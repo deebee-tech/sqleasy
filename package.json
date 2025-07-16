@@ -1,6 +1,6 @@
 {
    "name": "@deebeetech/sqleasy",
-   "version": "1.0.0-alpha.1",
+   "version": "1.0.0-alpha.2",
    "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
    "homepage": "https://github.com/deebee-tech/sqleasy",
    "license": "MIT",
