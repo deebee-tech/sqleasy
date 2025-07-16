@@ -14,12 +14,12 @@
       "url": "https://github.com/deebee-tech/sqleasy"
    },
    "type": "module",
-   "main": "dist/index.js",
+   "main": "index.js",
    "exports": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./index.js",
+      "require": "./index.cjs"
    },
-   "types": "dist/index.d.ts",
+   "types": "index.d.ts",
    "publishConfig": {
       "access": "public"
    },
