@@ -1,59 +1,51 @@
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-//#region \0rolldown/runtime.js
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __copyProps = (to, from, except, desc) => {
-	if (from && typeof from === "object" || typeof from === "function") for (var keys = __getOwnPropNames(from), i = 0, n = keys.length, key; i < n; i++) {
-		key = keys[i];
-		if (!__hasOwnProp.call(to, key) && key !== except) __defProp(to, key, {
-			get: ((k) => from[k]).bind(null, key),
-			enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
-		});
-	}
-	return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", {
-	value: mod,
-	enumerable: true
-}) : target, mod));
-//#endregion
-let _deebeetech_string_builder = require("@deebeetech/string-builder");
-_deebeetech_string_builder = __toESM(_deebeetech_string_builder);
 //#region src/enums/builder_type.ts
 let BuilderType = /* @__PURE__ */ function(BuilderType) {
 	BuilderType[BuilderType["And"] = 0] = "And";
 	BuilderType[BuilderType["FromBuilder"] = 1] = "FromBuilder";
 	BuilderType[BuilderType["FromTable"] = 2] = "FromTable";
 	BuilderType[BuilderType["FromRaw"] = 3] = "FromRaw";
-	BuilderType[BuilderType["JoinBuilder"] = 4] = "JoinBuilder";
-	BuilderType[BuilderType["JoinRaw"] = 5] = "JoinRaw";
-	BuilderType[BuilderType["JoinTable"] = 6] = "JoinTable";
-	BuilderType[BuilderType["None"] = 7] = "None";
-	BuilderType[BuilderType["Or"] = 8] = "Or";
-	BuilderType[BuilderType["OrderByColumn"] = 9] = "OrderByColumn";
-	BuilderType[BuilderType["OrderByRaw"] = 10] = "OrderByRaw";
-	BuilderType[BuilderType["SelectAll"] = 11] = "SelectAll";
-	BuilderType[BuilderType["SelectBuilder"] = 12] = "SelectBuilder";
-	BuilderType[BuilderType["SelectColumn"] = 13] = "SelectColumn";
-	BuilderType[BuilderType["SelectRaw"] = 14] = "SelectRaw";
-	BuilderType[BuilderType["Where"] = 15] = "Where";
-	BuilderType[BuilderType["WhereBetween"] = 16] = "WhereBetween";
-	BuilderType[BuilderType["WhereGroupBegin"] = 17] = "WhereGroupBegin";
-	BuilderType[BuilderType["WhereGroupBuilder"] = 18] = "WhereGroupBuilder";
-	BuilderType[BuilderType["WhereGroupEnd"] = 19] = "WhereGroupEnd";
-	BuilderType[BuilderType["WhereExistsBuilder"] = 20] = "WhereExistsBuilder";
-	BuilderType[BuilderType["WhereInBuilder"] = 21] = "WhereInBuilder";
-	BuilderType[BuilderType["WhereInValues"] = 22] = "WhereInValues";
-	BuilderType[BuilderType["WhereNotExistsBuilder"] = 23] = "WhereNotExistsBuilder";
-	BuilderType[BuilderType["WhereNotInBuilder"] = 24] = "WhereNotInBuilder";
-	BuilderType[BuilderType["WhereNotInValues"] = 25] = "WhereNotInValues";
-	BuilderType[BuilderType["WhereNotNull"] = 26] = "WhereNotNull";
-	BuilderType[BuilderType["WhereNull"] = 27] = "WhereNull";
-	BuilderType[BuilderType["WhereRaw"] = 28] = "WhereRaw";
+	BuilderType[BuilderType["GroupByColumn"] = 4] = "GroupByColumn";
+	BuilderType[BuilderType["GroupByRaw"] = 5] = "GroupByRaw";
+	BuilderType[BuilderType["Having"] = 6] = "Having";
+	BuilderType[BuilderType["HavingRaw"] = 7] = "HavingRaw";
+	BuilderType[BuilderType["InsertInto"] = 8] = "InsertInto";
+	BuilderType[BuilderType["InsertRaw"] = 9] = "InsertRaw";
+	BuilderType[BuilderType["JoinBuilder"] = 10] = "JoinBuilder";
+	BuilderType[BuilderType["JoinRaw"] = 11] = "JoinRaw";
+	BuilderType[BuilderType["JoinTable"] = 12] = "JoinTable";
+	BuilderType[BuilderType["None"] = 13] = "None";
+	BuilderType[BuilderType["Or"] = 14] = "Or";
+	BuilderType[BuilderType["OrderByColumn"] = 15] = "OrderByColumn";
+	BuilderType[BuilderType["OrderByRaw"] = 16] = "OrderByRaw";
+	BuilderType[BuilderType["SelectAll"] = 17] = "SelectAll";
+	BuilderType[BuilderType["SelectBuilder"] = 18] = "SelectBuilder";
+	BuilderType[BuilderType["SelectColumn"] = 19] = "SelectColumn";
+	BuilderType[BuilderType["SelectRaw"] = 20] = "SelectRaw";
+	BuilderType[BuilderType["UpdateTable"] = 21] = "UpdateTable";
+	BuilderType[BuilderType["UpdateColumn"] = 22] = "UpdateColumn";
+	BuilderType[BuilderType["UpdateRaw"] = 23] = "UpdateRaw";
+	BuilderType[BuilderType["DeleteFrom"] = 24] = "DeleteFrom";
+	BuilderType[BuilderType["Union"] = 25] = "Union";
+	BuilderType[BuilderType["UnionAll"] = 26] = "UnionAll";
+	BuilderType[BuilderType["Intersect"] = 27] = "Intersect";
+	BuilderType[BuilderType["Except"] = 28] = "Except";
+	BuilderType[BuilderType["CteBuilder"] = 29] = "CteBuilder";
+	BuilderType[BuilderType["CteRaw"] = 30] = "CteRaw";
+	BuilderType[BuilderType["Where"] = 31] = "Where";
+	BuilderType[BuilderType["WhereBetween"] = 32] = "WhereBetween";
+	BuilderType[BuilderType["WhereGroupBegin"] = 33] = "WhereGroupBegin";
+	BuilderType[BuilderType["WhereGroupBuilder"] = 34] = "WhereGroupBuilder";
+	BuilderType[BuilderType["WhereGroupEnd"] = 35] = "WhereGroupEnd";
+	BuilderType[BuilderType["WhereExistsBuilder"] = 36] = "WhereExistsBuilder";
+	BuilderType[BuilderType["WhereInBuilder"] = 37] = "WhereInBuilder";
+	BuilderType[BuilderType["WhereInValues"] = 38] = "WhereInValues";
+	BuilderType[BuilderType["WhereNotExistsBuilder"] = 39] = "WhereNotExistsBuilder";
+	BuilderType[BuilderType["WhereNotInBuilder"] = 40] = "WhereNotInBuilder";
+	BuilderType[BuilderType["WhereNotInValues"] = 41] = "WhereNotInValues";
+	BuilderType[BuilderType["WhereNotNull"] = 42] = "WhereNotNull";
+	BuilderType[BuilderType["WhereNull"] = 43] = "WhereNull";
+	BuilderType[BuilderType["WhereRaw"] = 44] = "WhereRaw";
 	return BuilderType;
 }({});
 //#endregion
@@ -78,6 +70,15 @@ let OrderByDirection = /* @__PURE__ */ function(OrderByDirection) {
 	return OrderByDirection;
 }({});
 //#endregion
+//#region src/enums/query_type.ts
+let QueryType = /* @__PURE__ */ function(QueryType) {
+	QueryType[QueryType["Select"] = 0] = "Select";
+	QueryType[QueryType["Insert"] = 1] = "Insert";
+	QueryType[QueryType["Update"] = 2] = "Update";
+	QueryType[QueryType["Delete"] = 3] = "Delete";
+	return QueryType;
+}({});
+//#endregion
 //#region src/enums/where_operator.ts
 let WhereOperator = /* @__PURE__ */ function(WhereOperator) {
 	WhereOperator[WhereOperator["Equals"] = 0] = "Equals";
@@ -90,14 +91,30 @@ let WhereOperator = /* @__PURE__ */ function(WhereOperator) {
 	return WhereOperator;
 }({});
 //#endregion
+//#region src/state/insert_state.ts
+var InsertState = class {
+	owner = void 0;
+	tableName = void 0;
+	columns = [];
+	values = [];
+	raw = void 0;
+};
+//#endregion
 //#region src/state/sqleasy_state.ts
 var SqlEasyState = class {
 	builderName = "";
+	queryType = QueryType.Select;
 	fromStates = [];
 	joinStates = [];
 	whereStates = [];
 	orderByStates = [];
 	selectStates = [];
+	groupByStates = [];
+	havingStates = [];
+	unionStates = [];
+	cteStates = [];
+	insertState = void 0;
+	updateStates = [];
 	isInnerStatement = false;
 	limit = 0;
 	offset = 0;
@@ -130,6 +147,14 @@ var DefaultBuilder = class {
 	};
 	clearFrom = () => {
 		this._sqlEasyState.fromStates = [];
+		return this;
+	};
+	clearGroupBy = () => {
+		this._sqlEasyState.groupByStates = [];
+		return this;
+	};
+	clearHaving = () => {
+		this._sqlEasyState.havingStates = [];
 		return this;
 	};
 	clearJoin = () => {
@@ -603,6 +628,246 @@ var DefaultBuilder = class {
 		});
 		return this;
 	};
+	groupByColumn = (tableNameOrAlias, columnName) => {
+		this._sqlEasyState.groupByStates.push({
+			builderType: BuilderType.GroupByColumn,
+			tableNameOrAlias,
+			columnName,
+			raw: void 0
+		});
+		return this;
+	};
+	groupByColumns = (columns) => {
+		columns.forEach((column) => {
+			this.groupByColumn(column.tableNameOrAlias, column.columnName);
+		});
+		return this;
+	};
+	groupByRaw = (rawGroupBy) => {
+		this._sqlEasyState.groupByStates.push({
+			builderType: BuilderType.GroupByRaw,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			raw: rawGroupBy
+		});
+		return this;
+	};
+	groupByRaws = (rawGroupBys) => {
+		rawGroupBys.forEach((rawGroupBy) => {
+			this.groupByRaw(rawGroupBy);
+		});
+		return this;
+	};
+	having = (tableNameOrAlias, columnName, whereOperator, value) => {
+		this._sqlEasyState.havingStates.push({
+			builderType: BuilderType.Having,
+			tableNameOrAlias,
+			columnName,
+			whereOperator,
+			raw: void 0,
+			values: [value]
+		});
+		return this;
+	};
+	havingRaw = (rawHaving) => {
+		this._sqlEasyState.havingStates.push({
+			builderType: BuilderType.HavingRaw,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: rawHaving,
+			values: []
+		});
+		return this;
+	};
+	havingRaws = (rawHavings) => {
+		rawHavings.forEach((rawHaving) => {
+			this.havingRaw(rawHaving);
+		});
+		return this;
+	};
+	insertInto = (tableName) => {
+		this._sqlEasyState.queryType = QueryType.Insert;
+		if (!this._sqlEasyState.insertState) this._sqlEasyState.insertState = new InsertState();
+		this._sqlEasyState.insertState.owner = this._config.defaultOwner();
+		this._sqlEasyState.insertState.tableName = tableName;
+		return this;
+	};
+	insertIntoWithOwner = (owner, tableName) => {
+		this._sqlEasyState.queryType = QueryType.Insert;
+		if (!this._sqlEasyState.insertState) this._sqlEasyState.insertState = new InsertState();
+		this._sqlEasyState.insertState.owner = owner;
+		this._sqlEasyState.insertState.tableName = tableName;
+		return this;
+	};
+	insertColumns = (columns) => {
+		if (!this._sqlEasyState.insertState) this._sqlEasyState.insertState = new InsertState();
+		this._sqlEasyState.insertState.columns = columns;
+		return this;
+	};
+	insertValues = (values) => {
+		if (!this._sqlEasyState.insertState) this._sqlEasyState.insertState = new InsertState();
+		this._sqlEasyState.insertState.values.push(values);
+		return this;
+	};
+	insertRaw = (raw) => {
+		this._sqlEasyState.queryType = QueryType.Insert;
+		if (!this._sqlEasyState.insertState) this._sqlEasyState.insertState = new InsertState();
+		this._sqlEasyState.insertState.raw = raw;
+		return this;
+	};
+	updateTable = (tableName, alias) => {
+		this._sqlEasyState.queryType = QueryType.Update;
+		this._sqlEasyState.fromStates.push({
+			builderType: BuilderType.FromTable,
+			owner: this._config.defaultOwner(),
+			tableName,
+			alias,
+			sqlEasyState: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	updateTableWithOwner = (owner, tableName, alias) => {
+		this._sqlEasyState.queryType = QueryType.Update;
+		this._sqlEasyState.fromStates.push({
+			builderType: BuilderType.FromTable,
+			owner,
+			tableName,
+			alias,
+			sqlEasyState: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	set = (columnName, value) => {
+		this._sqlEasyState.updateStates.push({
+			builderType: BuilderType.UpdateColumn,
+			columnName,
+			value,
+			raw: void 0
+		});
+		return this;
+	};
+	setColumns = (columns) => {
+		columns.forEach((column) => {
+			this.set(column.columnName, column.value);
+		});
+		return this;
+	};
+	setRaw = (raw) => {
+		this._sqlEasyState.updateStates.push({
+			builderType: BuilderType.UpdateRaw,
+			columnName: void 0,
+			value: void 0,
+			raw
+		});
+		return this;
+	};
+	deleteFrom = (tableName, alias) => {
+		this._sqlEasyState.queryType = QueryType.Delete;
+		this._sqlEasyState.fromStates.push({
+			builderType: BuilderType.FromTable,
+			owner: this._config.defaultOwner(),
+			tableName,
+			alias,
+			sqlEasyState: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	deleteFromWithOwner = (owner, tableName, alias) => {
+		this._sqlEasyState.queryType = QueryType.Delete;
+		this._sqlEasyState.fromStates.push({
+			builderType: BuilderType.FromTable,
+			owner,
+			tableName,
+			alias,
+			sqlEasyState: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	union = (builder) => {
+		const newBuilder = this.newBuilder();
+		builder(newBuilder);
+		newBuilder.state().isInnerStatement = true;
+		this._sqlEasyState.unionStates.push({
+			builderType: BuilderType.Union,
+			sqlEasyState: newBuilder.state(),
+			raw: void 0
+		});
+		return this;
+	};
+	unionAll = (builder) => {
+		const newBuilder = this.newBuilder();
+		builder(newBuilder);
+		newBuilder.state().isInnerStatement = true;
+		this._sqlEasyState.unionStates.push({
+			builderType: BuilderType.UnionAll,
+			sqlEasyState: newBuilder.state(),
+			raw: void 0
+		});
+		return this;
+	};
+	intersect = (builder) => {
+		const newBuilder = this.newBuilder();
+		builder(newBuilder);
+		newBuilder.state().isInnerStatement = true;
+		this._sqlEasyState.unionStates.push({
+			builderType: BuilderType.Intersect,
+			sqlEasyState: newBuilder.state(),
+			raw: void 0
+		});
+		return this;
+	};
+	except = (builder) => {
+		const newBuilder = this.newBuilder();
+		builder(newBuilder);
+		newBuilder.state().isInnerStatement = true;
+		this._sqlEasyState.unionStates.push({
+			builderType: BuilderType.Except,
+			sqlEasyState: newBuilder.state(),
+			raw: void 0
+		});
+		return this;
+	};
+	cte = (name, builder) => {
+		const newBuilder = this.newBuilder();
+		builder(newBuilder);
+		newBuilder.state().isInnerStatement = true;
+		this._sqlEasyState.cteStates.push({
+			builderType: BuilderType.CteBuilder,
+			name,
+			recursive: false,
+			sqlEasyState: newBuilder.state(),
+			raw: void 0
+		});
+		return this;
+	};
+	cteRecursive = (name, builder) => {
+		const newBuilder = this.newBuilder();
+		builder(newBuilder);
+		newBuilder.state().isInnerStatement = true;
+		this._sqlEasyState.cteStates.push({
+			builderType: BuilderType.CteBuilder,
+			name,
+			recursive: true,
+			sqlEasyState: newBuilder.state(),
+			raw: void 0
+		});
+		return this;
+	};
+	cteRaw = (name, raw) => {
+		this._sqlEasyState.cteStates.push({
+			builderType: BuilderType.CteRaw,
+			name,
+			recursive: false,
+			sqlEasyState: void 0,
+			raw
+		});
+		return this;
+	};
 };
 //#endregion
 //#region src/enums/join_on_operator.ts
@@ -815,13 +1080,13 @@ let Datatype = /* @__PURE__ */ function(Datatype) {
 //#endregion
 //#region src/enums/parser_area.ts
 let ParserArea = /* @__PURE__ */ function(ParserArea) {
-	ParserArea[ParserArea["Select"] = 0] = "Select";
-	ParserArea[ParserArea["From"] = 1] = "From";
-	ParserArea[ParserArea["Join"] = 2] = "Join";
-	ParserArea[ParserArea["Where"] = 3] = "Where";
-	ParserArea[ParserArea["OrderBy"] = 4] = "OrderBy";
-	ParserArea[ParserArea["LimitOffset"] = 5] = "LimitOffset";
-	ParserArea[ParserArea["General"] = 6] = "General";
+	ParserArea["Select"] = "Select";
+	ParserArea["From"] = "From";
+	ParserArea["Join"] = "Join";
+	ParserArea["Where"] = "Where";
+	ParserArea["OrderBy"] = "OrderBy";
+	ParserArea["LimitOffset"] = "LimitOffset";
+	ParserArea["General"] = "General";
 	return ParserArea;
 }({});
 //#endregion
@@ -842,9 +1107,21 @@ var ParserError = class extends Error {
 	}
 };
 //#endregion
+//#region src/helpers/string_builder.ts
+var StringBuilder = class {
+	_parts = [];
+	append(value) {
+		this._parts.push(value);
+		return this;
+	}
+	toString() {
+		return this._parts.join("");
+	}
+};
+//#endregion
 //#region src/helpers/sql_helper.ts
 var SqlHelper = class {
-	_sb = new _deebeetech_string_builder.default();
+	_sb = new StringBuilder();
 	_values = [];
 	_config;
 	_parserMode;
@@ -862,12 +1139,12 @@ var SqlHelper = class {
 	addSqlSnippet = (sql) => {
 		this._sb.append(sql);
 	};
-	addSqlSnippetWithValues = (sqlString, value) => {
-		this._values.push(value);
+	addSqlSnippetWithValues = (sqlString, values) => {
+		this._values.push(...values);
 		this.addSqlSnippet(sqlString);
 	};
 	clear = () => {
-		this._sb = new _deebeetech_string_builder.default();
+		this._sb = new StringBuilder();
 		this._values = [];
 	};
 	getSql = () => {
@@ -875,10 +1152,11 @@ var SqlHelper = class {
 	};
 	getSqlDebug = () => {
 		let sqlString = this._sb.toString();
+		const placeholder = this._config.preparedStatementPlaceholder();
 		this._values.forEach((value) => {
-			const valuePosition = sqlString.indexOf(this._config.preparedStatementPlaceholder());
+			const valuePosition = sqlString.indexOf(placeholder);
 			if (valuePosition === -1) return;
-			sqlString = sqlString.substring(0, valuePosition) + value + sqlString.substring(valuePosition + 1);
+			sqlString = sqlString.substring(0, valuePosition) + this.getValueStringFromDataType(value) + sqlString.substring(valuePosition + placeholder.length);
 		});
 		return sqlString;
 	};
@@ -898,6 +1176,178 @@ var SqlHelper = class {
 			default: return value.toString();
 		}
 	};
+};
+//#endregion
+//#region src/parser/default_delete.ts
+const defaultDelete = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.fromStates.length === 0) throw new ParserError(ParserArea.General, "DELETE requires a table");
+	sqlHelper.addSqlSnippet("DELETE FROM ");
+	const fromState = state.fromStates[0];
+	if (fromState.owner && fromState.owner !== "") {
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.owner + config.identifierDelimiters().end);
+		sqlHelper.addSqlSnippet(".");
+	}
+	sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.tableName + config.identifierDelimiters().end);
+	if (fromState.alias && fromState.alias !== "") {
+		sqlHelper.addSqlSnippet(" AS ");
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.alias + config.identifierDelimiters().end);
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default_from.ts
+const defaultFrom = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.fromStates.length === 0) throw new ParserError(ParserArea.From, "No tables to select from");
+	sqlHelper.addSqlSnippet("FROM ");
+	state.fromStates.forEach((fromState, i) => {
+		if (fromState.builderType === BuilderType.FromRaw) {
+			sqlHelper.addSqlSnippet(fromState.raw ?? "");
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (fromState.builderType === BuilderType.FromTable) {
+			if (fromState.owner !== "" && config.databaseType() === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
+			if (fromState.owner !== "") {
+				sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.owner + config.identifierDelimiters().end);
+				sqlHelper.addSqlSnippet(".");
+			}
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.tableName + config.identifierDelimiters().end);
+			if (fromState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.alias + config.identifierDelimiters().end);
+			}
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (fromState.builderType === BuilderType.FromBuilder) {
+			const subHelper = defaultToSql(fromState.sqlEasyState, config, mode);
+			sqlHelper.addSqlSnippet("(" + subHelper.getSql() + ")");
+			if (fromState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.alias + config.identifierDelimiters().end);
+			}
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+	});
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default_group_by.ts
+const defaultGroupBy = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.groupByStates.length === 0) return sqlHelper;
+	sqlHelper.addSqlSnippet("GROUP BY ");
+	state.groupByStates.forEach((groupByState, i) => {
+		if (groupByState.builderType === BuilderType.GroupByRaw) {
+			sqlHelper.addSqlSnippet(groupByState.raw ?? "");
+			if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (groupByState.builderType === BuilderType.GroupByColumn) {
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + groupByState.tableNameOrAlias + config.identifierDelimiters().end);
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + groupByState.columnName + config.identifierDelimiters().end);
+			if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+	});
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default_having.ts
+const defaultHaving = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.havingStates.length === 0) return sqlHelper;
+	if (state.groupByStates.length === 0) throw new ParserError(ParserArea.General, "HAVING requires a GROUP BY clause");
+	sqlHelper.addSqlSnippet("HAVING ");
+	for (let i = 0; i < state.havingStates.length; i++) {
+		const havingState = state.havingStates[i];
+		if (i === 0 && (havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or)) throw new ParserError(ParserArea.General, "First HAVING operator cannot be AND or OR");
+		if (havingState.builderType === BuilderType.And) {
+			sqlHelper.addSqlSnippet("AND ");
+			continue;
+		}
+		if (havingState.builderType === BuilderType.Or) {
+			sqlHelper.addSqlSnippet("OR ");
+			continue;
+		}
+		if (havingState.builderType === BuilderType.HavingRaw) {
+			sqlHelper.addSqlSnippet(havingState.raw ?? "");
+			if (i < state.havingStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			continue;
+		}
+		if (havingState.builderType === BuilderType.Having) {
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + havingState.tableNameOrAlias + config.identifierDelimiters().end);
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + havingState.columnName + config.identifierDelimiters().end);
+			sqlHelper.addSqlSnippet(" ");
+			switch (havingState.whereOperator) {
+				case WhereOperator.Equals:
+					sqlHelper.addSqlSnippet("=");
+					break;
+				case WhereOperator.NotEquals:
+					sqlHelper.addSqlSnippet("<>");
+					break;
+				case WhereOperator.GreaterThan:
+					sqlHelper.addSqlSnippet(">");
+					break;
+				case WhereOperator.GreaterThanOrEquals:
+					sqlHelper.addSqlSnippet(">=");
+					break;
+				case WhereOperator.LessThan:
+					sqlHelper.addSqlSnippet("<");
+					break;
+				case WhereOperator.LessThanOrEquals:
+					sqlHelper.addSqlSnippet("<=");
+					break;
+			}
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(havingState.values[0]));
+			if (i < state.havingStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			continue;
+		}
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default_insert.ts
+const defaultInsert = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (!state.insertState) throw new ParserError(ParserArea.General, "No insert state provided");
+	const insertState = state.insertState;
+	if (insertState.raw) {
+		sqlHelper.addSqlSnippet(insertState.raw);
+		return sqlHelper;
+	}
+	sqlHelper.addSqlSnippet("INSERT INTO ");
+	if (insertState.owner && insertState.owner !== "") {
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + insertState.owner + config.identifierDelimiters().end);
+		sqlHelper.addSqlSnippet(".");
+	}
+	sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + insertState.tableName + config.identifierDelimiters().end);
+	if (insertState.columns.length > 0) {
+		sqlHelper.addSqlSnippet(" (");
+		for (let i = 0; i < insertState.columns.length; i++) {
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + insertState.columns[i] + config.identifierDelimiters().end);
+			if (i < insertState.columns.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+		sqlHelper.addSqlSnippet(")");
+	}
+	if (insertState.values.length > 0) {
+		sqlHelper.addSqlSnippet(" VALUES ");
+		for (let r = 0; r < insertState.values.length; r++) {
+			sqlHelper.addSqlSnippet("(");
+			for (let c = 0; c < insertState.values[r].length; c++) {
+				sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(insertState.values[r][c]));
+				if (c < insertState.values[r].length - 1) sqlHelper.addSqlSnippet(", ");
+			}
+			sqlHelper.addSqlSnippet(")");
+			if (r < insertState.values.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+	}
+	return sqlHelper;
 };
 //#endregion
 //#region src/parser/default_join.ts
@@ -1065,7 +1515,7 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 const defaultLimitOffset = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(config, mode);
 	if (state.limit == 0 && state.offset == 0) return sqlHelper;
-	if (config.databaseType() == DatabaseType.Mysql || config.databaseType() == DatabaseType.Postgres) {
+	if (config.databaseType() == DatabaseType.Mysql || config.databaseType() == DatabaseType.Postgres || config.databaseType() == DatabaseType.Sqlite) {
 		if (state.limit > 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
@@ -1123,23 +1573,12 @@ const defaultOrderBy = (state, config, mode) => {
 };
 //#endregion
 //#region src/parser/default_select.ts
-const defaultSelect = (state, config, mode) => {
+const defaultSelect = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(config, mode);
 	if (state.selectStates.length === 0) throw new ParserError(ParserArea.Select, "Select statement must have at least one select state");
 	sqlHelper.addSqlSnippet("SELECT ");
 	if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
-	if (config.databaseType() === DatabaseType.Mssql) {
-		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && state.customState["top"] > 0) {
-			sqlHelper.addSqlSnippet("TOP ");
-			sqlHelper.addSqlSnippet(`(${state.customState["top"]})`);
-			sqlHelper.addSqlSnippet(" ");
-		}
-		if (state.customState !== null && state.customState !== void 0 && (state.customState["top"] === null || state.customState["top"] === void 0) && !state.isInnerStatement && state.limit === 0 && (!state.whereStates || state.whereStates.length === 0)) {
-			sqlHelper.addSqlSnippet("TOP ");
-			sqlHelper.addSqlSnippet(`(${config.runtimeConfiguration().maxRowsReturned})`);
-			sqlHelper.addSqlSnippet(" ");
-		}
-	}
+	if (options?.beforeSelectColumns) options.beforeSelectColumns(state, config, sqlHelper);
 	for (let i = 0; i < state.selectStates.length; i++) {
 		const selectState = state.selectStates[i];
 		if (selectState.builderType === BuilderType.SelectAll) {
@@ -1172,6 +1611,66 @@ const defaultSelect = (state, config, mode) => {
 			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
 			continue;
 		}
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default_union.ts
+const defaultUnion = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.unionStates.length === 0) return sqlHelper;
+	for (let i = 0; i < state.unionStates.length; i++) {
+		const unionState = state.unionStates[i];
+		switch (unionState.builderType) {
+			case BuilderType.Union:
+				sqlHelper.addSqlSnippet("UNION ");
+				break;
+			case BuilderType.UnionAll:
+				sqlHelper.addSqlSnippet("UNION ALL ");
+				break;
+			case BuilderType.Intersect:
+				sqlHelper.addSqlSnippet("INTERSECT ");
+				break;
+			case BuilderType.Except:
+				sqlHelper.addSqlSnippet("EXCEPT ");
+				break;
+		}
+		if (unionState.raw) sqlHelper.addSqlSnippet(unionState.raw);
+		else if (unionState.sqlEasyState) {
+			const subHelper = defaultToSql(unionState.sqlEasyState, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+		}
+		if (i < state.unionStates.length - 1) sqlHelper.addSqlSnippet(" ");
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default_update.ts
+const defaultUpdate = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.fromStates.length === 0) throw new ParserError(ParserArea.General, "UPDATE requires a table");
+	if (state.updateStates.length === 0) throw new ParserError(ParserArea.General, "UPDATE requires at least one SET column");
+	sqlHelper.addSqlSnippet("UPDATE ");
+	const fromState = state.fromStates[0];
+	if (fromState.owner && fromState.owner !== "") {
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.owner + config.identifierDelimiters().end);
+		sqlHelper.addSqlSnippet(".");
+	}
+	sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.tableName + config.identifierDelimiters().end);
+	if (fromState.alias && fromState.alias !== "") {
+		sqlHelper.addSqlSnippet(" AS ");
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.alias + config.identifierDelimiters().end);
+	}
+	sqlHelper.addSqlSnippet(" SET ");
+	for (let i = 0; i < state.updateStates.length; i++) {
+		const updateState = state.updateStates[i];
+		if (updateState.builderType === BuilderType.UpdateRaw) sqlHelper.addSqlSnippet(updateState.raw ?? "");
+		else if (updateState.builderType === BuilderType.UpdateColumn) {
+			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + updateState.columnName + config.identifierDelimiters().end);
+			sqlHelper.addSqlSnippet(" = ");
+			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(updateState.value));
+		}
+		if (i < state.updateStates.length - 1) sqlHelper.addSqlSnippet(", ");
 	}
 	return sqlHelper;
 };
@@ -1339,10 +1838,42 @@ const defaultWhere = (state, config, mode) => {
 };
 //#endregion
 //#region src/parser/default_to_sql.ts
-const defaultToSql = (state, config, mode) => {
+const defaultToSql = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(config, mode);
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
-	const sel = defaultSelect(state, config, mode);
+	if (state.cteStates.length > 0) {
+		const cte = defaultCte(state, config, mode);
+		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
+	}
+	if (state.queryType === QueryType.Insert) {
+		const insert = defaultInsert(state, config, mode);
+		sqlHelper.addSqlSnippetWithValues(insert.getSql(), insert.getValues());
+		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
+		return sqlHelper;
+	}
+	if (state.queryType === QueryType.Update) {
+		const update = defaultUpdate(state, config, mode);
+		sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
+		if (state.whereStates.length > 0) {
+			const where = defaultWhere(state, config, mode);
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+		}
+		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
+		return sqlHelper;
+	}
+	if (state.queryType === QueryType.Delete) {
+		const del = defaultDelete(state, config, mode);
+		sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
+		if (state.whereStates.length > 0) {
+			const where = defaultWhere(state, config, mode);
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+		}
+		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
+		return sqlHelper;
+	}
+	const sel = defaultSelect(state, config, mode, options);
 	sqlHelper.addSqlSnippetWithValues(sel.getSql(), sel.getValues());
 	const from = defaultFrom(state, config, mode);
 	sqlHelper.addSqlSnippet(" ");
@@ -1356,6 +1887,21 @@ const defaultToSql = (state, config, mode) => {
 		const where = defaultWhere(state, config, mode);
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+	}
+	if (state.groupByStates.length > 0) {
+		const groupBy = defaultGroupBy(state, config, mode);
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippetWithValues(groupBy.getSql(), groupBy.getValues());
+	}
+	if (state.havingStates.length > 0) {
+		const having = defaultHaving(state, config, mode);
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippetWithValues(having.getSql(), having.getValues());
+	}
+	if (state.unionStates.length > 0) {
+		const union = defaultUnion(state, config, mode, options);
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippetWithValues(union.getSql(), union.getValues());
 	}
 	if (state.orderByStates.length > 0) {
 		const orderBy = defaultOrderBy(state, config, mode);
@@ -1371,41 +1917,25 @@ const defaultToSql = (state, config, mode) => {
 	return sqlHelper;
 };
 //#endregion
-//#region src/parser/default_from.ts
-const defaultFrom = (state, config, mode) => {
+//#region src/parser/default_cte.ts
+const defaultCte = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(config, mode);
-	if (state.fromStates.length === 0) throw new ParserError(ParserArea.From, "No tables to select from");
-	sqlHelper.addSqlSnippet("FROM ");
-	state.fromStates.forEach((fromState, i) => {
-		if (fromState.builderType === BuilderType.FromRaw) {
-			sqlHelper.addSqlSnippet(fromState.raw ?? "");
-			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
+	if (state.cteStates.length === 0) return sqlHelper;
+	if (state.cteStates.some((cte) => cte.recursive)) sqlHelper.addSqlSnippet("WITH RECURSIVE ");
+	else sqlHelper.addSqlSnippet("WITH ");
+	for (let i = 0; i < state.cteStates.length; i++) {
+		const cteState = state.cteStates[i];
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + cteState.name + config.identifierDelimiters().end);
+		sqlHelper.addSqlSnippet(" AS (");
+		if (cteState.builderType === BuilderType.CteRaw) sqlHelper.addSqlSnippet(cteState.raw ?? "");
+		else if (cteState.sqlEasyState) {
+			const subHelper = defaultToSql(cteState.sqlEasyState, config, mode);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
 		}
-		if (fromState.builderType === BuilderType.FromTable) {
-			if (fromState.owner !== "" && config.databaseType() === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
-			if (fromState.owner !== "") {
-				sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.owner + config.identifierDelimiters().end);
-				sqlHelper.addSqlSnippet(".");
-			}
-			sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.tableName + config.identifierDelimiters().end);
-			if (fromState.alias !== "") {
-				sqlHelper.addSqlSnippet(" AS ");
-				sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.alias + config.identifierDelimiters().end);
-			}
-			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-		if (fromState.builderType === BuilderType.FromBuilder) {
-			const subHelper = defaultToSql(fromState.sqlEasyState, config, mode);
-			sqlHelper.addSqlSnippet("(" + subHelper.getSql() + ")");
-			if (fromState.alias !== "") {
-				sqlHelper.addSqlSnippet(" AS ");
-				sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + fromState.alias + config.identifierDelimiters().end);
-			}
-			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
-		}
-	});
+		sqlHelper.addSqlSnippet(")");
+		if (i < state.cteStates.length - 1) sqlHelper.addSqlSnippet(", ");
+		else sqlHelper.addSqlSnippet(" ");
+	}
 	return sqlHelper;
 };
 //#endregion
@@ -1415,8 +1945,14 @@ var DefaultParser = class {
 	constructor(config) {
 		this._config = config;
 	}
+	get config() {
+		return this._config;
+	}
+	getToSqlOptions() {
+		return {};
+	}
 	toSqlRaw = (state) => {
-		return defaultToSql(state, this._config, ParserMode.Raw).getSqlDebug();
+		return defaultToSql(state, this._config, ParserMode.Raw, this.getToSqlOptions()).getSqlDebug();
 	};
 	toSqlMultiRaw = (states, transactionState) => {
 		let sqlRaw = "";
@@ -1437,8 +1973,8 @@ var MssqlJoinOnBuilder = class MssqlJoinOnBuilder extends DefaultJoinOnBuilder {
 		super(config);
 		this._mssqlConfiguration = config;
 	}
-	newJoinOnBuilder = () => {
-		return new MssqlJoinOnBuilder(this._mssqlConfiguration);
+	newJoinOnBuilder = (config) => {
+		return new MssqlJoinOnBuilder(config ?? this._mssqlConfiguration);
 	};
 };
 //#endregion
@@ -1449,10 +1985,23 @@ var MssqlParser = class extends DefaultParser {
 		super(config);
 		this._mssqlConfiguration = config;
 	}
+	getToSqlOptions() {
+		return { beforeSelectColumns: (state, config, sqlHelper) => {
+			if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && state.customState["top"] > 0) {
+				sqlHelper.addSqlSnippet("TOP ");
+				sqlHelper.addSqlSnippet(`(${state.customState["top"]})`);
+				sqlHelper.addSqlSnippet(" ");
+			} else if (!state.isInnerStatement && state.limit === 0 && (!state.whereStates || state.whereStates.length === 0)) {
+				sqlHelper.addSqlSnippet("TOP ");
+				sqlHelper.addSqlSnippet(`(${config.runtimeConfiguration().maxRowsReturned})`);
+				sqlHelper.addSqlSnippet(" ");
+			}
+		} };
+	}
 	toSql = (state) => {
 		const paramsString = new SqlHelper(this._mssqlConfiguration, ParserMode.Prepared);
 		const finalString = new SqlHelper(this._mssqlConfiguration, ParserMode.Prepared);
-		const sqlHelper = defaultToSql(state, this._mssqlConfiguration, ParserMode.Prepared);
+		const sqlHelper = defaultToSql(state, this._mssqlConfiguration, ParserMode.Prepared, this.getToSqlOptions());
 		let sql = sqlHelper.getSql();
 		sql = sql.replaceAll("'", "''");
 		if (sql.length > 4e3) throw new ParserError(ParserArea.General, "SQL string is too long for Mssql prepared statement");
@@ -1479,8 +2028,15 @@ var MssqlParser = class extends DefaultParser {
 		finalString.addSqlSnippet(";");
 		return finalString.getSql();
 	};
-	toSqlMulti = (_states, _transactionState) => {
-		throw new ParserError(ParserArea.General, "toSqlMulti not implemented for MssqlParser");
+	toSqlMulti = (states, transactionState) => {
+		const finalString = new SqlHelper(this._mssqlConfiguration, ParserMode.Prepared);
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._mssqlConfiguration.transactionDelimiters().begin + "; ");
+		for (const state of states) {
+			const sql = this.toSql(state);
+			finalString.addSqlSnippet(sql + " ");
+		}
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._mssqlConfiguration.transactionDelimiters().end + ";");
+		return finalString.getSql();
 	};
 	getParameterType = (value) => {
 		switch (typeof value) {
@@ -1503,20 +2059,21 @@ var MssqlBuilder = class MssqlBuilder extends DefaultBuilder {
 		super(config);
 		this._mssqlConfig = config;
 	}
-	newBuilder = () => {
-		return new MssqlBuilder(this._mssqlConfig);
+	newBuilder = (config) => {
+		return new MssqlBuilder(config ?? this._mssqlConfig);
 	};
-	newJoinOnBuilder = () => {
-		return new MssqlJoinOnBuilder(this._mssqlConfig);
+	newJoinOnBuilder = (config) => {
+		return new MssqlJoinOnBuilder(config ?? this._mssqlConfig);
 	};
-	newParser = () => {
-		return new MssqlParser(this._mssqlConfig);
+	newParser = (config) => {
+		return new MssqlParser(config ?? this._mssqlConfig);
 	};
 	clearTop = () => {
-		delete this.state().customState["top"];
+		if (this.state().customState) delete this.state().customState["top"];
 		return this;
 	};
 	top = (top) => {
+		if (!this.state().customState) this.state().customState = {};
 		this.state().customState["top"] = top;
 		return this;
 	};
@@ -1599,8 +2156,8 @@ var MysqlJoinOnBuilder = class MysqlJoinOnBuilder extends DefaultJoinOnBuilder {
 		super(config);
 		this._mysqlConfig = config;
 	}
-	newJoinOnBuilder = () => {
-		return new MysqlJoinOnBuilder(this._mysqlConfig);
+	newJoinOnBuilder = (config) => {
+		return new MysqlJoinOnBuilder(config ?? this._mysqlConfig);
 	};
 };
 //#endregion
@@ -1611,11 +2168,18 @@ var MysqlParser = class extends DefaultParser {
 		super(config);
 		this._mysqlConfiguration = config;
 	}
-	toSql = (_state) => {
-		throw new ParserError(ParserArea.General, "toSql not implemented for MysqlParser");
+	toSql = (state) => {
+		return defaultToSql(state, this._mysqlConfiguration, ParserMode.Prepared).getSql();
 	};
-	toSqlMulti = (_states, _transactionState) => {
-		throw new ParserError(ParserArea.General, "toSqlMulti not implemented for MysqlParser");
+	toSqlMulti = (states, transactionState) => {
+		const finalString = new SqlHelper(this._mysqlConfiguration, ParserMode.Prepared);
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._mysqlConfiguration.transactionDelimiters().begin + "; ");
+		for (const state of states) {
+			const sql = this.toSql(state);
+			finalString.addSqlSnippet(sql);
+		}
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._mysqlConfiguration.transactionDelimiters().end + ";");
+		return finalString.getSql();
 	};
 };
 //#endregion
@@ -1626,14 +2190,14 @@ var MysqlBuilder = class MysqlBuilder extends DefaultBuilder {
 		super(config);
 		this._mysqlConfig = config;
 	}
-	newBuilder = () => {
-		return new MysqlBuilder(this._mysqlConfig);
+	newBuilder = (config) => {
+		return new MysqlBuilder(config ?? this._mysqlConfig);
 	};
-	newJoinOnBuilder = () => {
-		return new MysqlJoinOnBuilder(this._mysqlConfig);
+	newJoinOnBuilder = (config) => {
+		return new MysqlJoinOnBuilder(config ?? this._mysqlConfig);
 	};
-	newParser = () => {
-		return new MysqlParser(this._mysqlConfig);
+	newParser = (config) => {
+		return new MysqlParser(config ?? this._mysqlConfig);
 	};
 };
 //#endregion
@@ -1689,20 +2253,20 @@ var MysqlMultiBuilder = class extends DefaultMultiBuilder {
 //#endregion
 //#region src/sqleasy/mysql/mysql_sqleasy.ts
 var MysqlSqlEasy = class {
-	_mssqlConfiguration;
+	_mysqlConfiguration;
 	constructor(rc) {
 		if (rc === null || rc === void 0) rc = new RuntimeConfiguration();
-		this._mssqlConfiguration = new MysqlConfiguration(rc);
+		this._mysqlConfiguration = new MysqlConfiguration(rc);
 	}
 	configuration = () => {
-		return this._mssqlConfiguration;
+		return this._mysqlConfiguration;
 	};
 	newBuilder = (rc) => {
-		if (rc === null || rc === void 0) return new MysqlBuilder(this._mssqlConfiguration);
+		if (rc === null || rc === void 0) return new MysqlBuilder(this._mysqlConfiguration);
 		return new MysqlBuilder(new MysqlConfiguration(rc));
 	};
 	newMultiBuilder = (rc) => {
-		if (rc === null || rc === void 0) return new MysqlMultiBuilder(this._mssqlConfiguration);
+		if (rc === null || rc === void 0) return new MysqlMultiBuilder(this._mysqlConfiguration);
 		return new MysqlMultiBuilder(new MysqlConfiguration(rc));
 	};
 };
@@ -1714,8 +2278,8 @@ var PostgresJoinOnBuilder = class PostgresJoinOnBuilder extends DefaultJoinOnBui
 		super(config);
 		this._postgresConfig = config;
 	}
-	newJoinOnBuilder = () => {
-		return new PostgresJoinOnBuilder(this._postgresConfig);
+	newJoinOnBuilder = (config) => {
+		return new PostgresJoinOnBuilder(config ?? this._postgresConfig);
 	};
 };
 //#endregion
@@ -1726,11 +2290,30 @@ var PostgresParser = class extends DefaultParser {
 		super(config);
 		this._postgresConfiguration = config;
 	}
-	toSql = (_state) => {
-		throw new ParserError(ParserArea.General, "toSql not implemented for PostgresParser");
+	toSql = (state) => {
+		let sql = defaultToSql(state, this._postgresConfiguration, ParserMode.Prepared).getSql();
+		const placeholder = this._postgresConfiguration.preparedStatementPlaceholder();
+		let paramIndex = 1;
+		let searchFrom = 0;
+		while (true) {
+			const pos = sql.indexOf(placeholder, searchFrom);
+			if (pos === -1) break;
+			const replacement = "$" + paramIndex;
+			sql = sql.slice(0, pos) + replacement + sql.slice(pos + placeholder.length);
+			searchFrom = pos + replacement.length;
+			paramIndex++;
+		}
+		return sql;
 	};
-	toSqlMulti = (_states, _transactionState) => {
-		throw new ParserError(ParserArea.General, "toSqlMulti not implemented for PostgresParser");
+	toSqlMulti = (states, transactionState) => {
+		const finalString = new SqlHelper(this._postgresConfiguration, ParserMode.Prepared);
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._postgresConfiguration.transactionDelimiters().begin + "; ");
+		for (const state of states) {
+			const sql = this.toSql(state);
+			finalString.addSqlSnippet(sql);
+		}
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._postgresConfiguration.transactionDelimiters().end + ";");
+		return finalString.getSql();
 	};
 };
 //#endregion
@@ -1741,14 +2324,14 @@ var PostgresBuilder = class PostgresBuilder extends DefaultBuilder {
 		super(config);
 		this._postgresConfig = config;
 	}
-	newBuilder = () => {
-		return new PostgresBuilder(this._postgresConfig);
+	newBuilder = (config) => {
+		return new PostgresBuilder(config ?? this._postgresConfig);
 	};
-	newJoinOnBuilder = () => {
-		return new PostgresJoinOnBuilder(this._postgresConfig);
+	newJoinOnBuilder = (config) => {
+		return new PostgresJoinOnBuilder(config ?? this._postgresConfig);
 	};
-	newParser = () => {
-		return new PostgresParser(this._postgresConfig);
+	newParser = (config) => {
+		return new PostgresParser(config ?? this._postgresConfig);
 	};
 };
 //#endregion
@@ -1822,6 +2405,137 @@ var PostgresSqlEasy = class {
 	};
 };
 //#endregion
+//#region src/sqleasy/sqlite/sqlite_join_on_builder.ts
+var SqliteJoinOnBuilder = class SqliteJoinOnBuilder extends DefaultJoinOnBuilder {
+	_sqliteConfig;
+	constructor(config) {
+		super(config);
+		this._sqliteConfig = config;
+	}
+	newJoinOnBuilder = (config) => {
+		return new SqliteJoinOnBuilder(config ?? this._sqliteConfig);
+	};
+};
+//#endregion
+//#region src/sqleasy/sqlite/sqlite_parser.ts
+var SqliteParser = class extends DefaultParser {
+	_sqliteConfiguration;
+	constructor(config) {
+		super(config);
+		this._sqliteConfiguration = config;
+	}
+	toSql = (state) => {
+		return defaultToSql(state, this._sqliteConfiguration, ParserMode.Prepared).getSql();
+	};
+	toSqlMulti = (states, transactionState) => {
+		const finalString = new SqlHelper(this._sqliteConfiguration, ParserMode.Prepared);
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._sqliteConfiguration.transactionDelimiters().begin + "; ");
+		for (const state of states) {
+			const sql = this.toSql(state);
+			finalString.addSqlSnippet(sql);
+		}
+		if (transactionState === MultiBuilderTransactionState.TransactionOn) finalString.addSqlSnippet(this._sqliteConfiguration.transactionDelimiters().end + ";");
+		return finalString.getSql();
+	};
+};
+//#endregion
+//#region src/sqleasy/sqlite/sqlite_builder.ts
+var SqliteBuilder = class SqliteBuilder extends DefaultBuilder {
+	_sqliteConfig;
+	constructor(config) {
+		super(config);
+		this._sqliteConfig = config;
+	}
+	newBuilder = (config) => {
+		return new SqliteBuilder(config ?? this._sqliteConfig);
+	};
+	newJoinOnBuilder = (config) => {
+		return new SqliteJoinOnBuilder(config ?? this._sqliteConfig);
+	};
+	newParser = (config) => {
+		return new SqliteParser(config ?? this._sqliteConfig);
+	};
+};
+//#endregion
+//#region src/sqleasy/sqlite/sqlite_configuration.ts
+var SqliteConfiguration = class {
+	_sqliteRuntimeConfiguration;
+	constructor(rc) {
+		this._sqliteRuntimeConfiguration = rc;
+	}
+	databaseType = () => {
+		return DatabaseType.Sqlite;
+	};
+	defaultOwner = () => {
+		return "";
+	};
+	identifierDelimiters = () => {
+		return {
+			begin: "\"",
+			end: "\""
+		};
+	};
+	preparedStatementPlaceholder = () => {
+		return "?";
+	};
+	runtimeConfiguration = () => {
+		return this._sqliteRuntimeConfiguration;
+	};
+	stringDelimiter = () => {
+		return "'";
+	};
+	transactionDelimiters = () => {
+		return {
+			begin: "BEGIN",
+			end: "COMMIT"
+		};
+	};
+};
+//#endregion
+//#region src/sqleasy/sqlite/sqlite_multi_builder.ts
+var SqliteMultiBuilder = class extends DefaultMultiBuilder {
+	_sqliteConfig;
+	constructor(config) {
+		super(config);
+		this._sqliteConfig = config;
+	}
+	newBuilder = () => {
+		return new SqliteBuilder(this._sqliteConfig);
+	};
+	newParser = () => {
+		return new SqliteParser(this._sqliteConfig);
+	};
+};
+//#endregion
+//#region src/sqleasy/sqlite/sqlite_sqleasy.ts
+var SqliteSqlEasy = class {
+	_sqliteConfiguration;
+	constructor(rc) {
+		if (rc === null || rc === void 0) rc = new RuntimeConfiguration();
+		this._sqliteConfiguration = new SqliteConfiguration(rc);
+	}
+	configuration = () => {
+		return this._sqliteConfiguration;
+	};
+	newBuilder = (rc) => {
+		if (rc === null || rc === void 0) return new SqliteBuilder(this._sqliteConfiguration);
+		return new SqliteBuilder(new SqliteConfiguration(rc));
+	};
+	newMultiBuilder = (rc) => {
+		if (rc === null || rc === void 0) return new SqliteMultiBuilder(this._sqliteConfiguration);
+		return new SqliteMultiBuilder(new SqliteConfiguration(rc));
+	};
+};
+//#endregion
+//#region src/state/cte_state.ts
+var CteState = class {
+	builderType = BuilderType.None;
+	name = "";
+	recursive = false;
+	sqlEasyState = void 0;
+	raw = void 0;
+};
+//#endregion
 //#region src/state/from_state.ts
 var FromState = class {
 	builderType = BuilderType.None;
@@ -1830,6 +2544,24 @@ var FromState = class {
 	alias = void 0;
 	sqlEasyState = void 0;
 	raw = void 0;
+};
+//#endregion
+//#region src/state/group_by_state.ts
+var GroupByState = class {
+	builderType = BuilderType.None;
+	tableNameOrAlias = void 0;
+	columnName = void 0;
+	raw = void 0;
+};
+//#endregion
+//#region src/state/having_state.ts
+var HavingState = class {
+	builderType = BuilderType.None;
+	tableNameOrAlias = void 0;
+	columnName = void 0;
+	whereOperator = WhereOperator.None;
+	raw = void 0;
+	values = [];
 };
 //#endregion
 //#region src/state/join_on_state.ts
@@ -1875,6 +2607,21 @@ var SelectState = class {
 	raw = void 0;
 };
 //#endregion
+//#region src/state/union_state.ts
+var UnionState = class {
+	builderType = BuilderType.None;
+	sqlEasyState = void 0;
+	raw = void 0;
+};
+//#endregion
+//#region src/state/update_state.ts
+var UpdateState = class {
+	builderType = BuilderType.None;
+	columnName = void 0;
+	value = void 0;
+	raw = void 0;
+};
+//#endregion
 //#region src/state/where_state.ts
 var WhereState = class {
 	builderType = BuilderType.None;
@@ -1888,6 +2635,7 @@ var WhereState = class {
 //#endregion
 exports.BuilderType = BuilderType;
 exports.ConfigurationDelimiters = ConfigurationDelimiters;
+exports.CteState = CteState;
 exports.DatabaseType = DatabaseType;
 exports.Datatype = Datatype;
 exports.DefaultBuilder = DefaultBuilder;
@@ -1895,6 +2643,9 @@ exports.DefaultJoinOnBuilder = DefaultJoinOnBuilder;
 exports.DefaultMultiBuilder = DefaultMultiBuilder;
 exports.DefaultParser = DefaultParser;
 exports.FromState = FromState;
+exports.GroupByState = GroupByState;
+exports.HavingState = HavingState;
+exports.InsertState = InsertState;
 exports.JoinOnOperator = JoinOnOperator;
 exports.JoinOnState = JoinOnState;
 exports.JoinOperator = JoinOperator;
@@ -1924,18 +2675,34 @@ exports.PostgresJoinOnBuilder = PostgresJoinOnBuilder;
 exports.PostgresMultiBuilder = PostgresMultiBuilder;
 exports.PostgresParser = PostgresParser;
 exports.PostgresSqlEasy = PostgresSqlEasy;
+exports.QueryType = QueryType;
 exports.RuntimeConfiguration = RuntimeConfiguration;
 exports.SelectState = SelectState;
 exports.SqlEasyState = SqlEasyState;
 exports.SqlHelper = SqlHelper;
+exports.SqliteBuilder = SqliteBuilder;
+exports.SqliteConfiguration = SqliteConfiguration;
+exports.SqliteJoinOnBuilder = SqliteJoinOnBuilder;
+exports.SqliteMultiBuilder = SqliteMultiBuilder;
+exports.SqliteParser = SqliteParser;
+exports.SqliteSqlEasy = SqliteSqlEasy;
+exports.UnionState = UnionState;
+exports.UpdateState = UpdateState;
 exports.WhereOperator = WhereOperator;
 exports.WhereState = WhereState;
+exports.defaultCte = defaultCte;
+exports.defaultDelete = defaultDelete;
 exports.defaultFrom = defaultFrom;
+exports.defaultGroupBy = defaultGroupBy;
+exports.defaultHaving = defaultHaving;
+exports.defaultInsert = defaultInsert;
 exports.defaultJoin = defaultJoin;
 exports.defaultLimitOffset = defaultLimitOffset;
 exports.defaultOrderBy = defaultOrderBy;
 exports.defaultSelect = defaultSelect;
 exports.defaultToSql = defaultToSql;
+exports.defaultUnion = defaultUnion;
+exports.defaultUpdate = defaultUpdate;
 exports.defaultWhere = defaultWhere;
 
 //# sourceMappingURL=index.cjs.map
