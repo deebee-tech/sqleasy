@@ -1,3 +1,12 @@
+## [1.0.1](https://github.com/deebee-tech/sqleasy/compare/v1.0.0...v1.0.1) (2026-03-30)
+
+### Bug Fixes
+
+* **repo:** Fix for building releases in github ([f6e169b](https://github.com/deebee-tech/sqleasy/commit/f6e169b7af4b2f9688102d00e3ae059bc4073245))
+* **repo:** Fix for building releases in github part 2 ([8af7949](https://github.com/deebee-tech/sqleasy/commit/8af794959f50a4474ccda303ac76aa6ff8d43023))
+* **repo:** Fix for building releases in github part 3 ([4e1c3fa](https://github.com/deebee-tech/sqleasy/commit/4e1c3fa46f51a49c344ddf7ed8b483c5d1422b90))
+* **repo:** Fix for major releases in change commits. ([ea9e659](https://github.com/deebee-tech/sqleasy/commit/ea9e65986d44bdbdbe5ec4d39e3b4d20e9a9e314))
+
 # 1.0.0 (2026-03-30)
 
 
