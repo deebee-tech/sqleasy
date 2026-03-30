@@ -1,6 +1,6 @@
 {
    "name": "@deebeetech/sqleasy",
-   "version": "1.0.0-alpha.1",
+   "version": "1.0.0",
    "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
    "homepage": "https://github.com/deebee-tech/sqleasy",
    "license": "MIT",
@@ -14,29 +14,27 @@
       "url": "https://github.com/deebee-tech/sqleasy"
    },
    "type": "module",
-   "main": "dist/index.mjs",
+   "main": "index.mjs",
    "exports": {
       ".": {
-         "types": "./dist/index.d.mts",
-         "import": "./dist/index.mjs",
-         "require": "./dist/index.cjs"
+         "types": "./index.d.mts",
+         "import": "./index.mjs",
+         "require": "./index.cjs"
       }
    },
-   "types": "dist/index.d.mts",
+   "types": "index.d.mts",
    "publishConfig": {
       "access": "public"
    },
    "scripts": {
       "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/'",
-      "test": "vitest --coverage",
+      "format": "prettier --write .",
       "lint": "eslint .",
-      "format": "prettier --check .",
+      "spell": "cspell --no-progress \"**\"",
+      "test": "vitest --coverage",
       "typecheck": "tsc --noEmit"
    },
    "packageManager": "pnpm@10.33.0",
-   "dependencies": {
-      "@deebeetech/string-builder": "^1.0.0"
-   },
    "devDependencies": {
       "@eslint/js": "^10.0.1",
       "@sebbo2002/semantic-release-jsr": "^3.2.1",
@@ -48,6 +46,7 @@
       "@semantic-release/release-notes-generator": "^14.1.0",
       "@vitest/coverage-v8": "^4.1.2",
       "cpy-cli": "^7.0.0",
+      "cspell": "^9.4.0",
       "eslint": "^10.1.0",
       "eslint-config-prettier": "^10.1.8",
       "prettier": "^3.8.1",
