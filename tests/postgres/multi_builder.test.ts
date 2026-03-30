@@ -7,14 +7,10 @@ describe("PostgresSqlEasy multi builder", () => {
       const multi = sqlEasy.newMultiBuilder();
 
       const b1 = multi.addBuilder("insert_user");
-      b1.insertInto("users")
-         .insertColumns(["name", "email"])
-         .insertValues(["John", "john@example.com"]);
+      b1.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const b2 = multi.addBuilder("insert_order");
-      b2.insertInto("orders")
-         .insertColumns(["user_id", "product"])
-         .insertValues([1, "Widget"]);
+      b2.insertInto("orders").insertColumns(["user_id", "product"]).insertValues([1, "Widget"]);
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
@@ -28,14 +24,10 @@ describe("PostgresSqlEasy multi builder", () => {
       multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
 
       const b1 = multi.addBuilder("select_users");
-      b1.selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true);
+      b1.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
 
       const b2 = multi.addBuilder("select_orders");
-      b2.selectAll()
-         .fromTable("orders", "o")
-         .where("o", "status", WhereOperator.Equals, "pending");
+      b2.selectAll().fromTable("orders", "o").where("o", "status", WhereOperator.Equals, "pending");
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
@@ -48,14 +40,10 @@ describe("PostgresSqlEasy multi builder", () => {
       const multi = sqlEasy.newMultiBuilder();
 
       const b1 = multi.addBuilder("insert_user");
-      b1.insertInto("users")
-         .insertColumns(["name", "email"])
-         .insertValues(["John", "john@example.com"]);
+      b1.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const b2 = multi.addBuilder("update_count");
-      b2.updateTable("stats", "s")
-         .set("user_count", 100)
-         .where("s", "id", WhereOperator.Equals, 1);
+      b2.updateTable("stats", "s").set("user_count", 100).where("s", "id", WhereOperator.Equals, 1);
 
       const sql = multi.parse();
       expect(sql).toEqual(
@@ -69,21 +57,15 @@ describe("PostgresSqlEasy multi builder", () => {
       multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
 
       const b1 = multi.addBuilder("first");
-      b1.selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true);
+      b1.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
 
       const b2 = multi.addBuilder("second");
-      b2.selectAll()
-         .fromTable("orders", "o")
-         .where("o", "status", WhereOperator.Equals, "pending");
+      b2.selectAll().fromTable("orders", "o").where("o", "status", WhereOperator.Equals, "pending");
 
       multi.removeBuilder("first");
 
       const sql = multi.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."orders" AS "o" WHERE "o"."status" = pending;',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."orders" AS "o" WHERE "o"."status" = pending;');
    });
 
    it("multi builder reorderBuilders", () => {
@@ -92,14 +74,10 @@ describe("PostgresSqlEasy multi builder", () => {
       multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
 
       const b1 = multi.addBuilder("first");
-      b1.selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true);
+      b1.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
 
       const b2 = multi.addBuilder("second");
-      b2.selectAll()
-         .fromTable("orders", "o")
-         .where("o", "status", WhereOperator.Equals, "pending");
+      b2.selectAll().fromTable("orders", "o").where("o", "status", WhereOperator.Equals, "pending");
 
       multi.reorderBuilders(["second", "first"]);
 
@@ -121,18 +99,13 @@ describe("PostgresSqlEasy multi builder", () => {
       const multi = sqlEasy.newMultiBuilder();
 
       const b1 = multi.addBuilder("insert");
-      b1.insertInto("users")
-         .insertColumns(["name"])
-         .insertValues(["NewUser"]);
+      b1.insertInto("users").insertColumns(["name"]).insertValues(["NewUser"]);
 
       const b2 = multi.addBuilder("update");
-      b2.updateTable("counters", "c")
-         .set("total", 42)
-         .where("c", "name", WhereOperator.Equals, "users");
+      b2.updateTable("counters", "c").set("total", 42).where("c", "name", WhereOperator.Equals, "users");
 
       const b3 = multi.addBuilder("delete");
-      b3.deleteFrom("temp_data", "t")
-         .where("t", "expired", WhereOperator.Equals, true);
+      b3.deleteFrom("temp_data", "t").where("t", "expired", WhereOperator.Equals, true);
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
@@ -145,9 +118,7 @@ describe("PostgresSqlEasy multi builder", () => {
       const multi = sqlEasy.newMultiBuilder();
 
       const b1 = multi.addBuilder("op1");
-      b1.insertInto("logs")
-         .insertColumns(["message"])
-         .insertValues(["test"]);
+      b1.insertInto("logs").insertColumns(["message"]).insertValues(["test"]);
 
       const sql = multi.parseRaw();
       expect(sql).toContain("BEGIN;");

@@ -30,9 +30,7 @@ describe("MssqlSqlEasy update", () => {
       ]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "UPDATE [dbo].[users] AS [u] SET [name] = John, [email] = john@example.com, [age] = 30;",
-      );
+      expect(sql).toEqual("UPDATE [dbo].[users] AS [u] SET [name] = John, [email] = john@example.com, [age] = 30;");
    });
 
    it("setRaw", () => {

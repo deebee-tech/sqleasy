@@ -13,9 +13,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("LEFT JOIN", () => {
@@ -29,9 +27,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` LEFT JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` LEFT JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("LEFT OUTER JOIN", () => {
@@ -45,9 +41,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` LEFT OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` LEFT OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("RIGHT JOIN", () => {
@@ -61,9 +55,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` RIGHT JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` RIGHT JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("RIGHT OUTER JOIN", () => {
@@ -77,9 +69,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` RIGHT OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` RIGHT OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("FULL OUTER JOIN", () => {
@@ -93,9 +83,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` FULL OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` FULL OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("CROSS JOIN", () => {
@@ -113,15 +101,10 @@ describe("MysqlSqlEasy join", () => {
    it("joinRaw", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .joinRaw("INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`");
+      builder.selectAll().fromTable("users", "u").joinRaw("INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("joinRaws", () => {
@@ -188,17 +171,18 @@ describe("MysqlSqlEasy join", () => {
          .selectAll()
          .fromTable("users", "u")
          .joinTable(JoinType.Inner, "orders", "o", (jb) => {
-            jb.on("u", "id", JoinOperator.Equals, "o", "user_id").and().onGroup((gb) => {
-               gb.on("o", "status", JoinOperator.Equals, "u", "default_status")
-                  .or()
-                  .on("o", "type", JoinOperator.Equals, "u", "default_type");
-            });
+            jb.on("u", "id", JoinOperator.Equals, "o", "user_id")
+               .and()
+               .onGroup((gb) => {
+                  gb.on("o", "status", JoinOperator.Equals, "u", "default_status")
+                     .or()
+                     .on("o", "type", JoinOperator.Equals, "u", "default_type");
+               });
          });
 
       const sql = builder.parseRaw();
       expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON " +
-            "`u`.`id` = `o`.`user_id` AND ();",
+         "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON " + "`u`.`id` = `o`.`user_id` AND ();",
       );
    });
 
@@ -251,9 +235,7 @@ describe("MysqlSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;");
    });
 
    it("multiple joins", () => {
@@ -280,24 +262,27 @@ describe("MysqlSqlEasy join", () => {
    it("joinTables", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder.selectAll().fromTable("users", "u").joinTables([
-         {
-            joinType: JoinType.Inner,
-            tableName: "orders",
-            alias: "o",
-            joinOnBuilder: (jb) => {
-               jb.on("u", "id", JoinOperator.Equals, "o", "user_id");
+      builder
+         .selectAll()
+         .fromTable("users", "u")
+         .joinTables([
+            {
+               joinType: JoinType.Inner,
+               tableName: "orders",
+               alias: "o",
+               joinOnBuilder: (jb) => {
+                  jb.on("u", "id", JoinOperator.Equals, "o", "user_id");
+               },
             },
-         },
-         {
-            joinType: JoinType.Left,
-            tableName: "products",
-            alias: "p",
-            joinOnBuilder: (jb) => {
-               jb.on("o", "product_id", JoinOperator.Equals, "p", "id");
+            {
+               joinType: JoinType.Left,
+               tableName: "products",
+               alias: "p",
+               joinOnBuilder: (jb) => {
+                  jb.on("o", "product_id", JoinOperator.Equals, "p", "id");
+               },
             },
-         },
-      ]);
+         ]);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual(

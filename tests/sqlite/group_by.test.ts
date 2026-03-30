@@ -12,9 +12,7 @@ describe("SqliteSqlEasy group by", () => {
          .groupByColumn("u", "status");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT "u"."status", COUNT(*) AS count FROM "users" AS "u" GROUP BY "u"."status";',
-      );
+      expect(sql).toEqual('SELECT "u"."status", COUNT(*) AS count FROM "users" AS "u" GROUP BY "u"."status";');
    });
 
    it("group by multiple columns", () => {

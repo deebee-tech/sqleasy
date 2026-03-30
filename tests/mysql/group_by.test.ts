@@ -5,7 +5,11 @@ describe("MysqlSqlEasy group by", () => {
    it("groupByColumn", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder.selectRaw("COUNT(*) AS total").selectColumn("u", "role", "").fromTable("users", "u").groupByColumn("u", "role");
+      builder
+         .selectRaw("COUNT(*) AS total")
+         .selectColumn("u", "role", "")
+         .fromTable("users", "u")
+         .groupByColumn("u", "role");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("SELECT COUNT(*) AS total, `u`.`role` FROM `users` AS `u` GROUP BY `u`.`role`;");
@@ -94,10 +98,7 @@ describe("MysqlSqlEasy group by", () => {
    it("HAVING without GROUP BY throws", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectRaw("COUNT(*) AS total")
-         .fromTable("users", "u")
-         .having("u", "role", WhereOperator.GreaterThan, 5);
+      builder.selectRaw("COUNT(*) AS total").fromTable("users", "u").having("u", "role", WhereOperator.GreaterThan, 5);
 
       expect(() => builder.parseRaw()).toThrow("HAVING requires a GROUP BY clause");
    });

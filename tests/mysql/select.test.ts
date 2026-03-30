@@ -41,9 +41,7 @@ describe("MysqlSqlEasy select", () => {
          .fromTable("users", "u");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT `u`.`id` AS `user_id`, `u`.`name`, `u`.`email` AS `user_email` FROM `users` AS `u`;",
-      );
+      expect(sql).toEqual("SELECT `u`.`id` AS `user_id`, `u`.`name`, `u`.`email` AS `user_email` FROM `users` AS `u`;");
    });
 
    it("selectRaw", () => {
@@ -75,9 +73,7 @@ describe("MysqlSqlEasy select", () => {
          .fromTable("users", "u");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT *, (SELECT COUNT(*) FROM `orders` AS `o`) AS `order_count` FROM `users` AS `u`;",
-      );
+      expect(sql).toEqual("SELECT *, (SELECT COUNT(*) FROM `orders` AS `o`) AS `order_count` FROM `users` AS `u`;");
    });
 
    it("distinct", () => {

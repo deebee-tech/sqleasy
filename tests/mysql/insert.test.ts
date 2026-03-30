@@ -76,8 +76,6 @@ describe("MysqlSqlEasy insert", () => {
          .insertValues(["Charlie", 35]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "INSERT INTO `users` (`name`, `age`) VALUES (Alice, 25), (Bob, 30), (Charlie, 35);",
-      );
+      expect(sql).toEqual("INSERT INTO `users` (`name`, `age`) VALUES (Alice, 25), (Bob, 30), (Charlie, 35);");
    });
 });

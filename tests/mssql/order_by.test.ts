@@ -12,9 +12,7 @@ describe("MssqlSqlEasy order by", () => {
          .orderByColumn("u", "name", OrderByDirection.Ascending);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 ORDER BY [u].[name] ASC;",
-      );
+      expect(sql).toEqual("SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 ORDER BY [u].[name] ASC;");
    });
 
    it("orderByColumn DESC", () => {
@@ -27,9 +25,7 @@ describe("MssqlSqlEasy order by", () => {
          .orderByColumn("u", "created_at", OrderByDirection.Descending);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 ORDER BY [u].[created_at] DESC;",
-      );
+      expect(sql).toEqual("SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 ORDER BY [u].[created_at] DESC;");
    });
 
    it("orderByColumns (multiple)", () => {
@@ -54,11 +50,7 @@ describe("MssqlSqlEasy order by", () => {
    it("orderByRaw", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, 1)
-         .orderByRaw("NEWID()");
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, 1).orderByRaw("NEWID()");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 ORDER BY NEWID();");

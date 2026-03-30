@@ -11,9 +11,7 @@ describe("PostgresSqlEasy insert", () => {
          .insertValues(["John", "john@example.com", 30]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "public"."users" ("name", "email", "age") VALUES (John, john@example.com, 30);',
-      );
+      expect(sql).toEqual('INSERT INTO "public"."users" ("name", "email", "age") VALUES (John, john@example.com, 30);');
    });
 
    it("insert multiple rows", () => {
@@ -34,15 +32,10 @@ describe("PostgresSqlEasy insert", () => {
    it("insert with custom owner", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertIntoWithOwner("sales", "orders")
-         .insertColumns(["product_id", "quantity"])
-         .insertValues([101, 5]);
+      builder.insertIntoWithOwner("sales", "orders").insertColumns(["product_id", "quantity"]).insertValues([101, 5]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "sales"."orders" ("product_id", "quantity") VALUES (101, 5);',
-      );
+      expect(sql).toEqual('INSERT INTO "sales"."orders" ("product_id", "quantity") VALUES (101, 5);');
    });
 
    it("insertRaw", () => {
@@ -57,15 +50,10 @@ describe("PostgresSqlEasy insert", () => {
    it("insert with boolean and null-like values", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertColumns(["name", "active", "age"])
-         .insertValues(["John", true, 25]);
+      builder.insertInto("users").insertColumns(["name", "active", "age"]).insertValues(["John", true, 25]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "public"."users" ("name", "active", "age") VALUES (John, true, 25);',
-      );
+      expect(sql).toEqual('INSERT INTO "public"."users" ("name", "active", "age") VALUES (John, true, 25);');
    });
 
    it("insert with parse() - $1, $2, $3 placeholders", () => {
@@ -77,9 +65,7 @@ describe("PostgresSqlEasy insert", () => {
          .insertValues(["John", "john@example.com", 30]);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'INSERT INTO "public"."users" ("name", "email", "age") VALUES ($1, $2, $3);',
-      );
+      expect(sql).toEqual('INSERT INTO "public"."users" ("name", "email", "age") VALUES ($1, $2, $3);');
    });
 
    it("insert multiple rows with parse() - sequential placeholders", () => {
@@ -92,9 +78,7 @@ describe("PostgresSqlEasy insert", () => {
          .insertValues(["Jane", "jane@example.com"]);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'INSERT INTO "public"."users" ("name", "email") VALUES ($1, $2), ($3, $4);',
-      );
+      expect(sql).toEqual('INSERT INTO "public"."users" ("name", "email") VALUES ($1, $2), ($3, $4);');
    });
 
    it("insert without columns", () => {

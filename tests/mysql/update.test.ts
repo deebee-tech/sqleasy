@@ -45,10 +45,7 @@ describe("MysqlSqlEasy update", () => {
    it("updateTable with WHERE", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .updateTable("users", "u")
-         .set("status", "inactive")
-         .where("u", "id", WhereOperator.Equals, 42);
+      builder.updateTable("users", "u").set("status", "inactive").where("u", "id", WhereOperator.Equals, 42);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("UPDATE `users` AS `u` SET `status` = inactive WHERE `u`.`id` = 42;");
@@ -82,10 +79,7 @@ describe("MysqlSqlEasy update", () => {
    it("updateTable with mixed set and setRaw", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .updateTable("users", "u")
-         .set("name", "Alice")
-         .setRaw("`updated_at` = NOW()");
+      builder.updateTable("users", "u").set("name", "Alice").setRaw("`updated_at` = NOW()");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("UPDATE `users` AS `u` SET `name` = Alice, `updated_at` = NOW();");

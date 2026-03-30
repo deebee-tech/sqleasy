@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PostgresSqlEasy, RuntimeConfiguration, DatabaseType, WhereOperator, MultiBuilderTransactionState } from "../../src";
+import {
+   PostgresSqlEasy,
+   RuntimeConfiguration,
+   DatabaseType,
+   WhereOperator,
+   MultiBuilderTransactionState,
+} from "../../src";
 
 describe("PostgresSqlEasy factory", () => {
    it("configuration returns PostgresConfiguration", () => {

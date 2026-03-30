@@ -39,9 +39,7 @@ describe("MssqlSqlEasy delete", () => {
          .where("u", "age", WhereOperator.LessThan, 18);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "DELETE FROM [dbo].[users] AS [u] WHERE [u].[status] = deleted AND [u].[age] < 18;",
-      );
+      expect(sql).toEqual("DELETE FROM [dbo].[users] AS [u] WHERE [u].[status] = deleted AND [u].[age] < 18;");
    });
 
    it("deleteFrom without alias", () => {

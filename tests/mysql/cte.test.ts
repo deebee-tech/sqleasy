@@ -7,9 +7,7 @@ describe("MysqlSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "active", WhereOperator.Equals, true);
+            cb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
          })
          .selectAll()
          .fromTable("active_users", "au");
@@ -26,14 +24,10 @@ describe("MysqlSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "active", WhereOperator.Equals, true);
+            cb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
          })
          .cte("recent_orders", (cb) => {
-            cb.selectAll()
-               .fromTable("orders", "o")
-               .where("o", "year", WhereOperator.Equals, 2024);
+            cb.selectAll().fromTable("orders", "o").where("o", "year", WhereOperator.Equals, 2024);
          })
          .selectAll()
          .fromTable("active_users", "au");
@@ -57,9 +51,7 @@ describe("MysqlSqlEasy CTE", () => {
          .fromTable("numbers", "");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "WITH RECURSIVE `numbers` AS (SELECT 1 AS n FROM DUAL) SELECT * FROM `numbers`;",
-      );
+      expect(sql).toEqual("WITH RECURSIVE `numbers` AS (SELECT 1 AS n FROM DUAL) SELECT * FROM `numbers`;");
    });
 
    it("recursive CTE mixed with non-recursive uses WITH RECURSIVE", () => {
@@ -86,15 +78,10 @@ describe("MysqlSqlEasy CTE", () => {
    it("cteRaw", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .cteRaw("my_cte", "SELECT 1 AS id, 'test' AS name")
-         .selectAll()
-         .fromTable("my_cte", "m");
+      builder.cteRaw("my_cte", "SELECT 1 AS id, 'test' AS name").selectAll().fromTable("my_cte", "m");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "WITH `my_cte` AS (SELECT 1 AS id, 'test' AS name) SELECT * FROM `my_cte` AS `m`;",
-      );
+      expect(sql).toEqual("WITH `my_cte` AS (SELECT 1 AS id, 'test' AS name) SELECT * FROM `my_cte` AS `m`;");
    });
 
    it("CTE with complex inner query", () => {

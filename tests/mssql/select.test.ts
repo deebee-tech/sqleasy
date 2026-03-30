@@ -119,10 +119,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse select with where - sp_executesql format", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "id", WhereOperator.Equals, 42);
+      builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 42);
 
       const sql = builder.parse();
       expect(sql).toContain("exec sp_executesql");
@@ -133,10 +130,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with string parameter", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "name", WhereOperator.Equals, "John");
+      builder.selectAll().fromTable("users", "u").where("u", "name", WhereOperator.Equals, "John");
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 nvarchar(max)");
@@ -162,10 +156,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with boolean parameter", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true);
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 bit");
@@ -174,10 +165,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with float parameter", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "score", WhereOperator.Equals, 3.14);
+      builder.selectAll().fromTable("users", "u").where("u", "score", WhereOperator.Equals, 3.14);
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 float");
@@ -186,10 +174,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with tinyint value (0-127)", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "status", WhereOperator.Equals, 5);
+      builder.selectAll().fromTable("users", "u").where("u", "status", WhereOperator.Equals, 5);
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 tinyint");
@@ -198,10 +183,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with smallint value (128-32767)", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "code", WhereOperator.Equals, 1000);
+      builder.selectAll().fromTable("users", "u").where("u", "code", WhereOperator.Equals, 1000);
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 smallint");
@@ -210,10 +192,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with bigint value", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "bigId", WhereOperator.Equals, 9999999999);
+      builder.selectAll().fromTable("users", "u").where("u", "bigId", WhereOperator.Equals, 9999999999);
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 bigint");
@@ -222,10 +201,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with negative tinyint", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "val", WhereOperator.Equals, -100);
+      builder.selectAll().fromTable("users", "u").where("u", "val", WhereOperator.Equals, -100);
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 tinyint");
@@ -234,10 +210,7 @@ describe("MssqlSqlEasy parse (prepared statements)", () => {
    it("parse with default type (object/unknown)", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "data", WhereOperator.Equals, Symbol("test"));
+      builder.selectAll().fromTable("users", "u").where("u", "data", WhereOperator.Equals, Symbol("test"));
 
       const sql = builder.parse();
       expect(sql).toContain("@p0 nvarchar(max)");

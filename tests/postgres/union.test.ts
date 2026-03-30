@@ -10,9 +10,7 @@ describe("PostgresSqlEasy union", () => {
          .fromTable("users", "u")
          .where("u", "active", WhereOperator.Equals, true)
          .union((ub) => {
-            ub.selectColumn("a", "name", "")
-               .fromTable("admins", "a")
-               .where("a", "active", WhereOperator.Equals, true);
+            ub.selectColumn("a", "name", "").fromTable("admins", "a").where("a", "active", WhereOperator.Equals, true);
          });
 
       const sql = builder.parseRaw();
@@ -29,9 +27,7 @@ describe("PostgresSqlEasy union", () => {
          .fromTable("users", "u")
          .where("u", "active", WhereOperator.Equals, true)
          .unionAll((ub) => {
-            ub.selectColumn("a", "name", "")
-               .fromTable("admins", "a")
-               .where("a", "active", WhereOperator.Equals, true);
+            ub.selectColumn("a", "name", "").fromTable("admins", "a").where("a", "active", WhereOperator.Equals, true);
          });
 
       const sql = builder.parseRaw();
@@ -67,8 +63,7 @@ describe("PostgresSqlEasy union", () => {
          .fromTable("users", "u")
          .where("u", "active", WhereOperator.Equals, true)
          .except((eb) => {
-            eb.selectColumn("b", "user_id", "")
-               .fromTable("banned_users", "b");
+            eb.selectColumn("b", "user_id", "").fromTable("banned_users", "b");
          });
 
       const sql = builder.parseRaw();
@@ -112,9 +107,7 @@ describe("PostgresSqlEasy union", () => {
          .fromTable("users", "u")
          .where("u", "active", WhereOperator.Equals, true)
          .union((ub) => {
-            ub.selectColumn("a", "name", "")
-               .fromTable("admins", "a")
-               .where("a", "active", WhereOperator.Equals, true);
+            ub.selectColumn("a", "name", "").fromTable("admins", "a").where("a", "active", WhereOperator.Equals, true);
          });
 
       const sql = builder.parse();

@@ -36,10 +36,13 @@ describe("MysqlSqlEasy order by", () => {
    it("orderByColumns", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder.selectAll().fromTable("users", "u").orderByColumns([
-         { tableNameOrAlias: "u", columnName: "last_name", direction: OrderByDirection.Ascending },
-         { tableNameOrAlias: "u", columnName: "age", direction: OrderByDirection.Descending },
-      ]);
+      builder
+         .selectAll()
+         .fromTable("users", "u")
+         .orderByColumns([
+            { tableNameOrAlias: "u", columnName: "last_name", direction: OrderByDirection.Ascending },
+            { tableNameOrAlias: "u", columnName: "age", direction: OrderByDirection.Descending },
+         ]);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("SELECT * FROM `users` AS `u` ORDER BY `u`.`last_name` ASC, `u`.`age` DESC;");
@@ -59,10 +62,7 @@ describe("MysqlSqlEasy order by", () => {
    it("orderByRaws", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .orderByRaws(["`u`.`last_name` ASC", "`u`.`first_name` DESC"]);
+      builder.selectAll().fromTable("users", "u").orderByRaws(["`u`.`last_name` ASC", "`u`.`first_name` DESC"]);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("SELECT * FROM `users` AS `u` ORDER BY `u`.`last_name` ASC, `u`.`first_name` DESC;");

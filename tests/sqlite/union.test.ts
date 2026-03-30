@@ -48,9 +48,7 @@ describe("SqliteSqlEasy union", () => {
          .fromTable("users", "u")
          .where("u", "type", WhereOperator.Equals, "A")
          .unionAll((ub) => {
-            ub.selectColumn("u", "name", "")
-               .fromTable("users", "u")
-               .where("u", "type", WhereOperator.Equals, "B");
+            ub.selectColumn("u", "name", "").fromTable("users", "u").where("u", "type", WhereOperator.Equals, "B");
          });
 
       const sql = builder.parseRaw();
@@ -105,14 +103,10 @@ describe("SqliteSqlEasy union", () => {
          .fromTable("users", "u")
          .where("u", "type", WhereOperator.Equals, "A")
          .union((ub) => {
-            ub.selectColumn("u", "name", "")
-               .fromTable("users", "u")
-               .where("u", "type", WhereOperator.Equals, "B");
+            ub.selectColumn("u", "name", "").fromTable("users", "u").where("u", "type", WhereOperator.Equals, "B");
          })
          .union((ub) => {
-            ub.selectColumn("u", "name", "")
-               .fromTable("users", "u")
-               .where("u", "type", WhereOperator.Equals, "C");
+            ub.selectColumn("u", "name", "").fromTable("users", "u").where("u", "type", WhereOperator.Equals, "C");
          });
 
       const sql = builder.parseRaw();

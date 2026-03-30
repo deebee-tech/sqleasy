@@ -7,14 +7,10 @@ describe("SqliteSqlEasy multi builder", () => {
       const multi = sqlEasy.newMultiBuilder();
 
       const b1 = multi.addBuilder("insert_user");
-      b1.insertInto("users")
-         .insertColumns(["name", "email"])
-         .insertValues(["John", "john@example.com"]);
+      b1.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const b2 = multi.addBuilder("insert_order");
-      b2.insertInto("orders")
-         .insertColumns(["user_id", "total"])
-         .insertValues([1, 99.99]);
+      b2.insertInto("orders").insertColumns(["user_id", "total"]).insertValues([1, 99.99]);
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
@@ -27,14 +23,10 @@ describe("SqliteSqlEasy multi builder", () => {
       const multi = sqlEasy.newMultiBuilder();
 
       const b1 = multi.addBuilder("insert_user");
-      b1.insertInto("users")
-         .insertColumns(["name", "email"])
-         .insertValues(["John", "john@example.com"]);
+      b1.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const b2 = multi.addBuilder("insert_order");
-      b2.insertInto("orders")
-         .insertColumns(["user_id", "total"])
-         .insertValues([1, 99.99]);
+      b2.insertInto("orders").insertColumns(["user_id", "total"]).insertValues([1, 99.99]);
 
       const sql = multi.parse();
       expect(sql).toEqual(
@@ -48,14 +40,10 @@ describe("SqliteSqlEasy multi builder", () => {
       multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
 
       const b1 = multi.addBuilder("insert_user");
-      b1.insertInto("users")
-         .insertColumns(["name"])
-         .insertValues(["Alice"]);
+      b1.insertInto("users").insertColumns(["name"]).insertValues(["Alice"]);
 
       const b2 = multi.addBuilder("update_user");
-      b2.updateTable("users", "u")
-         .set("status", "active")
-         .where("u", "name", WhereOperator.Equals, "Alice");
+      b2.updateTable("users", "u").set("status", "active").where("u", "name", WhereOperator.Equals, "Alice");
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
@@ -84,9 +72,7 @@ describe("SqliteSqlEasy multi builder", () => {
       multi.removeBuilder("first");
 
       const sql = multi.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name") VALUES (B);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name") VALUES (B);');
    });
 
    it("multi builder reorder builders", () => {
@@ -103,9 +89,7 @@ describe("SqliteSqlEasy multi builder", () => {
       multi.reorderBuilders(["second", "first"]);
 
       const sql = multi.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name") VALUES (B);INSERT INTO "users" ("name") VALUES (A);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name") VALUES (B);INSERT INTO "users" ("name") VALUES (A);');
    });
 
    it("multi builder with select and insert", () => {
@@ -116,9 +100,7 @@ describe("SqliteSqlEasy multi builder", () => {
       b1.selectAll().fromTable("users", "u");
 
       const b2 = multi.addBuilder("insert_log");
-      b2.insertInto("audit_log")
-         .insertColumns(["action", "timestamp"])
-         .insertValues(["user_query", "2024-01-01"]);
+      b2.insertInto("audit_log").insertColumns(["action", "timestamp"]).insertValues(["user_query", "2024-01-01"]);
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
@@ -144,13 +126,10 @@ describe("SqliteSqlEasy multi builder", () => {
       multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
 
       const b1 = multi.addBuilder("delete_old");
-      b1.deleteFrom("sessions", "s")
-         .where("s", "expired", WhereOperator.Equals, true);
+      b1.deleteFrom("sessions", "s").where("s", "expired", WhereOperator.Equals, true);
 
       const b2 = multi.addBuilder("insert_new");
-      b2.insertInto("sessions")
-         .insertColumns(["user_id", "token"])
-         .insertValues([1, "abc123"]);
+      b2.insertInto("sessions").insertColumns(["user_id", "token"]).insertValues([1, "abc123"]);
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(

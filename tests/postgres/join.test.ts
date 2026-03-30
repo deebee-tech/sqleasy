@@ -107,9 +107,7 @@ describe("PostgresSqlEasy join", () => {
          .joinTable(JoinType.Cross, "roles", "r", () => {});
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" CROSS JOIN "public"."roles" AS "r";',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" CROSS JOIN "public"."roles" AS "r";');
    });
 
    it("join with multiple ON conditions (AND)", () => {

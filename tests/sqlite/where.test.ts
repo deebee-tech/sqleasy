@@ -76,9 +76,7 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "status", WhereOperator.Equals, "active");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."age" > 18 AND "u"."status" = active;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."age" > 18 AND "u"."status" = active;');
    });
 
    it("where with OR", () => {
@@ -92,9 +90,7 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "role", WhereOperator.Equals, "superadmin");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."role" = admin OR "u"."role" = superadmin;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."role" = admin OR "u"."role" = superadmin;');
    });
 
    it("where between", () => {
@@ -199,9 +195,7 @@ describe("SqliteSqlEasy where", () => {
          .selectAll()
          .fromTable("users", "u")
          .whereExistsWithBuilder("u", "id", (sb) => {
-            sb.selectRaw("1")
-               .fromTable("orders", "o")
-               .where("o", "user_id", WhereOperator.Equals, 1);
+            sb.selectRaw("1").fromTable("orders", "o").where("o", "user_id", WhereOperator.Equals, 1);
          });
 
       const sql = builder.parseRaw();
@@ -217,9 +211,7 @@ describe("SqliteSqlEasy where", () => {
          .selectAll()
          .fromTable("users", "u")
          .whereNotExistsWithBuilder("u", "id", (sb) => {
-            sb.selectRaw("1")
-               .fromTable("orders", "o")
-               .where("o", "user_id", WhereOperator.Equals, 1);
+            sb.selectRaw("1").fromTable("orders", "o").where("o", "user_id", WhereOperator.Equals, 1);
          });
 
       const sql = builder.parseRaw();
@@ -240,15 +232,10 @@ describe("SqliteSqlEasy where", () => {
    it("where multiple raws", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .whereRaws(['"u"."age" > 18', '"u"."status" = \'active\'']);
+      builder.selectAll().fromTable("users", "u").whereRaws(['"u"."age" > 18', '"u"."status" = \'active\'']);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."age" > 18 "u"."status" = \'active\';',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."age" > 18 "u"."status" = \'active\';');
    });
 
    it("where with string value - parseRaw does not quote strings", () => {
@@ -321,9 +308,7 @@ describe("SqliteSqlEasy where", () => {
          .selectAll()
          .fromTable("users", "u")
          .whereExistsWithBuilder("u", "id", (sb) => {
-            sb.selectRaw("1")
-               .fromTable("orders", "o")
-               .where("o", "user_id", WhereOperator.Equals, 1);
+            sb.selectRaw("1").fromTable("orders", "o").where("o", "user_id", WhereOperator.Equals, 1);
          });
 
       const sql = builder.parse();
@@ -335,15 +320,10 @@ describe("SqliteSqlEasy where", () => {
    it("where between - parse prepared", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .whereBetween("u", "created_at", "2024-01-01", "2024-12-31");
+      builder.selectAll().fromTable("users", "u").whereBetween("u", "created_at", "2024-01-01", "2024-12-31");
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."created_at" BETWEEN ? AND ?;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."created_at" BETWEEN ? AND ?;');
    });
 
    it("whereNotInWithBuilder followed by AND and another where (trailing space)", () => {
@@ -375,9 +355,7 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "status", WhereOperator.Equals, "active");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."id" NOT IN (4, 5, 6) AND "u"."status" = active;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."id" NOT IN (4, 5, 6) AND "u"."status" = active;');
    });
 
    it("whereNull followed by AND and another where (trailing space)", () => {
@@ -391,9 +369,7 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "status", WhereOperator.Equals, "active");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."deleted_at" IS NULL AND "u"."status" = active;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."deleted_at" IS NULL AND "u"."status" = active;');
    });
 
    it("whereInWithBuilder followed by AND and another where (trailing space)", () => {
@@ -425,9 +401,7 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "active", WhereOperator.Equals, true);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."id" IN (1, 2, 3) AND "u"."active" = true;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."id" IN (1, 2, 3) AND "u"."active" = true;');
    });
 
    it("whereNotNull followed by AND and another where (trailing space)", () => {
@@ -441,9 +415,7 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "active", WhereOperator.Equals, true);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."email" IS NOT NULL AND "u"."active" = true;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."email" IS NOT NULL AND "u"."active" = true;');
    });
 
    it("whereExistsWithBuilder followed by AND and another where (trailing space)", () => {
@@ -493,8 +465,6 @@ describe("SqliteSqlEasy where", () => {
          .where("u", "active", WhereOperator.Equals, true);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" WHERE "u"."age" BETWEEN 18 AND 65 AND "u"."active" = true;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."age" BETWEEN 18 AND 65 AND "u"."active" = true;');
    });
 });

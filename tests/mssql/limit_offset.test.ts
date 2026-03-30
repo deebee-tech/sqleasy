@@ -5,11 +5,7 @@ describe("MssqlSqlEasy limit/offset", () => {
    it("limit only (OFFSET 0 ROWS FETCH NEXT)", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, 1)
-         .limit(10);
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, 1).limit(10);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual(
@@ -61,11 +57,7 @@ describe("MssqlSqlEasy limit/offset", () => {
    it("offset without ORDER BY throws error", () => {
       const sqlEasy = new MssqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, 1)
-         .offset(20);
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, 1).offset(20);
 
       expect(() => builder.parseRaw()).toThrow();
    });

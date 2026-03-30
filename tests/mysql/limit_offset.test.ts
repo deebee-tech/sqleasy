@@ -28,11 +28,7 @@ describe("MysqlSqlEasy limit offset", () => {
    it("OFFSET only with ORDER BY (default LIMIT applied)", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .orderByColumn("u", "id", OrderByDirection.Ascending)
-         .offset(20);
+      builder.selectAll().fromTable("users", "u").orderByColumn("u", "id", OrderByDirection.Ascending).offset(20);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 1000 OFFSET 20;");
@@ -49,9 +45,7 @@ describe("MysqlSqlEasy limit offset", () => {
          .offset(20);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC  OFFSET 20;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC  OFFSET 20;");
    });
 
    it("OFFSET without ORDER BY throws error", () => {

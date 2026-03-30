@@ -97,9 +97,7 @@ describe("MssqlSqlEasy join", () => {
          .where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM [dbo].[users] AS [u] CROSS JOIN [dbo].[roles] AS [r] WHERE [u].[id] = 1;",
-      );
+      expect(sql).toEqual("SELECT * FROM [dbo].[users] AS [u] CROSS JOIN [dbo].[roles] AS [r] WHERE [u].[id] = 1;");
    });
 
    it("joinTableWithOwner", () => {
@@ -238,7 +236,9 @@ describe("MssqlSqlEasy join", () => {
          .selectAll()
          .fromTable("users", "u")
          .joinTable(JoinType.Inner, "orders", "o", (jb) => {
-            jb.on("u", "id", JoinOperator.Equals, "o", "user_id").and().onGroup(() => {});
+            jb.on("u", "id", JoinOperator.Equals, "o", "user_id")
+               .and()
+               .onGroup(() => {});
          })
          .where("u", "id", WhereOperator.Equals, 1);
 
@@ -255,9 +255,7 @@ describe("MssqlSqlEasy join", () => {
          .selectAll()
          .fromTable("users", "u")
          .joinTable(JoinType.Inner, "orders", "o", (jb) => {
-            jb.on("u", "id", JoinOperator.Equals, "o", "user_id")
-               .and()
-               .onRaw("[o].[created_at] > GETDATE()");
+            jb.on("u", "id", JoinOperator.Equals, "o", "user_id").and().onRaw("[o].[created_at] > GETDATE()");
          })
          .where("u", "id", WhereOperator.Equals, 1);
 

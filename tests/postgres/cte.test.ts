@@ -7,9 +7,7 @@ describe("PostgresSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "active", WhereOperator.Equals, true);
+            cb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
          })
          .selectAll()
          .fromRaw('"active_users" AS "au"');
@@ -25,14 +23,10 @@ describe("PostgresSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "active", WhereOperator.Equals, true);
+            cb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
          })
          .cte("user_orders", (cb) => {
-            cb.selectAll()
-               .fromTable("orders", "o")
-               .where("o", "status", WhereOperator.Equals, "pending");
+            cb.selectAll().fromTable("orders", "o").where("o", "status", WhereOperator.Equals, "pending");
          })
          .selectAll()
          .fromRaw('"active_users" AS "au"');
@@ -82,9 +76,7 @@ describe("PostgresSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "active", WhereOperator.Equals, true);
+            cb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
          })
          .selectAll()
          .fromRaw('"active_users" AS "au"')
@@ -101,9 +93,7 @@ describe("PostgresSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("base_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "active", WhereOperator.Equals, true);
+            cb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
          })
          .cteRecursive("hierarchy", (cb) => {
             cb.selectColumn("e", "id", "")

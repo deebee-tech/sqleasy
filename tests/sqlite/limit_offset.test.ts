@@ -34,11 +34,7 @@ describe("SqliteSqlEasy limit offset", () => {
    it("explicit limit with where clause", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "status", WhereOperator.Equals, "active")
-         .limit(25);
+      builder.selectAll().fromTable("users", "u").where("u", "status", WhereOperator.Equals, "active").limit(25);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT * FROM "users" AS "u" WHERE "u"."status" = active LIMIT 25;');
@@ -55,24 +51,16 @@ describe("SqliteSqlEasy limit offset", () => {
          .offset(5);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;');
    });
 
    it("offset without explicit limit adds default limit", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .orderByColumn("u", "id", OrderByDirection.Ascending)
-         .offset(20);
+      builder.selectAll().fromTable("users", "u").orderByColumn("u", "id", OrderByDirection.Ascending).offset(20);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 1000 OFFSET 20;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 1000 OFFSET 20;');
    });
 
    it("limit and offset - parse prepared", () => {
@@ -86,9 +74,7 @@ describe("SqliteSqlEasy limit offset", () => {
          .offset(5);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;');
    });
 
    it("offset requires order by", () => {
@@ -112,9 +98,7 @@ describe("SqliteSqlEasy limit offset", () => {
          .offset((page - 1) * pageSize);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 20  OFFSET 40;',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 20  OFFSET 40;');
    });
 
    it("limit only without order by", () => {

@@ -12,9 +12,7 @@ describe("PostgresSqlEasy order by", () => {
          .orderByColumn("u", "name", OrderByDirection.Ascending);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true ORDER BY "u"."name" ASC;',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true ORDER BY "u"."name" ASC;');
    });
 
    it("order by single column descending", () => {
@@ -61,9 +59,7 @@ describe("PostgresSqlEasy order by", () => {
          .orderByRaw("RANDOM()");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true ORDER BY RANDOM();',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true ORDER BY RANDOM();');
    });
 
    it("orderByRaws multiple", () => {
@@ -107,9 +103,7 @@ describe("PostgresSqlEasy order by", () => {
          .orderByColumn("u", "name", OrderByDirection.Ascending);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = $1 ORDER BY "u"."name" ASC;',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = $1 ORDER BY "u"."name" ASC;');
    });
 
    it("clearOrderBy resets order by state", () => {
@@ -124,8 +118,6 @@ describe("PostgresSqlEasy order by", () => {
          .orderByColumn("u", "id", OrderByDirection.Descending);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true ORDER BY "u"."id" DESC;',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true ORDER BY "u"."id" DESC;');
    });
 });

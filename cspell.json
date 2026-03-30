@@ -17,11 +17,5 @@
       "tseslint",
       "Weatherby"
    ],
-   "ignorePaths": [
-      "node_modules",
-      "dist",
-      "coverage",
-      "pnpm-lock.yaml",
-      "**/*.map"
-   ]
+   "ignorePaths": ["node_modules", "dist", "coverage", "pnpm-lock.yaml", "**/*.map"]
 }

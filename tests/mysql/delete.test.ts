@@ -39,9 +39,7 @@ describe("MysqlSqlEasy delete", () => {
          .where("u", "last_login", WhereOperator.LessThan, "2023-01-01");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "DELETE FROM `users` AS `u` WHERE `u`.`active` = false AND `u`.`last_login` < 2023-01-01;",
-      );
+      expect(sql).toEqual("DELETE FROM `users` AS `u` WHERE `u`.`active` = false AND `u`.`last_login` < 2023-01-01;");
    });
 
    it("deleteFrom with whereNull", () => {

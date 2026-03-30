@@ -58,9 +58,7 @@ describe("SqliteSqlEasy from", () => {
       });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM (SELECT * FROM "users" AS "u") AS "sub";',
-      );
+      expect(sql).toEqual('SELECT * FROM (SELECT * FROM "users" AS "u") AS "sub";');
    });
 
    it("from table with empty owner (SQLite default)", () => {

@@ -32,9 +32,7 @@ describe("Parser coverage edge cases", () => {
             .fromTable("orders", "o");
 
          const sql = builder.parseRaw();
-         expect(sql).toEqual(
-            'SELECT * FROM (SELECT * FROM "users" AS "u") AS "sub", "orders" AS "o";',
-         );
+         expect(sql).toEqual('SELECT * FROM (SELECT * FROM "users" AS "u") AS "sub", "orders" AS "o";');
       });
    });
 
@@ -44,9 +42,7 @@ describe("Parser coverage edge cases", () => {
          const builder = sqlEasy.newBuilder();
          builder.fromTable("users", "u");
 
-         expect(() => builder.parseRaw()).toThrow(
-            "Select statement must have at least one select state",
-         );
+         expect(() => builder.parseRaw()).toThrow("Select statement must have at least one select state");
       });
 
       it("selectWithBuilder followed by selectColumn produces trailing comma", () => {
@@ -178,9 +174,7 @@ describe("Parser coverage edge cases", () => {
          builder.updateTable("users", "u");
          builder.state().updateStates = [];
 
-         expect(() => builder.parseRaw()).toThrow(
-            "UPDATE requires at least one SET column",
-         );
+         expect(() => builder.parseRaw()).toThrow("UPDATE requires at least one SET column");
       });
    });
 
@@ -188,14 +182,9 @@ describe("Parser coverage edge cases", () => {
       it("throws when HAVING used without GROUP BY", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .having("u", "id", WhereOperator.Equals, 1);
+         builder.selectAll().fromTable("users", "u").having("u", "id", WhereOperator.Equals, 1);
 
-         expect(() => builder.parseRaw()).toThrow(
-            "HAVING requires a GROUP BY clause",
-         );
+         expect(() => builder.parseRaw()).toThrow("HAVING requires a GROUP BY clause");
       });
 
       it("returns empty SQL when no having states exist", () => {
@@ -218,9 +207,7 @@ describe("Parser coverage edge cases", () => {
          const builder = sqlEasy.newBuilder();
          builder.selectAll().fromTable("users", "u").and();
 
-         expect(() => builder.parseRaw()).toThrow(
-            "First WHERE operator cannot be AND or OR",
-         );
+         expect(() => builder.parseRaw()).toThrow("First WHERE operator cannot be AND or OR");
       });
 
       it("throws when first WHERE operator is OR", () => {
@@ -228,37 +215,23 @@ describe("Parser coverage edge cases", () => {
          const builder = sqlEasy.newBuilder();
          builder.selectAll().fromTable("users", "u").or();
 
-         expect(() => builder.parseRaw()).toThrow(
-            "First WHERE operator cannot be AND or OR",
-         );
+         expect(() => builder.parseRaw()).toThrow("First WHERE operator cannot be AND or OR");
       });
 
       it("throws when AND is used as last WHERE operator", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .where("u", "id", WhereOperator.Equals, 1)
-            .and();
+         builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1).and();
 
-         expect(() => builder.parseRaw()).toThrow(
-            "AND or OR cannot be used as the last WHERE operator",
-         );
+         expect(() => builder.parseRaw()).toThrow("AND or OR cannot be used as the last WHERE operator");
       });
 
       it("throws when OR is used as last WHERE operator", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .where("u", "id", WhereOperator.Equals, 1)
-            .or();
+         builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1).or();
 
-         expect(() => builder.parseRaw()).toThrow(
-            "AND or OR cannot be used as the last WHERE operator",
-         );
+         expect(() => builder.parseRaw()).toThrow("AND or OR cannot be used as the last WHERE operator");
       });
 
       it("throws when AND is used consecutively", () => {
@@ -272,9 +245,7 @@ describe("Parser coverage edge cases", () => {
             .and()
             .where("u", "name", WhereOperator.Equals, "test");
 
-         expect(() => builder.parseRaw()).toThrow(
-            "AND or OR cannot be used consecutively",
-         );
+         expect(() => builder.parseRaw()).toThrow("AND or OR cannot be used consecutively");
       });
 
       it("throws when OR is used consecutively", () => {
@@ -288,75 +259,120 @@ describe("Parser coverage edge cases", () => {
             .or()
             .where("u", "name", WhereOperator.Equals, "test");
 
-         expect(() => builder.parseRaw()).toThrow(
-            "AND or OR cannot be used consecutively",
-         );
+         expect(() => builder.parseRaw()).toThrow("AND or OR cannot be used consecutively");
       });
 
       it("throws when AND or OR is the last WHERE operator", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .where("u", "id", WhereOperator.Equals, 1)
-            .and();
+         builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1).and();
 
-         expect(() => builder.parseRaw()).toThrow(
-            "AND or OR cannot be used as the last WHERE operator",
-         );
+         expect(() => builder.parseRaw()).toThrow("AND or OR cannot be used as the last WHERE operator");
       });
 
       it("throws when AND is used after group begin", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
          builder.selectAll().fromTable("users", "u");
-         builder.state().whereStates.push(
-            { builderType: BuilderType.WhereGroupBegin, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, sqlEasyState: undefined, values: [] },
-            { builderType: BuilderType.And, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, sqlEasyState: undefined, values: [] },
-            { builderType: BuilderType.Where, tableNameOrAlias: "u", columnName: "id", whereOperator: WO.Equals, raw: undefined, sqlEasyState: undefined, values: [1] },
-         );
+         builder
+            .state()
+            .whereStates.push(
+               {
+                  builderType: BuilderType.WhereGroupBegin,
+                  tableNameOrAlias: undefined,
+                  columnName: undefined,
+                  whereOperator: WO.None,
+                  raw: undefined,
+                  sqlEasyState: undefined,
+                  values: [],
+               },
+               {
+                  builderType: BuilderType.And,
+                  tableNameOrAlias: undefined,
+                  columnName: undefined,
+                  whereOperator: WO.None,
+                  raw: undefined,
+                  sqlEasyState: undefined,
+                  values: [],
+               },
+               {
+                  builderType: BuilderType.Where,
+                  tableNameOrAlias: "u",
+                  columnName: "id",
+                  whereOperator: WO.Equals,
+                  raw: undefined,
+                  sqlEasyState: undefined,
+                  values: [1],
+               },
+            );
 
-         expect(() => builder.parseRaw()).toThrow(
-            "AND or OR cannot be used directly after a group begin",
-         );
+         expect(() => builder.parseRaw()).toThrow("AND or OR cannot be used directly after a group begin");
       });
 
       it("throws when group begin is the last operator", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
          builder.selectAll().fromTable("users", "u");
-         builder.state().whereStates.push(
-            { builderType: BuilderType.WhereGroupBegin, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, sqlEasyState: undefined, values: [] },
-         );
+         builder
+            .state()
+            .whereStates.push({
+               builderType: BuilderType.WhereGroupBegin,
+               tableNameOrAlias: undefined,
+               columnName: undefined,
+               whereOperator: WO.None,
+               raw: undefined,
+               sqlEasyState: undefined,
+               values: [],
+            });
 
-         expect(() => builder.parseRaw()).toThrow(
-            "Group begin cannot be the last WHERE operator",
-         );
+         expect(() => builder.parseRaw()).toThrow("Group begin cannot be the last WHERE operator");
       });
 
       it("throws when group end is the first operator", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
          builder.selectAll().fromTable("users", "u");
-         builder.state().whereStates.push(
-            { builderType: BuilderType.WhereGroupEnd, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, sqlEasyState: undefined, values: [] },
-         );
+         builder
+            .state()
+            .whereStates.push({
+               builderType: BuilderType.WhereGroupEnd,
+               tableNameOrAlias: undefined,
+               columnName: undefined,
+               whereOperator: WO.None,
+               raw: undefined,
+               sqlEasyState: undefined,
+               values: [],
+            });
 
-         expect(() => builder.parseRaw()).toThrow(
-            "Group end cannot be the first WHERE operator",
-         );
+         expect(() => builder.parseRaw()).toThrow("Group end cannot be the first WHERE operator");
       });
 
       it("group end followed by another group end suppresses trailing space", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder.selectAll().fromTable("users", "u")
-            .where("u", "id", WhereOperator.Equals, 1);
-         builder.state().whereStates.push(
-            { builderType: BuilderType.WhereGroupEnd, tableNameOrAlias: "", columnName: "", whereOperator: WO.None, raw: "", sqlEasyState: undefined, values: [] },
-            { builderType: BuilderType.WhereGroupEnd, tableNameOrAlias: "", columnName: "", whereOperator: WO.None, raw: "", sqlEasyState: undefined, values: [] },
-         );
+         builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1);
+         builder
+            .state()
+            .whereStates.push(
+               {
+                  builderType: BuilderType.WhereGroupEnd,
+                  tableNameOrAlias: "",
+                  columnName: "",
+                  whereOperator: WO.None,
+                  raw: "",
+                  sqlEasyState: undefined,
+                  values: [],
+               },
+               {
+                  builderType: BuilderType.WhereGroupEnd,
+                  tableNameOrAlias: "",
+                  columnName: "",
+                  whereOperator: WO.None,
+                  raw: "",
+                  sqlEasyState: undefined,
+                  values: [],
+               },
+            );
 
          const sql = builder.parseRaw();
          expect(sql).toContain("))");
@@ -409,7 +425,16 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.And, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.And,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -429,8 +454,26 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.Equals, joinOnOperator: JoinOnOperator.On, aliasLeft: "u", columnLeft: "id", aliasRight: "o", columnRight: "user_id", raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.And, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.Equals,
+                  joinOnOperator: JoinOnOperator.On,
+                  aliasLeft: "u",
+                  columnLeft: "id",
+                  aliasRight: "o",
+                  columnRight: "user_id",
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.And,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -450,10 +493,46 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.Equals, joinOnOperator: JoinOnOperator.On, aliasLeft: "u", columnLeft: "id", aliasRight: "o", columnRight: "user_id", raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.And, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.And, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.Equals, joinOnOperator: JoinOnOperator.On, aliasLeft: "u", columnLeft: "id2", aliasRight: "o", columnRight: "id2", raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.Equals,
+                  joinOnOperator: JoinOnOperator.On,
+                  aliasLeft: "u",
+                  columnLeft: "id",
+                  aliasRight: "o",
+                  columnRight: "user_id",
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.And,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.And,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.Equals,
+                  joinOnOperator: JoinOnOperator.On,
+                  aliasLeft: "u",
+                  columnLeft: "id2",
+                  aliasRight: "o",
+                  columnRight: "id2",
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -473,9 +552,36 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.GroupBegin, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.And, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.Equals, joinOnOperator: JoinOnOperator.On, aliasLeft: "u", columnLeft: "id", aliasRight: "o", columnRight: "uid", raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.GroupBegin,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.And,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.Equals,
+                  joinOnOperator: JoinOnOperator.On,
+                  aliasLeft: "u",
+                  columnLeft: "id",
+                  aliasRight: "o",
+                  columnRight: "uid",
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -495,7 +601,16 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.GroupBegin, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.GroupBegin,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -515,7 +630,16 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.GroupEnd, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.GroupEnd,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -535,11 +659,56 @@ describe("Parser coverage edge cases", () => {
             sqlEasyState: undefined,
             raw: undefined,
             joinOnStates: [
-               { joinOperator: JoinOperator.Equals, joinOnOperator: JoinOnOperator.On, aliasLeft: "u", columnLeft: "id", aliasRight: "o", columnRight: "uid", raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.And, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.GroupBegin, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.Equals, joinOnOperator: JoinOnOperator.On, aliasLeft: "o", columnLeft: "active", aliasRight: "u", columnRight: "active", raw: undefined, valueRight: undefined },
-               { joinOperator: JoinOperator.None, joinOnOperator: JoinOnOperator.GroupEnd, aliasLeft: undefined, columnLeft: undefined, aliasRight: undefined, columnRight: undefined, raw: undefined, valueRight: undefined },
+               {
+                  joinOperator: JoinOperator.Equals,
+                  joinOnOperator: JoinOnOperator.On,
+                  aliasLeft: "u",
+                  columnLeft: "id",
+                  aliasRight: "o",
+                  columnRight: "uid",
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.And,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.GroupBegin,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.Equals,
+                  joinOnOperator: JoinOnOperator.On,
+                  aliasLeft: "o",
+                  columnLeft: "active",
+                  aliasRight: "u",
+                  columnRight: "active",
+                  raw: undefined,
+                  valueRight: undefined,
+               },
+               {
+                  joinOperator: JoinOperator.None,
+                  joinOnOperator: JoinOnOperator.GroupEnd,
+                  aliasLeft: undefined,
+                  columnLeft: undefined,
+                  aliasRight: undefined,
+                  columnRight: undefined,
+                  raw: undefined,
+                  valueRight: undefined,
+               },
             ],
          });
 
@@ -552,7 +721,9 @@ describe("Parser coverage edge cases", () => {
       it("raw ON followed by another state adds trailing space", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder.selectAll().fromTable("users", "u")
+         builder
+            .selectAll()
+            .fromTable("users", "u")
             .joinTable(JoinType.Inner, "orders", "o", (jb) => {
                jb.onRaw("1 = 1").and().on("u", "id", JoinOperator.Equals, "o", "uid");
             });
@@ -571,11 +742,34 @@ describe("Parser coverage edge cases", () => {
             .selectRaw("COUNT(*) AS cnt")
             .fromTable("users", "u")
             .groupByColumn("u", "role");
-         builder.state().havingStates.push(
-            { builderType: BuilderType.Having, tableNameOrAlias: "u", columnName: "role", whereOperator: WO.Equals, raw: undefined, values: ["admin"] },
-            { builderType: BuilderType.And, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, values: [] },
-            { builderType: BuilderType.Having, tableNameOrAlias: "u", columnName: "cnt", whereOperator: WO.GreaterThan, raw: undefined, values: [5] },
-         );
+         builder
+            .state()
+            .havingStates.push(
+               {
+                  builderType: BuilderType.Having,
+                  tableNameOrAlias: "u",
+                  columnName: "role",
+                  whereOperator: WO.Equals,
+                  raw: undefined,
+                  values: ["admin"],
+               },
+               {
+                  builderType: BuilderType.And,
+                  tableNameOrAlias: undefined,
+                  columnName: undefined,
+                  whereOperator: WO.None,
+                  raw: undefined,
+                  values: [],
+               },
+               {
+                  builderType: BuilderType.Having,
+                  tableNameOrAlias: "u",
+                  columnName: "cnt",
+                  whereOperator: WO.GreaterThan,
+                  raw: undefined,
+                  values: [5],
+               },
+            );
 
          const sql = builder.parseRaw();
          expect(sql).toContain("HAVING");
@@ -590,11 +784,34 @@ describe("Parser coverage edge cases", () => {
             .selectRaw("COUNT(*) AS cnt")
             .fromTable("users", "u")
             .groupByColumn("u", "role");
-         builder.state().havingStates.push(
-            { builderType: BuilderType.Having, tableNameOrAlias: "u", columnName: "role", whereOperator: WO.Equals, raw: undefined, values: ["admin"] },
-            { builderType: BuilderType.Or, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, values: [] },
-            { builderType: BuilderType.Having, tableNameOrAlias: "u", columnName: "cnt", whereOperator: WO.LessThan, raw: undefined, values: [10] },
-         );
+         builder
+            .state()
+            .havingStates.push(
+               {
+                  builderType: BuilderType.Having,
+                  tableNameOrAlias: "u",
+                  columnName: "role",
+                  whereOperator: WO.Equals,
+                  raw: undefined,
+                  values: ["admin"],
+               },
+               {
+                  builderType: BuilderType.Or,
+                  tableNameOrAlias: undefined,
+                  columnName: undefined,
+                  whereOperator: WO.None,
+                  raw: undefined,
+                  values: [],
+               },
+               {
+                  builderType: BuilderType.Having,
+                  tableNameOrAlias: "u",
+                  columnName: "cnt",
+                  whereOperator: WO.LessThan,
+                  raw: undefined,
+                  values: [10],
+               },
+            );
 
          const sql = builder.parseRaw();
          expect(sql).toContain("HAVING");
@@ -605,9 +822,16 @@ describe("Parser coverage edge cases", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
          builder.selectRaw("COUNT(*) AS cnt").fromTable("users", "u").groupByColumn("u", "role");
-         builder.state().havingStates.push(
-            { builderType: BuilderType.And, tableNameOrAlias: undefined, columnName: undefined, whereOperator: WO.None, raw: undefined, values: [] },
-         );
+         builder
+            .state()
+            .havingStates.push({
+               builderType: BuilderType.And,
+               tableNameOrAlias: undefined,
+               columnName: undefined,
+               whereOperator: WO.None,
+               raw: undefined,
+               values: [],
+            });
 
          expect(() => builder.parseRaw()).toThrow("First HAVING operator cannot be AND or OR");
       });
@@ -617,8 +841,7 @@ describe("Parser coverage edge cases", () => {
       it("parser uses config from getter", () => {
          const sqlEasy = new PostgresSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder.selectAll().fromTable("users", "u")
-            .where("u", "id", WhereOperator.Equals, 1);
+         builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1);
          const sql = builder.parseRaw();
          expect(sql).toContain('"public"');
       });
@@ -636,8 +859,7 @@ describe("Parser coverage edge cases", () => {
       it("deleteFromWithOwner sets owner correctly", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder.deleteFromWithOwner("main", "users", "u")
-            .where("u", "id", WhereOperator.Equals, 1);
+         builder.deleteFromWithOwner("main", "users", "u").where("u", "id", WhereOperator.Equals, 1);
          const sql = builder.parseRaw();
          expect(sql).toContain('"main"."users"');
       });
@@ -645,7 +867,8 @@ describe("Parser coverage edge cases", () => {
       it("updateTableWithOwner sets owner correctly", () => {
          const sqlEasy = new SqliteSqlEasy();
          const builder = sqlEasy.newBuilder();
-         builder.updateTableWithOwner("main", "users", "u")
+         builder
+            .updateTableWithOwner("main", "users", "u")
             .set("name", "Jane")
             .where("u", "id", WhereOperator.Equals, 1);
          const sql = builder.parseRaw();

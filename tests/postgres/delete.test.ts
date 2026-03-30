@@ -5,40 +5,28 @@ describe("PostgresSqlEasy delete", () => {
    it("delete with where condition", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .deleteFrom("users", "u")
-         .where("u", "id", WhereOperator.Equals, 1);
+      builder.deleteFrom("users", "u").where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'DELETE FROM "public"."users" AS "u" WHERE "u"."id" = 1;',
-      );
+      expect(sql).toEqual('DELETE FROM "public"."users" AS "u" WHERE "u"."id" = 1;');
    });
 
    it("delete without alias", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .deleteFrom("users", "")
-         .where("users", "id", WhereOperator.Equals, 1);
+      builder.deleteFrom("users", "").where("users", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'DELETE FROM "public"."users" WHERE "users"."id" = 1;',
-      );
+      expect(sql).toEqual('DELETE FROM "public"."users" WHERE "users"."id" = 1;');
    });
 
    it("delete with custom owner", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .deleteFromWithOwner("sales", "orders", "o")
-         .where("o", "id", WhereOperator.Equals, 100);
+      builder.deleteFromWithOwner("sales", "orders", "o").where("o", "id", WhereOperator.Equals, 100);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'DELETE FROM "sales"."orders" AS "o" WHERE "o"."id" = 100;',
-      );
+      expect(sql).toEqual('DELETE FROM "sales"."orders" AS "o" WHERE "o"."id" = 100;');
    });
 
    it("delete with multiple where conditions", () => {
@@ -68,40 +56,28 @@ describe("PostgresSqlEasy delete", () => {
    it("delete with whereNull", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .deleteFrom("users", "u")
-         .whereNull("u", "email");
+      builder.deleteFrom("users", "u").whereNull("u", "email");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'DELETE FROM "public"."users" AS "u" WHERE "u"."email" IS NULL;',
-      );
+      expect(sql).toEqual('DELETE FROM "public"."users" AS "u" WHERE "u"."email" IS NULL;');
    });
 
    it("delete with whereInValues", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .deleteFrom("users", "u")
-         .whereInValues("u", "id", [1, 2, 3]);
+      builder.deleteFrom("users", "u").whereInValues("u", "id", [1, 2, 3]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'DELETE FROM "public"."users" AS "u" WHERE "u"."id" IN (1, 2, 3);',
-      );
+      expect(sql).toEqual('DELETE FROM "public"."users" AS "u" WHERE "u"."id" IN (1, 2, 3);');
    });
 
    it("delete with parse() - $1 placeholder", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .deleteFrom("users", "u")
-         .where("u", "id", WhereOperator.Equals, 1);
+      builder.deleteFrom("users", "u").where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'DELETE FROM "public"."users" AS "u" WHERE "u"."id" = $1;',
-      );
+      expect(sql).toEqual('DELETE FROM "public"."users" AS "u" WHERE "u"."id" = $1;');
    });
 
    it("delete with multiple conditions parse() - sequential placeholders", () => {
@@ -114,8 +90,6 @@ describe("PostgresSqlEasy delete", () => {
          .where("u", "created_at", WhereOperator.LessThan, "2020-01-01");
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'DELETE FROM "public"."users" AS "u" WHERE "u"."active" = $1 AND "u"."created_at" < $2;',
-      );
+      expect(sql).toEqual('DELETE FROM "public"."users" AS "u" WHERE "u"."active" = $1 AND "u"."created_at" < $2;');
    });
 });

@@ -13,9 +13,7 @@ describe("MysqlSqlEasy union", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT `u`.`name` FROM `users` AS `u` UNION SELECT `c`.`name` FROM `customers` AS `c`;",
-      );
+      expect(sql).toEqual("SELECT `u`.`name` FROM `users` AS `u` UNION SELECT `c`.`name` FROM `customers` AS `c`;");
    });
 
    it("UNION ALL", () => {
@@ -29,9 +27,7 @@ describe("MysqlSqlEasy union", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT `u`.`name` FROM `users` AS `u` UNION ALL SELECT `c`.`name` FROM `customers` AS `c`;",
-      );
+      expect(sql).toEqual("SELECT `u`.`name` FROM `users` AS `u` UNION ALL SELECT `c`.`name` FROM `customers` AS `c`;");
    });
 
    it("INTERSECT", () => {
@@ -61,9 +57,7 @@ describe("MysqlSqlEasy union", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT `u`.`email` FROM `users` AS `u` EXCEPT SELECT `b`.`email` FROM `blocked` AS `b`;",
-      );
+      expect(sql).toEqual("SELECT `u`.`email` FROM `users` AS `u` EXCEPT SELECT `b`.`email` FROM `blocked` AS `b`;");
    });
 
    it("multiple UNIONs", () => {

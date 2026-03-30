@@ -50,9 +50,7 @@ describe("SqliteSqlEasy select", () => {
          .fromTable("users", "u");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT "u"."id", "u"."name" AS "user_name", "u"."email" FROM "users" AS "u";',
-      );
+      expect(sql).toEqual('SELECT "u"."id", "u"."name" AS "user_name", "u"."email" FROM "users" AS "u";');
    });
 
    it("select raw", () => {
@@ -84,9 +82,7 @@ describe("SqliteSqlEasy select", () => {
          .fromTable("users", "u");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT *, (SELECT COUNT(*) FROM "orders" AS "o") AS "sub_count" FROM "users" AS "u";',
-      );
+      expect(sql).toEqual('SELECT *, (SELECT COUNT(*) FROM "orders" AS "o") AS "sub_count" FROM "users" AS "u";');
    });
 
    it("select distinct", () => {
@@ -101,11 +97,7 @@ describe("SqliteSqlEasy select", () => {
    it("select distinct with columns", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectColumn("u", "name", "")
-         .selectColumn("u", "email", "")
-         .distinct()
-         .fromTable("users", "u");
+      builder.selectColumn("u", "name", "").selectColumn("u", "email", "").distinct().fromTable("users", "u");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT DISTINCT "u"."name", "u"."email" FROM "users" AS "u";');
@@ -114,10 +106,7 @@ describe("SqliteSqlEasy select", () => {
    it("select all and column combined", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .selectColumn("u", "id", "user_id")
-         .fromTable("users", "u");
+      builder.selectAll().selectColumn("u", "id", "user_id").fromTable("users", "u");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT *, "u"."id" AS "user_id" FROM "users" AS "u";');

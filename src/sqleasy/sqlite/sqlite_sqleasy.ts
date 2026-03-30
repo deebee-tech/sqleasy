@@ -6,9 +6,7 @@ import type { SqliteJoinOnBuilder } from "./sqlite_join_on_builder";
 import { SqliteMultiBuilder } from "./sqlite_multi_builder";
 import type { SqliteParser } from "./sqlite_parser";
 
-export class SqliteSqlEasy
-   implements ISqlEasy<SqliteBuilder, SqliteJoinOnBuilder, SqliteMultiBuilder, SqliteParser>
-{
+export class SqliteSqlEasy implements ISqlEasy<SqliteBuilder, SqliteJoinOnBuilder, SqliteMultiBuilder, SqliteParser> {
    private _sqliteConfiguration: SqliteConfiguration;
 
    constructor(rc?: RuntimeConfiguration) {

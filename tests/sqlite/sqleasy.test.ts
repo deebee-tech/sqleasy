@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { SqliteSqlEasy, RuntimeConfiguration, DatabaseType, WhereOperator, MultiBuilderTransactionState } from "../../src";
+import {
+   SqliteSqlEasy,
+   RuntimeConfiguration,
+   DatabaseType,
+   WhereOperator,
+   MultiBuilderTransactionState,
+} from "../../src";
 
 describe("SqliteSqlEasy factory", () => {
    it("configuration returns SqliteConfiguration", () => {
@@ -45,10 +51,7 @@ describe("SqliteParser parse (prepared statements)", () => {
    it("parse with where returns ? placeholder", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "id", WhereOperator.Equals, 42);
+      builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 42);
       const sql = builder.parse();
       expect(sql).toContain("?");
       expect(sql).not.toContain("42");

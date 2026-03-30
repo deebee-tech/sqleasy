@@ -56,10 +56,7 @@ describe("Builder state management", () => {
    describe("clearJoin", () => {
       it("clears only join states", () => {
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .joinRaw("INNER JOIN orders AS o ON u.id = o.user_id");
+         builder.selectAll().fromTable("users", "u").joinRaw("INNER JOIN orders AS o ON u.id = o.user_id");
          builder.clearJoin();
 
          expect(builder.state().joinStates).toEqual([]);
@@ -70,10 +67,7 @@ describe("Builder state management", () => {
    describe("clearWhere", () => {
       it("clears only where states", () => {
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .where("u", "id", WhereOperator.Equals, 1);
+         builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1);
          builder.clearWhere();
 
          expect(builder.state().whereStates).toEqual([]);
@@ -84,10 +78,7 @@ describe("Builder state management", () => {
    describe("clearOrderBy", () => {
       it("clears only orderBy states", () => {
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .orderByColumn("u", "name", OrderByDirection.Ascending);
+         builder.selectAll().fromTable("users", "u").orderByColumn("u", "name", OrderByDirection.Ascending);
          builder.clearOrderBy();
 
          expect(builder.state().orderByStates).toEqual([]);
@@ -120,10 +111,7 @@ describe("Builder state management", () => {
    describe("clearGroupBy", () => {
       it("clears only groupBy states", () => {
          const builder = sqlEasy.newBuilder();
-         builder
-            .selectAll()
-            .fromTable("users", "u")
-            .groupByColumn("u", "status");
+         builder.selectAll().fromTable("users", "u").groupByColumn("u", "status");
          builder.clearGroupBy();
 
          expect(builder.state().groupByStates).toEqual([]);
@@ -191,11 +179,7 @@ describe("Builder state management", () => {
 
       it("clear methods return the builder for continued chaining", () => {
          const builder = sqlEasy.newBuilder();
-         const result = builder
-            .selectAll()
-            .fromTable("users", "u")
-            .clearSelect()
-            .selectColumn("u", "id", "id");
+         const result = builder.selectAll().fromTable("users", "u").clearSelect().selectColumn("u", "id", "id");
 
          expect(result).toBe(builder);
          expect(builder.state().selectStates.length).toBe(1);
@@ -203,11 +187,7 @@ describe("Builder state management", () => {
 
       it("clearAll returns the builder for continued chaining", () => {
          const builder = sqlEasy.newBuilder();
-         const result = builder
-            .selectAll()
-            .fromTable("users", "u")
-            .clearAll()
-            .selectColumn("u", "name", "name");
+         const result = builder.selectAll().fromTable("users", "u").clearAll().selectColumn("u", "name", "name");
 
          expect(result).toBe(builder);
          expect(builder.state().selectStates.length).toBe(1);

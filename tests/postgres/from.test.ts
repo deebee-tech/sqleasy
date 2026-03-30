@@ -23,17 +23,13 @@ describe("PostgresSqlEasy from", () => {
    it("fromTables multiple tables", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTables([
-            { tableName: "users", alias: "u" },
-            { tableName: "orders", alias: "o" },
-         ]);
+      builder.selectAll().fromTables([
+         { tableName: "users", alias: "u" },
+         { tableName: "orders", alias: "o" },
+      ]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u", "public"."orders" AS "o";',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u", "public"."orders" AS "o";');
    });
 
    it("fromTableWithOwner custom schema", () => {
@@ -48,17 +44,13 @@ describe("PostgresSqlEasy from", () => {
    it("fromTablesWithOwner multiple tables with owners", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTablesWithOwner([
-            { owner: "public", tableName: "users", alias: "u" },
-            { owner: "sales", tableName: "orders", alias: "o" },
-         ]);
+      builder.selectAll().fromTablesWithOwner([
+         { owner: "public", tableName: "users", alias: "u" },
+         { owner: "sales", tableName: "orders", alias: "o" },
+      ]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u", "sales"."orders" AS "o";',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u", "sales"."orders" AS "o";');
    });
 
    it("fromRaw", () => {
@@ -76,24 +68,18 @@ describe("PostgresSqlEasy from", () => {
       builder.selectAll().fromRaws(['"public"."users" AS "u"', '"public"."orders" AS "o"']);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u", "public"."orders" AS "o";',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u", "public"."orders" AS "o";');
    });
 
    it("fromWithBuilder subquery", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromWithBuilder("sub", (sb) => {
-            sb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
-         });
+      builder.selectAll().fromWithBuilder("sub", (sb) => {
+         sb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
+      });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM (SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true) AS "sub";',
-      );
+      expect(sql).toEqual('SELECT * FROM (SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true) AS "sub";');
    });
 
    it("fromTable with parse() prepared statement", () => {
@@ -108,26 +94,18 @@ describe("PostgresSqlEasy from", () => {
    it("fromWithBuilder subquery with parse()", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromWithBuilder("sub", (sb) => {
-            sb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
-         });
+      builder.selectAll().fromWithBuilder("sub", (sb) => {
+         sb.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
+      });
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'SELECT * FROM (SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = $1) AS "sub";',
-      );
+      expect(sql).toEqual('SELECT * FROM (SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = $1) AS "sub";');
    });
 
    it("clearFrom resets from state", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("orders", "o")
-         .clearFrom()
-         .fromTable("users", "u");
+      builder.selectAll().fromTable("orders", "o").clearFrom().fromTable("users", "u");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT * FROM "public"."users" AS "u";');

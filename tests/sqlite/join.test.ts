@@ -13,9 +13,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("left join", () => {
@@ -29,9 +27,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" LEFT JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" LEFT JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("left outer join", () => {
@@ -45,9 +41,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" LEFT OUTER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" LEFT OUTER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("right join", () => {
@@ -61,9 +55,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" RIGHT JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" RIGHT JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("right outer join", () => {
@@ -77,9 +69,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" RIGHT OUTER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" RIGHT OUTER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("full outer join", () => {
@@ -93,9 +83,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" FULL OUTER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" FULL OUTER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("cross join", () => {
@@ -107,9 +95,7 @@ describe("SqliteSqlEasy join", () => {
          .joinTable(JoinType.Cross, "colors", "c", () => {});
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" CROSS JOIN "colors" AS "c";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" CROSS JOIN "colors" AS "c";');
    });
 
    it("join with multiple ON conditions (AND)", () => {
@@ -195,9 +181,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" <> "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" <> "o"."user_id";');
    });
 
    it("join with greater than operator", () => {
@@ -211,9 +195,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" > "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" > "o"."user_id";');
    });
 
    it("join with less than or equals operator", () => {
@@ -227,9 +209,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" <= "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" <= "o"."user_id";');
    });
 
    it("multiple joins", () => {
@@ -254,15 +234,10 @@ describe("SqliteSqlEasy join", () => {
    it("join raw", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .joinRaw('INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id"');
+      builder.selectAll().fromTable("users", "u").joinRaw('INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id"');
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("join on raw", () => {
@@ -276,9 +251,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" = "o"."user_id";');
    });
 
    it("join with subquery builder", () => {
@@ -441,9 +414,7 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" >= "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" >= "o"."user_id";');
    });
 
    it("join with LessThan on column comparison", () => {
@@ -457,8 +428,6 @@ describe("SqliteSqlEasy join", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" < "o"."user_id";',
-      );
+      expect(sql).toEqual('SELECT * FROM "users" AS "u" INNER JOIN "orders" AS "o" ON "u"."id" < "o"."user_id";');
    });
 });

@@ -14,10 +14,7 @@ describe("PostgresSqlEasy select", () => {
    it("select all with where clause", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true);
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true;');
@@ -53,9 +50,7 @@ describe("PostgresSqlEasy select", () => {
          .fromTable("users", "u");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT "u"."id", "u"."name" AS "userName", "u"."email" FROM "public"."users" AS "u";',
-      );
+      expect(sql).toEqual('SELECT "u"."id", "u"."name" AS "userName", "u"."email" FROM "public"."users" AS "u";');
    });
 
    it("selectRaw", () => {
@@ -113,10 +108,7 @@ describe("PostgresSqlEasy select", () => {
    it("selectColumn with parse() prepared statement", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectColumn("u", "id", "")
-         .selectColumn("u", "name", "userName")
-         .fromTable("users", "u");
+      builder.selectColumn("u", "id", "").selectColumn("u", "name", "userName").fromTable("users", "u");
 
       const sql = builder.parse();
       expect(sql).toEqual('SELECT "u"."id", "u"."name" AS "userName" FROM "public"."users" AS "u";');
@@ -125,10 +117,7 @@ describe("PostgresSqlEasy select", () => {
    it("mixed selectAll and selectColumn", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .selectColumn("u", "name", "userName")
-         .fromTable("users", "u");
+      builder.selectAll().selectColumn("u", "name", "userName").fromTable("users", "u");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT *, "u"."name" AS "userName" FROM "public"."users" AS "u";');
@@ -137,11 +126,7 @@ describe("PostgresSqlEasy select", () => {
    it("clearSelect resets select state", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectColumn("u", "id", "")
-         .clearSelect()
-         .selectAll()
-         .fromTable("users", "u");
+      builder.selectColumn("u", "id", "").clearSelect().selectAll().fromTable("users", "u");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT * FROM "public"."users" AS "u";');

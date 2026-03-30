@@ -5,15 +5,10 @@ describe("PostgresSqlEasy update", () => {
    it("update single column", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .updateTable("users", "u")
-         .set("name", "John Updated")
-         .where("u", "id", WhereOperator.Equals, 1);
+      builder.updateTable("users", "u").set("name", "John Updated").where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'UPDATE "public"."users" AS "u" SET "name" = John Updated WHERE "u"."id" = 1;',
-      );
+      expect(sql).toEqual('UPDATE "public"."users" AS "u" SET "name" = John Updated WHERE "u"."id" = 1;');
    });
 
    it("update multiple columns", () => {
@@ -44,9 +39,7 @@ describe("PostgresSqlEasy update", () => {
          .where("u", "id", WhereOperator.Equals, 5);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'UPDATE "public"."users" AS "u" SET "name" = Jane, "active" = true WHERE "u"."id" = 5;',
-      );
+      expect(sql).toEqual('UPDATE "public"."users" AS "u" SET "name" = Jane, "active" = true WHERE "u"."id" = 5;');
    });
 
    it("update with setRaw", () => {
@@ -58,9 +51,7 @@ describe("PostgresSqlEasy update", () => {
          .where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'UPDATE "public"."users" AS "u" SET "login_count" = "login_count" + 1 WHERE "u"."id" = 1;',
-      );
+      expect(sql).toEqual('UPDATE "public"."users" AS "u" SET "login_count" = "login_count" + 1 WHERE "u"."id" = 1;');
    });
 
    it("update with custom owner", () => {
@@ -72,23 +63,16 @@ describe("PostgresSqlEasy update", () => {
          .where("o", "id", WhereOperator.Equals, 100);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'UPDATE "sales"."orders" AS "o" SET "status" = shipped WHERE "o"."id" = 100;',
-      );
+      expect(sql).toEqual('UPDATE "sales"."orders" AS "o" SET "status" = shipped WHERE "o"."id" = 100;');
    });
 
    it("update without alias", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .updateTable("users", "")
-         .set("active", false)
-         .where("users", "id", WhereOperator.Equals, 1);
+      builder.updateTable("users", "").set("active", false).where("users", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'UPDATE "public"."users" SET "active" = false WHERE "users"."id" = 1;',
-      );
+      expect(sql).toEqual('UPDATE "public"."users" SET "active" = false WHERE "users"."id" = 1;');
    });
 
    it("update with multiple where conditions", () => {
@@ -110,15 +94,10 @@ describe("PostgresSqlEasy update", () => {
    it("update with parse() - $1, $2 placeholders", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .updateTable("users", "u")
-         .set("name", "John Updated")
-         .where("u", "id", WhereOperator.Equals, 1);
+      builder.updateTable("users", "u").set("name", "John Updated").where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'UPDATE "public"."users" AS "u" SET "name" = $1 WHERE "u"."id" = $2;',
-      );
+      expect(sql).toEqual('UPDATE "public"."users" AS "u" SET "name" = $1 WHERE "u"."id" = $2;');
    });
 
    it("update multiple columns with parse() - sequential placeholders", () => {

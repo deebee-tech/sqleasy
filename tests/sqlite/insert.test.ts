@@ -5,43 +5,28 @@ describe("SqliteSqlEasy insert", () => {
    it("insert single row", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertColumns(["name", "email"])
-         .insertValues(["John", "john@example.com"]);
+      builder.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name", "email") VALUES (John, john@example.com);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name", "email") VALUES (John, john@example.com);');
    });
 
    it("insert single row - parse prepared", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertColumns(["name", "email"])
-         .insertValues(["John", "john@example.com"]);
+      builder.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name", "email") VALUES (?, ?);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name", "email") VALUES (?, ?);');
    });
 
    it("insert with numeric values", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertColumns(["name", "age", "score"])
-         .insertValues(["Alice", 25, 99.5]);
+      builder.insertInto("users").insertColumns(["name", "age", "score"]).insertValues(["Alice", 25, 99.5]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name", "age", "score") VALUES (Alice, 25, 99.5);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name", "age", "score") VALUES (Alice, 25, 99.5);');
    });
 
    it("insert multiple rows", () => {
@@ -69,43 +54,31 @@ describe("SqliteSqlEasy insert", () => {
          .insertValues(["Jane", "jane@example.com"]);
 
       const sql = builder.parse();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name", "email") VALUES (?, ?), (?, ?);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name", "email") VALUES (?, ?), (?, ?);');
    });
 
    it("insert raw", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertRaw('INSERT INTO "users" ("name") VALUES (\'test\')');
+      builder.insertInto("users").insertRaw('INSERT INTO "users" ("name") VALUES (\'test\')');
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual("INSERT INTO \"users\" (\"name\") VALUES ('test');");
+      expect(sql).toEqual('INSERT INTO "users" ("name") VALUES (\'test\');');
    });
 
    it("insert with boolean values", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertColumns(["name", "active"])
-         .insertValues(["Bob", true]);
+      builder.insertInto("users").insertColumns(["name", "active"]).insertValues(["Bob", true]);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'INSERT INTO "users" ("name", "active") VALUES (Bob, true);',
-      );
+      expect(sql).toEqual('INSERT INTO "users" ("name", "active") VALUES (Bob, true);');
    });
 
    it("insert without owner prefix (SQLite default)", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertInto("users")
-         .insertColumns(["name"])
-         .insertValues(["Test"]);
+      builder.insertInto("users").insertColumns(["name"]).insertValues(["Test"]);
 
       const sql = builder.parseRaw();
       expect(sql).not.toContain('"".');
@@ -115,10 +88,7 @@ describe("SqliteSqlEasy insert", () => {
    it("insert with explicit owner", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .insertIntoWithOwner("main", "users")
-         .insertColumns(["name"])
-         .insertValues(["Test"]);
+      builder.insertIntoWithOwner("main", "users").insertColumns(["name"]).insertValues(["Test"]);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('INSERT INTO "main"."users" ("name") VALUES (Test);');

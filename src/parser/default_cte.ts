@@ -23,9 +23,7 @@ export const defaultCte = (state: SqlEasyState, config: IConfiguration, mode: Pa
    for (let i = 0; i < state.cteStates.length; i++) {
       const cteState = state.cteStates[i];
 
-      sqlHelper.addSqlSnippet(
-         config.identifierDelimiters().begin + cteState.name + config.identifierDelimiters().end,
-      );
+      sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + cteState.name + config.identifierDelimiters().end);
       sqlHelper.addSqlSnippet(" AS (");
 
       if (cteState.builderType === BuilderType.CteRaw) {

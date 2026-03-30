@@ -99,9 +99,7 @@ describe("MysqlSqlEasy where", () => {
          .where("u", "role", WhereOperator.Equals, "superadmin");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` WHERE `u`.`role` = admin OR `u`.`role` = superadmin;",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` WHERE `u`.`role` = admin OR `u`.`role` = superadmin;");
    });
 
    it("where mixed AND/OR", () => {
@@ -215,9 +213,7 @@ describe("MysqlSqlEasy where", () => {
          .selectAll()
          .fromTable("users", "u")
          .whereExistsWithBuilder("u", "id", (sb) => {
-            sb.selectRaw("1")
-               .fromTable("orders", "o")
-               .where("o", "user_id", WhereOperator.Equals, "u.id");
+            sb.selectRaw("1").fromTable("orders", "o").where("o", "user_id", WhereOperator.Equals, "u.id");
          });
 
       const sql = builder.parseRaw();
@@ -233,9 +229,7 @@ describe("MysqlSqlEasy where", () => {
          .selectAll()
          .fromTable("users", "u")
          .whereNotExistsWithBuilder("u", "id", (sb) => {
-            sb.selectRaw("1")
-               .fromTable("orders", "o")
-               .where("o", "user_id", WhereOperator.Equals, "u.id");
+            sb.selectRaw("1").fromTable("orders", "o").where("o", "user_id", WhereOperator.Equals, "u.id");
          });
 
       const sql = builder.parseRaw();
@@ -256,12 +250,7 @@ describe("MysqlSqlEasy where", () => {
    it("whereRaws", () => {
       const sqlEasy = new MysqlSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .whereRaw("`u`.`age` > 18")
-         .and()
-         .whereRaw("`u`.`status` = 'active'");
+      builder.selectAll().fromTable("users", "u").whereRaw("`u`.`age` > 18").and().whereRaw("`u`.`status` = 'active'");
 
       const sql = builder.parseRaw();
       expect(sql).toEqual("SELECT * FROM `users` AS `u` WHERE `u`.`age` > 18 AND `u`.`status` = 'active';");
@@ -282,9 +271,7 @@ describe("MysqlSqlEasy where", () => {
          });
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true AND ();",
-      );
+      expect(sql).toEqual("SELECT * FROM `users` AS `u` WHERE `u`.`active` = true AND ();");
    });
 
    it("multiple where conditions combined", () => {

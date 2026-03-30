@@ -14,10 +14,7 @@ describe("PostgresSqlEasy limit offset", () => {
    it("no limit when where clause present", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "id", WhereOperator.Equals, 1);
+      builder.selectAll().fromTable("users", "u").where("u", "id", WhereOperator.Equals, 1);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 1;');
@@ -26,16 +23,10 @@ describe("PostgresSqlEasy limit offset", () => {
    it("explicit limit", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true)
-         .limit(10);
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true).limit(10);
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true LIMIT 10;',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true LIMIT 10;');
    });
 
    it("limit and offset with order by", () => {
@@ -74,11 +65,7 @@ describe("PostgresSqlEasy limit offset", () => {
    it("offset without order by throws error", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .where("u", "active", WhereOperator.Equals, true)
-         .offset(20);
+      builder.selectAll().fromTable("users", "u").where("u", "active", WhereOperator.Equals, true).offset(20);
 
       expect(() => builder.parseRaw()).toThrow();
    });
@@ -111,9 +98,7 @@ describe("PostgresSqlEasy limit offset", () => {
          .clearLimit();
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true;',
-      );
+      expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = true;');
    });
 
    it("clearOffset removes offset", () => {
@@ -137,10 +122,7 @@ describe("PostgresSqlEasy limit offset", () => {
    it("limit without where clause", () => {
       const sqlEasy = new PostgresSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .selectAll()
-         .fromTable("users", "u")
-         .limit(50);
+      builder.selectAll().fromTable("users", "u").limit(50);
 
       const sql = builder.parseRaw();
       expect(sql).toEqual('SELECT * FROM "public"."users" AS "u" LIMIT 50;');

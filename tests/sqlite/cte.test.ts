@@ -7,9 +7,7 @@ describe("SqliteSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "status", WhereOperator.Equals, "active");
+            cb.selectAll().fromTable("users", "u").where("u", "status", WhereOperator.Equals, "active");
          })
          .selectAll()
          .fromTable("active_users", "au");
@@ -25,9 +23,7 @@ describe("SqliteSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "status", WhereOperator.Equals, "active");
+            cb.selectAll().fromTable("users", "u").where("u", "status", WhereOperator.Equals, "active");
          })
          .selectAll()
          .fromTable("active_users", "au");
@@ -43,14 +39,10 @@ describe("SqliteSqlEasy CTE", () => {
       const builder = sqlEasy.newBuilder();
       builder
          .cte("active_users", (cb) => {
-            cb.selectAll()
-               .fromTable("users", "u")
-               .where("u", "status", WhereOperator.Equals, "active");
+            cb.selectAll().fromTable("users", "u").where("u", "status", WhereOperator.Equals, "active");
          })
          .cte("recent_orders", (cb) => {
-            cb.selectAll()
-               .fromTable("orders", "o")
-               .where("o", "year", WhereOperator.Equals, 2024);
+            cb.selectAll().fromTable("orders", "o").where("o", "year", WhereOperator.Equals, 2024);
          })
          .selectAll()
          .fromTable("active_users", "au");
@@ -69,9 +61,7 @@ describe("SqliteSqlEasy CTE", () => {
             cb.selectRaw("1 AS n")
                .fromTable("dual", "d")
                .union((ub) => {
-                  ub.selectRaw("n + 1")
-                     .fromTable("numbers", "")
-                     .where("numbers", "n", WhereOperator.LessThan, 10);
+                  ub.selectRaw("n + 1").fromTable("numbers", "").where("numbers", "n", WhereOperator.LessThan, 10);
                });
          })
          .selectAll()
@@ -86,15 +76,10 @@ describe("SqliteSqlEasy CTE", () => {
    it("cteRaw", () => {
       const sqlEasy = new SqliteSqlEasy();
       const builder = sqlEasy.newBuilder();
-      builder
-         .cteRaw("my_cte", "SELECT 1 AS id, 'test' AS name")
-         .selectAll()
-         .fromTable("my_cte", "");
+      builder.cteRaw("my_cte", "SELECT 1 AS id, 'test' AS name").selectAll().fromTable("my_cte", "");
 
       const sql = builder.parseRaw();
-      expect(sql).toEqual(
-         'WITH "my_cte" AS (SELECT 1 AS id, \'test\' AS name) SELECT * FROM "my_cte";',
-      );
+      expect(sql).toEqual('WITH "my_cte" AS (SELECT 1 AS id, \'test\' AS name) SELECT * FROM "my_cte";');
    });
 
    it("CTE with where on outer query", () => {
@@ -128,9 +113,7 @@ describe("SqliteSqlEasy CTE", () => {
             cb.selectRaw("1 AS n")
                .fromTable("dual", "d")
                .union((ub) => {
-                  ub.selectRaw("n + 1")
-                     .fromTable("counter", "")
-                     .where("counter", "n", WhereOperator.LessThan, 5);
+                  ub.selectRaw("n + 1").fromTable("counter", "").where("counter", "n", WhereOperator.LessThan, 5);
                });
          })
          .selectAll()

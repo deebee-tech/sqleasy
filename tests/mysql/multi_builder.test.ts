@@ -13,9 +13,7 @@ describe("MysqlSqlEasy multi builder", () => {
       b2.selectAll().fromTable("orders", "o");
 
       const sql = multiBuilder.parseRaw();
-      expect(sql).toEqual(
-         "START TRANSACTION; SELECT * FROM `users` AS `u`;SELECT * FROM `orders` AS `o`;COMMIT; ",
-      );
+      expect(sql).toEqual("START TRANSACTION; SELECT * FROM `users` AS `u`;SELECT * FROM `orders` AS `o`;COMMIT; ");
    });
 
    it("multiple builders with transaction off", () => {
@@ -112,9 +110,7 @@ describe("MysqlSqlEasy multi builder", () => {
       const multiBuilder = sqlEasy.newMultiBuilder();
 
       const b1 = multiBuilder.addBuilder("update");
-      b1.updateTable("users", "u")
-         .set("active", false)
-         .where("u", "id", WhereOperator.Equals, 1);
+      b1.updateTable("users", "u").set("active", false).where("u", "id", WhereOperator.Equals, 1);
 
       const b2 = multiBuilder.addBuilder("delete");
       b2.deleteFrom("sessions", "s").where("s", "user_id", WhereOperator.Equals, 1);

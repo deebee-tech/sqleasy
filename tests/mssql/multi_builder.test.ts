@@ -49,9 +49,7 @@ describe("MssqlSqlEasy multi builder", () => {
       multi.removeBuilder("b1");
 
       const sql = multi.parseRaw();
-      expect(sql).toEqual(
-         "SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100;",
-      );
+      expect(sql).toEqual("SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100;");
    });
 
    it("reorderBuilders", () => {
@@ -81,10 +79,7 @@ describe("MssqlSqlEasy multi builder", () => {
       insertBuilder.insertInto("users").insertColumns(["name", "email"]).insertValues(["John", "john@example.com"]);
 
       const updateBuilder = multi.addBuilder("update");
-      updateBuilder
-         .updateTable("users", "u")
-         .set("active", true)
-         .where("u", "name", WhereOperator.Equals, "John");
+      updateBuilder.updateTable("users", "u").set("active", true).where("u", "name", WhereOperator.Equals, "John");
 
       const sql = multi.parseRaw();
       expect(sql).toEqual(
