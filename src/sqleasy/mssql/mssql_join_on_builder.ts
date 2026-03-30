@@ -1,4 +1,5 @@
 import { DefaultJoinOnBuilder } from "../../builder/default_join_on_builder";
+import type { IConfiguration } from "../../configuration/interface_configuration";
 import type { MssqlConfiguration } from "./mssql_configuration";
 
 export class MssqlJoinOnBuilder extends DefaultJoinOnBuilder<MssqlJoinOnBuilder> {
@@ -9,7 +10,7 @@ export class MssqlJoinOnBuilder extends DefaultJoinOnBuilder<MssqlJoinOnBuilder>
       this._mssqlConfiguration = config;
    }
 
-   public override newJoinOnBuilder = (): MssqlJoinOnBuilder => {
-      return new MssqlJoinOnBuilder(this._mssqlConfiguration);
+   public override newJoinOnBuilder = (config?: IConfiguration): MssqlJoinOnBuilder => {
+      return new MssqlJoinOnBuilder((config ?? this._mssqlConfiguration) as MssqlConfiguration);
    };
 }

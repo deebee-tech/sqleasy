@@ -1,9 +1,11 @@
-import type { MultiBuilderTransactionState } from "../../enums/multi_builder_transaction_state";
+import type { IConfiguration } from "../../configuration/interface_configuration";
+import { MultiBuilderTransactionState } from "../../enums/multi_builder_transaction_state";
 import { ParserArea } from "../../enums/parser_area";
 import { ParserMode } from "../../enums/parser_mode";
 import { ParserError } from "../../helpers/parser_error";
 import { SqlHelper } from "../../helpers/sql_helper";
 import { DefaultParser } from "../../parser/default_parser";
+import type { ToSqlOptions } from "../../parser/default_to_sql";
 import { defaultToSql } from "../../parser/default_to_sql";
 import type { SqlEasyState } from "../../state/sqleasy_state";
 import type { MssqlConfiguration } from "./mssql_configuration";
@@ -16,11 +18,37 @@ export class MssqlParser extends DefaultParser {
       this._mssqlConfiguration = config;
    }
 
+   protected override getToSqlOptions(): ToSqlOptions {
+      return {
+         beforeSelectColumns: (state: SqlEasyState, config: IConfiguration, sqlHelper: SqlHelper) => {
+            if (
+               state.customState !== null &&
+               state.customState !== undefined &&
+               state.customState["top"] !== null &&
+               state.customState["top"] !== undefined &&
+               state.customState["top"] > 0
+            ) {
+               sqlHelper.addSqlSnippet("TOP ");
+               sqlHelper.addSqlSnippet(`(${state.customState["top"]})`);
+               sqlHelper.addSqlSnippet(" ");
+            } else if (
+               !state.isInnerStatement &&
+               state.limit === 0 &&
+               (!state.whereStates || state.whereStates.length === 0)
+            ) {
+               sqlHelper.addSqlSnippet("TOP ");
+               sqlHelper.addSqlSnippet(`(${config.runtimeConfiguration().maxRowsReturned})`);
+               sqlHelper.addSqlSnippet(" ");
+            }
+         },
+      };
+   }
+
    public override toSql = (state: SqlEasyState): string => {
       const paramsString = new SqlHelper(this._mssqlConfiguration, ParserMode.Prepared);
       const finalString = new SqlHelper(this._mssqlConfiguration, ParserMode.Prepared);
 
-      const sqlHelper = defaultToSql(state, this._mssqlConfiguration, ParserMode.Prepared);
+      const sqlHelper = defaultToSql(state, this._mssqlConfiguration, ParserMode.Prepared, this.getToSqlOptions());
 
       let sql = sqlHelper.getSql();
       sql = sql.replaceAll("'", "''");
@@ -73,9 +101,23 @@ export class MssqlParser extends DefaultParser {
       return finalString.getSql();
    };
 
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-   public override toSqlMulti = (_states: SqlEasyState[], _transactionState: MultiBuilderTransactionState): string => {
-      throw new ParserError(ParserArea.General, "toSqlMulti not implemented for MssqlParser");
+   public override toSqlMulti = (states: SqlEasyState[], transactionState: MultiBuilderTransactionState): string => {
+      const finalString = new SqlHelper(this._mssqlConfiguration, ParserMode.Prepared);
+
+      if (transactionState === MultiBuilderTransactionState.TransactionOn) {
+         finalString.addSqlSnippet(this._mssqlConfiguration.transactionDelimiters().begin + "; ");
+      }
+
+      for (const state of states) {
+         const sql = this.toSql(state);
+         finalString.addSqlSnippet(sql + " ");
+      }
+
+      if (transactionState === MultiBuilderTransactionState.TransactionOn) {
+         finalString.addSqlSnippet(this._mssqlConfiguration.transactionDelimiters().end + ";");
+      }
+
+      return finalString.getSql();
    };
 
    private getParameterType = (value: any): string => {

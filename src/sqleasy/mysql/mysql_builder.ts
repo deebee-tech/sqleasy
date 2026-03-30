@@ -1,4 +1,5 @@
 import { DefaultBuilder } from "../../builder/default_builder";
+import type { IConfiguration } from "../../configuration/interface_configuration";
 import type { MysqlConfiguration } from "./mysql_configuration";
 import { MysqlJoinOnBuilder } from "./mysql_join_on_builder";
 import { MysqlParser } from "./mysql_parser";
@@ -11,15 +12,15 @@ export class MysqlBuilder extends DefaultBuilder<MysqlBuilder, MysqlJoinOnBuilde
       this._mysqlConfig = config;
    }
 
-   public override newBuilder = (): MysqlBuilder => {
-      return new MysqlBuilder(this._mysqlConfig);
+   public override newBuilder = (config?: IConfiguration): MysqlBuilder => {
+      return new MysqlBuilder((config ?? this._mysqlConfig) as MysqlConfiguration);
    };
 
-   public override newJoinOnBuilder = (): MysqlJoinOnBuilder => {
-      return new MysqlJoinOnBuilder(this._mysqlConfig);
+   public override newJoinOnBuilder = (config?: IConfiguration): MysqlJoinOnBuilder => {
+      return new MysqlJoinOnBuilder((config ?? this._mysqlConfig) as MysqlConfiguration);
    };
 
-   public override newParser = (): MysqlParser => {
-      return new MysqlParser(this._mysqlConfig);
+   public override newParser = (config?: IConfiguration): MysqlParser => {
+      return new MysqlParser((config ?? this._mysqlConfig) as MysqlConfiguration);
    };
 }

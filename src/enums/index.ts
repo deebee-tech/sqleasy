@@ -8,4 +8,5 @@ export * from "./multi_builder_transaction_state";
 export * from "./order_by_direction";
 export * from "./parser_area";
 export * from "./parser_mode";
+export * from "./query_type";
 export * from "./where_operator";

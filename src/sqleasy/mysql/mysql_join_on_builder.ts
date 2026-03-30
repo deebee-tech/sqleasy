@@ -1,4 +1,5 @@
 import { DefaultJoinOnBuilder } from "../../builder/default_join_on_builder";
+import type { IConfiguration } from "../../configuration/interface_configuration";
 import type { MysqlConfiguration } from "./mysql_configuration";
 
 export class MysqlJoinOnBuilder extends DefaultJoinOnBuilder<MysqlJoinOnBuilder> {
@@ -9,7 +10,7 @@ export class MysqlJoinOnBuilder extends DefaultJoinOnBuilder<MysqlJoinOnBuilder>
       this._mysqlConfig = config;
    }
 
-   public override newJoinOnBuilder = (): MysqlJoinOnBuilder => {
-      return new MysqlJoinOnBuilder(this._mysqlConfig);
+   public override newJoinOnBuilder = (config?: IConfiguration): MysqlJoinOnBuilder => {
+      return new MysqlJoinOnBuilder((config ?? this._mysqlConfig) as MysqlConfiguration);
    };
 }

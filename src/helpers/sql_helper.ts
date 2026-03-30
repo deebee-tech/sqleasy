@@ -1,5 +1,4 @@
-import IsHelper from "@deebeetech/is-helper";
-import StringBuilder from "@deebeetech/string-builder";
+import StringBuilder from "./string_builder";
 import type { IConfiguration } from "../configuration/interface_configuration";
 import { ParserMode } from "../enums/parser_mode";
 
@@ -27,8 +26,8 @@ export class SqlHelper {
       this._sb.append(sql);
    };
 
-   public addSqlSnippetWithValues = (sqlString: string, value: any): void => {
-      this._values.push(value);
+   public addSqlSnippetWithValues = (sqlString: string, values: any[]): void => {
+      this._values.push(...values);
       this.addSqlSnippet(sqlString);
    };
 
@@ -43,15 +42,19 @@ export class SqlHelper {
 
    public getSqlDebug = (): string => {
       let sqlString = this._sb.toString();
+      const placeholder = this._config.preparedStatementPlaceholder();
 
       this._values.forEach((value) => {
-         const valuePosition = sqlString.indexOf(this._config.preparedStatementPlaceholder());
+         const valuePosition = sqlString.indexOf(placeholder);
 
          if (valuePosition === -1) {
             return;
          }
 
-         sqlString = sqlString.substring(0, valuePosition) + value + sqlString.substring(valuePosition + 1);
+         sqlString =
+            sqlString.substring(0, valuePosition) +
+            this.getValueStringFromDataType(value) +
+            sqlString.substring(valuePosition + placeholder.length);
       });
 
       return sqlString;
@@ -62,7 +65,7 @@ export class SqlHelper {
          return [];
       }
 
-      return this._values.filter((value) => !IsHelper.isNullOrUndefined(value));
+      return this._values.filter((value) => value !== null && value !== undefined);
    };
 
    public getValueStringFromDataType = (value: any): string => {

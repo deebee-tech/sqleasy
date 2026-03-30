@@ -1,4 +1,5 @@
 import { DefaultJoinOnBuilder } from "../../builder/default_join_on_builder";
+import type { IConfiguration } from "../../configuration/interface_configuration";
 import type { PostgresConfiguration } from "./postgres_configuration";
 
 export class PostgresJoinOnBuilder extends DefaultJoinOnBuilder<PostgresJoinOnBuilder> {
@@ -9,7 +10,7 @@ export class PostgresJoinOnBuilder extends DefaultJoinOnBuilder<PostgresJoinOnBu
       this._postgresConfig = config;
    }
 
-   public override newJoinOnBuilder = (): PostgresJoinOnBuilder => {
-      return new PostgresJoinOnBuilder(this._postgresConfig);
+   public override newJoinOnBuilder = (config?: IConfiguration): PostgresJoinOnBuilder => {
+      return new PostgresJoinOnBuilder((config ?? this._postgresConfig) as PostgresConfiguration);
    };
 }

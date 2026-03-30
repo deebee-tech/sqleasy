@@ -2,6 +2,7 @@ import type { IConfiguration } from "../configuration/interface_configuration";
 import { MultiBuilderTransactionState } from "../enums/multi_builder_transaction_state";
 import { ParserMode } from "../enums/parser_mode";
 import type { SqlEasyState } from "../state/sqleasy_state";
+import type { ToSqlOptions } from "./default_to_sql";
 import { defaultToSql } from "./default_to_sql";
 
 export abstract class DefaultParser {
@@ -11,11 +12,19 @@ export abstract class DefaultParser {
       this._config = config;
    }
 
+   protected get config(): IConfiguration {
+      return this._config;
+   }
+
+   protected getToSqlOptions(): ToSqlOptions {
+      return {};
+   }
+
    public abstract toSql(state: SqlEasyState): string;
    public abstract toSqlMulti(states: SqlEasyState[], transactionState: MultiBuilderTransactionState): string;
 
    public toSqlRaw = (state: SqlEasyState): string => {
-      const sqlHelper = defaultToSql(state, this._config, ParserMode.Raw);
+      const sqlHelper = defaultToSql(state, this._config, ParserMode.Raw, this.getToSqlOptions());
       return sqlHelper.getSqlDebug();
    };
 

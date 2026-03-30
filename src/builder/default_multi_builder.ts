@@ -6,9 +6,11 @@ import type { IBuilder } from "./interface_builder";
 import type { IJoinOnBuilder } from "./interface_join_on_builder";
 import type { IMultiBuilder } from "./interface_multi_builder";
 
-export abstract class DefaultMultiBuilder<T extends IBuilder<T, U, V>, U extends IJoinOnBuilder<U>, V extends IParser>
-   implements IMultiBuilder<T, U, V>
-{
+export abstract class DefaultMultiBuilder<
+   T extends IBuilder<T, U, V>,
+   U extends IJoinOnBuilder<U>,
+   V extends IParser,
+> implements IMultiBuilder<T, U, V> {
    private _config: IConfiguration;
    private _states: SqlEasyState[] = [];
    private _transactionState: MultiBuilderTransactionState = MultiBuilderTransactionState.TransactionOn;

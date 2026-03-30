@@ -1,4 +1,3 @@
-import IsHelper from "@deebeetech/is-helper";
 import { RuntimeConfiguration } from "../../configuration/runtime_configuration";
 import type { ISqlEasy } from "../interface_sqleasy";
 import { MssqlBuilder } from "./mssql_builder";
@@ -11,7 +10,7 @@ export class MssqlSqlEasy implements ISqlEasy<MssqlBuilder, MssqlJoinOnBuilder, 
    private _mssqlConfiguration: MssqlConfiguration;
 
    constructor(rc?: RuntimeConfiguration) {
-      if (IsHelper.isNullOrUndefined(rc)) {
+      if (rc === null || rc === undefined) {
          rc = new RuntimeConfiguration();
       }
 
@@ -23,7 +22,7 @@ export class MssqlSqlEasy implements ISqlEasy<MssqlBuilder, MssqlJoinOnBuilder, 
    };
 
    public newBuilder = (rc?: RuntimeConfiguration): MssqlBuilder => {
-      if (IsHelper.isNullOrUndefined(rc)) {
+      if (rc === null || rc === undefined) {
          return new MssqlBuilder(this._mssqlConfiguration);
       }
 
@@ -31,7 +30,7 @@ export class MssqlSqlEasy implements ISqlEasy<MssqlBuilder, MssqlJoinOnBuilder, 
    };
 
    public newMultiBuilder = (rc?: RuntimeConfiguration): MssqlMultiBuilder => {
-      if (IsHelper.isNullOrUndefined(rc)) {
+      if (rc === null || rc === undefined) {
          return new MssqlMultiBuilder(this._mssqlConfiguration);
       }
 

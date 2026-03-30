@@ -1,4 +1,3 @@
-import IsHelper from "@deebeetech/is-helper";
 import type { IConfiguration } from "../configuration/interface_configuration";
 import { DatabaseType } from "../enums/database_type";
 import { ParserArea } from "../enums/parser_area";
@@ -14,7 +13,11 @@ export const defaultLimitOffset = (state: SqlEasyState, config: IConfiguration, 
       return sqlHelper;
    }
 
-   if (config.databaseType() == DatabaseType.Mysql || config.databaseType() == DatabaseType.Postgres) {
+   if (
+      config.databaseType() == DatabaseType.Mysql ||
+      config.databaseType() == DatabaseType.Postgres ||
+      config.databaseType() == DatabaseType.Sqlite
+   ) {
       if (state.limit > 0) {
          sqlHelper.addSqlSnippet("LIMIT ");
          sqlHelper.addSqlSnippet(state.limit.toString());
@@ -23,7 +26,7 @@ export const defaultLimitOffset = (state: SqlEasyState, config: IConfiguration, 
       if (
          state.limit == 0 &&
          !state.isInnerStatement &&
-         (IsHelper.isNullOrUndefined(state.whereStates) || state.whereStates.length == 0)
+         (state.whereStates === null || state.whereStates === undefined || state.whereStates.length == 0)
       ) {
          sqlHelper.addSqlSnippet("LIMIT ");
          sqlHelper.addSqlSnippet(config.runtimeConfiguration().maxRowsReturned.toString());
@@ -41,8 +44,10 @@ export const defaultLimitOffset = (state: SqlEasyState, config: IConfiguration, 
 
    if (config.databaseType() == DatabaseType.Mssql) {
       if (
-         !IsHelper.isNullOrUndefined(state.customState) &&
-         !IsHelper.isNullOrUndefined(state.customState["top"]) &&
+         state.customState !== null &&
+         state.customState !== undefined &&
+         state.customState["top"] !== null &&
+         state.customState["top"] !== undefined &&
          (state.limit > 0 || state.offset > 0)
       ) {
          throw new ParserError(
@@ -66,7 +71,10 @@ export const defaultLimitOffset = (state: SqlEasyState, config: IConfiguration, 
       }
    }
 
-   if (state.offset > 0 && (IsHelper.isNullOrUndefined(state.orderByStates) || state.orderByStates.length == 0)) {
+   if (
+      state.offset > 0 &&
+      (state.orderByStates === null || state.orderByStates === undefined || state.orderByStates.length == 0)
+   ) {
       throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
    }
 

@@ -1,9 +1,9 @@
 export enum ParserArea {
-   Select,
-   From,
-   Join,
-   Where,
-   OrderBy,
-   LimitOffset,
-   General,
+   Select = "Select",
+   From = "From",
+   Join = "Join",
+   Where = "Where",
+   OrderBy = "OrderBy",
+   LimitOffset = "LimitOffset",
+   General = "General",
 }

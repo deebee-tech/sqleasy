@@ -4,7 +4,7 @@ import type { JoinOnState } from "../state/join_on_state";
 
 export interface IJoinOnBuilder<T> {
    and(): T;
-   newJoinOnBuilder(config: IConfiguration): T;
+   newJoinOnBuilder(config?: IConfiguration): T;
    on(aliasLeft: string, columnLeft: string, joinOperator: JoinOperator, aliasRight: string, columnRight: string): T;
    onGroup(builder: (jb: T) => void): T;
    onRaw(raw: string): T;

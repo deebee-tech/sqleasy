@@ -12,7 +12,7 @@ export abstract class DefaultJoinOnBuilder<T extends IJoinOnBuilder<T>> implemen
       this._config = config;
    }
 
-   public abstract newJoinOnBuilder(): T;
+   public abstract newJoinOnBuilder(config?: IConfiguration): T;
 
    public and = (): T => {
       this._states.push({

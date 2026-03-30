@@ -1,4 +1,3 @@
-import IsHelper from "@deebeetech/is-helper";
 import { RuntimeConfiguration } from "../../configuration/runtime_configuration";
 import type { ISqlEasy } from "../interface_sqleasy";
 import { PostgresBuilder } from "./postgres_builder";
@@ -7,13 +6,16 @@ import type { PostgresJoinOnBuilder } from "./postgres_join_on_builder";
 import { PostgresMultiBuilder } from "./postgres_multi_builder";
 import type { PostgresParser } from "./postgres_parser";
 
-export class PostgresSqlEasy
-   implements ISqlEasy<PostgresBuilder, PostgresJoinOnBuilder, PostgresMultiBuilder, PostgresParser>
-{
+export class PostgresSqlEasy implements ISqlEasy<
+   PostgresBuilder,
+   PostgresJoinOnBuilder,
+   PostgresMultiBuilder,
+   PostgresParser
+> {
    private _postgresConfig: PostgresConfiguration;
 
    constructor(rc?: RuntimeConfiguration) {
-      if (IsHelper.isNullOrUndefined(rc)) {
+      if (rc === null || rc === undefined) {
          rc = new RuntimeConfiguration();
       }
 
@@ -25,7 +27,7 @@ export class PostgresSqlEasy
    };
 
    public newBuilder = (rc?: RuntimeConfiguration): PostgresBuilder => {
-      if (IsHelper.isNullOrUndefined(rc)) {
+      if (rc === null || rc === undefined) {
          return new PostgresBuilder(this._postgresConfig);
       }
 
@@ -33,7 +35,7 @@ export class PostgresSqlEasy
    };
 
    public newMultiBuilder = (rc?: RuntimeConfiguration): PostgresMultiBuilder => {
-      if (IsHelper.isNullOrUndefined(rc)) {
+      if (rc === null || rc === undefined) {
          return new PostgresMultiBuilder(this._postgresConfig);
       }
 

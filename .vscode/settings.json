@@ -1,21 +1,8 @@
 {
-   "cSpell.words": [
-      "codepaths",
-      "deebeetech",
-      "executesql",
-      "NOCOUNT",
-      "nvarchar",
-      "sebbo",
-      "tinyint",
-      "tsbuildinfo",
-      "tseslint",
-      "Weatherby"
-   ],
    "editor.defaultFormatter": "esbenp.prettier-vscode",
    "editor.formatOnSave": true,
    "editor.codeActionsOnSave": {
       "source.organizeImports": "explicit"
    },
-   "typescript.tsdk": "node_modules/typescript/lib",
-   "typescript.tsserver.experimental.enableProjectDiagnostics": true
+   "typescript.tsdk": "node_modules/typescript/lib"
 }

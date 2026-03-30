@@ -1,4 +1,5 @@
 import { DefaultBuilder } from "../../builder/default_builder";
+import type { IConfiguration } from "../../configuration/interface_configuration";
 import type { PostgresConfiguration } from "./postgres_configuration";
 import { PostgresJoinOnBuilder } from "./postgres_join_on_builder";
 import { PostgresParser } from "./postgres_parser";
@@ -11,15 +12,15 @@ export class PostgresBuilder extends DefaultBuilder<PostgresBuilder, PostgresJoi
       this._postgresConfig = config;
    }
 
-   public override newBuilder = (): PostgresBuilder => {
-      return new PostgresBuilder(this._postgresConfig);
+   public override newBuilder = (config?: IConfiguration): PostgresBuilder => {
+      return new PostgresBuilder((config ?? this._postgresConfig) as PostgresConfiguration);
    };
 
-   public override newJoinOnBuilder = (): PostgresJoinOnBuilder => {
-      return new PostgresJoinOnBuilder(this._postgresConfig);
+   public override newJoinOnBuilder = (config?: IConfiguration): PostgresJoinOnBuilder => {
+      return new PostgresJoinOnBuilder((config ?? this._postgresConfig) as PostgresConfiguration);
    };
 
-   public override newParser = (): PostgresParser => {
-      return new PostgresParser(this._postgresConfig);
+   public override newParser = (config?: IConfiguration): PostgresParser => {
+      return new PostgresParser((config ?? this._postgresConfig) as PostgresConfiguration);
    };
 }
