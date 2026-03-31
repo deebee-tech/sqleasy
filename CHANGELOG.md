@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/deebee-tech/sqleasy/compare/v1.0.1...v1.0.2) (2026-03-31)
+
+### Bug Fixes
+
+* **repo:** Adding documentation ([ec258ed](https://github.com/deebee-tech/sqleasy/commit/ec258edabf0d2dc84c7cbf31449afbd34627f994))
+
 ## [1.0.1](https://github.com/deebee-tech/sqleasy/compare/v1.0.0...v1.0.1) (2026-03-30)
 
 ### Bug Fixes

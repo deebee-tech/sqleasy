@@ -1,124 +1,370 @@
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
+//#region src/configuration/configuration_delimiters.ts
+/** Pair of delimiter strings for quoting identifiers or framing transaction blocks. */
+var ConfigurationDelimiters = class {
+	/** Opening delimiter (e.g. `[`, `` ` ``, or `"`). */
+	begin = "";
+	/** Closing delimiter matching {@link ConfigurationDelimiters.begin}. */
+	end = "";
+};
+//#endregion
+//#region src/configuration/runtime_configuration.ts
+/** Options passed when creating SqlEasy instances or builders. */
+var RuntimeConfiguration = class {
+	/** Maximum number of rows to return from queries; defaults to 1000. */
+	maxRowsReturned = 1e3;
+	/** Optional host-defined settings carried alongside runtime options. */
+	customConfiguration = void 0;
+};
+//#endregion
 //#region src/enums/builder_type.ts
+/**
+* Internal discriminator for the kind of builder operation stored in a state entry.
+* Used by the query builder to track fragments (FROM, WHERE, JOIN, etc.).
+*/
 let BuilderType = /* @__PURE__ */ function(BuilderType) {
+	/** Logical AND between predicate groups or conditions. */
 	BuilderType[BuilderType["And"] = 0] = "And";
+	/** FROM clause sourced from a nested builder/subquery. */
 	BuilderType[BuilderType["FromBuilder"] = 1] = "FromBuilder";
+	/** FROM clause referencing a table name. */
 	BuilderType[BuilderType["FromTable"] = 2] = "FromTable";
+	/** FROM clause using raw SQL text. */
 	BuilderType[BuilderType["FromRaw"] = 3] = "FromRaw";
+	/** GROUP BY on a column reference. */
 	BuilderType[BuilderType["GroupByColumn"] = 4] = "GroupByColumn";
+	/** GROUP BY using raw SQL. */
 	BuilderType[BuilderType["GroupByRaw"] = 5] = "GroupByRaw";
+	/** HAVING condition (standard form). */
 	BuilderType[BuilderType["Having"] = 6] = "Having";
+	/** HAVING clause using raw SQL. */
 	BuilderType[BuilderType["HavingRaw"] = 7] = "HavingRaw";
+	/** INSERT INTO table/columns entry. */
 	BuilderType[BuilderType["InsertInto"] = 8] = "InsertInto";
+	/** INSERT values or body as raw SQL. */
 	BuilderType[BuilderType["InsertRaw"] = 9] = "InsertRaw";
+	/** JOIN defined via a nested builder. */
 	BuilderType[BuilderType["JoinBuilder"] = 10] = "JoinBuilder";
+	/** JOIN ON or clause fragment as raw SQL. */
 	BuilderType[BuilderType["JoinRaw"] = 11] = "JoinRaw";
+	/** JOIN targeting a table reference. */
 	BuilderType[BuilderType["JoinTable"] = 12] = "JoinTable";
+	/** No operation / placeholder. */
 	BuilderType[BuilderType["None"] = 13] = "None";
+	/** Logical OR between predicate groups or conditions. */
 	BuilderType[BuilderType["Or"] = 14] = "Or";
+	/** ORDER BY on a column with optional direction. */
 	BuilderType[BuilderType["OrderByColumn"] = 15] = "OrderByColumn";
+	/** ORDER BY using raw SQL. */
 	BuilderType[BuilderType["OrderByRaw"] = 16] = "OrderByRaw";
+	/** SELECT * (all columns). */
 	BuilderType[BuilderType["SelectAll"] = 17] = "SelectAll";
+	/** SELECT list entry from a nested builder/subquery. */
 	BuilderType[BuilderType["SelectBuilder"] = 18] = "SelectBuilder";
+	/** SELECT list entry for a single column/expression. */
 	BuilderType[BuilderType["SelectColumn"] = 19] = "SelectColumn";
+	/** SELECT list entry as raw SQL. */
 	BuilderType[BuilderType["SelectRaw"] = 20] = "SelectRaw";
+	/** UPDATE target table. */
 	BuilderType[BuilderType["UpdateTable"] = 21] = "UpdateTable";
+	/** UPDATE SET column assignment. */
 	BuilderType[BuilderType["UpdateColumn"] = 22] = "UpdateColumn";
+	/** UPDATE fragment as raw SQL. */
 	BuilderType[BuilderType["UpdateRaw"] = 23] = "UpdateRaw";
+	/** DELETE FROM table. */
 	BuilderType[BuilderType["DeleteFrom"] = 24] = "DeleteFrom";
+	/** UNION set operator (distinct). */
 	BuilderType[BuilderType["Union"] = 25] = "Union";
+	/** UNION ALL set operator. */
 	BuilderType[BuilderType["UnionAll"] = 26] = "UnionAll";
+	/** INTERSECT set operator. */
 	BuilderType[BuilderType["Intersect"] = 27] = "Intersect";
+	/** EXCEPT / MINUS set operator. */
 	BuilderType[BuilderType["Except"] = 28] = "Except";
+	/** Common table expression defined via a builder. */
 	BuilderType[BuilderType["CteBuilder"] = 29] = "CteBuilder";
+	/** CTE definition as raw SQL. */
 	BuilderType[BuilderType["CteRaw"] = 30] = "CteRaw";
+	/** WHERE predicate (standard comparison or helper). */
 	BuilderType[BuilderType["Where"] = 31] = "Where";
+	/** WHERE column BETWEEN low AND high. */
 	BuilderType[BuilderType["WhereBetween"] = 32] = "WhereBetween";
+	/** Opens a parenthesized WHERE group. */
 	BuilderType[BuilderType["WhereGroupBegin"] = 33] = "WhereGroupBegin";
+	/** Nested WHERE built from a sub-builder. */
 	BuilderType[BuilderType["WhereGroupBuilder"] = 34] = "WhereGroupBuilder";
+	/** Closes a parenthesized WHERE group. */
 	BuilderType[BuilderType["WhereGroupEnd"] = 35] = "WhereGroupEnd";
+	/** WHERE EXISTS (subquery from builder). */
 	BuilderType[BuilderType["WhereExistsBuilder"] = 36] = "WhereExistsBuilder";
+	/** WHERE IN (subquery from builder). */
 	BuilderType[BuilderType["WhereInBuilder"] = 37] = "WhereInBuilder";
+	/** WHERE IN (literal value list). */
 	BuilderType[BuilderType["WhereInValues"] = 38] = "WhereInValues";
+	/** WHERE NOT EXISTS (subquery from builder). */
 	BuilderType[BuilderType["WhereNotExistsBuilder"] = 39] = "WhereNotExistsBuilder";
+	/** WHERE NOT IN (subquery from builder). */
 	BuilderType[BuilderType["WhereNotInBuilder"] = 40] = "WhereNotInBuilder";
+	/** WHERE NOT IN (literal value list). */
 	BuilderType[BuilderType["WhereNotInValues"] = 41] = "WhereNotInValues";
+	/** WHERE column IS NOT NULL. */
 	BuilderType[BuilderType["WhereNotNull"] = 42] = "WhereNotNull";
+	/** WHERE column IS NULL. */
 	BuilderType[BuilderType["WhereNull"] = 43] = "WhereNull";
+	/** WHERE fragment as raw SQL. */
 	BuilderType[BuilderType["WhereRaw"] = 44] = "WhereRaw";
 	return BuilderType;
 }({});
 //#endregion
+//#region src/enums/database_type.ts
+/**
+* Identifies the target SQL database dialect for generation and quoting behavior.
+*/
+let DatabaseType = /* @__PURE__ */ function(DatabaseType) {
+	/** Microsoft SQL Server. */
+	DatabaseType[DatabaseType["Mssql"] = 0] = "Mssql";
+	/** PostgreSQL. */
+	DatabaseType[DatabaseType["Postgres"] = 1] = "Postgres";
+	/** MySQL or compatible (e.g. MariaDB). */
+	DatabaseType[DatabaseType["Mysql"] = 2] = "Mysql";
+	/** SQLite. */
+	DatabaseType[DatabaseType["Sqlite"] = 3] = "Sqlite";
+	/** Dialect not set or unrecognized. */
+	DatabaseType[DatabaseType["Unknown"] = 4] = "Unknown";
+	return DatabaseType;
+}({});
+//#endregion
+//#region src/enums/join_on_operator.ts
+/**
+* Classifies each entry in a JOIN ON condition list (column compare, grouping, logic).
+*/
+let JoinOnOperator = /* @__PURE__ */ function(JoinOnOperator) {
+	/** Opens a parenthesized ON predicate group. */
+	JoinOnOperator[JoinOnOperator["GroupBegin"] = 0] = "GroupBegin";
+	/** Closes a parenthesized ON predicate group. */
+	JoinOnOperator[JoinOnOperator["GroupEnd"] = 1] = "GroupEnd";
+	/** Standard ON left op right comparison. */
+	JoinOnOperator[JoinOnOperator["On"] = 2] = "On";
+	/** ON fragment as raw SQL. */
+	JoinOnOperator[JoinOnOperator["Raw"] = 3] = "Raw";
+	/** ON right-hand value or bound parameter. */
+	JoinOnOperator[JoinOnOperator["Value"] = 4] = "Value";
+	/** Logical AND between ON parts. */
+	JoinOnOperator[JoinOnOperator["And"] = 5] = "And";
+	/** Logical OR between ON parts. */
+	JoinOnOperator[JoinOnOperator["Or"] = 6] = "Or";
+	/** No operator / unused slot. */
+	JoinOnOperator[JoinOnOperator["None"] = 7] = "None";
+	return JoinOnOperator;
+}({});
+//#endregion
+//#region src/enums/join_operator.ts
+/**
+* Comparison operators used in JOIN ON conditions (e.g. tableA.id = tableB.id).
+*/
+let JoinOperator = /* @__PURE__ */ function(JoinOperator) {
+	/** Equality (=). */
+	JoinOperator[JoinOperator["Equals"] = 0] = "Equals";
+	/** Inequality (<> or !=). */
+	JoinOperator[JoinOperator["NotEquals"] = 1] = "NotEquals";
+	/** Strictly greater than (>). */
+	JoinOperator[JoinOperator["GreaterThan"] = 2] = "GreaterThan";
+	/** Greater than or equal (>=). */
+	JoinOperator[JoinOperator["GreaterThanOrEquals"] = 3] = "GreaterThanOrEquals";
+	/** Strictly less than (<). */
+	JoinOperator[JoinOperator["LessThan"] = 4] = "LessThan";
+	/** Less than or equal (<=). */
+	JoinOperator[JoinOperator["LessThanOrEquals"] = 5] = "LessThanOrEquals";
+	/** No operator specified. */
+	JoinOperator[JoinOperator["None"] = 6] = "None";
+	return JoinOperator;
+}({});
+//#endregion
 //#region src/enums/join_type.ts
+/**
+* SQL JOIN kinds: inner, outer variants, cross join, or none.
+*/
 let JoinType = /* @__PURE__ */ function(JoinType) {
+	/** INNER JOIN. */
 	JoinType[JoinType["Inner"] = 0] = "Inner";
+	/** LEFT JOIN (synonym for left outer in many dialects). */
 	JoinType[JoinType["Left"] = 1] = "Left";
+	/** LEFT OUTER JOIN. */
 	JoinType[JoinType["LeftOuter"] = 2] = "LeftOuter";
+	/** RIGHT JOIN. */
 	JoinType[JoinType["Right"] = 3] = "Right";
+	/** RIGHT OUTER JOIN. */
 	JoinType[JoinType["RightOuter"] = 4] = "RightOuter";
+	/** FULL OUTER JOIN. */
 	JoinType[JoinType["FullOuter"] = 5] = "FullOuter";
+	/** CROSS JOIN. */
 	JoinType[JoinType["Cross"] = 6] = "Cross";
+	/** No join type / not applicable. */
 	JoinType[JoinType["None"] = 7] = "None";
 	return JoinType;
 }({});
 //#endregion
+//#region src/enums/multi_builder_transaction_state.ts
+/**
+* Whether multi-statement batches are wrapped in an explicit transaction block.
+*/
+let MultiBuilderTransactionState = /* @__PURE__ */ function(MultiBuilderTransactionState) {
+	/** Emit BEGIN/COMMIT (or equivalent) around the batch. */
+	MultiBuilderTransactionState[MultiBuilderTransactionState["TransactionOn"] = 0] = "TransactionOn";
+	/** Do not wrap the batch in a transaction. */
+	MultiBuilderTransactionState[MultiBuilderTransactionState["TransactionOff"] = 1] = "TransactionOff";
+	/** Use default / unspecified transaction behavior. */
+	MultiBuilderTransactionState[MultiBuilderTransactionState["None"] = 2] = "None";
+	return MultiBuilderTransactionState;
+}({});
+//#endregion
 //#region src/enums/order_by_direction.ts
+/**
+* Sort direction for ORDER BY columns and expressions.
+*/
 let OrderByDirection = /* @__PURE__ */ function(OrderByDirection) {
+	/** Ascending (ASC). */
 	OrderByDirection[OrderByDirection["Ascending"] = 0] = "Ascending";
+	/** Descending (DESC). */
 	OrderByDirection[OrderByDirection["Descending"] = 1] = "Descending";
+	/** No direction / dialect default. */
 	OrderByDirection[OrderByDirection["None"] = 2] = "None";
 	return OrderByDirection;
 }({});
 //#endregion
+//#region src/enums/parser_area.ts
+/**
+* Indicates which SQL clause produced a parser error for clearer diagnostics.
+*/
+let ParserArea = /* @__PURE__ */ function(ParserArea) {
+	/** SELECT list or projections. */
+	ParserArea["Select"] = "Select";
+	/** FROM clause. */
+	ParserArea["From"] = "From";
+	/** JOIN definitions. */
+	ParserArea["Join"] = "Join";
+	/** WHERE clause. */
+	ParserArea["Where"] = "Where";
+	/** ORDER BY clause. */
+	ParserArea["OrderBy"] = "OrderBy";
+	/** LIMIT, OFFSET, FETCH, TOP, etc. */
+	ParserArea["LimitOffset"] = "LimitOffset";
+	/** Cross-clause or unspecified area. */
+	ParserArea["General"] = "General";
+	return ParserArea;
+}({});
+//#endregion
 //#region src/enums/query_type.ts
+/**
+* High-level SQL statement kind the builder is assembling.
+*/
 let QueryType = /* @__PURE__ */ function(QueryType) {
+	/** SELECT query. */
 	QueryType[QueryType["Select"] = 0] = "Select";
+	/** INSERT statement. */
 	QueryType[QueryType["Insert"] = 1] = "Insert";
+	/** UPDATE statement. */
 	QueryType[QueryType["Update"] = 2] = "Update";
+	/** DELETE statement. */
 	QueryType[QueryType["Delete"] = 3] = "Delete";
 	return QueryType;
 }({});
 //#endregion
 //#region src/enums/where_operator.ts
+/**
+* Comparison operators for WHERE and HAVING predicates.
+*/
 let WhereOperator = /* @__PURE__ */ function(WhereOperator) {
+	/** Equality (=). */
 	WhereOperator[WhereOperator["Equals"] = 0] = "Equals";
+	/** Inequality (<> or !=). */
 	WhereOperator[WhereOperator["NotEquals"] = 1] = "NotEquals";
+	/** Strictly greater than (>). */
 	WhereOperator[WhereOperator["GreaterThan"] = 2] = "GreaterThan";
+	/** Greater than or equal (>=). */
 	WhereOperator[WhereOperator["GreaterThanOrEquals"] = 3] = "GreaterThanOrEquals";
+	/** Strictly less than (<). */
 	WhereOperator[WhereOperator["LessThan"] = 4] = "LessThan";
+	/** Less than or equal (<=). */
 	WhereOperator[WhereOperator["LessThanOrEquals"] = 5] = "LessThanOrEquals";
+	/** No operator specified. */
 	WhereOperator[WhereOperator["None"] = 6] = "None";
 	return WhereOperator;
 }({});
 //#endregion
+//#region src/helpers/parser_error.ts
+/** Error thrown when SQL parsing fails; {@link ParserError.name} is `SqlEasyParserError`. */
+var ParserError = class extends Error {
+	/**
+	* @param parserArea - Phase or region of the parser where the error occurred.
+	* @param message - Human-readable parse error description.
+	*/
+	constructor(parserArea, message) {
+		const finalMessage = `${parserArea}: ${message}`;
+		super(finalMessage);
+		this.name = "SqlEasyParserError";
+	}
+};
+//#endregion
 //#region src/state/insert_state.ts
+/**
+* Holds state for an INSERT: target table, columns, and row value sets.
+* Populated by the builder; exposed via {@link SqlEasyState.insertState}.
+*/
 var InsertState = class {
+	/** Schema or database owner qualifier for the target table. */
 	owner = void 0;
+	/** Target table name. */
 	tableName = void 0;
+	/** Column names for the INSERT column list. */
 	columns = [];
+	/** One inner array per row; values align with {@link InsertState.columns}. */
 	values = [];
+	/** Raw SQL for the INSERT when not fully represented by structured fields. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/sqleasy_state.ts
+/**
+* Root snapshot of query-builder state returned by {@link IBuilder.state}.
+* Arrays preserve clause order; insert/update fields apply per query kind.
+*/
 var SqlEasyState = class {
+	/** Logical name of the builder instance, if set. */
 	builderName = "";
+	/** High-level statement kind (SELECT, INSERT, etc.). */
 	queryType = QueryType.Select;
+	/** FROM sources in declaration order. */
 	fromStates = [];
+	/** JOIN clauses in declaration order. */
 	joinStates = [];
+	/** WHERE predicates in declaration order. */
 	whereStates = [];
+	/** ORDER BY terms in declaration order. */
 	orderByStates = [];
+	/** SELECT list items in declaration order. */
 	selectStates = [];
+	/** GROUP BY terms in declaration order. */
 	groupByStates = [];
+	/** HAVING predicates in declaration order. */
 	havingStates = [];
+	/** UNION / compound-query parts in declaration order. */
 	unionStates = [];
+	/** WITH (CTE) entries in declaration order. */
 	cteStates = [];
+	/** INSERT-specific state; undefined for non-INSERT queries. */
 	insertState = void 0;
+	/** UPDATE SET assignments in declaration order. */
 	updateStates = [];
+	/** True when this state represents a nested subquery, not the outer query. */
 	isInnerStatement = false;
+	/** Maximum row count (0 often means unset; dialect-specific). */
 	limit = 0;
+	/** Rows to skip before returning (0 often means unset). */
 	offset = 0;
+	/** Whether SELECT DISTINCT was requested. */
 	distinct = false;
+	/** Opaque hook for dialect- or app-specific extensions. */
 	customState = void 0;
 };
 //#endregion
@@ -870,31 +1116,6 @@ var DefaultBuilder = class {
 	};
 };
 //#endregion
-//#region src/enums/join_on_operator.ts
-let JoinOnOperator = /* @__PURE__ */ function(JoinOnOperator) {
-	JoinOnOperator[JoinOnOperator["GroupBegin"] = 0] = "GroupBegin";
-	JoinOnOperator[JoinOnOperator["GroupEnd"] = 1] = "GroupEnd";
-	JoinOnOperator[JoinOnOperator["On"] = 2] = "On";
-	JoinOnOperator[JoinOnOperator["Raw"] = 3] = "Raw";
-	JoinOnOperator[JoinOnOperator["Value"] = 4] = "Value";
-	JoinOnOperator[JoinOnOperator["And"] = 5] = "And";
-	JoinOnOperator[JoinOnOperator["Or"] = 6] = "Or";
-	JoinOnOperator[JoinOnOperator["None"] = 7] = "None";
-	return JoinOnOperator;
-}({});
-//#endregion
-//#region src/enums/join_operator.ts
-let JoinOperator = /* @__PURE__ */ function(JoinOperator) {
-	JoinOperator[JoinOperator["Equals"] = 0] = "Equals";
-	JoinOperator[JoinOperator["NotEquals"] = 1] = "NotEquals";
-	JoinOperator[JoinOperator["GreaterThan"] = 2] = "GreaterThan";
-	JoinOperator[JoinOperator["GreaterThanOrEquals"] = 3] = "GreaterThanOrEquals";
-	JoinOperator[JoinOperator["LessThan"] = 4] = "LessThan";
-	JoinOperator[JoinOperator["LessThanOrEquals"] = 5] = "LessThanOrEquals";
-	JoinOperator[JoinOperator["None"] = 6] = "None";
-	return JoinOperator;
-}({});
-//#endregion
 //#region src/builder/default_join_on_builder.ts
 var DefaultJoinOnBuilder = class {
 	_states = [];
@@ -996,99 +1217,20 @@ var DefaultJoinOnBuilder = class {
 	};
 };
 //#endregion
-//#region src/enums/multi_builder_transaction_state.ts
-let MultiBuilderTransactionState = /* @__PURE__ */ function(MultiBuilderTransactionState) {
-	MultiBuilderTransactionState[MultiBuilderTransactionState["TransactionOn"] = 0] = "TransactionOn";
-	MultiBuilderTransactionState[MultiBuilderTransactionState["TransactionOff"] = 1] = "TransactionOff";
-	MultiBuilderTransactionState[MultiBuilderTransactionState["None"] = 2] = "None";
-	return MultiBuilderTransactionState;
-}({});
-//#endregion
-//#region src/builder/default_multi_builder.ts
-var DefaultMultiBuilder = class {
-	_config;
-	_states = [];
-	_transactionState = MultiBuilderTransactionState.TransactionOn;
+//#region src/sqleasy/mssql/mssql_join_on_builder.ts
+/** MSSQL {@link DefaultJoinOnBuilder} for constructing `JOIN ... ON` fragments. */
+var MssqlJoinOnBuilder = class MssqlJoinOnBuilder extends DefaultJoinOnBuilder {
+	_mssqlConfiguration;
+	/** @param config - MSSQL dialect configuration used when emitting join conditions. */
 	constructor(config) {
-		this._config = config;
+		super(config);
+		this._mssqlConfiguration = config;
 	}
-	addBuilder = (builderName) => {
-		const newBuilder = this.newBuilder();
-		newBuilder.state().builderName = builderName;
-		this._states.push(newBuilder.state());
-		return newBuilder;
-	};
-	parse = () => {
-		return this.newParser().toSqlMulti(this._states, this._transactionState);
-	};
-	parseRaw = () => {
-		return this.newParser().toSqlMultiRaw(this._states, this._transactionState);
-	};
-	removeBuilder = (builderName) => {
-		this._states = this._states.filter((state) => state.builderName !== builderName);
-	};
-	reorderBuilders = (builderNames) => {
-		const newStates = [];
-		builderNames.forEach((builderName) => {
-			const state = this._states.find((state) => state.builderName === builderName);
-			if (state) newStates.push(state);
-		});
-		this._states = newStates;
-	};
-	setTransactionState = (transactionState) => {
-		this._transactionState = transactionState;
-	};
-	states = () => {
-		return this._states;
-	};
-	transactionState = () => {
-		return this._transactionState;
+	/** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
+	newJoinOnBuilder = (config) => {
+		return new MssqlJoinOnBuilder(config ?? this._mssqlConfiguration);
 	};
 };
-//#endregion
-//#region src/configuration/configuration_delimiters.ts
-var ConfigurationDelimiters = class {
-	begin = "";
-	end = "";
-};
-//#endregion
-//#region src/configuration/runtime_configuration.ts
-var RuntimeConfiguration = class {
-	maxRowsReturned = 1e3;
-	customConfiguration = void 0;
-};
-//#endregion
-//#region src/enums/database_type.ts
-let DatabaseType = /* @__PURE__ */ function(DatabaseType) {
-	DatabaseType[DatabaseType["Mssql"] = 0] = "Mssql";
-	DatabaseType[DatabaseType["Postgres"] = 1] = "Postgres";
-	DatabaseType[DatabaseType["Mysql"] = 2] = "Mysql";
-	DatabaseType[DatabaseType["Sqlite"] = 3] = "Sqlite";
-	DatabaseType[DatabaseType["Unknown"] = 4] = "Unknown";
-	return DatabaseType;
-}({});
-//#endregion
-//#region src/enums/datatype.ts
-let Datatype = /* @__PURE__ */ function(Datatype) {
-	Datatype[Datatype["Boolean"] = 0] = "Boolean";
-	Datatype[Datatype["DateTime"] = 1] = "DateTime";
-	Datatype[Datatype["Number"] = 2] = "Number";
-	Datatype[Datatype["String"] = 3] = "String";
-	Datatype[Datatype["Unknown"] = 4] = "Unknown";
-	return Datatype;
-}({});
-//#endregion
-//#region src/enums/parser_area.ts
-let ParserArea = /* @__PURE__ */ function(ParserArea) {
-	ParserArea["Select"] = "Select";
-	ParserArea["From"] = "From";
-	ParserArea["Join"] = "Join";
-	ParserArea["Where"] = "Where";
-	ParserArea["OrderBy"] = "OrderBy";
-	ParserArea["LimitOffset"] = "LimitOffset";
-	ParserArea["General"] = "General";
-	return ParserArea;
-}({});
 //#endregion
 //#region src/enums/parser_mode.ts
 let ParserMode = /* @__PURE__ */ function(ParserMode) {
@@ -1097,15 +1239,6 @@ let ParserMode = /* @__PURE__ */ function(ParserMode) {
 	ParserMode[ParserMode["None"] = 2] = "None";
 	return ParserMode;
 }({});
-//#endregion
-//#region src/helpers/parser_error.ts
-var ParserError = class extends Error {
-	constructor(parserArea, message) {
-		const finalMessage = `${parserArea}: ${message}`;
-		super(finalMessage);
-		this.name = "SqlEasyParserError";
-	}
-};
 //#endregion
 //#region src/helpers/string_builder.ts
 var StringBuilder = class {
@@ -1176,6 +1309,28 @@ var SqlHelper = class {
 			default: return value.toString();
 		}
 	};
+};
+//#endregion
+//#region src/parser/default_cte.ts
+const defaultCte = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(config, mode);
+	if (state.cteStates.length === 0) return sqlHelper;
+	if (state.cteStates.some((cte) => cte.recursive)) sqlHelper.addSqlSnippet("WITH RECURSIVE ");
+	else sqlHelper.addSqlSnippet("WITH ");
+	for (let i = 0; i < state.cteStates.length; i++) {
+		const cteState = state.cteStates[i];
+		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + cteState.name + config.identifierDelimiters().end);
+		sqlHelper.addSqlSnippet(" AS (");
+		if (cteState.builderType === BuilderType.CteRaw) sqlHelper.addSqlSnippet(cteState.raw ?? "");
+		else if (cteState.sqlEasyState) {
+			const subHelper = defaultToSql(cteState.sqlEasyState, config, mode);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+		}
+		sqlHelper.addSqlSnippet(")");
+		if (i < state.cteStates.length - 1) sqlHelper.addSqlSnippet(", ");
+		else sqlHelper.addSqlSnippet(" ");
+	}
+	return sqlHelper;
 };
 //#endregion
 //#region src/parser/default_delete.ts
@@ -1917,28 +2072,6 @@ const defaultToSql = (state, config, mode, options) => {
 	return sqlHelper;
 };
 //#endregion
-//#region src/parser/default_cte.ts
-const defaultCte = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
-	if (state.cteStates.length === 0) return sqlHelper;
-	if (state.cteStates.some((cte) => cte.recursive)) sqlHelper.addSqlSnippet("WITH RECURSIVE ");
-	else sqlHelper.addSqlSnippet("WITH ");
-	for (let i = 0; i < state.cteStates.length; i++) {
-		const cteState = state.cteStates[i];
-		sqlHelper.addSqlSnippet(config.identifierDelimiters().begin + cteState.name + config.identifierDelimiters().end);
-		sqlHelper.addSqlSnippet(" AS (");
-		if (cteState.builderType === BuilderType.CteRaw) sqlHelper.addSqlSnippet(cteState.raw ?? "");
-		else if (cteState.sqlEasyState) {
-			const subHelper = defaultToSql(cteState.sqlEasyState, config, mode);
-			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
-		}
-		sqlHelper.addSqlSnippet(")");
-		if (i < state.cteStates.length - 1) sqlHelper.addSqlSnippet(", ");
-		else sqlHelper.addSqlSnippet(" ");
-	}
-	return sqlHelper;
-};
-//#endregion
 //#region src/parser/default_parser.ts
 var DefaultParser = class {
 	_config;
@@ -1963,18 +2096,6 @@ var DefaultParser = class {
 		}
 		if (transactionState === MultiBuilderTransactionState.TransactionOn) sqlRaw += this._config.transactionDelimiters().end + "; ";
 		return sqlRaw;
-	};
-};
-//#endregion
-//#region src/sqleasy/mssql/mssql_join_on_builder.ts
-var MssqlJoinOnBuilder = class MssqlJoinOnBuilder extends DefaultJoinOnBuilder {
-	_mssqlConfiguration;
-	constructor(config) {
-		super(config);
-		this._mssqlConfiguration = config;
-	}
-	newJoinOnBuilder = (config) => {
-		return new MssqlJoinOnBuilder(config ?? this._mssqlConfiguration);
 	};
 };
 //#endregion
@@ -2053,25 +2174,32 @@ var MssqlParser = class extends DefaultParser {
 };
 //#endregion
 //#region src/sqleasy/mssql/mssql_builder.ts
+/** MSSQL {@link DefaultBuilder}; creates dialect parsers and join-on builders and supports `TOP`. */
 var MssqlBuilder = class MssqlBuilder extends DefaultBuilder {
 	_mssqlConfig;
+	/** @param config - MSSQL dialect configuration used for SQL generation. */
 	constructor(config) {
 		super(config);
 		this._mssqlConfig = config;
 	}
+	/** Returns a new builder, reusing this configuration unless `config` is provided. */
 	newBuilder = (config) => {
 		return new MssqlBuilder(config ?? this._mssqlConfig);
 	};
+	/** Returns a new join-on builder for this dialect. */
 	newJoinOnBuilder = (config) => {
 		return new MssqlJoinOnBuilder(config ?? this._mssqlConfig);
 	};
+	/** Returns a new MSSQL parser instance. */
 	newParser = (config) => {
 		return new MssqlParser(config ?? this._mssqlConfig);
 	};
+	/** Removes a previously set `TOP` limit from builder state. */
 	clearTop = () => {
 		if (this.state().customState) delete this.state().customState["top"];
 		return this;
 	};
+	/** Sets the `TOP` row limit for the generated `SELECT`. */
 	top = (top) => {
 		if (!this.state().customState) this.state().customState = {};
 		this.state().customState["top"] = top;
@@ -2080,32 +2208,41 @@ var MssqlBuilder = class MssqlBuilder extends DefaultBuilder {
 };
 //#endregion
 //#region src/sqleasy/mssql/mssql_configuration.ts
+/** {@link IConfiguration} for Microsoft SQL Server (delimiters, placeholders, default schema). */
 var MssqlConfiguration = class {
 	_mssqlRuntimeConfiguration;
+	/** @param rc - Runtime options (e.g. row limits) bound to this dialect configuration. */
 	constructor(rc) {
 		this._mssqlRuntimeConfiguration = rc;
 	}
+	/** Returns {@link DatabaseType.Mssql}. */
 	databaseType = () => {
 		return DatabaseType.Mssql;
 	};
+	/** Default schema/owner for unqualified objects (`dbo`). */
 	defaultOwner = () => {
 		return "dbo";
 	};
+	/** Bracket delimiters for quoted identifiers. */
 	identifierDelimiters = () => {
 		return {
 			begin: "[",
 			end: "]"
 		};
 	};
+	/** Placeholder character for parameterized SQL (`?`). */
 	preparedStatementPlaceholder = () => {
 		return "?";
 	};
+	/** Runtime options associated with this configuration. */
 	runtimeConfiguration = () => {
 		return this._mssqlRuntimeConfiguration;
 	};
+	/** Single-quote delimiter for string literals. */
 	stringDelimiter = () => {
 		return "'";
 	};
+	/** Keywords delimiting a transaction block for this dialect. */
 	transactionDelimiters = () => {
 		return {
 			begin: "BEGIN TRANSACTION",
@@ -2114,35 +2251,86 @@ var MssqlConfiguration = class {
 	};
 };
 //#endregion
+//#region src/builder/default_multi_builder.ts
+var DefaultMultiBuilder = class {
+	_config;
+	_states = [];
+	_transactionState = MultiBuilderTransactionState.TransactionOn;
+	constructor(config) {
+		this._config = config;
+	}
+	addBuilder = (builderName) => {
+		const newBuilder = this.newBuilder();
+		newBuilder.state().builderName = builderName;
+		this._states.push(newBuilder.state());
+		return newBuilder;
+	};
+	parse = () => {
+		return this.newParser().toSqlMulti(this._states, this._transactionState);
+	};
+	parseRaw = () => {
+		return this.newParser().toSqlMultiRaw(this._states, this._transactionState);
+	};
+	removeBuilder = (builderName) => {
+		this._states = this._states.filter((state) => state.builderName !== builderName);
+	};
+	reorderBuilders = (builderNames) => {
+		const newStates = [];
+		builderNames.forEach((builderName) => {
+			const state = this._states.find((state) => state.builderName === builderName);
+			if (state) newStates.push(state);
+		});
+		this._states = newStates;
+	};
+	setTransactionState = (transactionState) => {
+		this._transactionState = transactionState;
+	};
+	states = () => {
+		return this._states;
+	};
+	transactionState = () => {
+		return this._transactionState;
+	};
+};
+//#endregion
 //#region src/sqleasy/mssql/mssql_multi_builder.ts
+/** MSSQL {@link DefaultMultiBuilder} for batching multiple statements with shared configuration. */
 var MssqlMultiBuilder = class extends DefaultMultiBuilder {
 	_mssqlConfiguration;
+	/** @param config - MSSQL dialect configuration shared by child builders and parsers. */
 	constructor(config) {
 		super(config);
 		this._mssqlConfiguration = config;
 	}
+	/** Creates a fresh {@link MssqlBuilder} using this multi-builder’s configuration. */
 	newBuilder = () => {
 		return new MssqlBuilder(this._mssqlConfiguration);
 	};
+	/** Creates a fresh {@link MssqlParser} using this multi-builder’s configuration. */
 	newParser = () => {
 		return new MssqlParser(this._mssqlConfiguration);
 	};
 };
 //#endregion
 //#region src/sqleasy/mssql/mssql_sqleasy.ts
+/** Main entry point for Microsoft SQL Server; implements {@link ISqlEasy} for MSSQL builders and parsers. */
 var MssqlSqlEasy = class {
 	_mssqlConfiguration;
+	/** @param rc - Optional runtime options; defaults to a new {@link RuntimeConfiguration} when omitted. */
 	constructor(rc) {
 		if (rc === null || rc === void 0) rc = new RuntimeConfiguration();
 		this._mssqlConfiguration = new MssqlConfiguration(rc);
 	}
+	/** Returns the shared MSSQL dialect configuration for this instance. */
 	configuration = () => {
 		return this._mssqlConfiguration;
 	};
+	/** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new MssqlBuilder(this._mssqlConfiguration);
 		return new MssqlBuilder(new MssqlConfiguration(rc));
 	};
+	/** Creates a multi-statement builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newMultiBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new MssqlMultiBuilder(this._mssqlConfiguration);
 		return new MssqlMultiBuilder(new MssqlConfiguration(rc));
@@ -2150,12 +2338,15 @@ var MssqlSqlEasy = class {
 };
 //#endregion
 //#region src/sqleasy/mysql/mysql_join_on_builder.ts
+/** MySQL {@link DefaultJoinOnBuilder} for constructing `JOIN ... ON` fragments. */
 var MysqlJoinOnBuilder = class MysqlJoinOnBuilder extends DefaultJoinOnBuilder {
 	_mysqlConfig;
+	/** @param config - MySQL dialect configuration used when emitting join conditions. */
 	constructor(config) {
 		super(config);
 		this._mysqlConfig = config;
 	}
+	/** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
 	newJoinOnBuilder = (config) => {
 		return new MysqlJoinOnBuilder(config ?? this._mysqlConfig);
 	};
@@ -2184,50 +2375,64 @@ var MysqlParser = class extends DefaultParser {
 };
 //#endregion
 //#region src/sqleasy/mysql/mysql_builder.ts
+/** MySQL {@link DefaultBuilder}; creates dialect parsers and join-on builders. */
 var MysqlBuilder = class MysqlBuilder extends DefaultBuilder {
 	_mysqlConfig;
+	/** @param config - MySQL dialect configuration used for SQL generation. */
 	constructor(config) {
 		super(config);
 		this._mysqlConfig = config;
 	}
+	/** Returns a new builder, reusing this configuration unless `config` is provided. */
 	newBuilder = (config) => {
 		return new MysqlBuilder(config ?? this._mysqlConfig);
 	};
+	/** Returns a new join-on builder for this dialect. */
 	newJoinOnBuilder = (config) => {
 		return new MysqlJoinOnBuilder(config ?? this._mysqlConfig);
 	};
+	/** Returns a new MySQL parser instance. */
 	newParser = (config) => {
 		return new MysqlParser(config ?? this._mysqlConfig);
 	};
 };
 //#endregion
 //#region src/sqleasy/mysql/mysql_configuration.ts
+/** {@link IConfiguration} for MySQL (delimiters, placeholders, transactions). */
 var MysqlConfiguration = class {
 	_mysqlRuntimeConfiguration;
+	/** @param rc - Runtime options (e.g. row limits) bound to this dialect configuration. */
 	constructor(rc) {
 		this._mysqlRuntimeConfiguration = rc;
 	}
+	/** Returns {@link DatabaseType.Mysql}. */
 	databaseType = () => {
 		return DatabaseType.Mysql;
 	};
+	/** Default owner for unqualified objects (empty for typical MySQL usage). */
 	defaultOwner = () => {
 		return "";
 	};
+	/** Backtick delimiters for quoted identifiers. */
 	identifierDelimiters = () => {
 		return {
 			begin: "`",
 			end: "`"
 		};
 	};
+	/** Placeholder character for parameterized SQL (`?`). */
 	preparedStatementPlaceholder = () => {
 		return "?";
 	};
+	/** Runtime options associated with this configuration. */
 	runtimeConfiguration = () => {
 		return this._mysqlRuntimeConfiguration;
 	};
+	/** Single-quote delimiter for string literals. */
 	stringDelimiter = () => {
 		return "'";
 	};
+	/** Keywords delimiting a transaction block for this dialect. */
 	transactionDelimiters = () => {
 		return {
 			begin: "START TRANSACTION",
@@ -2237,34 +2442,43 @@ var MysqlConfiguration = class {
 };
 //#endregion
 //#region src/sqleasy/mysql/mysql_multi_builder.ts
+/** MySQL {@link DefaultMultiBuilder} for batching multiple statements with shared configuration. */
 var MysqlMultiBuilder = class extends DefaultMultiBuilder {
 	_mysqlConfig;
+	/** @param config - MySQL dialect configuration shared by child builders and parsers. */
 	constructor(config) {
 		super(config);
 		this._mysqlConfig = config;
 	}
+	/** Creates a fresh {@link MysqlBuilder} using this multi-builder’s configuration. */
 	newBuilder = () => {
 		return new MysqlBuilder(this._mysqlConfig);
 	};
+	/** Creates a fresh {@link MysqlParser} using this multi-builder’s configuration. */
 	newParser = () => {
 		return new MysqlParser(this._mysqlConfig);
 	};
 };
 //#endregion
 //#region src/sqleasy/mysql/mysql_sqleasy.ts
+/** Main entry point for MySQL; implements {@link ISqlEasy} for MySQL builders and parsers. */
 var MysqlSqlEasy = class {
 	_mysqlConfiguration;
+	/** @param rc - Optional runtime options; defaults to a new {@link RuntimeConfiguration} when omitted. */
 	constructor(rc) {
 		if (rc === null || rc === void 0) rc = new RuntimeConfiguration();
 		this._mysqlConfiguration = new MysqlConfiguration(rc);
 	}
+	/** Returns the shared MySQL dialect configuration for this instance. */
 	configuration = () => {
 		return this._mysqlConfiguration;
 	};
+	/** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new MysqlBuilder(this._mysqlConfiguration);
 		return new MysqlBuilder(new MysqlConfiguration(rc));
 	};
+	/** Creates a multi-statement builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newMultiBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new MysqlMultiBuilder(this._mysqlConfiguration);
 		return new MysqlMultiBuilder(new MysqlConfiguration(rc));
@@ -2272,12 +2486,15 @@ var MysqlSqlEasy = class {
 };
 //#endregion
 //#region src/sqleasy/postgres/postgres_join_on_builder.ts
+/** PostgreSQL {@link DefaultJoinOnBuilder} for constructing `JOIN ... ON` fragments. */
 var PostgresJoinOnBuilder = class PostgresJoinOnBuilder extends DefaultJoinOnBuilder {
 	_postgresConfig;
+	/** @param config - PostgreSQL dialect configuration used when emitting join conditions. */
 	constructor(config) {
 		super(config);
 		this._postgresConfig = config;
 	}
+	/** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
 	newJoinOnBuilder = (config) => {
 		return new PostgresJoinOnBuilder(config ?? this._postgresConfig);
 	};
@@ -2318,50 +2535,64 @@ var PostgresParser = class extends DefaultParser {
 };
 //#endregion
 //#region src/sqleasy/postgres/postgres_builder.ts
+/** PostgreSQL {@link DefaultBuilder}; creates dialect parsers and join-on builders. */
 var PostgresBuilder = class PostgresBuilder extends DefaultBuilder {
 	_postgresConfig;
+	/** @param config - PostgreSQL dialect configuration used for SQL generation. */
 	constructor(config) {
 		super(config);
 		this._postgresConfig = config;
 	}
+	/** Returns a new builder, reusing this configuration unless `config` is provided. */
 	newBuilder = (config) => {
 		return new PostgresBuilder(config ?? this._postgresConfig);
 	};
+	/** Returns a new join-on builder for this dialect. */
 	newJoinOnBuilder = (config) => {
 		return new PostgresJoinOnBuilder(config ?? this._postgresConfig);
 	};
+	/** Returns a new PostgreSQL parser instance. */
 	newParser = (config) => {
 		return new PostgresParser(config ?? this._postgresConfig);
 	};
 };
 //#endregion
 //#region src/sqleasy/postgres/postgres_configuration.ts
+/** {@link IConfiguration} for PostgreSQL (delimiters, placeholders, default schema). */
 var PostgresConfiguration = class {
 	_postgresRuntimeConfiguration;
+	/** @param rc - Runtime options (e.g. row limits) bound to this dialect configuration. */
 	constructor(rc) {
 		this._postgresRuntimeConfiguration = rc;
 	}
+	/** Returns {@link DatabaseType.Postgres}. */
 	databaseType = () => {
 		return DatabaseType.Postgres;
 	};
+	/** Default schema for unqualified objects (`public`). */
 	defaultOwner = () => {
 		return "public";
 	};
+	/** Double-quote delimiters for quoted identifiers. */
 	identifierDelimiters = () => {
 		return {
 			begin: "\"",
 			end: "\""
 		};
 	};
+	/** Prefix for numbered prepared statement placeholders (`$`). */
 	preparedStatementPlaceholder = () => {
 		return "$";
 	};
+	/** Runtime options associated with this configuration. */
 	runtimeConfiguration = () => {
 		return this._postgresRuntimeConfiguration;
 	};
+	/** Single-quote delimiter for string literals. */
 	stringDelimiter = () => {
 		return "'";
 	};
+	/** Keywords delimiting a transaction block for this dialect. */
 	transactionDelimiters = () => {
 		return {
 			begin: "BEGIN",
@@ -2371,34 +2602,43 @@ var PostgresConfiguration = class {
 };
 //#endregion
 //#region src/sqleasy/postgres/postgres_multi_builder.ts
+/** PostgreSQL {@link DefaultMultiBuilder} for batching multiple statements with shared configuration. */
 var PostgresMultiBuilder = class extends DefaultMultiBuilder {
 	_postgresConfig;
+	/** @param config - PostgreSQL dialect configuration shared by child builders and parsers. */
 	constructor(config) {
 		super(config);
 		this._postgresConfig = config;
 	}
+	/** Creates a fresh {@link PostgresBuilder} using this multi-builder’s configuration. */
 	newBuilder = () => {
 		return new PostgresBuilder(this._postgresConfig);
 	};
+	/** Creates a fresh {@link PostgresParser} using this multi-builder’s configuration. */
 	newParser = () => {
 		return new PostgresParser(this._postgresConfig);
 	};
 };
 //#endregion
 //#region src/sqleasy/postgres/postgres_sqleasy.ts
+/** Main entry point for PostgreSQL; implements {@link ISqlEasy} for Postgres builders and parsers. */
 var PostgresSqlEasy = class {
 	_postgresConfig;
+	/** @param rc - Optional runtime options; defaults to a new {@link RuntimeConfiguration} when omitted. */
 	constructor(rc) {
 		if (rc === null || rc === void 0) rc = new RuntimeConfiguration();
 		this._postgresConfig = new PostgresConfiguration(rc);
 	}
+	/** Returns the shared PostgreSQL dialect configuration for this instance. */
 	configuration = () => {
 		return this._postgresConfig;
 	};
+	/** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new PostgresBuilder(this._postgresConfig);
 		return new PostgresBuilder(new PostgresConfiguration(rc));
 	};
+	/** Creates a multi-statement builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newMultiBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new PostgresMultiBuilder(this._postgresConfig);
 		return new PostgresMultiBuilder(new PostgresConfiguration(rc));
@@ -2406,12 +2646,15 @@ var PostgresSqlEasy = class {
 };
 //#endregion
 //#region src/sqleasy/sqlite/sqlite_join_on_builder.ts
+/** SQLite {@link DefaultJoinOnBuilder} for constructing `JOIN ... ON` fragments. */
 var SqliteJoinOnBuilder = class SqliteJoinOnBuilder extends DefaultJoinOnBuilder {
 	_sqliteConfig;
+	/** @param config - SQLite dialect configuration used when emitting join conditions. */
 	constructor(config) {
 		super(config);
 		this._sqliteConfig = config;
 	}
+	/** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
 	newJoinOnBuilder = (config) => {
 		return new SqliteJoinOnBuilder(config ?? this._sqliteConfig);
 	};
@@ -2440,50 +2683,64 @@ var SqliteParser = class extends DefaultParser {
 };
 //#endregion
 //#region src/sqleasy/sqlite/sqlite_builder.ts
+/** SQLite {@link DefaultBuilder}; creates dialect parsers and join-on builders. */
 var SqliteBuilder = class SqliteBuilder extends DefaultBuilder {
 	_sqliteConfig;
+	/** @param config - SQLite dialect configuration used for SQL generation. */
 	constructor(config) {
 		super(config);
 		this._sqliteConfig = config;
 	}
+	/** Returns a new builder, reusing this configuration unless `config` is provided. */
 	newBuilder = (config) => {
 		return new SqliteBuilder(config ?? this._sqliteConfig);
 	};
+	/** Returns a new join-on builder for this dialect. */
 	newJoinOnBuilder = (config) => {
 		return new SqliteJoinOnBuilder(config ?? this._sqliteConfig);
 	};
+	/** Returns a new SQLite parser instance. */
 	newParser = (config) => {
 		return new SqliteParser(config ?? this._sqliteConfig);
 	};
 };
 //#endregion
 //#region src/sqleasy/sqlite/sqlite_configuration.ts
+/** {@link IConfiguration} for SQLite (delimiters, placeholders, transactions). */
 var SqliteConfiguration = class {
 	_sqliteRuntimeConfiguration;
+	/** @param rc - Runtime options (e.g. row limits) bound to this dialect configuration. */
 	constructor(rc) {
 		this._sqliteRuntimeConfiguration = rc;
 	}
+	/** Returns {@link DatabaseType.Sqlite}. */
 	databaseType = () => {
 		return DatabaseType.Sqlite;
 	};
+	/** Default owner for unqualified objects (empty for SQLite). */
 	defaultOwner = () => {
 		return "";
 	};
+	/** Double-quote delimiters for quoted identifiers. */
 	identifierDelimiters = () => {
 		return {
 			begin: "\"",
 			end: "\""
 		};
 	};
+	/** Placeholder character for parameterized SQL (`?`). */
 	preparedStatementPlaceholder = () => {
 		return "?";
 	};
+	/** Runtime options associated with this configuration. */
 	runtimeConfiguration = () => {
 		return this._sqliteRuntimeConfiguration;
 	};
+	/** Single-quote delimiter for string literals. */
 	stringDelimiter = () => {
 		return "'";
 	};
+	/** Keywords delimiting a transaction block for this dialect. */
 	transactionDelimiters = () => {
 		return {
 			begin: "BEGIN",
@@ -2493,34 +2750,43 @@ var SqliteConfiguration = class {
 };
 //#endregion
 //#region src/sqleasy/sqlite/sqlite_multi_builder.ts
+/** SQLite {@link DefaultMultiBuilder} for batching multiple statements with shared configuration. */
 var SqliteMultiBuilder = class extends DefaultMultiBuilder {
 	_sqliteConfig;
+	/** @param config - SQLite dialect configuration shared by child builders and parsers. */
 	constructor(config) {
 		super(config);
 		this._sqliteConfig = config;
 	}
+	/** Creates a fresh {@link SqliteBuilder} using this multi-builder’s configuration. */
 	newBuilder = () => {
 		return new SqliteBuilder(this._sqliteConfig);
 	};
+	/** Creates a fresh {@link SqliteParser} using this multi-builder’s configuration. */
 	newParser = () => {
 		return new SqliteParser(this._sqliteConfig);
 	};
 };
 //#endregion
 //#region src/sqleasy/sqlite/sqlite_sqleasy.ts
+/** Main entry point for SQLite; implements {@link ISqlEasy} for SQLite builders and parsers. */
 var SqliteSqlEasy = class {
 	_sqliteConfiguration;
+	/** @param rc - Optional runtime options; defaults to a new {@link RuntimeConfiguration} when omitted. */
 	constructor(rc) {
 		if (rc === null || rc === void 0) rc = new RuntimeConfiguration();
 		this._sqliteConfiguration = new SqliteConfiguration(rc);
 	}
+	/** Returns the shared SQLite dialect configuration for this instance. */
 	configuration = () => {
 		return this._sqliteConfiguration;
 	};
+	/** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new SqliteBuilder(this._sqliteConfiguration);
 		return new SqliteBuilder(new SqliteConfiguration(rc));
 	};
+	/** Creates a multi-statement builder, optionally with a one-off {@link RuntimeConfiguration}. */
 	newMultiBuilder = (rc) => {
 		if (rc === null || rc === void 0) return new SqliteMultiBuilder(this._sqliteConfiguration);
 		return new SqliteMultiBuilder(new SqliteConfiguration(rc));
@@ -2528,108 +2794,214 @@ var SqliteSqlEasy = class {
 };
 //#endregion
 //#region src/state/cte_state.ts
+/**
+* Holds state for a single WITH (CTE) clause entry: name, body, and recursion flag.
+* Populated by the builder; exposed via {@link SqlEasyState.cteStates}.
+*/
 var CteState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** CTE name as declared in WITH. */
 	name = "";
+	/** Whether this CTE is declared as RECURSIVE. */
 	recursive = false;
+	/** Nested query state for the CTE body, when not using raw SQL. */
 	sqlEasyState = void 0;
+	/** Raw SQL fragment for the CTE body when bypassing structured state. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/from_state.ts
+/**
+* Holds state for one FROM source (table, subquery, or raw).
+* Populated by the builder; exposed via {@link SqlEasyState.fromStates}.
+*/
 var FromState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Schema or database owner qualifier for the table. */
 	owner = void 0;
+	/** Base table name when this source is a table. */
 	tableName = void 0;
+	/** Table or subquery alias in the FROM clause. */
 	alias = void 0;
+	/** Nested query state when this FROM entry is a subquery. */
 	sqlEasyState = void 0;
+	/** Raw SQL for this FROM fragment when not using structured fields. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/group_by_state.ts
+/**
+* Holds state for one GROUP BY expression (column or raw).
+* Populated by the builder; exposed via {@link SqlEasyState.groupByStates}.
+*/
 var GroupByState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Table name or alias qualifying the grouped column. */
 	tableNameOrAlias = void 0;
+	/** Column name being grouped. */
 	columnName = void 0;
+	/** Raw SQL for this GROUP BY term when not using structured fields. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/having_state.ts
+/**
+* Holds state for one HAVING predicate (similar shape to WHERE).
+* Populated by the builder; exposed via {@link SqlEasyState.havingStates}.
+*/
 var HavingState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Table name or alias qualifying the column in the predicate. */
 	tableNameOrAlias = void 0;
+	/** Column name in the HAVING expression. */
 	columnName = void 0;
+	/** Comparison or logical operator for this HAVING term. */
 	whereOperator = WhereOperator.None;
+	/** Raw SQL for this HAVING fragment when not using structured fields. */
 	raw = void 0;
+	/** Bound parameter values associated with this predicate. */
 	values = [];
 };
 //#endregion
 //#region src/state/join_on_state.ts
+/**
+* Holds state for one ON (or AND) join condition between two sides.
+* Populated by the builder; nested under {@link JoinState.joinOnStates}.
+*/
 var JoinOnState = class {
+	/** Alias of the left-hand column in the join condition. */
 	aliasLeft = void 0;
+	/** Left-hand column name. */
 	columnLeft = void 0;
+	/** Operator relating left and right (e.g. equals). */
 	joinOperator = JoinOperator.Equals;
+	/** Alias of the right-hand side (column or literal context). */
 	aliasRight = void 0;
+	/** Right-hand column name when the RHS is a column. */
 	columnRight = void 0;
+	/** AND/OR style combinator with the next join-on term. */
 	joinOnOperator = JoinOnOperator.None;
+	/** Raw SQL for this join condition when not using structured fields. */
 	raw = void 0;
+	/** Right-hand value when the RHS is a literal or parameter. */
 	valueRight = void 0;
 };
 //#endregion
 //#region src/state/join_state.ts
+/**
+* Holds state for one JOIN (table/subquery, type, and ON clauses).
+* Populated by the builder; exposed via {@link SqlEasyState.joinStates}.
+*/
 var JoinState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** INNER, LEFT, RIGHT, etc. */
 	joinType = JoinType.Inner;
+	/** Schema or owner for the joined table. */
 	owner = void 0;
+	/** Joined table name. */
 	tableName = void 0;
+	/** Alias for the joined relation. */
 	alias = void 0;
+	/** Nested query state when the join target is a subquery. */
 	sqlEasyState = void 0;
+	/** Raw SQL for the join target or full join fragment when applicable. */
 	raw = void 0;
+	/** Ordered ON/AND conditions for this join. */
 	joinOnStates = [];
 };
 //#endregion
 //#region src/state/order_by_state.ts
+/**
+* Holds state for one ORDER BY sort key and direction.
+* Populated by the builder; exposed via {@link SqlEasyState.orderByStates}.
+*/
 var OrderByState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Table name or alias qualifying the sort column. */
 	tableNameOrAlias = void 0;
+	/** Column or expression name used for ordering. */
 	columnName = void 0;
+	/** ASC, DESC, or none. */
 	direction = OrderByDirection.None;
+	/** Raw SQL for this ORDER BY term when not using structured fields. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/select_state.ts
+/**
+* Holds state for one SELECT list item (column, subquery, alias, or raw).
+* Populated by the builder; exposed via {@link SqlEasyState.selectStates}.
+*/
 var SelectState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Table name or alias qualifying the selected column. */
 	tableNameOrAlias = void 0;
+	/** Column name or expression identifier. */
 	columnName = void 0;
+	/** Output alias for this select item. */
 	alias = void 0;
+	/** Nested query state when this item is a scalar subquery. */
 	sqlEasyState = void 0;
+	/** Raw SQL for this select item when not using structured fields. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/union_state.ts
+/**
+* Holds state for one UNION (or similar) branch: nested query or raw SQL.
+* Populated by the builder; exposed via {@link SqlEasyState.unionStates}.
+*/
 var UnionState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** State for the branch query when not represented as raw SQL. */
 	sqlEasyState = void 0;
+	/** Raw SQL for this compound branch when applicable. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/update_state.ts
+/**
+* Holds state for one UPDATE SET assignment (column and value or raw).
+* Populated by the builder; exposed via {@link SqlEasyState.updateStates}.
+*/
 var UpdateState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Target column name being updated. */
 	columnName = void 0;
+	/** New value or parameter placeholder binding. */
 	value = void 0;
+	/** Raw SQL for this SET fragment when not using structured fields. */
 	raw = void 0;
 };
 //#endregion
 //#region src/state/where_state.ts
+/**
+* Holds state for one WHERE predicate (column op value, subquery, or raw).
+* Populated by the builder; exposed via {@link SqlEasyState.whereStates}.
+*/
 var WhereState = class {
+	/** Which builder variant produced this state. */
 	builderType = BuilderType.None;
+	/** Table name or alias qualifying the column. */
 	tableNameOrAlias = void 0;
+	/** Column name in the predicate. */
 	columnName = void 0;
+	/** Comparison or logical operator for this term. */
 	whereOperator = WhereOperator.None;
+	/** Raw SQL for this WHERE fragment when not using structured fields. */
 	raw = void 0;
+	/** Nested query state when the RHS is a subquery. */
 	sqlEasyState = void 0;
+	/** Bound parameter values for this predicate. */
 	values = [];
 };
 //#endregion
@@ -2637,11 +3009,6 @@ exports.BuilderType = BuilderType;
 exports.ConfigurationDelimiters = ConfigurationDelimiters;
 exports.CteState = CteState;
 exports.DatabaseType = DatabaseType;
-exports.Datatype = Datatype;
-exports.DefaultBuilder = DefaultBuilder;
-exports.DefaultJoinOnBuilder = DefaultJoinOnBuilder;
-exports.DefaultMultiBuilder = DefaultMultiBuilder;
-exports.DefaultParser = DefaultParser;
 exports.FromState = FromState;
 exports.GroupByState = GroupByState;
 exports.HavingState = HavingState;
@@ -2655,54 +3022,34 @@ exports.MssqlBuilder = MssqlBuilder;
 exports.MssqlConfiguration = MssqlConfiguration;
 exports.MssqlJoinOnBuilder = MssqlJoinOnBuilder;
 exports.MssqlMultiBuilder = MssqlMultiBuilder;
-exports.MssqlParser = MssqlParser;
 exports.MssqlSqlEasy = MssqlSqlEasy;
 exports.MultiBuilderTransactionState = MultiBuilderTransactionState;
 exports.MysqlBuilder = MysqlBuilder;
 exports.MysqlConfiguration = MysqlConfiguration;
 exports.MysqlJoinOnBuilder = MysqlJoinOnBuilder;
 exports.MysqlMultiBuilder = MysqlMultiBuilder;
-exports.MysqlParser = MysqlParser;
 exports.MysqlSqlEasy = MysqlSqlEasy;
 exports.OrderByDirection = OrderByDirection;
 exports.OrderByState = OrderByState;
 exports.ParserArea = ParserArea;
 exports.ParserError = ParserError;
-exports.ParserMode = ParserMode;
 exports.PostgresBuilder = PostgresBuilder;
 exports.PostgresConfiguration = PostgresConfiguration;
 exports.PostgresJoinOnBuilder = PostgresJoinOnBuilder;
 exports.PostgresMultiBuilder = PostgresMultiBuilder;
-exports.PostgresParser = PostgresParser;
 exports.PostgresSqlEasy = PostgresSqlEasy;
 exports.QueryType = QueryType;
 exports.RuntimeConfiguration = RuntimeConfiguration;
 exports.SelectState = SelectState;
 exports.SqlEasyState = SqlEasyState;
-exports.SqlHelper = SqlHelper;
 exports.SqliteBuilder = SqliteBuilder;
 exports.SqliteConfiguration = SqliteConfiguration;
 exports.SqliteJoinOnBuilder = SqliteJoinOnBuilder;
 exports.SqliteMultiBuilder = SqliteMultiBuilder;
-exports.SqliteParser = SqliteParser;
 exports.SqliteSqlEasy = SqliteSqlEasy;
 exports.UnionState = UnionState;
 exports.UpdateState = UpdateState;
 exports.WhereOperator = WhereOperator;
 exports.WhereState = WhereState;
-exports.defaultCte = defaultCte;
-exports.defaultDelete = defaultDelete;
-exports.defaultFrom = defaultFrom;
-exports.defaultGroupBy = defaultGroupBy;
-exports.defaultHaving = defaultHaving;
-exports.defaultInsert = defaultInsert;
-exports.defaultJoin = defaultJoin;
-exports.defaultLimitOffset = defaultLimitOffset;
-exports.defaultOrderBy = defaultOrderBy;
-exports.defaultSelect = defaultSelect;
-exports.defaultToSql = defaultToSql;
-exports.defaultUnion = defaultUnion;
-exports.defaultUpdate = defaultUpdate;
-exports.defaultWhere = defaultWhere;
 
 //# sourceMappingURL=index.cjs.map
