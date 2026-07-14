@@ -48,7 +48,7 @@
     "test": "vitest --coverage",
     "typecheck": "tsc --noEmit"
   },
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@11.13.0",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@sebbo2002/semantic-release-jsr": "^4.0.2",
