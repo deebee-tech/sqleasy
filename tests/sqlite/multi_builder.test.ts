@@ -100,6 +100,26 @@ describe('SqliteQuery multi builder', () => {
     );
   });
 
+  it('multi builder reorder builders deduplicates repeated names', () => {
+    const query = new SqliteQuery();
+    const multi = query.newMultiBuilder();
+
+    const b1 = multi.addBuilder('first');
+    b1.insertInto('users').insertColumns(['name']).insertValues(['A']);
+
+    const b2 = multi.addBuilder('second');
+    b2.insertInto('orders').insertColumns(['total']).insertValues([9]);
+
+    multi.reorderBuilders(['first', 'first', 'second']);
+
+    const sql = multi.parseRaw();
+    expect(sql.match(/INSERT INTO "users"/g)).toHaveLength(1);
+    expect(multi.states()).toHaveLength(2);
+    expect(sql).toEqual(
+      'BEGIN; INSERT INTO "users" ("name") VALUES (A);INSERT INTO "orders" ("total") VALUES (9);COMMIT; ',
+    );
+  });
+
   it('multi builder with select and insert', () => {
     const query = new SqliteQuery();
     const multi = query.newMultiBuilder();

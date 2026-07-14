@@ -77,6 +77,14 @@ export const defaultHaving = (state: QueryState, config: Dialect, mode: ParserMo
         case WhereOperator.LessThanOrEquals:
           sqlHelper.addSqlSnippet('<=');
           break;
+        // HAVING takes the same WhereOperator as WHERE. Omitting these two rendered `HAVING "x"."y"
+        // $1` — the operator silently missing, the value still bound, the statement invalid.
+        case WhereOperator.Like:
+          sqlHelper.addSqlSnippet('LIKE');
+          break;
+        case WhereOperator.NotLike:
+          sqlHelper.addSqlSnippet('NOT LIKE');
+          break;
       }
 
       sqlHelper.addSqlSnippet(' ');

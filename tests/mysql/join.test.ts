@@ -198,9 +198,13 @@ describe('MysqlQuery join', () => {
       });
 
     const sql = builder.parseRaw();
+    // Previously asserted `AND ()` — the group's conditions were built into a child JoinOnBuilder
+    // that was then discarded, so the predicate silently vanished and the join matched the wrong
+    // rows. The test name was right; the expectation was pinning the bug.
     expect(sql).toEqual(
       'SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON ' +
-        '`u`.`id` = `o`.`user_id` AND ();',
+        '`u`.`id` = `o`.`user_id` AND (`o`.`status` = `u`.`default_status` ' +
+        'OR `o`.`type` = `u`.`default_type`);',
     );
   });
 

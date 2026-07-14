@@ -74,6 +74,12 @@ export class JoinOnBuilder {
     const child = this.#child();
     builder(child);
 
+    // Splice the group's own conditions between the delimiters. Without this the child builder was
+    // populated and then thrown away: every condition inside the group vanished (the join rendered
+    // `... AND ()`), and any `onValue` inside it was never bound — so the JOIN silently matched on
+    // the wrong predicate and returned the wrong rows.
+    this.#states.push(...child.states());
+
     this.#states.push({
       joinOperator: JoinOperator.None,
       joinOnOperator: JoinOnOperator.GroupEnd,

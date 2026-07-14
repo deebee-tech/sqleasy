@@ -82,6 +82,32 @@ export default {
         ],
       },
     ],
+    // Stamp the release version into the golden corpus. The corpus is the cross-language contract:
+    // `sqleasy-dart` pins a version and fetches it from this repo's TAG
+    // (raw.githubusercontent.com/deebee-tech/sqleasy/v<version>/goldens/corpus.json), so it must be
+    // committed and tagged, and its `version` must match the release. Deliberately NOT a GitHub
+    // release asset — that upload is the one that crashed on 2.0.0 (see the note below).
+    [
+      'semantic-release-replace-plugin',
+      {
+        replacements: [
+          {
+            files: ['goldens/corpus.json'],
+            from: '"version": ".*"',
+            to: '"version": "${nextRelease.version}"',
+            results: [
+              {
+                file: 'goldens/corpus.json',
+                hasChanged: true,
+                numMatches: 1,
+                numReplacements: 1,
+              },
+            ],
+            countMatches: true,
+          },
+        ],
+      },
+    ],
     [
       '@semantic-release/npm',
       {
@@ -97,7 +123,14 @@ export default {
     [
       '@semantic-release/git',
       {
-        assets: ['CHANGELOG.md', 'package.json', 'jsr.json', 'dist/**/*', 'coverage/**/*'],
+        assets: [
+          'CHANGELOG.md',
+          'package.json',
+          'jsr.json',
+          'goldens/corpus.json',
+          'dist/**/*',
+          'coverage/**/*',
+        ],
       },
     ],
     // Registries BEFORE the GitHub release: on 2.0.0 the GitHub plugin crashed uploading release
