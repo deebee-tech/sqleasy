@@ -1,1 +1,1 @@
-export * from "./interface_parser";
+export * from './to-sql';

@@ -1,3 +1,3 @@
-export * from "./interface_builder";
-export * from "./interface_join_on_builder";
-export * from "./interface_multi_builder";
+export * from './query';
+export * from './join-on';
+export * from './multi-builder';

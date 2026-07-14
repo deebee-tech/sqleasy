@@ -1,21 +1,27 @@
 {
-   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
-   "version": "0.2",
-   "language": "en",
-   "words": [
-      "codepaths",
-      "deebeetech",
-      "esbuild",
-      "Froms",
-      "executesql",
-      "NOCOUNT",
-      "nvarchar",
-      "sebbo",
-      "sqleasy",
-      "tinyint",
-      "tsbuildinfo",
-      "tseslint",
-      "Weatherby"
-   ],
-   "ignorePaths": ["node_modules", "dist", "coverage", "pnpm-lock.yaml", "**/*.map"]
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "behaviour",
+    "codepaths",
+    "combinators",
+    "deebeetech",
+    "esbuild",
+    "Froms",
+    "executesql",
+    "Havings",
+    "inlines",
+    "mydb",
+    "NOCOUNT",
+    "nvarchar",
+    "sebbo",
+    "sqleasy",
+    "superadmin",
+    "tinyint",
+    "tsbuildinfo",
+    "tseslint",
+    "Weatherby"
+  ],
+  "ignorePaths": ["node_modules", "dist", "coverage", "pnpm-lock.yaml", "**/*.map", "assets"]
 }

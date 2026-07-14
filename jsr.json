@@ -1,7 +1,7 @@
 {
-   "name": "@deebeetech/sqleasy",
-   "version": "1.0.2",
-   "license": "MIT",
-   "exports": "./src/index.ts",
-   "publish": { "include": ["./src/**/*", "./README.md", "./CHANGELOG.md", "./LICENSE"] }
+  "name": "@deebeetech/sqleasy",
+  "version": "1.0.2",
+  "license": "MIT",
+  "exports": "./src/index.ts",
+  "publish": { "include": ["./src/**/*", "./README.md", "./CHANGELOG.md", "./LICENSE"] }
 }

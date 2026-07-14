@@ -1,61 +1,75 @@
 {
-   "name": "@deebeetech/sqleasy",
-   "version": "1.0.2",
-   "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
-   "homepage": "https://github.com/deebee-tech/sqleasy",
-   "license": "MIT",
-   "private": false,
-   "author": {
-      "name": "Sandy Weatherby",
-      "email": "unicornbeachdiaries@gmail.com"
-   },
-   "repository": {
-      "type": "git",
-      "url": "https://github.com/deebee-tech/sqleasy"
-   },
-   "type": "module",
-   "main": "index.mjs",
-   "exports": {
-      ".": {
-         "types": "./index.d.mts",
-         "import": "./index.mjs",
-         "require": "./index.cjs"
-      }
-   },
-   "types": "index.d.mts",
-   "publishConfig": {
-      "access": "public"
-   },
-   "scripts": {
-      "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/'",
-      "format": "prettier --write .",
-      "lint": "eslint .",
-      "spell": "cspell --no-progress \"**\"",
-      "test": "vitest --coverage",
-      "typecheck": "tsc --noEmit"
-   },
-   "packageManager": "pnpm@10.33.0",
-   "devDependencies": {
-      "@eslint/js": "^10.0.1",
-      "@sebbo2002/semantic-release-jsr": "^3.2.1",
-      "@semantic-release/changelog": "^6.0.3",
-      "@semantic-release/commit-analyzer": "^13.0.1",
-      "@semantic-release/git": "^10.0.1",
-      "@semantic-release/github": "^12.0.6",
-      "@semantic-release/npm": "^13.1.5",
-      "@semantic-release/release-notes-generator": "^14.1.0",
-      "@vitest/coverage-v8": "^4.1.2",
-      "conventional-changelog-conventionalcommits": "^9.3.1",
-      "cpy-cli": "^7.0.0",
-      "cspell": "^9.7.0",
-      "eslint": "^10.1.0",
-      "eslint-config-prettier": "^10.1.8",
-      "prettier": "^3.8.1",
-      "semantic-release": "^25.0.3",
-      "semantic-release-replace-plugin": "^1.2.7",
-      "tsdown": "^0.21.7",
-      "typescript": "^5.9.3",
-      "typescript-eslint": "^8.58.0",
-      "vitest": "^4.1.2"
-   }
+  "name": "@deebeetech/sqleasy",
+  "version": "1.0.2",
+  "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
+  "keywords": [
+    "sql",
+    "sql-builder",
+    "query-builder",
+    "sql-query-builder",
+    "postgres",
+    "postgresql",
+    "mysql",
+    "mssql",
+    "sqlite",
+    "prepared-statements",
+    "typescript",
+    "database"
+  ],
+  "homepage": "https://github.com/deebee-tech/sqleasy",
+  "license": "MIT",
+  "private": false,
+  "author": {
+    "name": "Sandy Weatherby",
+    "email": "unicornbeachdiaries@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deebee-tech/sqleasy"
+  },
+  "type": "module",
+  "main": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "types": "dist/index.d.mts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/' && cpy './LICENSE' './dist/'",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "spell": "cspell --no-progress \"**\"",
+    "test": "vitest --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@sebbo2002/semantic-release-jsr": "^3.2.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "cpy-cli": "^7.0.0",
+    "cspell": "^9.7.0",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "semantic-release": "^25.0.3",
+    "semantic-release-replace-plugin": "^1.2.7",
+    "tsdown": "^0.21.7",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.58.0",
+    "vitest": "^4.1.2"
+  }
 }

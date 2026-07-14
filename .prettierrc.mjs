@@ -4,12 +4,12 @@
  */
 
 const config = {
-   endOfLine: "auto",
-   singleQuote: false,
-   trailingComma: "all",
-   printWidth: 120,
-   semi: true,
-   tabWidth: 3,
+  endOfLine: 'auto',
+  printWidth: 100,
+  singleQuote: true,
+  trailingComma: 'all',
+  semi: true,
+  tabWidth: 2,
 };
 
 export default config;
