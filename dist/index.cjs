@@ -246,46 +246,93 @@ var ParserError = class extends Error {
 };
 //#endregion
 //#region src/helpers/sql.ts
-/** Accumulates SQL fragments and their bound values while a parser walks a query state. */
+const NUL = String.fromCharCode(0);
+/**
+* Refuses a value that has no SQL representation, at the point it is bound or inlined.
+*
+* `NaN`/`Infinity` used to render as the bare words `NaN`/`Infinity` (invalid SQL in every dialect)
+* when inlined, and to sail straight into the bound `params` otherwise — surfacing as a driver-level
+* error far from the call that caused it, or silently coercing. Fail here, where the caller is.
+*/
+const assertBindableValue = (value) => {
+	if (typeof value === "number" && !Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+};
+/**
+* Replaces each {@link PLACEHOLDER_TOKEN} with the dialect's placeholder, in emission order.
+*
+* Values are appended in the same order their tokens are, so the Nth token binds the Nth value.
+* `nth` receives the zero-based index, which Postgres needs for `$1`, `$2`, … and MSSQL for
+* `@p0`, `@p1`, ….
+*/
+const renderPlaceholders = (sql, nth) => {
+	let index = 0;
+	return sql.split("\0?\0").reduce((acc, part) => acc + nth(index++) + part);
+};
+/**
+* Accumulates SQL fragments and their bound values while a parser walks a query state.
+*
+* Deliberately dialect-agnostic: it emits {@link PLACEHOLDER_TOKEN}, never a dialect's `?`/`$`, so
+* it needs no {@link Dialect}. The dialect's placeholder is applied once, at the top-level parse.
+*/
 var SqlHelper = class {
 	#parts = [];
 	#values = [];
-	#config;
 	#parserMode;
-	constructor(config, parserMode) {
-		this.#config = config;
+	constructor(parserMode) {
 		this.#parserMode = parserMode;
 	}
+	/**
+	* Emits one bound value: a {@link PLACEHOLDER_TOKEN} in Prepared mode (with the value recorded for
+	* binding), or the value inlined in Raw mode.
+	*
+	* This appends directly rather than returning text for the caller to pass back through
+	* {@link addSqlSnippet}, so that `addSqlSnippet` can reject *every* NUL byte it sees. If the token
+	* passed through the public path, `addSqlSnippet` could not tell our token from a NUL sequence
+	* in a caller's raw fragment — which is exactly how a raw fragment could forge a placeholder.
+	*/
 	addDynamicValue = (value) => {
+		assertBindableValue(value);
 		if (this.#parserMode === ParserMode.Prepared) {
 			this.#values.push(value);
-			return this.#config.preparedStatementPlaceholder;
+			this.#parts.push("\0?\0");
+			return;
 		}
-		return this.getValueStringFromDataType(value);
+		this.#parts.push(this.getValueStringFromDataType(value));
 	};
+	/**
+	* Appends a SQL fragment. This is the path every caller-supplied raw fragment takes, so a NUL
+	* byte is refused outright: it could forge a {@link PLACEHOLDER_TOKEN} and steal a bound value's
+	* position, and it silently truncates the statement in some drivers. Our own tokens never come
+	* through here — see {@link addDynamicValue}.
+	*/
 	addSqlSnippet = (sql) => {
+		if (sql.includes(NUL)) throw new ParserError(ParserArea.General, "SQL fragment contains a NUL byte");
 		this.#parts.push(sql);
 	};
+	/**
+	* Splices a sub-parser's already-rendered SQL and its bound values into this helper. The sub-SQL
+	* legitimately carries {@link PLACEHOLDER_TOKEN}s, so it bypasses the NUL check in
+	* {@link addSqlSnippet} — its own fragments were validated when the sub-parser built them.
+	*/
 	addSqlSnippetWithValues = (sqlString, values) => {
 		this.#values.push(...values);
-		this.addSqlSnippet(sqlString);
+		this.#parts.push(sqlString);
 	};
 	clear = () => {
 		this.#parts = [];
 		this.#values = [];
 	};
+	/**
+	* The rendered SQL, still carrying {@link PLACEHOLDER_TOKEN} for each bound value. Sub-parsers
+	* compose their output into a parent helper, so the tokens must survive until the top-level
+	* parse swaps them for the dialect's placeholder via {@link renderPlaceholders}.
+	*/
 	getSql = () => {
 		return this.#parts.join("");
 	};
 	getSqlDebug = () => {
-		let sqlString = this.#parts.join("");
-		const placeholder = this.#config.preparedStatementPlaceholder;
-		this.#values.forEach((value) => {
-			const valuePosition = sqlString.indexOf(placeholder);
-			if (valuePosition === -1) return;
-			sqlString = sqlString.substring(0, valuePosition) + this.getValueStringFromDataType(value) + sqlString.substring(valuePosition + placeholder.length);
-		});
-		return sqlString;
+		const values = this.#values;
+		return renderPlaceholders(this.#parts.join(""), (index) => index < values.length ? this.getValueStringFromDataType(values[index]) : "");
 	};
 	getValues = () => {
 		return [...this.#values];
@@ -294,7 +341,9 @@ var SqlHelper = class {
 		if (value === null || value === void 0) return "";
 		switch (typeof value) {
 			case "string": return value;
-			case "number": return value.toString();
+			case "number":
+				if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+				return value.toString();
 			case "boolean": return value ? "true" : "false";
 			case "object":
 				if (value instanceof Date) return value.toISOString();
@@ -321,7 +370,7 @@ function quoteIdentifier(name, delimiters) {
 //#endregion
 //#region src/parser/default-cte.ts
 const defaultCte = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.cteStates.length === 0) return sqlHelper;
 	if (state.cteStates.some((cte) => cte.recursive)) sqlHelper.addSqlSnippet("WITH RECURSIVE ");
 	else sqlHelper.addSqlSnippet("WITH ");
@@ -343,7 +392,7 @@ const defaultCte = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-delete.ts
 const defaultDelete = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.fromStates.length === 0) throw new ParserError(ParserArea.General, "DELETE requires a table");
 	const delim = config.identifierDelimiters;
 	const quote = (s) => quoteIdentifier(s, delim);
@@ -371,7 +420,7 @@ const defaultDelete = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-from.ts
 const defaultFrom = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.fromStates.length === 0) throw new ParserError(ParserArea.From, "No tables to select from");
 	sqlHelper.addSqlSnippet("FROM ");
 	state.fromStates.forEach((fromState, i) => {
@@ -409,7 +458,7 @@ const defaultFrom = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-group-by.ts
 const defaultGroupBy = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.groupByStates.length === 0) return sqlHelper;
 	sqlHelper.addSqlSnippet("GROUP BY ");
 	state.groupByStates.forEach((groupByState, i) => {
@@ -431,7 +480,7 @@ const defaultGroupBy = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-having.ts
 const defaultHaving = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.havingStates.length === 0) return sqlHelper;
 	if (state.groupByStates.length === 0) throw new ParserError(ParserArea.General, "HAVING requires a GROUP BY clause");
 	sqlHelper.addSqlSnippet("HAVING ");
@@ -475,9 +524,15 @@ const defaultHaving = (state, config, mode) => {
 				case WhereOperator.LessThanOrEquals:
 					sqlHelper.addSqlSnippet("<=");
 					break;
+				case WhereOperator.Like:
+					sqlHelper.addSqlSnippet("LIKE");
+					break;
+				case WhereOperator.NotLike:
+					sqlHelper.addSqlSnippet("NOT LIKE");
+					break;
 			}
 			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(havingState.values[0]));
+			sqlHelper.addDynamicValue(havingState.values[0]);
 			if (i < state.havingStates.length - 1) sqlHelper.addSqlSnippet(" ");
 			continue;
 		}
@@ -487,7 +542,7 @@ const defaultHaving = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-insert.ts
 const defaultInsert = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (!state.insertState) throw new ParserError(ParserArea.General, "No insert state provided");
 	const insertState = state.insertState;
 	if (insertState.raw) {
@@ -514,7 +569,7 @@ const defaultInsert = (state, config, mode) => {
 			sqlHelper.addSqlSnippet("(");
 			const row = insertState.values[r];
 			for (let c = 0; c < row.length; c++) {
-				sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(row[c]));
+				sqlHelper.addDynamicValue(row[c]);
 				if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
 			}
 			sqlHelper.addSqlSnippet(")");
@@ -570,7 +625,7 @@ const JoinOperator = {
 //#endregion
 //#region src/parser/default-join.ts
 const defaultJoin = (state, config, mode) => {
-	let sqlHelper = new SqlHelper(config, mode);
+	let sqlHelper = new SqlHelper(mode);
 	if (state.joinStates.length === 0) return sqlHelper;
 	for (let i = 0; i < state.joinStates.length; i++) {
 		const joinState = state.joinStates[i];
@@ -635,6 +690,10 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 	for (let i = 0; i < joinOnStates.length; i++) {
 		const on = joinOnStates[i];
 		const prevOn = i > 0 ? joinOnStates[i - 1] : void 0;
+		const nextOn = i < joinOnStates.length - 1 ? joinOnStates[i + 1] : void 0;
+		const spaceAfter = () => {
+			if (i < joinOnStates.length - 1 && nextOn?.joinOnOperator !== JoinOnOperator.GroupEnd) sqlHelper.addSqlSnippet(" ");
+		};
 		if (i === 0 && (on.joinOnOperator === JoinOnOperator.And || on.joinOnOperator === JoinOnOperator.Or)) throw new ParserError(ParserArea.Join, "First JOIN ON operator cannot be AND or OR");
 		if (i === joinOnStates.length - 1 && (on.joinOnOperator === JoinOnOperator.And || on.joinOnOperator === JoinOnOperator.Or)) throw new ParserError(ParserArea.Join, "AND or OR cannot be used as the last JOIN ON operator");
 		if ((on.joinOnOperator === JoinOnOperator.And || on.joinOnOperator === JoinOnOperator.Or) && (prevOn?.joinOnOperator === JoinOnOperator.And || prevOn?.joinOnOperator === JoinOnOperator.Or)) throw new ParserError(ParserArea.Join, "AND or OR cannot be used consecutively");
@@ -643,12 +702,12 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 		if (on.joinOnOperator === JoinOnOperator.GroupEnd && i === 0) throw new ParserError(ParserArea.Join, "Group end cannot be the first JOIN ON operator");
 		if (on.joinOnOperator === JoinOnOperator.And) {
 			sqlHelper.addSqlSnippet("AND");
-			if (i < joinOnStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			spaceAfter();
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.Or) {
 			sqlHelper.addSqlSnippet("OR");
-			if (i < joinOnStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			spaceAfter();
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.GroupBegin) {
@@ -657,12 +716,12 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 		}
 		if (on.joinOnOperator === JoinOnOperator.GroupEnd) {
 			sqlHelper.addSqlSnippet(")");
-			if (i < joinOnStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			spaceAfter();
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.Raw) {
 			sqlHelper.addSqlSnippet(on.raw ?? "");
-			if (i < joinOnStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			spaceAfter();
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.On) {
@@ -694,7 +753,7 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasRight, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnRight, config.identifierDelimiters));
-			if (i < joinOnStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			spaceAfter();
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.Value) {
@@ -723,8 +782,8 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 					break;
 			}
 			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(on.valueRight));
-			if (i < joinOnStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addDynamicValue(on.valueRight);
+			spaceAfter();
 			continue;
 		}
 	}
@@ -733,7 +792,7 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 //#endregion
 //#region src/parser/default-limit-offset.ts
 const defaultLimitOffset = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.limit === 0 && state.offset === 0) return sqlHelper;
 	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
 		if (state.limit > 0) {
@@ -770,7 +829,7 @@ const defaultLimitOffset = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-order-by.ts
 const defaultOrderBy = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.orderByStates.length === 0) return sqlHelper;
 	sqlHelper.addSqlSnippet("ORDER BY ");
 	state.orderByStates.forEach((orderByState, i) => {
@@ -794,7 +853,7 @@ const defaultOrderBy = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-select.ts
 const defaultSelect = (state, config, mode, options) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.selectStates.length === 0) throw new ParserError(ParserArea.Select, "Select statement must have at least one select state");
 	sqlHelper.addSqlSnippet("SELECT ");
 	if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
@@ -837,7 +896,7 @@ const defaultSelect = (state, config, mode, options) => {
 //#endregion
 //#region src/parser/default-union.ts
 const defaultUnion = (state, config, mode, options) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.unionStates.length === 0) return sqlHelper;
 	for (let i = 0; i < state.unionStates.length; i++) {
 		const unionState = state.unionStates[i];
@@ -867,7 +926,7 @@ const defaultUnion = (state, config, mode, options) => {
 //#endregion
 //#region src/parser/default-update.ts
 const defaultUpdate = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.fromStates.length === 0) throw new ParserError(ParserArea.General, "UPDATE requires a table");
 	if (state.updateStates.length === 0) throw new ParserError(ParserArea.General, "UPDATE requires at least one SET column");
 	const delim = config.identifierDelimiters;
@@ -893,7 +952,7 @@ const defaultUpdate = (state, config, mode) => {
 		else if (updateState.builderType === BuilderType.UpdateColumn) {
 			sqlHelper.addSqlSnippet(quoteIdentifier(updateState.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" = ");
-			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(updateState.value));
+			sqlHelper.addDynamicValue(updateState.value);
 		}
 		if (i < state.updateStates.length - 1) sqlHelper.addSqlSnippet(", ");
 	}
@@ -908,7 +967,7 @@ const defaultUpdate = (state, config, mode) => {
 //#endregion
 //#region src/parser/default-where.ts
 const defaultWhere = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state.whereStates.length === 0) return sqlHelper;
 	sqlHelper.addSqlSnippet("WHERE ");
 	for (let i = 0; i < state.whereStates.length; i++) {
@@ -990,7 +1049,7 @@ const defaultWhere = (state, config, mode) => {
 					break;
 			}
 			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[0]));
+			sqlHelper.addDynamicValue(cur.values[0]);
 			spaceAfter();
 			continue;
 		}
@@ -1000,9 +1059,9 @@ const defaultWhere = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet("BETWEEN ");
-			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[0]));
+			sqlHelper.addDynamicValue(cur.values[0]);
 			sqlHelper.addSqlSnippet(" AND ");
-			sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[1]));
+			sqlHelper.addDynamicValue(cur.values[1]);
 			spaceAfter();
 			continue;
 		}
@@ -1026,12 +1085,13 @@ const defaultWhere = (state, config, mode) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereInValues) {
+			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "IN requires at least one value");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			for (let j = 0; j < cur.values.length; j++) {
-				sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[j]));
+				sqlHelper.addDynamicValue(cur.values[j]);
 				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
 			}
 			sqlHelper.addSqlSnippet(")");
@@ -1058,12 +1118,13 @@ const defaultWhere = (state, config, mode) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereNotInValues) {
+			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "NOT IN requires at least one value");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			for (let j = 0; j < cur.values.length; j++) {
-				sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[j]));
+				sqlHelper.addDynamicValue(cur.values[j]);
 				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
 			}
 			sqlHelper.addSqlSnippet(")");
@@ -1098,7 +1159,7 @@ const defaultWhere = (state, config, mode) => {
 * the outer statement and, recursively, for every nested subquery.
 */
 const defaultToSql = (state, config, mode, options) => {
-	const sqlHelper = new SqlHelper(config, mode);
+	const sqlHelper = new SqlHelper(mode);
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
 	if (state.cteStates.length > 0) {
 		const cte = defaultCte(state, config, mode);
@@ -1198,7 +1259,9 @@ const toSqlOptionsFor = (config) => {
 const mssqlParameterValue = (value) => {
 	if (value === null || value === void 0) return "NULL";
 	switch (typeof value) {
-		case "number": return value.toString();
+		case "number":
+			if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+			return value.toString();
 		case "boolean": return value ? "1" : "0";
 		case "object":
 			if (value instanceof Date) return "'" + value.toISOString() + "'";
@@ -1210,11 +1273,13 @@ const mssqlParameterValue = (value) => {
 const mssqlParameterType = (value) => {
 	switch (typeof value) {
 		case "string": return "nvarchar(max)";
-		case "number": if (Number.isInteger(value)) if (value >= -128 && value <= 127) return "tinyint";
-		else if (value >= -32768 && value <= 32767) return "smallint";
-		else if (value >= -2147483648 && value <= 2147483647) return "int";
-		else return "bigint";
-		else return "float";
+		case "number":
+			if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+			if (Number.isSafeInteger(value)) if (value >= 0 && value <= 255) return "tinyint";
+			else if (value >= -32768 && value <= 32767) return "smallint";
+			else if (value >= -2147483648 && value <= 2147483647) return "int";
+			else return "bigint";
+			else return "float";
 		case "boolean": return "bit";
 		default: return "nvarchar(max)";
 	}
@@ -1225,27 +1290,23 @@ const mssqlParameterType = (value) => {
 * when there are parameters — the `@pN = value` assignment list.
 */
 const mssqlToSql = (state, config) => {
-	const paramsString = new SqlHelper(config, ParserMode.Prepared);
-	const finalString = new SqlHelper(config, ParserMode.Prepared);
+	const paramsString = new SqlHelper(ParserMode.Prepared);
+	const finalString = new SqlHelper(ParserMode.Prepared);
 	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
 	let sql = sqlHelper.getSql();
 	sql = sql.replaceAll("'", "''");
-	let valueCounter = 0;
-	for (const value of sqlHelper.getValues()) {
-		const valuePosition = sql.indexOf(config.preparedStatementPlaceholder);
-		if (valuePosition === -1) break;
-		sql = sql.slice(0, valuePosition) + "@p" + valueCounter + sql.slice(valuePosition + 1);
-		if (valueCounter > 0) paramsString.addSqlSnippet(", ");
-		paramsString.addSqlSnippet("@p" + valueCounter + " " + mssqlParameterType(value));
-		valueCounter++;
-	}
+	const values = sqlHelper.getValues();
+	sql = renderPlaceholders(sql, (index) => "@p" + index);
+	values.forEach((value, index) => {
+		if (index > 0) paramsString.addSqlSnippet(", ");
+		paramsString.addSqlSnippet("@p" + index + " " + mssqlParameterType(value));
+	});
 	finalString.addSqlSnippet("SET NOCOUNT ON; ");
 	finalString.addSqlSnippet("exec sp_executesql N'");
 	finalString.addSqlSnippet(sql);
 	finalString.addSqlSnippet("', N'");
 	finalString.addSqlSnippet(paramsString.getSql());
 	finalString.addSqlSnippet("'");
-	const values = sqlHelper.getValues();
 	if (values.length > 0) {
 		finalString.addSqlSnippet(", ");
 		for (let i = 0; i < values.length; i++) {
@@ -1257,36 +1318,38 @@ const mssqlToSql = (state, config) => {
 	return finalString.getSql();
 };
 /**
-* Postgres uses numbered `$n` placeholders. Render with the shared `?` placeholder, then
-* walk left-to-right replacing each `?` with `$1`, `$2`, … in order.
+* Postgres uses numbered `$n` placeholders: substitute the Nth token with `$1`, `$2`, … in order.
+*
+* This must not scan for a bare `$`. Doing so rewrote the `$` inside caller text — `selectRaw("'$100'")`
+* became `'$1100'` — and shifted the real placeholder to `$2` while only one value was bound, so
+* Postgres rejected the statement outright. `$` is especially common in Postgres (`$$`-quoting).
 */
 const postgresPrepared = (state, config) => {
 	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
-	let sql = sqlHelper.getSql();
-	const placeholder = config.preparedStatementPlaceholder;
-	let paramIndex = 1;
-	let searchFrom = 0;
-	while (true) {
-		const pos = sql.indexOf(placeholder, searchFrom);
-		if (pos === -1) break;
-		const replacement = "$" + paramIndex;
-		sql = sql.slice(0, pos) + replacement + sql.slice(pos + placeholder.length);
-		searchFrom = pos + replacement.length;
-		paramIndex++;
-	}
 	return {
-		sql,
+		sql: renderPlaceholders(sqlHelper.getSql(), (index) => "$" + (index + 1)),
+		params: sqlHelper.getValues()
+	};
+};
+/**
+* The dialect's own placeholder, substituted for each {@link PLACEHOLDER_TOKEN}. MySQL and SQLite
+* bind positionally, so every placeholder is the same `?`.
+*/
+const positionalPrepared = (state, config) => {
+	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
+	return {
+		sql: renderPlaceholders(sqlHelper.getSql(), () => config.preparedStatementPlaceholder),
 		params: sqlHelper.getValues()
 	};
 };
 /**
 * Renders one query state as a prepared SQL string. MSSQL returns a self-contained
-* `sp_executesql`; Postgres rewrites `?`→`$n`; the rest keep the dialect's `?` placeholder.
+* `sp_executesql`; Postgres rewrites to `$n`; the rest keep the dialect's `?` placeholder.
 */
 const parse = (state, config) => {
 	if (config.databaseType === DatabaseType.Mssql) return mssqlToSql(state, config);
 	if (config.databaseType === DatabaseType.Postgres) return postgresPrepared(state, config).sql;
-	return defaultToSql(state, config, ParserMode.Prepared).getSql();
+	return positionalPrepared(state, config).sql;
 };
 /**
 * Renders one query state as prepared SQL plus its ordered bound values. MSSQL inlines its
@@ -1298,11 +1361,7 @@ const parsePrepared = (state, config) => {
 		params: []
 	};
 	if (config.databaseType === DatabaseType.Postgres) return postgresPrepared(state, config);
-	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
-	return {
-		sql: sqlHelper.getSql(),
-		params: sqlHelper.getValues()
-	};
+	return positionalPrepared(state, config);
 };
 /**
 * Renders one query state as a raw SQL string with values inlined (MSSQL keeps its `TOP`). DEBUG /
@@ -1427,7 +1486,9 @@ var JoinOnBuilder = class JoinOnBuilder {
 			raw: void 0,
 			valueRight: void 0
 		});
-		builder(this.#child());
+		const child = this.#child();
+		builder(child);
+		this.#states.push(...child.states());
 		this.#states.push({
 			joinOperator: JoinOperator.None,
 			joinOnOperator: JoinOnOperator.GroupEnd,
@@ -2298,10 +2359,13 @@ var MultiBuilder = class {
 	removeBuilder = (builderName) => {
 		this.#builders = this.#builders.filter((builder) => builder.state().builderName !== builderName);
 	};
-	/** Reorders the batch to match the given builder names; names not present are dropped. */
+	/**
+	* Reorders the batch to match the given builder names; names not present are dropped and
+	* repeated names are deduplicated (first occurrence wins).
+	*/
 	reorderBuilders = (builderNames) => {
 		const reordered = [];
-		builderNames.forEach((builderName) => {
+		[...new Set(builderNames)].forEach((builderName) => {
 			const match = this.#builders.find((builder) => builder.state().builderName === builderName);
 			if (match) reordered.push(match);
 		});
@@ -2363,7 +2427,6 @@ const mssqlConfiguration = (rc = new RuntimeConfiguration()) => ({
 	},
 	preparedStatementPlaceholder: "?",
 	runtimeConfiguration: rc,
-	stringDelimiter: "'",
 	transactionDelimiters: {
 		begin: "BEGIN TRANSACTION",
 		end: "COMMIT TRANSACTION"
@@ -2407,7 +2470,6 @@ const mysqlConfiguration = (rc = new RuntimeConfiguration()) => ({
 	},
 	preparedStatementPlaceholder: "?",
 	runtimeConfiguration: rc,
-	stringDelimiter: "'",
 	transactionDelimiters: {
 		begin: "START TRANSACTION",
 		end: "COMMIT"
@@ -2451,7 +2513,6 @@ const postgresConfiguration = (rc = new RuntimeConfiguration()) => ({
 	},
 	preparedStatementPlaceholder: "$",
 	runtimeConfiguration: rc,
-	stringDelimiter: "'",
 	transactionDelimiters: {
 		begin: "BEGIN",
 		end: "COMMIT"
@@ -2495,7 +2556,6 @@ const sqliteConfiguration = (rc = new RuntimeConfiguration()) => ({
 	},
 	preparedStatementPlaceholder: "?",
 	runtimeConfiguration: rc,
-	stringDelimiter: "'",
 	transactionDelimiters: {
 		begin: "BEGIN",
 		end: "COMMIT"

@@ -55,8 +55,6 @@ type Dialect = {
   preparedStatementPlaceholder: string;
   /** The {@link RuntimeConfiguration} bound to this dialect instance. */
   runtimeConfiguration: RuntimeConfiguration;
-  /** The delimiter used to quote string literals (typically `'`). */
-  stringDelimiter: string;
   /** The delimiters used to wrap transaction blocks (e.g. `BEGIN`/`COMMIT`). */
   transactionDelimiters: ConfigurationDelimiters;
 };
@@ -159,14 +157,44 @@ declare const ParserMode: {
 type ParserMode = (typeof ParserMode)[keyof typeof ParserMode];
 //#endregion
 //#region src/helpers/sql.d.ts
-/** Accumulates SQL fragments and their bound values while a parser walks a query state. */
+/**
+ * Accumulates SQL fragments and their bound values while a parser walks a query state.
+ *
+ * Deliberately dialect-agnostic: it emits {@link PLACEHOLDER_TOKEN}, never a dialect's `?`/`$`, so
+ * it needs no {@link Dialect}. The dialect's placeholder is applied once, at the top-level parse.
+ */
 declare class SqlHelper {
   #private;
-  constructor(config: Dialect, parserMode: ParserMode);
-  addDynamicValue: (value: any) => string;
+  constructor(parserMode: ParserMode);
+  /**
+   * Emits one bound value: a {@link PLACEHOLDER_TOKEN} in Prepared mode (with the value recorded for
+   * binding), or the value inlined in Raw mode.
+   *
+   * This appends directly rather than returning text for the caller to pass back through
+   * {@link addSqlSnippet}, so that `addSqlSnippet` can reject *every* NUL byte it sees. If the token
+   * passed through the public path, `addSqlSnippet` could not tell our token from a NUL sequence
+   * in a caller's raw fragment — which is exactly how a raw fragment could forge a placeholder.
+   */
+  addDynamicValue: (value: any) => void;
+  /**
+   * Appends a SQL fragment. This is the path every caller-supplied raw fragment takes, so a NUL
+   * byte is refused outright: it could forge a {@link PLACEHOLDER_TOKEN} and steal a bound value's
+   * position, and it silently truncates the statement in some drivers. Our own tokens never come
+   * through here — see {@link addDynamicValue}.
+   */
   addSqlSnippet: (sql: string) => void;
+  /**
+   * Splices a sub-parser's already-rendered SQL and its bound values into this helper. The sub-SQL
+   * legitimately carries {@link PLACEHOLDER_TOKEN}s, so it bypasses the NUL check in
+   * {@link addSqlSnippet} — its own fragments were validated when the sub-parser built them.
+   */
   addSqlSnippetWithValues: (sqlString: string, values: any[]) => void;
   clear: () => void;
+  /**
+   * The rendered SQL, still carrying {@link PLACEHOLDER_TOKEN} for each bound value. Sub-parsers
+   * compose their output into a parent helper, so the tokens must survive until the top-level
+   * parse swaps them for the dialect's placeholder via {@link renderPlaceholders}.
+   */
   getSql: () => string;
   getSqlDebug: () => string;
   getValues: () => any[];
@@ -655,7 +683,7 @@ type ToSqlOptions = {
 declare const defaultToSql: (state: QueryState | undefined, config: Dialect, mode: ParserMode, options?: ToSqlOptions) => SqlHelper;
 /**
  * Renders one query state as a prepared SQL string. MSSQL returns a self-contained
- * `sp_executesql`; Postgres rewrites `?`→`$n`; the rest keep the dialect's `?` placeholder.
+ * `sp_executesql`; Postgres rewrites to `$n`; the rest keep the dialect's `?` placeholder.
  */
 declare const parse: (state: QueryState, config: Dialect) => string;
 /**
@@ -862,7 +890,10 @@ declare class MultiBuilder {
   parseRaw: () => string;
   /** Removes a previously added builder from the batch by name. */
   removeBuilder: (builderName: string) => void;
-  /** Reorders the batch to match the given builder names; names not present are dropped. */
+  /**
+   * Reorders the batch to match the given builder names; names not present are dropped and
+   * repeated names are deduplicated (first occurrence wins).
+   */
   reorderBuilders: (builderNames: string[]) => void;
   /** Sets whether the batch is wrapped in a transaction. */
   setTransactionState: (transactionState: MultiBuilderTransactionState) => void;
