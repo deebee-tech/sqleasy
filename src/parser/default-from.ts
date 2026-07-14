@@ -10,7 +10,7 @@ import type { QueryState } from '../state/query';
 import { defaultToSql } from './to-sql';
 
 export const defaultFrom = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.fromStates.length === 0) {
     throw new ParserError(ParserArea.From, 'No tables to select from');

@@ -15,6 +15,5 @@ export const mysqlConfiguration = (
   identifierDelimiters: { begin: '`', end: '`' },
   preparedStatementPlaceholder: '?',
   runtimeConfiguration: rc,
-  stringDelimiter: "'",
   transactionDelimiters: { begin: 'START TRANSACTION', end: 'COMMIT' },
 });

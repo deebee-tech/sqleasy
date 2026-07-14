@@ -9,7 +9,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 
 export const defaultHaving = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.havingStates.length === 0) {
     return sqlHelper;
@@ -80,7 +80,7 @@ export const defaultHaving = (state: QueryState, config: Dialect, mode: ParserMo
       }
 
       sqlHelper.addSqlSnippet(' ');
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(havingState.values[0]));
+      sqlHelper.addDynamicValue(havingState.values[0]);
 
       if (i < state.havingStates.length - 1) {
         sqlHelper.addSqlSnippet(' ');

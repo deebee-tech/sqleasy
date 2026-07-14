@@ -15,6 +15,5 @@ export const sqliteConfiguration = (
   identifierDelimiters: { begin: '"', end: '"' },
   preparedStatementPlaceholder: '?',
   runtimeConfiguration: rc,
-  stringDelimiter: "'",
   transactionDelimiters: { begin: 'BEGIN', end: 'COMMIT' },
 });

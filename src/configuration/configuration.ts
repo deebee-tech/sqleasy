@@ -26,9 +26,6 @@ export type Dialect = {
   /** The {@link RuntimeConfiguration} bound to this dialect instance. */
   runtimeConfiguration: RuntimeConfiguration;
 
-  /** The delimiter used to quote string literals (typically `'`). */
-  stringDelimiter: string;
-
   /** The delimiters used to wrap transaction blocks (e.g. `BEGIN`/`COMMIT`). */
   transactionDelimiters: ConfigurationDelimiters;
 };

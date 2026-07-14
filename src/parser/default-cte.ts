@@ -7,7 +7,7 @@ import type { QueryState } from '../state/query';
 import { defaultToSql } from './to-sql';
 
 export const defaultCte = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.cteStates.length === 0) {
     return sqlHelper;

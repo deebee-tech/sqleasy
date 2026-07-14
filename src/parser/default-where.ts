@@ -10,7 +10,7 @@ import type { QueryState } from '../state/query';
 import { defaultToSql } from './to-sql';
 
 export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.whereStates.length === 0) {
     return sqlHelper;
@@ -146,7 +146,7 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
       }
 
       sqlHelper.addSqlSnippet(' ');
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[0]));
+      sqlHelper.addDynamicValue(cur.values[0]);
       spaceAfter();
       continue;
     }
@@ -157,9 +157,9 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' ');
       sqlHelper.addSqlSnippet('BETWEEN ');
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[0]));
+      sqlHelper.addDynamicValue(cur.values[0]);
       sqlHelper.addSqlSnippet(' AND ');
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[1]));
+      sqlHelper.addDynamicValue(cur.values[1]);
       spaceAfter();
       continue;
     }
@@ -186,13 +186,20 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
     }
 
     if (cur.builderType === BuilderType.WhereInValues) {
+      // `IN ()` is a syntax error in every dialect. An empty list means "match nothing", but
+      // silently rewriting it to a false predicate would hide a caller bug (an unfiltered
+      // collection), so refuse it and let the caller decide.
+      if (cur.values.length === 0) {
+        throw new ParserError(ParserArea.Where, 'IN requires at least one value');
+      }
+
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
       sqlHelper.addSqlSnippet('.');
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IN (');
 
       for (let j = 0; j < cur.values.length; j++) {
-        sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[j]));
+        sqlHelper.addDynamicValue(cur.values[j]);
         if (j < cur.values.length - 1) {
           sqlHelper.addSqlSnippet(', ');
         }
@@ -225,13 +232,18 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
     }
 
     if (cur.builderType === BuilderType.WhereNotInValues) {
+      // See WhereInValues above — `NOT IN ()` is equally invalid.
+      if (cur.values.length === 0) {
+        throw new ParserError(ParserArea.Where, 'NOT IN requires at least one value');
+      }
+
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
       sqlHelper.addSqlSnippet('.');
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' NOT IN (');
 
       for (let j = 0; j < cur.values.length; j++) {
-        sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(cur.values[j]));
+        sqlHelper.addDynamicValue(cur.values[j]);
         if (j < cur.values.length - 1) {
           sqlHelper.addSqlSnippet(', ');
         }

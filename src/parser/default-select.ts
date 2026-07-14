@@ -15,7 +15,7 @@ export const defaultSelect = (
   mode: ParserMode,
   options?: ToSqlOptions,
 ): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.selectStates.length === 0) {
     throw new ParserError(

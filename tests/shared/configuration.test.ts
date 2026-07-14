@@ -30,10 +30,6 @@ describe('Configuration', () => {
       expect(config.preparedStatementPlaceholder).toBe('?');
     });
 
-    it('stringDelimiter returns single quote', () => {
-      expect(config.stringDelimiter).toBe("'");
-    });
-
     it('transactionDelimiters returns BEGIN TRANSACTION / COMMIT TRANSACTION', () => {
       const delimiters = config.transactionDelimiters;
       expect(delimiters.begin).toBe('BEGIN TRANSACTION');
@@ -60,10 +56,6 @@ describe('Configuration', () => {
 
     it('preparedStatementPlaceholder returns ?', () => {
       expect(config.preparedStatementPlaceholder).toBe('?');
-    });
-
-    it('stringDelimiter returns single quote', () => {
-      expect(config.stringDelimiter).toBe("'");
     });
 
     it('transactionDelimiters returns START TRANSACTION / COMMIT', () => {
@@ -94,10 +86,6 @@ describe('Configuration', () => {
       expect(config.preparedStatementPlaceholder).toBe('$');
     });
 
-    it('stringDelimiter returns single quote', () => {
-      expect(config.stringDelimiter).toBe("'");
-    });
-
     it('transactionDelimiters returns BEGIN / COMMIT', () => {
       const delimiters = config.transactionDelimiters;
       expect(delimiters.begin).toBe('BEGIN');
@@ -124,10 +112,6 @@ describe('Configuration', () => {
 
     it('preparedStatementPlaceholder returns ?', () => {
       expect(config.preparedStatementPlaceholder).toBe('?');
-    });
-
-    it('stringDelimiter returns single quote', () => {
-      expect(config.stringDelimiter).toBe("'");
     });
 
     it('transactionDelimiters returns BEGIN / COMMIT', () => {

@@ -15,6 +15,5 @@ export const mssqlConfiguration = (
   identifierDelimiters: { begin: '[', end: ']' },
   preparedStatementPlaceholder: '?',
   runtimeConfiguration: rc,
-  stringDelimiter: "'",
   transactionDelimiters: { begin: 'BEGIN TRANSACTION', end: 'COMMIT TRANSACTION' },
 });

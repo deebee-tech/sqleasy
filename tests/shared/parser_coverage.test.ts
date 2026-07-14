@@ -74,23 +74,22 @@ describe('Parser coverage edge cases', () => {
 
   describe('sql_helper.ts', () => {
     it('getSqlDebug with more values than placeholders skips extra values', () => {
-      const rc = new RuntimeConfiguration();
-      const config = sqliteConfiguration(rc);
-      const helper = new SqlHelper(config, ParserMode.Prepared);
+      const helper = new SqlHelper(ParserMode.Prepared);
 
       helper.addSqlSnippet('SELECT * FROM users WHERE id = ');
-      const p1 = helper.addDynamicValue(42);
-      helper.addSqlSnippet(p1);
-      helper.addDynamicValue(99);
+      helper.addDynamicValue(42);
 
+      // `addDynamicValue` emits the placeholder token and records the value together, so a value
+      // can no longer exist without a placeholder (or vice versa). That mismatch used to be
+      // reachable — the caller had to remember to append the returned placeholder — and it
+      // silently shifted every later bound parameter by one.
       const debug = helper.getSqlDebug();
       expect(debug).toEqual('SELECT * FROM users WHERE id = 42');
+      expect(helper.getValues()).toEqual([42]);
     });
 
     it('getValueStringFromDataType with symbol type hits default branch', () => {
-      const rc = new RuntimeConfiguration();
-      const config = sqliteConfiguration(rc);
-      const helper = new SqlHelper(config, ParserMode.Raw);
+      const helper = new SqlHelper(ParserMode.Raw);
 
       const sym = Symbol('test');
       const result = helper.getValueStringFromDataType(sym);
@@ -98,9 +97,7 @@ describe('Parser coverage edge cases', () => {
     });
 
     it('getValueStringFromDataType with bigint type hits default branch', () => {
-      const rc = new RuntimeConfiguration();
-      const config = sqliteConfiguration(rc);
-      const helper = new SqlHelper(config, ParserMode.Raw);
+      const helper = new SqlHelper(ParserMode.Raw);
 
       const big = BigInt(9007199254740991);
       const result = helper.getValueStringFromDataType(big);
@@ -408,9 +405,8 @@ describe('Parser coverage edge cases', () => {
   });
 
   describe('Postgres configuration full coverage', () => {
-    it('covers stringDelimiter and transactionDelimiters', () => {
+    it('covers transactionDelimiters', () => {
       const config = postgresConfiguration(new RuntimeConfiguration());
-      expect(config.stringDelimiter).toEqual("'");
       expect(config.transactionDelimiters.begin).toEqual('BEGIN');
       expect(config.transactionDelimiters.end).toEqual('COMMIT');
     });

@@ -13,7 +13,7 @@ import type { QueryState } from '../state/query';
 import { defaultToSql } from './to-sql';
 
 export const defaultJoin = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  let sqlHelper = new SqlHelper(config, mode);
+  let sqlHelper = new SqlHelper(mode);
 
   if (state.joinStates.length === 0) {
     return sqlHelper;
@@ -265,7 +265,7 @@ const defaultJoinOns = (
 
       sqlHelper.addSqlSnippet(' ');
 
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(on.valueRight));
+      sqlHelper.addDynamicValue(on.valueRight);
 
       if (i < joinOnStates.length - 1) {
         sqlHelper.addSqlSnippet(' ');

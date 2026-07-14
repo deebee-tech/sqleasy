@@ -9,7 +9,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 
 export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.fromStates.length === 0) {
     throw new ParserError(ParserArea.General, 'UPDATE requires a table');
@@ -52,7 +52,7 @@ export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMo
     } else if (updateState.builderType === BuilderType.UpdateColumn) {
       sqlHelper.addSqlSnippet(quoteIdentifier(updateState.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' = ');
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(updateState.value));
+      sqlHelper.addDynamicValue(updateState.value);
     }
 
     if (i < state.updateStates.length - 1) {
