@@ -1,6 +1,6 @@
 {
   "name": "@deebeetech/sqleasy",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
   "keywords": [
     "sql",
@@ -28,15 +28,15 @@
     "url": "https://github.com/deebee-tech/sqleasy"
   },
   "type": "module",
-  "main": "dist/index.mjs",
+  "main": "index.mjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "types": "./index.d.mts",
+      "import": "./index.mjs",
+      "require": "./index.cjs"
     }
   },
-  "types": "dist/index.d.mts",
+  "types": "index.d.mts",
   "publishConfig": {
     "access": "public"
   },
