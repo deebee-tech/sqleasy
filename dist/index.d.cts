@@ -1,7 +1,9 @@
 //#region src/configuration/delimiters.d.ts
 /** Pair of delimiter strings for quoting identifiers or framing transaction blocks. */
 type ConfigurationDelimiters = {
-  /** Opening delimiter (e.g. `[`, `` ` ``, or `"`). */begin: string; /** Closing delimiter matching {@link ConfigurationDelimiters.begin}. */
+  /** Opening delimiter (e.g. `[`, `` ` ``, or `"`). */
+  begin: string;
+  /** Closing delimiter matching {@link ConfigurationDelimiters.begin}. */
   end: string;
 };
 //#endregion
@@ -19,10 +21,15 @@ declare class RuntimeConfiguration {
  * Identifies the target SQL database dialect for generation and quoting behavior.
  */
 declare const DatabaseType: {
-  /** Microsoft SQL Server. */readonly Mssql: "mssql"; /** PostgreSQL. */
-  readonly Postgres: "postgres"; /** MySQL or compatible (e.g. MariaDB). */
-  readonly Mysql: "mysql"; /** SQLite. */
-  readonly Sqlite: "sqlite"; /** Dialect not set or unrecognized. */
+  /** Microsoft SQL Server. */
+  readonly Mssql: "mssql";
+  /** PostgreSQL. */
+  readonly Postgres: "postgres";
+  /** MySQL or compatible (e.g. MariaDB). */
+  readonly Mysql: "mysql";
+  /** SQLite. */
+  readonly Sqlite: "sqlite";
+  /** Dialect not set or unrecognized. */
   readonly Unknown: "unknown";
 };
 /** One of the {@link DatabaseType} dialect identifiers. */
@@ -38,12 +45,19 @@ type DatabaseType = (typeof DatabaseType)[keyof typeof DatabaseType];
  * default schema, and transaction syntax.
  */
 type Dialect = {
-  /** The {@link DatabaseType} identifying this dialect. */databaseType: DatabaseType; /** The default schema/owner name (e.g. `"dbo"` for MSSQL, `"public"` for Postgres). */
-  defaultOwner: string; /** The delimiters used to quote identifiers (e.g. `[`/`]` for MSSQL, `"`/`"` for Postgres). */
-  identifierDelimiters: ConfigurationDelimiters; /** The placeholder character used in prepared statements (e.g. `"?"` or `"$"`). */
-  preparedStatementPlaceholder: string; /** The {@link RuntimeConfiguration} bound to this dialect instance. */
-  runtimeConfiguration: RuntimeConfiguration; /** The delimiter used to quote string literals (typically `'`). */
-  stringDelimiter: string; /** The delimiters used to wrap transaction blocks (e.g. `BEGIN`/`COMMIT`). */
+  /** The {@link DatabaseType} identifying this dialect. */
+  databaseType: DatabaseType;
+  /** The default schema/owner name (e.g. `"dbo"` for MSSQL, `"public"` for Postgres). */
+  defaultOwner: string;
+  /** The delimiters used to quote identifiers (e.g. `[`/`]` for MSSQL, `"`/`"` for Postgres). */
+  identifierDelimiters: ConfigurationDelimiters;
+  /** The placeholder character used in prepared statements (e.g. `"?"` or `"$"`). */
+  preparedStatementPlaceholder: string;
+  /** The {@link RuntimeConfiguration} bound to this dialect instance. */
+  runtimeConfiguration: RuntimeConfiguration;
+  /** The delimiter used to quote string literals (typically `'`). */
+  stringDelimiter: string;
+  /** The delimiters used to wrap transaction blocks (e.g. `BEGIN`/`COMMIT`). */
   transactionDelimiters: ConfigurationDelimiters;
 };
 //#endregion
@@ -52,13 +66,21 @@ type Dialect = {
  * SQL JOIN kinds: inner, outer variants, cross join, or none.
  */
 declare const JoinType: {
-  /** INNER JOIN. */readonly Inner: "Inner"; /** LEFT JOIN (synonym for left outer in many dialects). */
-  readonly Left: "Left"; /** LEFT OUTER JOIN. */
-  readonly LeftOuter: "LeftOuter"; /** RIGHT JOIN. */
-  readonly Right: "Right"; /** RIGHT OUTER JOIN. */
-  readonly RightOuter: "RightOuter"; /** FULL OUTER JOIN. */
-  readonly FullOuter: "FullOuter"; /** CROSS JOIN. */
-  readonly Cross: "Cross"; /** No join type / not applicable. */
+  /** INNER JOIN. */
+  readonly Inner: "Inner";
+  /** LEFT JOIN (synonym for left outer in many dialects). */
+  readonly Left: "Left";
+  /** LEFT OUTER JOIN. */
+  readonly LeftOuter: "LeftOuter";
+  /** RIGHT JOIN. */
+  readonly Right: "Right";
+  /** RIGHT OUTER JOIN. */
+  readonly RightOuter: "RightOuter";
+  /** FULL OUTER JOIN. */
+  readonly FullOuter: "FullOuter";
+  /** CROSS JOIN. */
+  readonly Cross: "Cross";
+  /** No join type / not applicable. */
   readonly None: "None";
 };
 /** One of the {@link JoinType} kinds. */
@@ -69,8 +91,11 @@ type JoinType = (typeof JoinType)[keyof typeof JoinType];
  * Sort direction for ORDER BY columns and expressions.
  */
 declare const OrderByDirection: {
-  /** Ascending (ASC). */readonly Ascending: "Ascending"; /** Descending (DESC). */
-  readonly Descending: "Descending"; /** No direction / dialect default. */
+  /** Ascending (ASC). */
+  readonly Ascending: "Ascending";
+  /** Descending (DESC). */
+  readonly Descending: "Descending";
+  /** No direction / dialect default. */
   readonly None: "None";
 };
 /** One of the {@link OrderByDirection} values. */
@@ -81,14 +106,23 @@ type OrderByDirection = (typeof OrderByDirection)[keyof typeof OrderByDirection]
  * Comparison operators for WHERE and HAVING predicates.
  */
 declare const WhereOperator: {
-  /** Equality (=). */readonly Equals: "Equals"; /** Inequality (<> or !=). */
-  readonly NotEquals: "NotEquals"; /** Strictly greater than (>). */
-  readonly GreaterThan: "GreaterThan"; /** Greater than or equal (>=). */
-  readonly GreaterThanOrEquals: "GreaterThanOrEquals"; /** Strictly less than (<). */
-  readonly LessThan: "LessThan"; /** Less than or equal (<=). */
-  readonly LessThanOrEquals: "LessThanOrEquals"; /** No operator specified. */
-  readonly None: "None"; /** Pattern match (LIKE) — the bound value carries any `%`/`_` wildcards. */
-  readonly Like: "Like"; /** Negated pattern match (NOT LIKE). */
+  /** Equality (=). */
+  readonly Equals: "Equals";
+  /** Inequality (<> or !=). */
+  readonly NotEquals: "NotEquals";
+  /** Strictly greater than (>). */
+  readonly GreaterThan: "GreaterThan";
+  /** Greater than or equal (>=). */
+  readonly GreaterThanOrEquals: "GreaterThanOrEquals";
+  /** Strictly less than (<). */
+  readonly LessThan: "LessThan";
+  /** Less than or equal (<=). */
+  readonly LessThanOrEquals: "LessThanOrEquals";
+  /** No operator specified. */
+  readonly None: "None";
+  /** Pattern match (LIKE) — the bound value carries any `%`/`_` wildcards. */
+  readonly Like: "Like";
+  /** Negated pattern match (NOT LIKE). */
   readonly NotLike: "NotLike";
 };
 /** One of the {@link WhereOperator} comparison values. */
@@ -99,8 +133,11 @@ type WhereOperator = (typeof WhereOperator)[keyof typeof WhereOperator];
  * Whether a multi-statement batch is wrapped in an explicit transaction block.
  */
 declare const MultiBuilderTransactionState: {
-  /** Emit the dialect's BEGIN/COMMIT (or equivalent) around the batch. */readonly TransactionOn: "TransactionOn"; /** Do not wrap the batch in a transaction. */
-  readonly TransactionOff: "TransactionOff"; /** Use default / unspecified transaction behavior. */
+  /** Emit the dialect's BEGIN/COMMIT (or equivalent) around the batch. */
+  readonly TransactionOn: "TransactionOn";
+  /** Do not wrap the batch in a transaction. */
+  readonly TransactionOff: "TransactionOff";
+  /** Use default / unspecified transaction behavior. */
   readonly None: "None";
 };
 /** One of the {@link MultiBuilderTransactionState} values. */
@@ -111,8 +148,11 @@ type MultiBuilderTransactionState = (typeof MultiBuilderTransactionState)[keyof 
  * Whether values are inlined into the SQL (Raw) or surfaced as bound parameters (Prepared).
  */
 declare const ParserMode: {
-  /** Values are rendered inline into the SQL string. */readonly Raw: "Raw"; /** Values are replaced by placeholders and surfaced separately. */
-  readonly Prepared: "Prepared"; /** No mode / unused. */
+  /** Values are rendered inline into the SQL string. */
+  readonly Raw: "Raw";
+  /** Values are replaced by placeholders and surfaced separately. */
+  readonly Prepared: "Prepared";
+  /** No mode / unused. */
   readonly None: "None";
 };
 /** One of the {@link ParserMode} values. */
@@ -139,47 +179,89 @@ declare class SqlHelper {
  * Used by the query builder to track fragments (FROM, WHERE, JOIN, etc.).
  */
 declare const BuilderType: {
-  /** Logical AND between predicate groups or conditions. */readonly And: "And"; /** FROM clause sourced from a nested builder/subquery. */
-  readonly FromBuilder: "FromBuilder"; /** FROM clause referencing a table name. */
-  readonly FromTable: "FromTable"; /** FROM clause using raw SQL text. */
-  readonly FromRaw: "FromRaw"; /** GROUP BY on a column reference. */
-  readonly GroupByColumn: "GroupByColumn"; /** GROUP BY using raw SQL. */
-  readonly GroupByRaw: "GroupByRaw"; /** HAVING condition (standard form). */
-  readonly Having: "Having"; /** HAVING clause using raw SQL. */
-  readonly HavingRaw: "HavingRaw"; /** INSERT values or body as raw SQL. */
-  readonly InsertRaw: "InsertRaw"; /** JOIN defined via a nested builder. */
-  readonly JoinBuilder: "JoinBuilder"; /** JOIN ON or clause fragment as raw SQL. */
-  readonly JoinRaw: "JoinRaw"; /** JOIN targeting a table reference. */
-  readonly JoinTable: "JoinTable"; /** No operation / placeholder. */
-  readonly None: "None"; /** Logical OR between predicate groups or conditions. */
-  readonly Or: "Or"; /** ORDER BY on a column with optional direction. */
-  readonly OrderByColumn: "OrderByColumn"; /** ORDER BY using raw SQL. */
-  readonly OrderByRaw: "OrderByRaw"; /** SELECT * (all columns). */
-  readonly SelectAll: "SelectAll"; /** SELECT list entry from a nested builder/subquery. */
-  readonly SelectBuilder: "SelectBuilder"; /** SELECT list entry for a single column/expression. */
-  readonly SelectColumn: "SelectColumn"; /** SELECT list entry as raw SQL. */
-  readonly SelectRaw: "SelectRaw"; /** UPDATE SET column assignment. */
-  readonly UpdateColumn: "UpdateColumn"; /** UPDATE fragment as raw SQL. */
-  readonly UpdateRaw: "UpdateRaw"; /** UNION set operator (distinct). */
-  readonly Union: "Union"; /** UNION ALL set operator. */
-  readonly UnionAll: "UnionAll"; /** INTERSECT set operator. */
-  readonly Intersect: "Intersect"; /** EXCEPT / MINUS set operator. */
-  readonly Except: "Except"; /** Common table expression defined via a builder. */
-  readonly CteBuilder: "CteBuilder"; /** CTE definition as raw SQL. */
-  readonly CteRaw: "CteRaw"; /** WHERE predicate (standard comparison or helper). */
-  readonly Where: "Where"; /** WHERE column BETWEEN low AND high. */
-  readonly WhereBetween: "WhereBetween"; /** Opens a parenthesized WHERE group. */
-  readonly WhereGroupBegin: "WhereGroupBegin"; /** Nested WHERE built from a sub-builder. */
-  readonly WhereGroupBuilder: "WhereGroupBuilder"; /** Closes a parenthesized WHERE group. */
-  readonly WhereGroupEnd: "WhereGroupEnd"; /** WHERE EXISTS (subquery from builder). */
-  readonly WhereExistsBuilder: "WhereExistsBuilder"; /** WHERE IN (subquery from builder). */
-  readonly WhereInBuilder: "WhereInBuilder"; /** WHERE IN (literal value list). */
-  readonly WhereInValues: "WhereInValues"; /** WHERE NOT EXISTS (subquery from builder). */
-  readonly WhereNotExistsBuilder: "WhereNotExistsBuilder"; /** WHERE NOT IN (subquery from builder). */
-  readonly WhereNotInBuilder: "WhereNotInBuilder"; /** WHERE NOT IN (literal value list). */
-  readonly WhereNotInValues: "WhereNotInValues"; /** WHERE column IS NOT NULL. */
-  readonly WhereNotNull: "WhereNotNull"; /** WHERE column IS NULL. */
-  readonly WhereNull: "WhereNull"; /** WHERE fragment as raw SQL. */
+  /** Logical AND between predicate groups or conditions. */
+  readonly And: "And";
+  /** FROM clause sourced from a nested builder/subquery. */
+  readonly FromBuilder: "FromBuilder";
+  /** FROM clause referencing a table name. */
+  readonly FromTable: "FromTable";
+  /** FROM clause using raw SQL text. */
+  readonly FromRaw: "FromRaw";
+  /** GROUP BY on a column reference. */
+  readonly GroupByColumn: "GroupByColumn";
+  /** GROUP BY using raw SQL. */
+  readonly GroupByRaw: "GroupByRaw";
+  /** HAVING condition (standard form). */
+  readonly Having: "Having";
+  /** HAVING clause using raw SQL. */
+  readonly HavingRaw: "HavingRaw";
+  /** INSERT values or body as raw SQL. */
+  readonly InsertRaw: "InsertRaw";
+  /** JOIN defined via a nested builder. */
+  readonly JoinBuilder: "JoinBuilder";
+  /** JOIN ON or clause fragment as raw SQL. */
+  readonly JoinRaw: "JoinRaw";
+  /** JOIN targeting a table reference. */
+  readonly JoinTable: "JoinTable";
+  /** No operation / placeholder. */
+  readonly None: "None";
+  /** Logical OR between predicate groups or conditions. */
+  readonly Or: "Or";
+  /** ORDER BY on a column with optional direction. */
+  readonly OrderByColumn: "OrderByColumn";
+  /** ORDER BY using raw SQL. */
+  readonly OrderByRaw: "OrderByRaw";
+  /** SELECT * (all columns). */
+  readonly SelectAll: "SelectAll";
+  /** SELECT list entry from a nested builder/subquery. */
+  readonly SelectBuilder: "SelectBuilder";
+  /** SELECT list entry for a single column/expression. */
+  readonly SelectColumn: "SelectColumn";
+  /** SELECT list entry as raw SQL. */
+  readonly SelectRaw: "SelectRaw";
+  /** UPDATE SET column assignment. */
+  readonly UpdateColumn: "UpdateColumn";
+  /** UPDATE fragment as raw SQL. */
+  readonly UpdateRaw: "UpdateRaw";
+  /** UNION set operator (distinct). */
+  readonly Union: "Union";
+  /** UNION ALL set operator. */
+  readonly UnionAll: "UnionAll";
+  /** INTERSECT set operator. */
+  readonly Intersect: "Intersect";
+  /** EXCEPT / MINUS set operator. */
+  readonly Except: "Except";
+  /** Common table expression defined via a builder. */
+  readonly CteBuilder: "CteBuilder";
+  /** CTE definition as raw SQL. */
+  readonly CteRaw: "CteRaw";
+  /** WHERE predicate (standard comparison or helper). */
+  readonly Where: "Where";
+  /** WHERE column BETWEEN low AND high. */
+  readonly WhereBetween: "WhereBetween";
+  /** Opens a parenthesized WHERE group. */
+  readonly WhereGroupBegin: "WhereGroupBegin";
+  /** Nested WHERE built from a sub-builder. */
+  readonly WhereGroupBuilder: "WhereGroupBuilder";
+  /** Closes a parenthesized WHERE group. */
+  readonly WhereGroupEnd: "WhereGroupEnd";
+  /** WHERE EXISTS (subquery from builder). */
+  readonly WhereExistsBuilder: "WhereExistsBuilder";
+  /** WHERE IN (subquery from builder). */
+  readonly WhereInBuilder: "WhereInBuilder";
+  /** WHERE IN (literal value list). */
+  readonly WhereInValues: "WhereInValues";
+  /** WHERE NOT EXISTS (subquery from builder). */
+  readonly WhereNotExistsBuilder: "WhereNotExistsBuilder";
+  /** WHERE NOT IN (subquery from builder). */
+  readonly WhereNotInBuilder: "WhereNotInBuilder";
+  /** WHERE NOT IN (literal value list). */
+  readonly WhereNotInValues: "WhereNotInValues";
+  /** WHERE column IS NOT NULL. */
+  readonly WhereNotNull: "WhereNotNull";
+  /** WHERE column IS NULL. */
+  readonly WhereNull: "WhereNull";
+  /** WHERE fragment as raw SQL. */
   readonly WhereRaw: "WhereRaw";
 };
 /** One of the {@link BuilderType} discriminator values. */
@@ -191,10 +273,15 @@ type BuilderType = (typeof BuilderType)[keyof typeof BuilderType];
  * Populated by the builder; exposed via {@link QueryState.cteStates}.
  */
 type CteState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** CTE name as declared in WITH. */
-  name: string; /** Whether this CTE is declared as RECURSIVE. */
-  recursive: boolean; /** Nested query state for the CTE body, when not using raw SQL. */
-  subquery: QueryState | undefined; /** Raw SQL fragment for the CTE body when bypassing structured state. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** CTE name as declared in WITH. */
+  name: string;
+  /** Whether this CTE is declared as RECURSIVE. */
+  recursive: boolean;
+  /** Nested query state for the CTE body, when not using raw SQL. */
+  subquery: QueryState | undefined;
+  /** Raw SQL fragment for the CTE body when bypassing structured state. */
   raw: string | undefined;
 };
 /** Creates a {@link CteState} with default field values. */
@@ -206,11 +293,17 @@ declare const createCteState: () => CteState;
  * Populated by the builder; exposed via {@link QueryState.fromStates}.
  */
 type FromState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Schema or database owner qualifier for the table. */
-  owner: string | undefined; /** Base table name when this source is a table. */
-  tableName: string | undefined; /** Table or subquery alias in the FROM clause. */
-  alias: string | undefined; /** Nested query state when this FROM entry is a subquery. */
-  subquery: QueryState | undefined; /** Raw SQL for this FROM fragment when not using structured fields. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Schema or database owner qualifier for the table. */
+  owner: string | undefined;
+  /** Base table name when this source is a table. */
+  tableName: string | undefined;
+  /** Table or subquery alias in the FROM clause. */
+  alias: string | undefined;
+  /** Nested query state when this FROM entry is a subquery. */
+  subquery: QueryState | undefined;
+  /** Raw SQL for this FROM fragment when not using structured fields. */
   raw: string | undefined;
 };
 /** Creates a {@link FromState} with default field values. */
@@ -222,9 +315,13 @@ declare const createFromState: () => FromState;
  * Populated by the builder; exposed via {@link QueryState.groupByStates}.
  */
 type GroupByState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Table name or alias qualifying the grouped column. */
-  tableNameOrAlias: string | undefined; /** Column name being grouped. */
-  columnName: string | undefined; /** Raw SQL for this GROUP BY term when not using structured fields. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Table name or alias qualifying the grouped column. */
+  tableNameOrAlias: string | undefined;
+  /** Column name being grouped. */
+  columnName: string | undefined;
+  /** Raw SQL for this GROUP BY term when not using structured fields. */
   raw: string | undefined;
 };
 /** Creates a {@link GroupByState} with default field values. */
@@ -236,11 +333,17 @@ declare const createGroupByState: () => GroupByState;
  * Populated by the builder; exposed via {@link QueryState.havingStates}.
  */
 type HavingState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Table name or alias qualifying the column in the predicate. */
-  tableNameOrAlias: string | undefined; /** Column name in the HAVING expression. */
-  columnName: string | undefined; /** Comparison or logical operator for this HAVING term. */
-  whereOperator: WhereOperator; /** Raw SQL for this HAVING fragment when not using structured fields. */
-  raw: string | undefined; /** Bound parameter values associated with this predicate. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Table name or alias qualifying the column in the predicate. */
+  tableNameOrAlias: string | undefined;
+  /** Column name in the HAVING expression. */
+  columnName: string | undefined;
+  /** Comparison or logical operator for this HAVING term. */
+  whereOperator: WhereOperator;
+  /** Raw SQL for this HAVING fragment when not using structured fields. */
+  raw: string | undefined;
+  /** Bound parameter values associated with this predicate. */
   values: any[];
 };
 /** Creates a {@link HavingState} with default field values. */
@@ -252,10 +355,15 @@ declare const createHavingState: () => HavingState;
  * Populated by the builder; exposed via {@link QueryState.insertState}.
  */
 type InsertState = {
-  /** Schema or database owner qualifier for the target table. */owner: string | undefined; /** Target table name. */
-  tableName: string | undefined; /** Column names for the INSERT column list. */
-  columns: string[]; /** One inner array per row; values align with {@link InsertState.columns}. */
-  values: any[][]; /** Raw SQL for the INSERT when not fully represented by structured fields. */
+  /** Schema or database owner qualifier for the target table. */
+  owner: string | undefined;
+  /** Target table name. */
+  tableName: string | undefined;
+  /** Column names for the INSERT column list. */
+  columns: string[];
+  /** One inner array per row; values align with {@link InsertState.columns}. */
+  values: any[][];
+  /** Raw SQL for the INSERT when not fully represented by structured fields. */
   raw: string | undefined;
 };
 /** Creates an {@link InsertState} with default field values. */
@@ -266,13 +374,21 @@ declare const createInsertState: () => InsertState;
  * Classifies each entry in a JOIN ON condition list (column compare, grouping, logic).
  */
 declare const JoinOnOperator: {
-  /** Opens a parenthesized ON predicate group. */readonly GroupBegin: "GroupBegin"; /** Closes a parenthesized ON predicate group. */
-  readonly GroupEnd: "GroupEnd"; /** Standard ON left op right comparison. */
-  readonly On: "On"; /** ON fragment as raw SQL. */
-  readonly Raw: "Raw"; /** ON right-hand value or bound parameter. */
-  readonly Value: "Value"; /** Logical AND between ON parts. */
-  readonly And: "And"; /** Logical OR between ON parts. */
-  readonly Or: "Or"; /** No operator / unused slot. */
+  /** Opens a parenthesized ON predicate group. */
+  readonly GroupBegin: "GroupBegin";
+  /** Closes a parenthesized ON predicate group. */
+  readonly GroupEnd: "GroupEnd";
+  /** Standard ON left op right comparison. */
+  readonly On: "On";
+  /** ON fragment as raw SQL. */
+  readonly Raw: "Raw";
+  /** ON right-hand value or bound parameter. */
+  readonly Value: "Value";
+  /** Logical AND between ON parts. */
+  readonly And: "And";
+  /** Logical OR between ON parts. */
+  readonly Or: "Or";
+  /** No operator / unused slot. */
   readonly None: "None";
 };
 /** One of the {@link JoinOnOperator} values. */
@@ -283,12 +399,19 @@ type JoinOnOperator = (typeof JoinOnOperator)[keyof typeof JoinOnOperator];
  * Comparison operators used in JOIN ON conditions (e.g. tableA.id = tableB.id).
  */
 declare const JoinOperator: {
-  /** Equality (=). */readonly Equals: "Equals"; /** Inequality (<> or !=). */
-  readonly NotEquals: "NotEquals"; /** Strictly greater than (>). */
-  readonly GreaterThan: "GreaterThan"; /** Greater than or equal (>=). */
-  readonly GreaterThanOrEquals: "GreaterThanOrEquals"; /** Strictly less than (<). */
-  readonly LessThan: "LessThan"; /** Less than or equal (<=). */
-  readonly LessThanOrEquals: "LessThanOrEquals"; /** No operator specified. */
+  /** Equality (=). */
+  readonly Equals: "Equals";
+  /** Inequality (<> or !=). */
+  readonly NotEquals: "NotEquals";
+  /** Strictly greater than (>). */
+  readonly GreaterThan: "GreaterThan";
+  /** Greater than or equal (>=). */
+  readonly GreaterThanOrEquals: "GreaterThanOrEquals";
+  /** Strictly less than (<). */
+  readonly LessThan: "LessThan";
+  /** Less than or equal (<=). */
+  readonly LessThanOrEquals: "LessThanOrEquals";
+  /** No operator specified. */
   readonly None: "None";
 };
 /** One of the {@link JoinOperator} comparison values. */
@@ -300,13 +423,21 @@ type JoinOperator = (typeof JoinOperator)[keyof typeof JoinOperator];
  * Populated by the builder; nested under {@link JoinState.joinOnStates}.
  */
 type JoinOnState = {
-  /** Alias of the left-hand column in the join condition. */aliasLeft: string | undefined; /** Left-hand column name. */
-  columnLeft: string | undefined; /** Operator relating left and right (e.g. equals). */
-  joinOperator: JoinOperator; /** Alias of the right-hand side (column or literal context). */
-  aliasRight: string | undefined; /** Right-hand column name when the RHS is a column. */
-  columnRight: string | undefined; /** AND/OR style combinator with the next join-on term. */
-  joinOnOperator: JoinOnOperator; /** Raw SQL for this join condition when not using structured fields. */
-  raw: string | undefined; /** Right-hand value when the RHS is a literal or parameter. */
+  /** Alias of the left-hand column in the join condition. */
+  aliasLeft: string | undefined;
+  /** Left-hand column name. */
+  columnLeft: string | undefined;
+  /** Operator relating left and right (e.g. equals). */
+  joinOperator: JoinOperator;
+  /** Alias of the right-hand side (column or literal context). */
+  aliasRight: string | undefined;
+  /** Right-hand column name when the RHS is a column. */
+  columnRight: string | undefined;
+  /** AND/OR style combinator with the next join-on term. */
+  joinOnOperator: JoinOnOperator;
+  /** Raw SQL for this join condition when not using structured fields. */
+  raw: string | undefined;
+  /** Right-hand value when the RHS is a literal or parameter. */
   valueRight: any | undefined;
 };
 /** Creates a {@link JoinOnState} with default field values. */
@@ -318,13 +449,21 @@ declare const createJoinOnState: () => JoinOnState;
  * Populated by the builder; exposed via {@link QueryState.joinStates}.
  */
 type JoinState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** INNER, LEFT, RIGHT, etc. */
-  joinType: JoinType; /** Schema or owner for the joined table. */
-  owner: string | undefined; /** Joined table name. */
-  tableName: string | undefined; /** Alias for the joined relation. */
-  alias: string | undefined; /** Nested query state when the join target is a subquery. */
-  subquery: QueryState | undefined; /** Raw SQL for the join target or full join fragment when applicable. */
-  raw: string | undefined; /** Ordered ON/AND conditions for this join. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** INNER, LEFT, RIGHT, etc. */
+  joinType: JoinType;
+  /** Schema or owner for the joined table. */
+  owner: string | undefined;
+  /** Joined table name. */
+  tableName: string | undefined;
+  /** Alias for the joined relation. */
+  alias: string | undefined;
+  /** Nested query state when the join target is a subquery. */
+  subquery: QueryState | undefined;
+  /** Raw SQL for the join target or full join fragment when applicable. */
+  raw: string | undefined;
+  /** Ordered ON/AND conditions for this join. */
   joinOnStates: JoinOnState[];
 };
 /** Creates a {@link JoinState} with default field values. */
@@ -336,10 +475,15 @@ declare const createJoinState: () => JoinState;
  * Populated by the builder; exposed via {@link QueryState.orderByStates}.
  */
 type OrderByState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Table name or alias qualifying the sort column. */
-  tableNameOrAlias: string | undefined; /** Column or expression name used for ordering. */
-  columnName: string | undefined; /** ASC, DESC, or none. */
-  direction: OrderByDirection; /** Raw SQL for this ORDER BY term when not using structured fields. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Table name or alias qualifying the sort column. */
+  tableNameOrAlias: string | undefined;
+  /** Column or expression name used for ordering. */
+  columnName: string | undefined;
+  /** ASC, DESC, or none. */
+  direction: OrderByDirection;
+  /** Raw SQL for this ORDER BY term when not using structured fields. */
   raw: string | undefined;
 };
 /** Creates an {@link OrderByState} with default field values. */
@@ -351,11 +495,17 @@ declare const createOrderByState: () => OrderByState;
  * Populated by the builder; exposed via {@link QueryState.selectStates}.
  */
 type SelectState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Table name or alias qualifying the selected column. */
-  tableNameOrAlias: string | undefined; /** Column name or expression identifier. */
-  columnName: string | undefined; /** Output alias for this select item. */
-  alias: string | undefined; /** Nested query state when this item is a scalar subquery. */
-  subquery: QueryState | undefined; /** Raw SQL for this select item when not using structured fields. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Table name or alias qualifying the selected column. */
+  tableNameOrAlias: string | undefined;
+  /** Column name or expression identifier. */
+  columnName: string | undefined;
+  /** Output alias for this select item. */
+  alias: string | undefined;
+  /** Nested query state when this item is a scalar subquery. */
+  subquery: QueryState | undefined;
+  /** Raw SQL for this select item when not using structured fields. */
   raw: string | undefined;
 };
 /** Creates a {@link SelectState} with default field values. */
@@ -367,8 +517,11 @@ declare const createSelectState: () => SelectState;
  * Populated by the builder; exposed via {@link QueryState.unionStates}.
  */
 type UnionState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** State for the branch query when not represented as raw SQL. */
-  subquery: QueryState | undefined; /** Raw SQL for this compound branch when applicable. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** State for the branch query when not represented as raw SQL. */
+  subquery: QueryState | undefined;
+  /** Raw SQL for this compound branch when applicable. */
   raw: string | undefined;
 };
 /** Creates a {@link UnionState} with default field values. */
@@ -380,9 +533,13 @@ declare const createUnionState: () => UnionState;
  * Populated by the builder; exposed via {@link QueryState.updateStates}.
  */
 type UpdateState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Target column name being updated. */
-  columnName: string | undefined; /** New value or parameter placeholder binding. */
-  value: any; /** Raw SQL for this SET fragment when not using structured fields. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Target column name being updated. */
+  columnName: string | undefined;
+  /** New value or parameter placeholder binding. */
+  value: any;
+  /** Raw SQL for this SET fragment when not using structured fields. */
   raw: string | undefined;
 };
 /** Creates an {@link UpdateState} with default field values. */
@@ -394,12 +551,19 @@ declare const createUpdateState: () => UpdateState;
  * Populated by the builder; exposed via {@link QueryState.whereStates}.
  */
 type WhereState = {
-  /** Which builder variant produced this state. */builderType: BuilderType; /** Table name or alias qualifying the column. */
-  tableNameOrAlias: string | undefined; /** Column name in the predicate. */
-  columnName: string | undefined; /** Comparison or logical operator for this term. */
-  whereOperator: WhereOperator; /** Raw SQL for this WHERE fragment when not using structured fields. */
-  raw: string | undefined; /** Nested query state when the RHS is a subquery. */
-  subquery: QueryState | undefined; /** Bound parameter values for this predicate. */
+  /** Which builder variant produced this state. */
+  builderType: BuilderType;
+  /** Table name or alias qualifying the column. */
+  tableNameOrAlias: string | undefined;
+  /** Column name in the predicate. */
+  columnName: string | undefined;
+  /** Comparison or logical operator for this term. */
+  whereOperator: WhereOperator;
+  /** Raw SQL for this WHERE fragment when not using structured fields. */
+  raw: string | undefined;
+  /** Nested query state when the RHS is a subquery. */
+  subquery: QueryState | undefined;
+  /** Bound parameter values for this predicate. */
   values: any[];
 };
 /** Creates a {@link WhereState} with default field values. */
@@ -410,9 +574,13 @@ declare const createWhereState: () => WhereState;
  * High-level SQL statement kind the builder is assembling.
  */
 declare const QueryType: {
-  /** SELECT query. */readonly Select: "Select"; /** INSERT statement. */
-  readonly Insert: "Insert"; /** UPDATE statement. */
-  readonly Update: "Update"; /** DELETE statement. */
+  /** SELECT query. */
+  readonly Select: "Select";
+  /** INSERT statement. */
+  readonly Insert: "Insert";
+  /** UPDATE statement. */
+  readonly Update: "Update";
+  /** DELETE statement. */
   readonly Delete: "Delete";
 };
 /** One of the {@link QueryType} statement kinds. */
@@ -424,23 +592,41 @@ type QueryType = (typeof QueryType)[keyof typeof QueryType];
  * Arrays preserve clause order; insert/update fields apply per query kind.
  */
 type QueryState = {
-  /** Logical name of the builder instance, if set. */builderName: string; /** High-level statement kind (SELECT, INSERT, etc.). */
-  queryType: QueryType; /** FROM sources in declaration order. */
-  fromStates: FromState[]; /** JOIN clauses in declaration order. */
-  joinStates: JoinState[]; /** WHERE predicates in declaration order. */
-  whereStates: WhereState[]; /** ORDER BY terms in declaration order. */
-  orderByStates: OrderByState[]; /** SELECT list items in declaration order. */
-  selectStates: SelectState[]; /** GROUP BY terms in declaration order. */
-  groupByStates: GroupByState[]; /** HAVING predicates in declaration order. */
-  havingStates: HavingState[]; /** UNION / compound-query parts in declaration order. */
-  unionStates: UnionState[]; /** WITH (CTE) entries in declaration order. */
-  cteStates: CteState[]; /** INSERT-specific state; undefined for non-INSERT queries. */
-  insertState: InsertState | undefined; /** UPDATE SET assignments in declaration order. */
-  updateStates: UpdateState[]; /** True when this state represents a nested subquery, not the outer query. */
-  isInnerStatement: boolean; /** Maximum row count (0 often means unset; dialect-specific). */
-  limit: number; /** Rows to skip before returning (0 often means unset). */
-  offset: number; /** Whether SELECT DISTINCT was requested. */
-  distinct: boolean; /** Opaque hook for dialect- or app-specific extensions. */
+  /** Logical name of the builder instance, if set. */
+  builderName: string;
+  /** High-level statement kind (SELECT, INSERT, etc.). */
+  queryType: QueryType;
+  /** FROM sources in declaration order. */
+  fromStates: FromState[];
+  /** JOIN clauses in declaration order. */
+  joinStates: JoinState[];
+  /** WHERE predicates in declaration order. */
+  whereStates: WhereState[];
+  /** ORDER BY terms in declaration order. */
+  orderByStates: OrderByState[];
+  /** SELECT list items in declaration order. */
+  selectStates: SelectState[];
+  /** GROUP BY terms in declaration order. */
+  groupByStates: GroupByState[];
+  /** HAVING predicates in declaration order. */
+  havingStates: HavingState[];
+  /** UNION / compound-query parts in declaration order. */
+  unionStates: UnionState[];
+  /** WITH (CTE) entries in declaration order. */
+  cteStates: CteState[];
+  /** INSERT-specific state; undefined for non-INSERT queries. */
+  insertState: InsertState | undefined;
+  /** UPDATE SET assignments in declaration order. */
+  updateStates: UpdateState[];
+  /** True when this state represents a nested subquery, not the outer query. */
+  isInnerStatement: boolean;
+  /** Maximum row count (0 often means unset; dialect-specific). */
+  limit: number;
+  /** Rows to skip before returning (0 often means unset). */
+  offset: number;
+  /** Whether SELECT DISTINCT was requested. */
+  distinct: boolean;
+  /** Opaque hook for dialect- or app-specific extensions. */
   customState: any | undefined;
 };
 /** Creates a {@link QueryState} with default field values (an empty SELECT). */
@@ -692,10 +878,15 @@ declare class MultiBuilder {
  * to describe or coerce column values on top of the builder.
  */
 declare const Datatype: {
-  /** Boolean value. */readonly Boolean: "Boolean"; /** Date/time value. */
-  readonly DateTime: "DateTime"; /** Numeric value. */
-  readonly Number: "Number"; /** String value. */
-  readonly String: "String"; /** Unknown or unspecified type. */
+  /** Boolean value. */
+  readonly Boolean: "Boolean";
+  /** Date/time value. */
+  readonly DateTime: "DateTime";
+  /** Numeric value. */
+  readonly Number: "Number";
+  /** String value. */
+  readonly String: "String";
+  /** Unknown or unspecified type. */
   readonly Unknown: "Unknown";
 };
 /** One of the {@link Datatype} value categories. */
@@ -706,12 +897,19 @@ type Datatype = (typeof Datatype)[keyof typeof Datatype];
  * Indicates which SQL clause produced a parser error for clearer diagnostics.
  */
 declare const ParserArea: {
-  /** SELECT list or projections. */readonly Select: "Select"; /** FROM clause. */
-  readonly From: "From"; /** JOIN definitions. */
-  readonly Join: "Join"; /** WHERE clause. */
-  readonly Where: "Where"; /** ORDER BY clause. */
-  readonly OrderBy: "OrderBy"; /** LIMIT, OFFSET, FETCH, TOP, etc. */
-  readonly LimitOffset: "LimitOffset"; /** Cross-clause or unspecified area. */
+  /** SELECT list or projections. */
+  readonly Select: "Select";
+  /** FROM clause. */
+  readonly From: "From";
+  /** JOIN definitions. */
+  readonly Join: "Join";
+  /** WHERE clause. */
+  readonly Where: "Where";
+  /** ORDER BY clause. */
+  readonly OrderBy: "OrderBy";
+  /** LIMIT, OFFSET, FETCH, TOP, etc. */
+  readonly LimitOffset: "LimitOffset";
+  /** Cross-clause or unspecified area. */
   readonly General: "General";
 };
 /** One of the {@link ParserArea} clause identifiers. */

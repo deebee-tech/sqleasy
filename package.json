@@ -1,6 +1,6 @@
 {
   "name": "@deebeetech/sqleasy",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
   "keywords": [
     "sql",

@@ -4,47 +4,89 @@
 * Used by the query builder to track fragments (FROM, WHERE, JOIN, etc.).
 */
 const BuilderType = {
+	/** Logical AND between predicate groups or conditions. */
 	And: "And",
+	/** FROM clause sourced from a nested builder/subquery. */
 	FromBuilder: "FromBuilder",
+	/** FROM clause referencing a table name. */
 	FromTable: "FromTable",
+	/** FROM clause using raw SQL text. */
 	FromRaw: "FromRaw",
+	/** GROUP BY on a column reference. */
 	GroupByColumn: "GroupByColumn",
+	/** GROUP BY using raw SQL. */
 	GroupByRaw: "GroupByRaw",
+	/** HAVING condition (standard form). */
 	Having: "Having",
+	/** HAVING clause using raw SQL. */
 	HavingRaw: "HavingRaw",
+	/** INSERT values or body as raw SQL. */
 	InsertRaw: "InsertRaw",
+	/** JOIN defined via a nested builder. */
 	JoinBuilder: "JoinBuilder",
+	/** JOIN ON or clause fragment as raw SQL. */
 	JoinRaw: "JoinRaw",
+	/** JOIN targeting a table reference. */
 	JoinTable: "JoinTable",
+	/** No operation / placeholder. */
 	None: "None",
+	/** Logical OR between predicate groups or conditions. */
 	Or: "Or",
+	/** ORDER BY on a column with optional direction. */
 	OrderByColumn: "OrderByColumn",
+	/** ORDER BY using raw SQL. */
 	OrderByRaw: "OrderByRaw",
+	/** SELECT * (all columns). */
 	SelectAll: "SelectAll",
+	/** SELECT list entry from a nested builder/subquery. */
 	SelectBuilder: "SelectBuilder",
+	/** SELECT list entry for a single column/expression. */
 	SelectColumn: "SelectColumn",
+	/** SELECT list entry as raw SQL. */
 	SelectRaw: "SelectRaw",
+	/** UPDATE SET column assignment. */
 	UpdateColumn: "UpdateColumn",
+	/** UPDATE fragment as raw SQL. */
 	UpdateRaw: "UpdateRaw",
+	/** UNION set operator (distinct). */
 	Union: "Union",
+	/** UNION ALL set operator. */
 	UnionAll: "UnionAll",
+	/** INTERSECT set operator. */
 	Intersect: "Intersect",
+	/** EXCEPT / MINUS set operator. */
 	Except: "Except",
+	/** Common table expression defined via a builder. */
 	CteBuilder: "CteBuilder",
+	/** CTE definition as raw SQL. */
 	CteRaw: "CteRaw",
+	/** WHERE predicate (standard comparison or helper). */
 	Where: "Where",
+	/** WHERE column BETWEEN low AND high. */
 	WhereBetween: "WhereBetween",
+	/** Opens a parenthesized WHERE group. */
 	WhereGroupBegin: "WhereGroupBegin",
+	/** Nested WHERE built from a sub-builder. */
 	WhereGroupBuilder: "WhereGroupBuilder",
+	/** Closes a parenthesized WHERE group. */
 	WhereGroupEnd: "WhereGroupEnd",
+	/** WHERE EXISTS (subquery from builder). */
 	WhereExistsBuilder: "WhereExistsBuilder",
+	/** WHERE IN (subquery from builder). */
 	WhereInBuilder: "WhereInBuilder",
+	/** WHERE IN (literal value list). */
 	WhereInValues: "WhereInValues",
+	/** WHERE NOT EXISTS (subquery from builder). */
 	WhereNotExistsBuilder: "WhereNotExistsBuilder",
+	/** WHERE NOT IN (subquery from builder). */
 	WhereNotInBuilder: "WhereNotInBuilder",
+	/** WHERE NOT IN (literal value list). */
 	WhereNotInValues: "WhereNotInValues",
+	/** WHERE column IS NOT NULL. */
 	WhereNotNull: "WhereNotNull",
+	/** WHERE column IS NULL. */
 	WhereNull: "WhereNull",
+	/** WHERE fragment as raw SQL. */
 	WhereRaw: "WhereRaw"
 };
 //#endregion
@@ -53,13 +95,21 @@ const BuilderType = {
 * SQL JOIN kinds: inner, outer variants, cross join, or none.
 */
 const JoinType = {
+	/** INNER JOIN. */
 	Inner: "Inner",
+	/** LEFT JOIN (synonym for left outer in many dialects). */
 	Left: "Left",
+	/** LEFT OUTER JOIN. */
 	LeftOuter: "LeftOuter",
+	/** RIGHT JOIN. */
 	Right: "Right",
+	/** RIGHT OUTER JOIN. */
 	RightOuter: "RightOuter",
+	/** FULL OUTER JOIN. */
 	FullOuter: "FullOuter",
+	/** CROSS JOIN. */
 	Cross: "Cross",
+	/** No join type / not applicable. */
 	None: "None"
 };
 //#endregion
@@ -68,8 +118,11 @@ const JoinType = {
 * Sort direction for ORDER BY columns and expressions.
 */
 const OrderByDirection = {
+	/** Ascending (ASC). */
 	Ascending: "Ascending",
+	/** Descending (DESC). */
 	Descending: "Descending",
+	/** No direction / dialect default. */
 	None: "None"
 };
 //#endregion
@@ -78,9 +131,13 @@ const OrderByDirection = {
 * High-level SQL statement kind the builder is assembling.
 */
 const QueryType = {
+	/** SELECT query. */
 	Select: "Select",
+	/** INSERT statement. */
 	Insert: "Insert",
+	/** UPDATE statement. */
 	Update: "Update",
+	/** DELETE statement. */
 	Delete: "Delete"
 };
 //#endregion
@@ -89,14 +146,23 @@ const QueryType = {
 * Comparison operators for WHERE and HAVING predicates.
 */
 const WhereOperator = {
+	/** Equality (=). */
 	Equals: "Equals",
+	/** Inequality (<> or !=). */
 	NotEquals: "NotEquals",
+	/** Strictly greater than (>). */
 	GreaterThan: "GreaterThan",
+	/** Greater than or equal (>=). */
 	GreaterThanOrEquals: "GreaterThanOrEquals",
+	/** Strictly less than (<). */
 	LessThan: "LessThan",
+	/** Less than or equal (<=). */
 	LessThanOrEquals: "LessThanOrEquals",
+	/** No operator specified. */
 	None: "None",
+	/** Pattern match (LIKE) — the bound value carries any `%`/`_` wildcards. */
 	Like: "Like",
+	/** Negated pattern match (NOT LIKE). */
 	NotLike: "NotLike"
 };
 //#endregion
@@ -105,10 +171,15 @@ const WhereOperator = {
 * Identifies the target SQL database dialect for generation and quoting behavior.
 */
 const DatabaseType = {
+	/** Microsoft SQL Server. */
 	Mssql: "mssql",
+	/** PostgreSQL. */
 	Postgres: "postgres",
+	/** MySQL or compatible (e.g. MariaDB). */
 	Mysql: "mysql",
+	/** SQLite. */
 	Sqlite: "sqlite",
+	/** Dialect not set or unrecognized. */
 	Unknown: "unknown"
 };
 //#endregion
@@ -117,8 +188,11 @@ const DatabaseType = {
 * Whether a multi-statement batch is wrapped in an explicit transaction block.
 */
 const MultiBuilderTransactionState = {
+	/** Emit the dialect's BEGIN/COMMIT (or equivalent) around the batch. */
 	TransactionOn: "TransactionOn",
+	/** Do not wrap the batch in a transaction. */
 	TransactionOff: "TransactionOff",
+	/** Use default / unspecified transaction behavior. */
 	None: "None"
 };
 //#endregion
@@ -127,12 +201,19 @@ const MultiBuilderTransactionState = {
 * Indicates which SQL clause produced a parser error for clearer diagnostics.
 */
 const ParserArea = {
+	/** SELECT list or projections. */
 	Select: "Select",
+	/** FROM clause. */
 	From: "From",
+	/** JOIN definitions. */
 	Join: "Join",
+	/** WHERE clause. */
 	Where: "Where",
+	/** ORDER BY clause. */
 	OrderBy: "OrderBy",
+	/** LIMIT, OFFSET, FETCH, TOP, etc. */
 	LimitOffset: "LimitOffset",
+	/** Cross-clause or unspecified area. */
 	General: "General"
 };
 //#endregion
@@ -141,8 +222,11 @@ const ParserArea = {
 * Whether values are inlined into the SQL (Raw) or surfaced as bound parameters (Prepared).
 */
 const ParserMode = {
+	/** Values are rendered inline into the SQL string. */
 	Raw: "Raw",
+	/** Values are replaced by placeholders and surfaced separately. */
 	Prepared: "Prepared",
+	/** No mode / unused. */
 	None: "None"
 };
 //#endregion
@@ -444,13 +528,21 @@ const defaultInsert = (state, config, mode) => {
 * Classifies each entry in a JOIN ON condition list (column compare, grouping, logic).
 */
 const JoinOnOperator = {
+	/** Opens a parenthesized ON predicate group. */
 	GroupBegin: "GroupBegin",
+	/** Closes a parenthesized ON predicate group. */
 	GroupEnd: "GroupEnd",
+	/** Standard ON left op right comparison. */
 	On: "On",
+	/** ON fragment as raw SQL. */
 	Raw: "Raw",
+	/** ON right-hand value or bound parameter. */
 	Value: "Value",
+	/** Logical AND between ON parts. */
 	And: "And",
+	/** Logical OR between ON parts. */
 	Or: "Or",
+	/** No operator / unused slot. */
 	None: "None"
 };
 //#endregion
@@ -459,12 +551,19 @@ const JoinOnOperator = {
 * Comparison operators used in JOIN ON conditions (e.g. tableA.id = tableB.id).
 */
 const JoinOperator = {
+	/** Equality (=). */
 	Equals: "Equals",
+	/** Inequality (<> or !=). */
 	NotEquals: "NotEquals",
+	/** Strictly greater than (>). */
 	GreaterThan: "GreaterThan",
+	/** Greater than or equal (>=). */
 	GreaterThanOrEquals: "GreaterThanOrEquals",
+	/** Strictly less than (<). */
 	LessThan: "LessThan",
+	/** Less than or equal (<=). */
 	LessThanOrEquals: "LessThanOrEquals",
+	/** No operator specified. */
 	None: "None"
 };
 //#endregion
@@ -2236,10 +2335,15 @@ var RuntimeConfiguration = class {
 * to describe or coerce column values on top of the builder.
 */
 const Datatype = {
+	/** Boolean value. */
 	Boolean: "Boolean",
+	/** Date/time value. */
 	DateTime: "DateTime",
+	/** Numeric value. */
 	Number: "Number",
+	/** String value. */
 	String: "String",
+	/** Unknown or unspecified type. */
 	Unknown: "Unknown"
 };
 //#endregion
