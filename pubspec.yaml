@@ -1,0 +1,19 @@
+name: sqleasy
+description: >-
+  A dialect-aware SQL builder for Postgres, MySQL, SQL Server and SQLite. Composes dialect-correct
+  SELECT/INSERT/UPDATE/DELETE with a fluent API and hands you the SQL and its bound parameters.
+  Zero dependencies, no driver, no ORM — bring your own connection.
+version: 0.1.0-dev
+
+repository: https://github.com/deebee-tech/sqleasy-dart
+issue_tracker: https://github.com/deebee-tech/sqleasy-dart/issues
+
+# Deliberately a PURE DART package — no `flutter:` dependency. It has no I/O, no platform channels
+# and no dart:io/dart:html, so it runs on Flutter mobile, desktop and web, and on plain Dart servers.
+# Adding a Flutter SDK dependency would cost the Dart-native classification on pub.dev and buy nothing.
+environment:
+  sdk: ^3.6.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
