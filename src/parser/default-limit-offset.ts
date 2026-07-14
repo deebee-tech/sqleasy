@@ -27,13 +27,7 @@ export const defaultLimitOffset = (
       sqlHelper.addSqlSnippet(state.limit.toString());
     }
 
-    if (
-      state.limit === 0 &&
-      !state.isInnerStatement &&
-      (state.whereStates === null ||
-        state.whereStates === undefined ||
-        state.whereStates.length === 0)
-    ) {
+    if (state.limit === 0 && !state.isInnerStatement && state.whereStates.length === 0) {
       sqlHelper.addSqlSnippet('LIMIT ');
       sqlHelper.addSqlSnippet(config.runtimeConfiguration.maxRowsReturned.toString());
     }
@@ -77,12 +71,7 @@ export const defaultLimitOffset = (
     }
   }
 
-  if (
-    state.offset > 0 &&
-    (state.orderByStates === null ||
-      state.orderByStates === undefined ||
-      state.orderByStates.length === 0)
-  ) {
+  if (state.offset > 0 && state.orderByStates.length === 0) {
     throw new ParserError(ParserArea.LimitOffset, 'ORDER BY is required when using OFFSET');
   }
 
