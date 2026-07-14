@@ -13,7 +13,7 @@ import type { QueryState } from '../state/query';
 import { defaultToSql } from './to-sql';
 
 export const defaultJoin = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  let sqlHelper = new SqlHelper(config, mode);
+  let sqlHelper = new SqlHelper(mode);
 
   if (state.joinStates.length === 0) {
     return sqlHelper;
@@ -110,6 +110,15 @@ const defaultJoinOns = (
   for (let i = 0; i < joinOnStates.length; i++) {
     const on = joinOnStates[i]!;
     const prevOn = i > 0 ? joinOnStates[i - 1] : undefined;
+    const nextOn = i < joinOnStates.length - 1 ? joinOnStates[i + 1] : undefined;
+
+    // Separator after a condition — but never immediately before a `)`, which would render
+    // `(... = ? )`. Mirrors the same rule in `defaultWhere`.
+    const spaceAfter = () => {
+      if (i < joinOnStates.length - 1 && nextOn?.joinOnOperator !== JoinOnOperator.GroupEnd) {
+        sqlHelper.addSqlSnippet(' ');
+      }
+    };
 
     if (
       i === 0 &&
@@ -157,18 +166,14 @@ const defaultJoinOns = (
     if (on.joinOnOperator === JoinOnOperator.And) {
       sqlHelper.addSqlSnippet('AND');
 
-      if (i < joinOnStates.length - 1) {
-        sqlHelper.addSqlSnippet(' ');
-      }
+      spaceAfter();
       continue;
     }
 
     if (on.joinOnOperator === JoinOnOperator.Or) {
       sqlHelper.addSqlSnippet('OR');
 
-      if (i < joinOnStates.length - 1) {
-        sqlHelper.addSqlSnippet(' ');
-      }
+      spaceAfter();
       continue;
     }
 
@@ -180,18 +185,14 @@ const defaultJoinOns = (
     if (on.joinOnOperator === JoinOnOperator.GroupEnd) {
       sqlHelper.addSqlSnippet(')');
 
-      if (i < joinOnStates.length - 1) {
-        sqlHelper.addSqlSnippet(' ');
-      }
+      spaceAfter();
       continue;
     }
 
     if (on.joinOnOperator === JoinOnOperator.Raw) {
       sqlHelper.addSqlSnippet(on.raw ?? '');
 
-      if (i < joinOnStates.length - 1) {
-        sqlHelper.addSqlSnippet(' ');
-      }
+      spaceAfter();
       continue;
     }
 
@@ -229,9 +230,7 @@ const defaultJoinOns = (
       sqlHelper.addSqlSnippet('.');
       sqlHelper.addSqlSnippet(quoteIdentifier(on.columnRight, config.identifierDelimiters));
 
-      if (i < joinOnStates.length - 1) {
-        sqlHelper.addSqlSnippet(' ');
-      }
+      spaceAfter();
       continue;
     }
 
@@ -265,11 +264,9 @@ const defaultJoinOns = (
 
       sqlHelper.addSqlSnippet(' ');
 
-      sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(on.valueRight));
+      sqlHelper.addDynamicValue(on.valueRight);
 
-      if (i < joinOnStates.length - 1) {
-        sqlHelper.addSqlSnippet(' ');
-      }
+      spaceAfter();
       continue;
     }
   }

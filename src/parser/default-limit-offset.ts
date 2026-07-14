@@ -11,7 +11,7 @@ export const defaultLimitOffset = (
   config: Dialect,
   mode: ParserMode,
 ): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.limit === 0 && state.offset === 0) {
     return sqlHelper;

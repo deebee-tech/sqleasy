@@ -15,6 +15,5 @@ export const postgresConfiguration = (
   identifierDelimiters: { begin: '"', end: '"' },
   preparedStatementPlaceholder: '$',
   runtimeConfiguration: rc,
-  stringDelimiter: "'",
   transactionDelimiters: { begin: 'BEGIN', end: 'COMMIT' },
 });

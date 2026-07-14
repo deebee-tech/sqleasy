@@ -7,7 +7,6 @@ describe('PostgresQuery factory', () => {
     const config = query.configuration();
     expect(config.databaseType).toEqual(DatabaseType.Postgres);
     expect(config.defaultOwner).toEqual('public');
-    expect(config.stringDelimiter).toEqual("'");
     expect(config.transactionDelimiters.begin).toEqual('BEGIN');
     expect(config.transactionDelimiters.end).toEqual('COMMIT');
   });

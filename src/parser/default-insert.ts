@@ -7,7 +7,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 
 export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (!state.insertState) {
     throw new ParserError(ParserArea.General, 'No insert state provided');
@@ -49,7 +49,7 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
 
       const row = insertState.values[r]!;
       for (let c = 0; c < row.length; c++) {
-        sqlHelper.addSqlSnippet(sqlHelper.addDynamicValue(row[c]));
+        sqlHelper.addDynamicValue(row[c]);
 
         if (c < row.length - 1) {
           sqlHelper.addSqlSnippet(', ');

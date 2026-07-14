@@ -5,7 +5,7 @@ import { ParserArea } from '../enums/parser-area';
 import { ParserMode } from '../enums/parser-mode';
 import { QueryType } from '../enums/query-type';
 import { ParserError } from '../helpers/parser-error';
-import { SqlHelper } from '../helpers/sql';
+import { renderPlaceholders, SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 import { defaultCte } from './default-cte';
 import { defaultDelete } from './default-delete';
@@ -48,7 +48,7 @@ export const defaultToSql = (
   mode: ParserMode,
   options?: ToSqlOptions,
 ): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state === null || state === undefined) {
     throw new ParserError(ParserArea.General, 'No state provided');
@@ -200,6 +200,9 @@ const mssqlParameterValue = (value: any): string => {
 
   switch (typeof value) {
     case 'number':
+      if (!Number.isFinite(value)) {
+        throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+      }
       return value.toString();
     case 'boolean':
       return value ? '1' : '0';
@@ -219,8 +222,17 @@ const mssqlParameterType = (value: any): string => {
     case 'string':
       return 'nvarchar(max)';
     case 'number':
-      if (Number.isInteger(value)) {
-        if (value >= -128 && value <= 127) {
+      if (!Number.isFinite(value)) {
+        throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+      }
+      // Only a SAFE integer is declared as an integral type. `Number.isInteger(1e21)` is true, but
+      // it renders via `toString()` as `1e+21` — not a legal `bigint` literal, so SQL Server
+      // rejected the batch. Anything past 2^53 is not exactly representable anyway; declare it
+      // `float`, whose literal syntax does accept scientific notation.
+      if (Number.isSafeInteger(value)) {
+        // T-SQL `tinyint` is UNSIGNED 0–255. The old lower bound of -128 declared negatives as
+        // `tinyint`, and SQL Server raised an arithmetic-overflow error on every one of them.
+        if (value >= 0 && value <= 255) {
           return 'tinyint';
         } else if (value >= -32768 && value <= 32767) {
           return 'smallint';
@@ -245,8 +257,8 @@ const mssqlParameterType = (value: any): string => {
  * when there are parameters — the `@pN = value` assignment list.
  */
 const mssqlToSql = (state: QueryState, config: Dialect): string => {
-  const paramsString = new SqlHelper(config, ParserMode.Prepared);
-  const finalString = new SqlHelper(config, ParserMode.Prepared);
+  const paramsString = new SqlHelper(ParserMode.Prepared);
+  const finalString = new SqlHelper(ParserMode.Prepared);
 
   const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
 
@@ -257,25 +269,20 @@ const mssqlToSql = (state: QueryState, config: Dialect): string => {
   // 4000-char guard was spurious — and it measured post-escape, inflating the count on quote-heavy
   // SQL and falsely rejecting valid statements.
 
-  let valueCounter = 0;
+  const values = sqlHelper.getValues();
 
-  for (const value of sqlHelper.getValues()) {
-    const valuePosition = sql.indexOf(config.preparedStatementPlaceholder);
+  // Substitute by token, never by scanning for a bare `?`. The old scan rewrote the first `?` it
+  // found — which, for `selectRaw("'why?' AS q")`, was the one inside the caller's string literal,
+  // corrupting it to `'why@p0'` and leaving the real placeholder dangling as `?`.
+  sql = renderPlaceholders(sql, (index) => '@p' + index);
 
-    if (valuePosition === -1) {
-      break;
-    }
-
-    sql = sql.slice(0, valuePosition) + '@p' + valueCounter + sql.slice(valuePosition + 1);
-
-    if (valueCounter > 0) {
+  values.forEach((value, index) => {
+    if (index > 0) {
       paramsString.addSqlSnippet(', ');
     }
 
-    paramsString.addSqlSnippet('@p' + valueCounter + ' ' + mssqlParameterType(value));
-
-    valueCounter++;
-  }
+    paramsString.addSqlSnippet('@p' + index + ' ' + mssqlParameterType(value));
+  });
 
   finalString.addSqlSnippet('SET NOCOUNT ON; ');
   finalString.addSqlSnippet("exec sp_executesql N'");
@@ -286,7 +293,6 @@ const mssqlToSql = (state: QueryState, config: Dialect): string => {
 
   // Only append the parameter-value list when there are parameters; otherwise a trailing
   // `', ;` is malformed sp_executesql syntax and SQL Server rejects the whole statement.
-  const values = sqlHelper.getValues();
   if (values.length > 0) {
     finalString.addSqlSnippet(', ');
     for (let i = 0; i < values.length; i++) {
@@ -303,33 +309,35 @@ const mssqlToSql = (state: QueryState, config: Dialect): string => {
 };
 
 /**
- * Postgres uses numbered `$n` placeholders. Render with the shared `?` placeholder, then
- * walk left-to-right replacing each `?` with `$1`, `$2`, … in order.
+ * Postgres uses numbered `$n` placeholders: substitute the Nth token with `$1`, `$2`, … in order.
+ *
+ * This must not scan for a bare `$`. Doing so rewrote the `$` inside caller text — `selectRaw("'$100'")`
+ * became `'$1100'` — and shifted the real placeholder to `$2` while only one value was bound, so
+ * Postgres rejected the statement outright. `$` is especially common in Postgres (`$$`-quoting).
  */
 const postgresPrepared = (state: QueryState, config: Dialect): PreparedSql => {
   const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
 
-  let sql = sqlHelper.getSql();
-  const placeholder = config.preparedStatementPlaceholder;
-  let paramIndex = 1;
-  let searchFrom = 0;
+  const sql = renderPlaceholders(sqlHelper.getSql(), (index) => '$' + (index + 1));
 
-  while (true) {
-    const pos = sql.indexOf(placeholder, searchFrom);
-    if (pos === -1) break;
+  return { sql, params: sqlHelper.getValues() };
+};
 
-    const replacement = '$' + paramIndex;
-    sql = sql.slice(0, pos) + replacement + sql.slice(pos + placeholder.length);
-    searchFrom = pos + replacement.length;
-    paramIndex++;
-  }
+/**
+ * The dialect's own placeholder, substituted for each {@link PLACEHOLDER_TOKEN}. MySQL and SQLite
+ * bind positionally, so every placeholder is the same `?`.
+ */
+const positionalPrepared = (state: QueryState, config: Dialect): PreparedSql => {
+  const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
+
+  const sql = renderPlaceholders(sqlHelper.getSql(), () => config.preparedStatementPlaceholder);
 
   return { sql, params: sqlHelper.getValues() };
 };
 
 /**
  * Renders one query state as a prepared SQL string. MSSQL returns a self-contained
- * `sp_executesql`; Postgres rewrites `?`→`$n`; the rest keep the dialect's `?` placeholder.
+ * `sp_executesql`; Postgres rewrites to `$n`; the rest keep the dialect's `?` placeholder.
  */
 export const parse = (state: QueryState, config: Dialect): string => {
   if (config.databaseType === DatabaseType.Mssql) {
@@ -338,7 +346,7 @@ export const parse = (state: QueryState, config: Dialect): string => {
   if (config.databaseType === DatabaseType.Postgres) {
     return postgresPrepared(state, config).sql;
   }
-  return defaultToSql(state, config, ParserMode.Prepared).getSql();
+  return positionalPrepared(state, config).sql;
 };
 
 /**
@@ -352,8 +360,7 @@ export const parsePrepared = (state: QueryState, config: Dialect): PreparedSql =
   if (config.databaseType === DatabaseType.Postgres) {
     return postgresPrepared(state, config);
   }
-  const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
-  return { sql: sqlHelper.getSql(), params: sqlHelper.getValues() };
+  return positionalPrepared(state, config);
 };
 
 /**

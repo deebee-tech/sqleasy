@@ -20,6 +20,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
       - run: pnpm run lint
-      - run: pnpm run format
+      # `format` is `prettier --write`, which rewrites files and always exits 0 — it could never
+      # fail the build. `--check` actually gates it.
+      - run: pnpm run format:check
+      - run: pnpm run spell
+      # Runs the hand-written suite AND the golden-corpus conformance tests in tests/conformance.
+      # The corpus is the cross-language contract `sqleasy-dart` must reproduce byte-for-byte, so a
+      # failure here means the SQL this library emits has changed — regenerate with `pnpm goldens`
+      # only after confirming that is intended, and review the resulting diff line by line.
       - run: pnpm run test
       - run: pnpm run build

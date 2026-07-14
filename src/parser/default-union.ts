@@ -12,7 +12,7 @@ export const defaultUnion = (
   mode: ParserMode,
   options?: ToSqlOptions,
 ): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.unionStates.length === 0) {
     return sqlHelper;

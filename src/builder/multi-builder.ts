@@ -45,11 +45,14 @@ export class MultiBuilder {
     );
   };
 
-  /** Reorders the batch to match the given builder names; names not present are dropped. */
+  /**
+   * Reorders the batch to match the given builder names; names not present are dropped and
+   * repeated names are deduplicated (first occurrence wins).
+   */
   public reorderBuilders = (builderNames: string[]): void => {
     const reordered: QueryBuilder[] = [];
 
-    builderNames.forEach((builderName) => {
+    [...new Set(builderNames)].forEach((builderName) => {
       const match = this.#builders.find((builder) => builder.state().builderName === builderName);
 
       if (match) {

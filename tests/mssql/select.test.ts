@@ -226,13 +226,47 @@ describe('MssqlQuery parse (prepared statements)', () => {
     expect(sql).toContain('@p0 bigint');
   });
 
-  it('parse with negative tinyint', () => {
+  // T-SQL `tinyint` is UNSIGNED 0–255. Declaring a negative as tinyint makes SQL Server raise an
+  // arithmetic-overflow error on the whole batch, so a negative must never land in that band.
+  it('declares a negative value as smallint, never tinyint', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder.selectAll().fromTable('users', 'u').where('u', 'val', WhereOperator.Equals, -100);
 
     const sql = builder.parse();
+    expect(sql).toContain('@p0 smallint');
+    expect(sql).not.toContain('tinyint');
+  });
+
+  it('declares the unsigned tinyint band (0–255) as tinyint', () => {
+    const query = new MssqlQuery();
+    const builder = query.newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .where('u', 'zero', WhereOperator.Equals, 0)
+      .and()
+      .where('u', 'max', WhereOperator.Equals, 255)
+      .and()
+      .where('u', 'over', WhereOperator.Equals, 256);
+
+    const sql = builder.parse();
     expect(sql).toContain('@p0 tinyint');
+    expect(sql).toContain('@p1 tinyint');
+    expect(sql).toContain('@p2 smallint');
+  });
+
+  // `Number.isInteger(1e21)` is true, but it renders as `1e+21` — not a legal bigint literal, so
+  // SQL Server rejected the batch. Anything past 2^53 is declared float, whose literal syntax
+  // accepts scientific notation.
+  it('declares an integer beyond 2^53 as float, not bigint', () => {
+    const query = new MssqlQuery();
+    const builder = query.newBuilder();
+    builder.selectAll().fromTable('users', 'u').where('u', 'huge', WhereOperator.Equals, 1e21);
+
+    const sql = builder.parse();
+    expect(sql).toContain('@p0 float');
+    expect(sql).not.toContain('bigint');
   });
 
   it('parse with default type (object/unknown)', () => {

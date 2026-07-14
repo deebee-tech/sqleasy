@@ -8,7 +8,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 
 export const defaultDelete = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
-  const sqlHelper = new SqlHelper(config, mode);
+  const sqlHelper = new SqlHelper(mode);
 
   if (state.fromStates.length === 0) {
     throw new ParserError(ParserArea.General, 'DELETE requires a table');
