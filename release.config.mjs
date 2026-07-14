@@ -100,29 +100,12 @@ export default {
         assets: ['CHANGELOG.md', 'package.json', 'jsr.json', 'dist/**/*', 'coverage/**/*'],
       },
     ],
-    [
-      '@semantic-release/github',
-      {
-        assets: [
-          {
-            path: 'dist/index.mjs',
-            label: 'JavaScript Distribution (ESM)',
-          },
-          {
-            path: 'dist/index.cjs',
-            label: 'JavaScript Distribution (CommonJS)',
-          },
-          {
-            path: 'dist/index.d.mts',
-            label: 'TypeScript Declaration (ESM)',
-          },
-          {
-            path: 'dist/index.d.cts',
-            label: 'TypeScript Declaration (CommonJS)',
-          },
-        ],
-      },
-    ],
+    // Registries BEFORE the GitHub release: on 2.0.0 the GitHub plugin crashed uploading release
+    // assets ("invalid content-length header" from octokit/undici) and, because JSR was listed
+    // after it, JSR never published. npm/JSR are the product; the GitHub release is cosmetic.
     '@sebbo2002/semantic-release-jsr',
+    // No `assets` here: that upload is exactly what crashed, and the built files already ship via
+    // npm and JSR. The GitHub release still gets its generated notes.
+    '@semantic-release/github',
   ],
 };
