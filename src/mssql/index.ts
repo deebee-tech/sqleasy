@@ -78,19 +78,21 @@ type SqlRequest = {
   batch<T = Row>(sql: string): Promise<IResult<T>>;
 };
 
+/** SQLEasy's mssql dialect emits a self-contained `… exec sp_executesql N'…'` batch. */
+const isExecuteSqlBatch = (sql: string): boolean => /\bexec\s+sp_executesql\b/i.test(sql);
+
 /**
  * Run one prepared statement on a fresh request.
  *
- * A self-contained batch (SQLEasy's mssql output is `SET NOCOUNT ON; exec sp_executesql …` with
- * `params: []`) MUST go through `batch()`, not `query()`: `query()` re-wraps its argument in ANOTHER
- * `sp_executesql`, which is wrong for a pre-formed batch and, inside a transaction, silently drops
- * statements. Only when the caller passes positional `@pN` params (e.g. the introspection reader)
- * do we bind them and use `query()`. No `?`→`@p` rewriting — mssql has no positional `?`.
+ * A pre-formed `exec sp_executesql` batch (what SQLEasy's mssql dialect emits) MUST go through
+ * `batch()`: `query()` re-wraps its argument in ANOTHER `sp_executesql`, which is wrong for a
+ * pre-formed batch and, inside a transaction, silently drops statements. Everything else — a plain
+ * statement, or one with `@pN` params to bind (the introspection reader) — goes through `query()`,
+ * which returns a recordset and binds params. No `?`→`@p` rewriting: mssql has no positional `?`.
  */
 const exec = <T = Row>(request: SqlRequest, prepared: PreparedSql): Promise<IResult<T>> => {
-  const params = prepared.params ?? [];
-  if (params.length === 0) return request.batch<T>(prepared.sql);
-  params.forEach((value, i) => request.input(`p${i}`, value));
+  if (isExecuteSqlBatch(prepared.sql)) return request.batch<T>(prepared.sql);
+  (prepared.params ?? []).forEach((value, i) => request.input(`p${i}`, value));
   return request.query<T>(prepared.sql);
 };
 
