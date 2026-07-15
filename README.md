@@ -12,6 +12,13 @@ npm install @deebeetech/sqleasy-engine @libsql/client   # only the driver(s) you
 
 Each dialect lives at its own subpath, so importing one pulls in only its driver:
 
+| Import                                | Driver (optional peer) | Factory                  |
+| ------------------------------------- | ---------------------- | ------------------------ |
+| `@deebeetech/sqleasy-engine/sqlite`   | `@libsql/client`       | `createSqliteExecutor`   |
+| `@deebeetech/sqleasy-engine/postgres` | `pg`                   | `createPostgresExecutor` |
+| `@deebeetech/sqleasy-engine/mysql`    | `mysql2`               | `createMysqlExecutor`    |
+| `@deebeetech/sqleasy-engine/mssql`    | `mssql`                | `createMssqlExecutor`    |
+
 ```typescript
 import { createSqliteExecutor } from '@deebeetech/sqleasy-engine/sqlite';
 
@@ -41,9 +48,15 @@ execute a SQLEasy batch, and this package does it for you.
 
 ## Status
 
-Early. The core (`run` / `transaction` / `explain` / `close`) and the **SQLite / libSQL** executor
-are implemented and covered by real in-memory integration tests, including transaction rollback.
-Postgres, MySQL, and SQL Server executors follow, then optional introspection.
+All four dialect executors — **SQLite/libSQL, Postgres, MySQL, SQL Server** — implement the full
+`run` / `transaction` / `explain` / `close` surface. The Postgres/MySQL/MSSQL executors also expose a
+`…FromPool` variant so you can share a pool you already manage.
+
+Tested: SQLite runs against real in-memory libSQL (params, atomic commit, rollback, explain). The
+others verify their transaction orchestration (BEGIN → per-statement → COMMIT/ROLLBACK + connection
+release) against a recording fake driver, their EXPLAIN parsers against real plan output, and carry
+real-database integration blocks gated on a connection env var (`DATABASE_URL`, `MYSQL_URL`,
+`MSSQL_CONNECTION_STRING`) for CI. Optional schema introspection is next.
 
 Part of the [DeeBee](https://github.com/deebee-tech) ecosystem.
 
