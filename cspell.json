@@ -17,6 +17,7 @@
     "Havings",
     "inlines",
     "ints",
+    "misalign",
     "misaligning",
     "misaligns",
     "mydb",
@@ -33,6 +34,7 @@
     "tseslint",
     "unaliased",
     "unforgeable",
+    "varbinary",
     "Weatherby"
   ],
   "ignorePaths": [
