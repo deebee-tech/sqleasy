@@ -40,6 +40,11 @@
       "types": "./dist/sqlite/index.d.mts",
       "import": "./dist/sqlite/index.mjs",
       "require": "./dist/sqlite/index.cjs"
+    },
+    "./postgres": {
+      "types": "./dist/postgres/index.d.mts",
+      "import": "./dist/postgres/index.mjs",
+      "require": "./dist/postgres/index.cjs"
     }
   },
   "files": [
@@ -58,10 +63,14 @@
   },
   "packageManager": "pnpm@11.13.0",
   "peerDependencies": {
-    "@libsql/client": "*"
+    "@libsql/client": "*",
+    "pg": "*"
   },
   "peerDependenciesMeta": {
     "@libsql/client": {
+      "optional": true
+    },
+    "pg": {
       "optional": true
     }
   },
@@ -69,8 +78,10 @@
     "@eslint/js": "^10.0.1",
     "@libsql/client": "^0.17.4",
     "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
+    "pg": "^8.22.0",
     "prettier": "^3.9.5",
     "tsdown": "^0.22.7",
     "typescript": "^5.9.3",
