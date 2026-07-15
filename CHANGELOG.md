@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3
+
+Tracks the TypeScript `@deebeetech/sqleasy` **4.0.1** golden corpus (was pinned to 3.0.0).
+
+**No behavior change.** The 4.0.0/4.0.1 releases were refactors and API cleanup — the corpus cases
+are byte-identical across v3.0.0 → v4.0.1, so the emitted SQL is unchanged, and conformance still
+passes on the Dart VM and under dart2js. The API cleanups were already reflected here: the removed
+`Datatype` enum and `JoinOnBuilder.newJoinOnBuilder` were never ported, and
+`MultiBuilder.preparedStatements()` was already present.
+
 ## 0.1.2
 
 - Docs: rework the README to match the SQLEasy house style — logo lockup, badges, and a full example
