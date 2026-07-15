@@ -1,0 +1,80 @@
+{
+  "name": "@deebeetech/sqleasy-engine",
+  "version": "0.0.0",
+  "description": "A thin, opt-in executor for @deebeetech/sqleasy: runs its prepared SQL and transactions on Postgres, MySQL, SQL Server, and SQLite — loading only the driver you import.",
+  "keywords": [
+    "sql",
+    "sql-executor",
+    "query-runner",
+    "postgres",
+    "mysql",
+    "mssql",
+    "sqlite",
+    "libsql",
+    "transactions",
+    "sqleasy",
+    "typescript",
+    "database"
+  ],
+  "homepage": "https://github.com/deebee-tech/sqleasy-engine",
+  "license": "MIT",
+  "private": false,
+  "author": {
+    "name": "Sandy Weatherby",
+    "email": "unicornbeachdiaries@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deebee-tech/sqleasy-engine"
+  },
+  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./sqlite": {
+      "types": "./dist/sqlite/index.d.mts",
+      "import": "./dist/sqlite/index.mjs",
+      "require": "./dist/sqlite/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@11.13.0",
+  "peerDependencies": {
+    "@libsql/client": "*"
+  },
+  "peerDependenciesMeta": {
+    "@libsql/client": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@libsql/client": "^0.17.4",
+    "@types/node": "^26.1.1",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.5",
+    "tsdown": "^0.22.7",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.10"
+  }
+}
