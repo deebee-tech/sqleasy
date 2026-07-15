@@ -799,7 +799,7 @@ const defaultLimitOffset = (state, config, mode) => {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
 		}
-		if (state.limit === 0 && !state.isInnerStatement && (state.whereStates === null || state.whereStates === void 0 || state.whereStates.length === 0)) {
+		if (state.limit === 0 && !state.isInnerStatement && state.whereStates.length === 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(config.runtimeConfiguration.maxRowsReturned.toString());
 		}
@@ -823,7 +823,7 @@ const defaultLimitOffset = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(" ROWS ONLY");
 		}
 	}
-	if (state.offset > 0 && (state.orderByStates === null || state.orderByStates === void 0 || state.orderByStates.length === 0)) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+	if (state.offset > 0 && state.orderByStates.length === 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
 	return sqlHelper;
 };
 //#endregion
@@ -1445,10 +1445,6 @@ var JoinOnBuilder = class JoinOnBuilder {
 		this.#config = config;
 	}
 	#child = () => new JoinOnBuilder(this.#config);
-	/** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
-	newJoinOnBuilder = (config) => {
-		return new JoinOnBuilder(config ?? this.#config);
-	};
 	and = () => {
 		this.#states.push({
 			joinOperator: JoinOperator.None,
@@ -2355,6 +2351,18 @@ var MultiBuilder = class {
 	parseRaw = () => {
 		return parseMultiRaw(this.states(), this.#transactionState, this.#config);
 	};
+	/**
+	* The execution-safe form of the batch: each builder rendered as its own prepared
+	* `{ sql, params }`, in batch order. This — not {@link parse} — is what you run: a batch is
+	* executed statement by statement, because placeholder numbering restarts per statement (so the
+	* single {@link parse} string is not a runnable parameterized call), and {@link parse}/{@link
+	* parseRaw} carry no bound values at all. Open a transaction on your own connection, run each in
+	* order, and consult {@link transactionState} to decide whether to wrap them in BEGIN/COMMIT — the
+	* delimiters are NOT included here.
+	*/
+	preparedStatements = () => {
+		return this.#builders.map((builder) => builder.parsePrepared());
+	};
 	/** Removes a previously added builder from the batch by name. */
 	removeBuilder = (builderName) => {
 		this.#builders = this.#builders.filter((builder) => builder.state().builderName !== builderName);
@@ -2392,24 +2400,6 @@ var RuntimeConfiguration = class {
 	maxRowsReturned = 1e3;
 	/** Optional host-defined settings carried alongside runtime options. */
 	customConfiguration = void 0;
-};
-//#endregion
-//#region src/enums/datatype.ts
-/**
-* A coarse value category. SQL generation does not use it — it is exposed for callers that want
-* to describe or coerce column values on top of the builder.
-*/
-const Datatype = {
-	/** Boolean value. */
-	Boolean: "Boolean",
-	/** Date/time value. */
-	DateTime: "DateTime",
-	/** Numeric value. */
-	Number: "Number",
-	/** String value. */
-	String: "String",
-	/** Unknown or unspecified type. */
-	Unknown: "Unknown"
 };
 //#endregion
 //#region src/dialects/mssql/configuration.ts
@@ -2703,7 +2693,6 @@ const createWhereState = () => ({
 //#endregion
 exports.BuilderType = BuilderType;
 exports.DatabaseType = DatabaseType;
-exports.Datatype = Datatype;
 exports.JoinOnBuilder = JoinOnBuilder;
 exports.JoinOnOperator = JoinOnOperator;
 exports.JoinOperator = JoinOperator;
