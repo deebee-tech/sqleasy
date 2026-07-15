@@ -12,14 +12,21 @@ void main() {
   // Fill a batch with the same two statements used on the TypeScript side.
   (QueryBuilder, QueryBuilder) fill(MultiBuilder multi) {
     final b1 = multi.addBuilder('ins');
-    b1.insertInto('users').insertColumns(['name', 'age']).insertValues(['Ada', 36]);
+    b1
+        .insertInto('users')
+        .insertColumns(['name', 'age']).insertValues(['Ada', 36]);
     final b2 = multi.addBuilder('upd');
-    b2.updateTable('stats', alias: 's').set('n', 100).where('s', 'id', WhereOperator.equals, 1);
+    b2
+        .updateTable('stats', alias: 's')
+        .set('n', 100)
+        .where('s', 'id', WhereOperator.equals, 1);
     return (b1, b2);
   }
 
   group('MultiBuilder.preparedStatements()', () {
-    test('returns each builder prepared, in order, without transaction delimiters', () {
+    test(
+        'returns each builder prepared, in order, without transaction delimiters',
+        () {
       final multi = PostgresQuery().newMultiBuilder();
       fill(multi);
 
@@ -40,7 +47,9 @@ void main() {
       }
     });
 
-    test('reflects reorder and yields MSSQL self-contained batches with empty params', () {
+    test(
+        'reflects reorder and yields MSSQL self-contained batches with empty params',
+        () {
       final multi = MssqlQuery().newMultiBuilder();
       fill(multi);
       multi.reorderBuilders(['upd', 'ins']);
@@ -48,7 +57,8 @@ void main() {
       final stmts = multi.preparedStatements();
 
       expect(stmts, hasLength(2));
-      expect(stmts[0].sql, contains('UPDATE [s] SET')); // reordered: update first
+      expect(
+          stmts[0].sql, contains('UPDATE [s] SET')); // reordered: update first
       expect(stmts[1].sql, contains('INSERT INTO [dbo].[users]'));
       // MSSQL inlines into sp_executesql, so every statement binds no params.
       expect(stmts.every((s) => s.params.isEmpty), isTrue);

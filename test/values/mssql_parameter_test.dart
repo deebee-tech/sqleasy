@@ -19,7 +19,8 @@ void main() {
       );
     });
 
-    test('mssqlParameterType declares a BigInt as nvarchar(max), matching TS', () {
+    test('mssqlParameterType declares a BigInt as nvarchar(max), matching TS',
+        () {
       expect(mssqlParameterType(BigInt.from(123)), 'nvarchar(max)');
     });
 
