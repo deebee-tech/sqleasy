@@ -187,18 +187,20 @@ describe.skipIf(!MSSQL_CONNECTION_STRING)('mssql executor (real database)', () =
     await db.run({
       sql: 'CREATE TABLE _sqleasy_engine_it (id INT PRIMARY KEY, name NVARCHAR(200));',
     });
+    // Read the count positionally — robust to how the driver keys a COUNT(*) column.
+    const countRows = async () =>
+      Number(
+        Object.values(
+          (await db.run({ sql: 'SELECT COUNT(*) AS n FROM _sqleasy_engine_it;' })).rows[0]!,
+        )[0],
+      );
+
     try {
       await db.transaction([insert(1, 'Ada'), insert(2, 'Grace')]);
-      const committed = await db.run<{ n: number }>({
-        sql: 'SELECT COUNT(*) AS n FROM _sqleasy_engine_it;',
-      });
-      expect(committed.rows[0]!.n).toBe(2);
+      expect(await countRows()).toBe(2);
 
       await expect(db.transaction([insert(3, 'Bob'), insert(1, 'Dup')])).rejects.toThrow();
-      const afterRollback = await db.run<{ n: number }>({
-        sql: 'SELECT COUNT(*) AS n FROM _sqleasy_engine_it;',
-      });
-      expect(afterRollback.rows[0]!.n).toBe(2); // Bob rolled back with the failed batch
+      expect(await countRows()).toBe(2); // Bob rolled back with the failed batch
     } finally {
       await db
         .run({

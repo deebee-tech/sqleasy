@@ -154,12 +154,15 @@ const REAL = [
       (await import('../src/postgres')).createPostgresExecutor({
         connectionString: process.env['DATABASE_URL'],
       }),
+    // One statement per run() — pg's simple protocol returns an array of results for a
+    // multi-statement string, which run() (single-statement by contract) does not handle.
     ddl: [
-      'DROP TABLE IF EXISTS _se_orders; DROP TABLE IF EXISTS _se_users;',
+      'DROP TABLE IF EXISTS _se_orders;',
+      'DROP TABLE IF EXISTS _se_users;',
       'CREATE TABLE _se_users (id INT PRIMARY KEY, name TEXT NOT NULL);',
       'CREATE TABLE _se_orders (id INT PRIMARY KEY, user_id INT REFERENCES _se_users(id));',
     ],
-    cleanup: 'DROP TABLE IF EXISTS _se_orders; DROP TABLE IF EXISTS _se_users;',
+    cleanup: ['DROP TABLE IF EXISTS _se_orders;', 'DROP TABLE IF EXISTS _se_users;'],
     schema: undefined as string | undefined,
   },
   {
@@ -173,7 +176,7 @@ const REAL = [
       'CREATE TABLE _se_users (id INT PRIMARY KEY, name VARCHAR(100) NOT NULL);',
       'CREATE TABLE _se_orders (id INT PRIMARY KEY, user_id INT, FOREIGN KEY (user_id) REFERENCES _se_users(id));',
     ],
-    cleanup: 'DROP TABLE IF EXISTS _se_orders;',
+    cleanup: ['DROP TABLE IF EXISTS _se_orders;'],
     schema: undefined,
   },
   {
@@ -189,7 +192,7 @@ const REAL = [
       'CREATE TABLE _se_users (id INT PRIMARY KEY, name NVARCHAR(100) NOT NULL);',
       'CREATE TABLE _se_orders (id INT PRIMARY KEY, user_id INT FOREIGN KEY REFERENCES _se_users(id));',
     ],
-    cleanup: "IF OBJECT_ID('_se_orders') IS NOT NULL DROP TABLE _se_orders;",
+    cleanup: ["IF OBJECT_ID('_se_orders') IS NOT NULL DROP TABLE _se_orders;"],
     schema: undefined,
   },
 ];
@@ -214,7 +217,7 @@ for (const t of REAL) {
           }),
         );
       } finally {
-        await db.run({ sql: t.cleanup }).catch(() => {});
+        for (const sql of t.cleanup) await db.run({ sql }).catch(() => {});
         await db.close();
       }
     });
