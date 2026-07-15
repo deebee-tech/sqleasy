@@ -71,14 +71,27 @@ const toResult = <T>(result: IResult<unknown>): QueryResult<T> => ({
   rowCount: result.recordset ? result.recordset.length : (result.rowsAffected?.[0] ?? 0),
 });
 
-// Bind params (if any) as @p0..@pN. SQLEasy's mssql dialect inlines its values into the
-// sp_executesql batch and passes `params: []`, so nothing binds on that path; a caller passing
-// bound values must reference @p0.. in their SQL (mssql has no positional `?`). No `?`→`@p`
-// rewriting — that scan corrupts a `?` inside a string literal.
-type BindableRequest = { input(name: string, value: unknown): unknown };
-const bindParams = <R extends BindableRequest>(request: R, params?: readonly unknown[]): R => {
-  (params ?? []).forEach((value, i) => request.input(`p${i}`, value));
-  return request;
+// The bits of an mssql Request the executor uses.
+type SqlRequest = {
+  input(name: string, value: unknown): unknown;
+  query<T = Row>(sql: string): Promise<IResult<T>>;
+  batch<T = Row>(sql: string): Promise<IResult<T>>;
+};
+
+/**
+ * Run one prepared statement on a fresh request.
+ *
+ * A self-contained batch (SQLEasy's mssql output is `SET NOCOUNT ON; exec sp_executesql …` with
+ * `params: []`) MUST go through `batch()`, not `query()`: `query()` re-wraps its argument in ANOTHER
+ * `sp_executesql`, which is wrong for a pre-formed batch and, inside a transaction, silently drops
+ * statements. Only when the caller passes positional `@pN` params (e.g. the introspection reader)
+ * do we bind them and use `query()`. No `?`→`@p` rewriting — mssql has no positional `?`.
+ */
+const exec = <T = Row>(request: SqlRequest, prepared: PreparedSql): Promise<IResult<T>> => {
+  const params = prepared.params ?? [];
+  if (params.length === 0) return request.batch<T>(prepared.sql);
+  params.forEach((value, i) => request.input(`p${i}`, value));
+  return request.query<T>(prepared.sql);
 };
 
 /**
@@ -107,8 +120,7 @@ export function createMssqlExecutor(config: MssqlConfig): DbExecutor {
   return {
     async run<T = Row>(prepared: PreparedSql): Promise<QueryResult<T>> {
       await ensureReady();
-      const request = bindParams(pool.request(), prepared.params);
-      return toResult<T>(await request.query(prepared.sql));
+      return toResult<T>(await exec<T>(pool.request(), prepared));
     },
 
     async transaction(statements: readonly PreparedSql[]): Promise<QueryResult[]> {
@@ -118,8 +130,7 @@ export function createMssqlExecutor(config: MssqlConfig): DbExecutor {
       try {
         const results: QueryResult[] = [];
         for (const s of statements) {
-          const request = bindParams(new Request(tx), s.params);
-          results.push(toResult(await request.query(s.sql)));
+          results.push(toResult(await exec(new Request(tx), s)));
         }
         await tx.commit();
         return results;

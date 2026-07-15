@@ -26,6 +26,7 @@ vi.mock('mssql', () => {
     }
     async batch(sql: string) {
       rec.events.push(`batch:${sql}`);
+      if (rec.failOn && sql.includes(rec.failOn)) throw new Error(`boom: ${sql}`);
       return { recordset: [] };
     }
   }
@@ -140,7 +141,9 @@ describe('mssql orchestration', () => {
     expect(rec.events).toContain('begin');
     expect(rec.events).toContain('commit');
     expect(rec.events).not.toContain('rollback');
-    expect(rec.queries.map((q) => q.sql)).toEqual([batch('INSERT').sql, batch('UPDATE').sql]);
+    // Self-contained batches (params []) run via batch(), not query() — see the exec() note.
+    expect(rec.events).toContain(`batch:${batch('INSERT').sql}`);
+    expect(rec.events).toContain(`batch:${batch('UPDATE').sql}`);
   });
 
   it('transaction() rolls back (not commits) when a statement fails', async () => {
