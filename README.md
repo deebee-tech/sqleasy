@@ -458,8 +458,8 @@ const query = new PostgresQuery(rc);
 - **MSSQL correctness fix:** aliased `DELETE`/`UPDATE` now emit valid T-SQL
   (`DELETE [u] FROM [dbo].[users] AS [u] …`, `UPDATE [u] SET … FROM [dbo].[users] AS [u] …`),
   where 1.x produced invalid syntax.
-- Unchanged: dual **ESM + CJS** builds, **JSR** publishing, the `multi_builder`, the `Datatype`
-  enum, and all four dialects.
+- Unchanged: dual **ESM + CJS** builds, **JSR** publishing, the `multi_builder`, and all four
+  dialects.
 
 ## License
 

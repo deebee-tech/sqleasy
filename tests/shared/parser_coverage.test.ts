@@ -8,10 +8,8 @@ import {
   JoinOperator,
 } from '../../src';
 import { SqlHelper } from '../../src/helpers/sql';
-import { sqliteConfiguration } from '../../src/dialects/sqlite/configuration';
 import { postgresConfiguration } from '../../src/dialects/postgres/configuration';
 import { RuntimeConfiguration } from '../../src/configuration/runtime';
-import { JoinOnBuilder } from '../../src/builder/join-on';
 import { BuilderType } from '../../src/enums/builder-type';
 import { JoinOnOperator } from '../../src/enums/join-on-operator';
 import { WhereOperator as WO } from '../../src/enums/where-operator';
@@ -383,24 +381,6 @@ describe('Parser coverage edge cases', () => {
 
       const sql = builder.parseRaw();
       expect(sql).toContain('))');
-    });
-  });
-
-  describe('JoinOnBuilder config override', () => {
-    it('SQLite newJoinOnBuilder with config override', () => {
-      const config = sqliteConfiguration(new RuntimeConfiguration());
-      const jb = new JoinOnBuilder(config);
-      const config2 = sqliteConfiguration(new RuntimeConfiguration());
-      const jb2 = jb.newJoinOnBuilder(config2);
-      expect(jb2).toBeInstanceOf(JoinOnBuilder);
-    });
-
-    it('Postgres newJoinOnBuilder with config override', () => {
-      const config = postgresConfiguration(new RuntimeConfiguration());
-      const jb = new JoinOnBuilder(config);
-      const config2 = postgresConfiguration(new RuntimeConfiguration());
-      const jb2 = jb.newJoinOnBuilder(config2);
-      expect(jb2).toBeInstanceOf(JoinOnBuilder);
     });
   });
 

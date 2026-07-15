@@ -18,11 +18,6 @@ export class JoinOnBuilder {
 
   #child = (): JoinOnBuilder => new JoinOnBuilder(this.#config);
 
-  /** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
-  public newJoinOnBuilder = (config?: Dialect): JoinOnBuilder => {
-    return new JoinOnBuilder(config ?? this.#config);
-  };
-
   public and = (): this => {
     this.#states.push({
       joinOperator: JoinOperator.None,

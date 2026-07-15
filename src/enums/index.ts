@@ -1,6 +1,5 @@
 export * from './builder-type';
 export * from './database-type';
-export * from './datatype';
 export * from './join-on-operator';
 export * from './join-operator';
 export * from './join-type';
