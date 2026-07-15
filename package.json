@@ -55,6 +55,11 @@
       "types": "./dist/mssql/index.d.mts",
       "import": "./dist/mssql/index.mjs",
       "require": "./dist/mssql/index.cjs"
+    },
+    "./introspection": {
+      "types": "./dist/introspection/index.d.mts",
+      "import": "./dist/introspection/index.mjs",
+      "require": "./dist/introspection/index.cjs"
     }
   },
   "files": [

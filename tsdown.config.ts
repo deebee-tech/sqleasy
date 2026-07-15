@@ -9,6 +9,7 @@ export default defineConfig({
     './src/postgres/index.ts',
     './src/mysql/index.ts',
     './src/mssql/index.ts',
+    './src/introspection/index.ts',
   ],
   format: ['esm', 'cjs'],
   dts: true,
