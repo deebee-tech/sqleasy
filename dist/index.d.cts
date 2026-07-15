@@ -722,8 +722,6 @@ declare const parseMultiRaw: (states: QueryState[], transactionState: MultiBuild
 declare class JoinOnBuilder {
   #private;
   constructor(config: Dialect);
-  /** Returns a new join-on builder, reusing this configuration unless `config` is provided. */
-  newJoinOnBuilder: (config?: Dialect) => JoinOnBuilder;
   and: () => this;
   on: (aliasLeft: string, columnLeft: string, joinOperator: JoinOperator, aliasRight: string, columnRight: string) => this;
   onGroup: (builder: (builder: JoinOnBuilder) => void) => this;
@@ -888,6 +886,16 @@ declare class MultiBuilder {
   parse: () => string;
   /** Renders the batch as a single raw SQL string with values inlined. DEBUG / TEST only. */
   parseRaw: () => string;
+  /**
+   * The execution-safe form of the batch: each builder rendered as its own prepared
+   * `{ sql, params }`, in batch order. This — not {@link parse} — is what you run: a batch is
+   * executed statement by statement, because placeholder numbering restarts per statement (so the
+   * single {@link parse} string is not a runnable parameterized call), and {@link parse}/{@link
+   * parseRaw} carry no bound values at all. Open a transaction on your own connection, run each in
+   * order, and consult {@link transactionState} to decide whether to wrap them in BEGIN/COMMIT — the
+   * delimiters are NOT included here.
+   */
+  preparedStatements: () => PreparedSql[];
   /** Removes a previously added builder from the batch by name. */
   removeBuilder: (builderName: string) => void;
   /**
@@ -902,26 +910,6 @@ declare class MultiBuilder {
   /** Returns the current transaction state of the batch. */
   transactionState: () => MultiBuilderTransactionState;
 }
-//#endregion
-//#region src/enums/datatype.d.ts
-/**
- * A coarse value category. SQL generation does not use it — it is exposed for callers that want
- * to describe or coerce column values on top of the builder.
- */
-declare const Datatype: {
-  /** Boolean value. */
-  readonly Boolean: "Boolean";
-  /** Date/time value. */
-  readonly DateTime: "DateTime";
-  /** Numeric value. */
-  readonly Number: "Number";
-  /** String value. */
-  readonly String: "String";
-  /** Unknown or unspecified type. */
-  readonly Unknown: "Unknown";
-};
-/** One of the {@link Datatype} value categories. */
-type Datatype = (typeof Datatype)[keyof typeof Datatype];
 //#endregion
 //#region src/enums/parser-area.d.ts
 /**
@@ -1054,5 +1042,5 @@ declare class SqliteQuery {
   newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
 }
 //#endregion
-export { BuilderType, ConfigurationDelimiters, CteState, DatabaseType, Datatype, Dialect, FromState, GroupByState, HavingState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, WhereOperator, WhereState, createCteState, createFromState, createGroupByState, createHavingState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createSelectState, createUnionState, createUpdateState, createWhereState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
+export { BuilderType, ConfigurationDelimiters, CteState, DatabaseType, Dialect, FromState, GroupByState, HavingState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, WhereOperator, WhereState, createCteState, createFromState, createGroupByState, createHavingState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createSelectState, createUnionState, createUpdateState, createWhereState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
 //# sourceMappingURL=index.d.cts.map
