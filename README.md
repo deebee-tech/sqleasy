@@ -68,7 +68,7 @@ schemas, and transaction delimiters automatically.
 ```typescript
 import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '@deebeetech/sqleasy';
 
-const mssql = new MssqlQuery(); // [dbo].[table], ? placeholders, BEGIN TRANSACTION/COMMIT TRANSACTION
+const mssql = new MssqlQuery(); // [dbo].[table], sp_executesql (values inlined, params empty), BEGIN TRANSACTION/COMMIT TRANSACTION
 const mysql = new MysqlQuery(); // `table`, ? placeholders, START TRANSACTION/COMMIT
 const postgres = new PostgresQuery(); // "public"."table", $1 placeholders, BEGIN/COMMIT
 const sqlite = new SqliteQuery(); // "table", ? placeholders, BEGIN/COMMIT
@@ -376,13 +376,48 @@ multi.removeBuilder('update_count');
 multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
 ```
 
+### Executing a batch
+
+`parse()` / `parseRaw()` render the batch as **one string for display or logging** — they do not
+return bound parameters, so on Postgres, MySQL, and SQLite that string is **not** an execution-safe
+prepared call. Placeholder numbering restarts at each statement (the Postgres batch above contains
+`$1` and `$2` twice), so binding a single flat `params` array to it would misalign every value after
+the first statement.
+
+To **run** a batch with bound parameters, open a transaction on your own connection and execute each
+builder's `parsePrepared()` in order — that is the executable unit:
+
+```typescript
+const client = await pool.connect(); // your driver
+try {
+  await client.query('BEGIN');
+  for (const b of [b1, b2]) {
+    const { sql, params } = b.parsePrepared();
+    await client.query(sql, params);
+  }
+  await client.query('COMMIT');
+} catch (err) {
+  await client.query('ROLLBACK');
+  throw err;
+} finally {
+  client.release();
+}
+```
+
 ## Prepared Statements vs Raw SQL
 
 Every builder offers three renderings:
 
-- **`parsePrepared()`** — the execution-safe one. Returns `{ sql, params }`: SQL with dialect
-  placeholders (`?` for MSSQL/MySQL/SQLite, `$1`/`$2`/… for Postgres) plus the ordered bound values.
-  Hand it straight to your driver.
+- **`parsePrepared()`** — the execution-safe one. Returns `{ sql, params }`. The exact shape is
+  dialect-specific:
+  - **Postgres** — `$1`/`$2`/… placeholders + the ordered `params`.
+  - **MySQL / SQLite** — positional `?` placeholders + the ordered `params`.
+  - **MSSQL** — a self-contained `exec sp_executesql …` batch with the values inlined as escaped
+    arguments, so `params` is **empty** (`[]`). It is still injection-safe: values are escaped and
+    passed as sp_executesql arguments, never concatenated into the statement text.
+
+  Hand `{ sql, params }` straight to your driver — for MSSQL that's the batch string with no params.
+
 - **`parse()`** — the SQL string with placeholders, without the values (handy for logging the shape).
 - **`parseRaw()`** — values inlined into the SQL. **Debug / display only** — it is not escaped and
   not execution-safe. Never run `parseRaw()` output against a database.
