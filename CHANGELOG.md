@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Docs: rework the README to match the SQLEasy house style — logo lockup, badges, and a full example
+  tour (SELECT / WHERE / JOIN / INSERT / UPDATE / DELETE / GROUP BY / CTE / UNION, plus multi-builder
+  batches) written in idiomatic Dart. No code changes.
+
 ## 0.1.1
 
 - Docs: correct the README, which still described the package as a work in progress after the port
