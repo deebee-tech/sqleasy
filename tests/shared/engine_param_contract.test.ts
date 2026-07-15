@@ -30,11 +30,38 @@ describe('multi-builder execution contract', () => {
     return { multi, b1, b2 };
   };
 
-  it('MultiBuilder deliberately has NO parsePrepared — the executable unit is each builder', () => {
+  it('MultiBuilder has no single-blob parsePrepared — preparedStatements() is the executable API', () => {
     const { multi } = twoStatementBatch(new PostgresQuery());
-    // parse()/parseRaw() render a single display/logging string; neither carries bound params.
-    // An executor must therefore iterate the builders, not the batch string.
+    // There is no single {sql, params} for a batch: parse()/parseRaw() are display-only and carry no
+    // params, and numbering restarts per statement (next test). The executor consumes the per-builder
+    // list instead.
     expect((multi as unknown as Record<string, unknown>)['parsePrepared']).toBeUndefined();
+    expect(typeof multi.preparedStatements).toBe('function');
+  });
+
+  it('preparedStatements() returns each builder prepared, in order, without transaction delimiters', () => {
+    const { multi } = twoStatementBatch(new PostgresQuery());
+    const stmts = multi.preparedStatements();
+
+    expect(stmts).toEqual([
+      { sql: 'INSERT INTO "public"."users" ("name", "age") VALUES ($1, $2);', params: ['Ada', 36] },
+      { sql: 'UPDATE "public"."stats" AS "s" SET "n" = $1 WHERE "s"."id" = $2;', params: [100, 1] },
+    ]);
+    // BEGIN/COMMIT wrapping is the executor's job (via transactionState()), never baked in here.
+    for (const { sql } of stmts) {
+      expect(sql).not.toMatch(/BEGIN|COMMIT/);
+    }
+  });
+
+  it('preparedStatements() reflects reorder/remove and yields MSSQL self-contained batches', () => {
+    const { multi } = twoStatementBatch(new MssqlQuery());
+    multi.reorderBuilders(['upd', 'ins']);
+
+    const stmts = multi.preparedStatements();
+    expect(stmts).toHaveLength(2);
+    expect(stmts[0]!.sql).toContain('UPDATE [s] SET'); // reordered: update first
+    expect(stmts[1]!.sql).toContain('INSERT INTO [dbo].[users]');
+    expect(stmts.every((s) => s.params.length === 0)).toBe(true); // mssql inlines, so params stay []
   });
 
   it('multi.parse() RESTARTS placeholder numbering per statement — so the batch string is not a runnable parameterized call (postgres)', () => {

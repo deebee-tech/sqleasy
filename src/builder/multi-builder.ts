@@ -1,6 +1,6 @@
 import type { Dialect } from '../configuration/configuration';
 import { MultiBuilderTransactionState } from '../enums/multi-builder-transaction-state';
-import { parseMulti, parseMultiRaw } from '../parser/to-sql';
+import { parseMulti, parseMultiRaw, type PreparedSql } from '../parser/to-sql';
 import type { QueryState } from '../state/query';
 import { QueryBuilder } from './query';
 
@@ -36,6 +36,19 @@ export class MultiBuilder {
   /** Renders the batch as a single raw SQL string with values inlined. DEBUG / TEST only. */
   public parseRaw = (): string => {
     return parseMultiRaw(this.states(), this.#transactionState, this.#config);
+  };
+
+  /**
+   * The execution-safe form of the batch: each builder rendered as its own prepared
+   * `{ sql, params }`, in batch order. This — not {@link parse} — is what you run: a batch is
+   * executed statement by statement, because placeholder numbering restarts per statement (so the
+   * single {@link parse} string is not a runnable parameterized call), and {@link parse}/{@link
+   * parseRaw} carry no bound values at all. Open a transaction on your own connection, run each in
+   * order, and consult {@link transactionState} to decide whether to wrap them in BEGIN/COMMIT — the
+   * delimiters are NOT included here.
+   */
+  public preparedStatements = (): PreparedSql[] => {
+    return this.#builders.map((builder) => builder.parsePrepared());
   };
 
   /** Removes a previously added builder from the batch by name. */
