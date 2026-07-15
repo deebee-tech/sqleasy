@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main, beta, alpha, next]
+  pull_request:
+    branches: [main, beta, alpha, next]
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      # `format` is `prettier --write` and always exits 0; `--check` is what actually gates.
+      - run: pnpm run format:check
+      # Unit + mocked-driver + real in-memory SQLite tests. The pg/mysql/mssql integration blocks are
+      # gated on DATABASE_URL / MYSQL_URL / MSSQL_CONNECTION_STRING and skip here until those are set.
+      - run: pnpm run test
+      - run: pnpm run build
