@@ -28,38 +28,68 @@
     "url": "https://github.com/deebee-tech/sqleasy-engine"
   },
   "type": "module",
-  "main": "dist/index.mjs",
+  "main": "dist/index.cjs",
   "types": "dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./sqlite": {
-      "types": "./dist/sqlite/index.d.mts",
-      "import": "./dist/sqlite/index.mjs",
-      "require": "./dist/sqlite/index.cjs"
+      "import": {
+        "types": "./dist/sqlite/index.d.mts",
+        "default": "./dist/sqlite/index.mjs"
+      },
+      "require": {
+        "types": "./dist/sqlite/index.d.cts",
+        "default": "./dist/sqlite/index.cjs"
+      }
     },
     "./postgres": {
-      "types": "./dist/postgres/index.d.mts",
-      "import": "./dist/postgres/index.mjs",
-      "require": "./dist/postgres/index.cjs"
+      "import": {
+        "types": "./dist/postgres/index.d.mts",
+        "default": "./dist/postgres/index.mjs"
+      },
+      "require": {
+        "types": "./dist/postgres/index.d.cts",
+        "default": "./dist/postgres/index.cjs"
+      }
     },
     "./mysql": {
-      "types": "./dist/mysql/index.d.mts",
-      "import": "./dist/mysql/index.mjs",
-      "require": "./dist/mysql/index.cjs"
+      "import": {
+        "types": "./dist/mysql/index.d.mts",
+        "default": "./dist/mysql/index.mjs"
+      },
+      "require": {
+        "types": "./dist/mysql/index.d.cts",
+        "default": "./dist/mysql/index.cjs"
+      }
     },
     "./mssql": {
-      "types": "./dist/mssql/index.d.mts",
-      "import": "./dist/mssql/index.mjs",
-      "require": "./dist/mssql/index.cjs"
+      "import": {
+        "types": "./dist/mssql/index.d.mts",
+        "default": "./dist/mssql/index.mjs"
+      },
+      "require": {
+        "types": "./dist/mssql/index.d.cts",
+        "default": "./dist/mssql/index.cjs"
+      }
     },
     "./introspection": {
-      "types": "./dist/introspection/index.d.mts",
-      "import": "./dist/introspection/index.mjs",
-      "require": "./dist/introspection/index.cjs"
+      "import": {
+        "types": "./dist/introspection/index.d.mts",
+        "default": "./dist/introspection/index.mjs"
+      },
+      "require": {
+        "types": "./dist/introspection/index.d.cts",
+        "default": "./dist/introspection/index.cjs"
+      }
     }
   },
   "files": [
