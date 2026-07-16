@@ -63,6 +63,10 @@ export async function introspectPostgres(
 
   // Secondary indexes: columns unnested in key order (WITH ORDINALITY), `attnum > 0` drops
   // expression-index entries. Plus an approximate row count from planner stats (reltuples).
+  //
+  // relkind IN ('r','p'): a PARTITIONED table's parent is 'p', not 'r'. Filtering on 'r' alone
+  // reported every partitioned table as having no indexes and no row count — silently, and worst on
+  // exactly the biggest tables in a database, which are the ones most likely to be partitioned.
   const indexes = await executor.run<{
     table_name: string;
     index_name: string;
@@ -79,7 +83,7 @@ export async function introspectPostgres(
        JOIN LATERAL unnest(string_to_array(ix.indkey::text, ' ')::int[]) WITH ORDINALITY AS k(attnum, ord)
          ON true
        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
-       WHERE n.nspname = $1 AND t.relkind = 'r' AND k.attnum > 0
+       WHERE n.nspname = $1 AND t.relkind IN ('r', 'p') AND k.attnum > 0
        ORDER BY table_name, index_name, ordinal`,
     params: [target],
   });
@@ -87,7 +91,9 @@ export async function introspectPostgres(
   const rowCounts = await executor.run<{ table_name: string; n: string }>({
     sql: `SELECT c.relname AS table_name, c.reltuples::bigint AS n
        FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-       WHERE n.nspname = $1 AND c.relkind = 'r'`,
+       -- reltuples on a partitioned parent is -1 until it is ANALYZEd; the >= 0 filter below
+       -- drops that rather than reporting a table with minus one row.
+       WHERE n.nspname = $1 AND c.relkind IN ('r', 'p')`,
     params: [target],
   });
 

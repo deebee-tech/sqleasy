@@ -223,3 +223,70 @@ for (const t of REAL) {
     });
   });
 }
+
+// Postgres-only: a partitioned table's parent is relkind 'p', not 'r'. The catalog queries filtered
+// on 'r', so a partitioned table came back with no indexes and no row count — reported as a bare,
+// unindexed table. It fails worst on the largest tables in a database, which are the ones most
+// likely to be partitioned in the first place. Only a real server can catch it: the shape lives
+// entirely in pg_class.
+describe.skipIf(!process.env['DATABASE_URL'])(
+  'introspectSchema (postgres, partitioned table)',
+  () => {
+    it('reads indexes and an approximate row count for a PARTITIONED table', async () => {
+      const { createPostgresExecutor } = await import('../src/postgres');
+      const db = createPostgresExecutor({ connectionString: process.env['DATABASE_URL'] });
+      const cleanup = [
+        'DROP TABLE IF EXISTS _se_events CASCADE;',
+        'DROP TABLE IF EXISTS _se_plain;',
+      ];
+      try {
+        for (const sql of cleanup) await db.run({ sql });
+        await db.run({
+          sql: `CREATE TABLE _se_events (id INT NOT NULL, tenant TEXT NOT NULL, at DATE NOT NULL)
+              PARTITION BY RANGE (at);`,
+        });
+        await db.run({
+          sql: `CREATE TABLE _se_events_2026 PARTITION OF _se_events
+              FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');`,
+        });
+        await db.run({ sql: 'CREATE INDEX _se_events_tenant_idx ON _se_events (tenant);' });
+        await db.run({ sql: "INSERT INTO _se_events VALUES (1, 't1', '2026-06-01');" });
+        // reltuples stays -1 until the table is analyzed; the count assertion needs real stats.
+        await db.run({ sql: 'ANALYZE _se_events;' });
+
+        const schema = await introspectSchema(db, 'postgres');
+        const events = schema.tables.find((x) => x.name === '_se_events')!;
+
+        expect(events.indexes.map((i) => i.name)).toContain('_se_events_tenant_idx');
+        expect(events.approxRowCount).toBeGreaterThanOrEqual(1);
+      } finally {
+        for (const sql of cleanup) await db.run({ sql }).catch(() => {});
+        await db.close();
+      }
+    });
+
+    it('omits the row count for a partitioned table that was never analyzed, rather than reporting -1', async () => {
+      const { createPostgresExecutor } = await import('../src/postgres');
+      const db = createPostgresExecutor({ connectionString: process.env['DATABASE_URL'] });
+      const drop = 'DROP TABLE IF EXISTS _se_fresh CASCADE;';
+      try {
+        await db.run({ sql: drop });
+        await db.run({
+          sql: 'CREATE TABLE _se_fresh (id INT NOT NULL, at DATE NOT NULL) PARTITION BY RANGE (at);',
+        });
+        await db.run({
+          sql: `CREATE TABLE _se_fresh_p PARTITION OF _se_fresh
+              FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');`,
+        });
+
+        const schema = await introspectSchema(db, 'postgres');
+        const fresh = schema.tables.find((x) => x.name === '_se_fresh')!;
+
+        expect(fresh.approxRowCount).toBeUndefined();
+      } finally {
+        await db.run({ sql: drop }).catch(() => {});
+        await db.close();
+      }
+    });
+  },
+);
