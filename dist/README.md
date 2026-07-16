@@ -292,6 +292,30 @@ builder
   .offset(20);
 ```
 
+`.limit()` is **pagination**: on MSSQL it renders as `OFFSET … ROWS FETCH NEXT … ROWS ONLY`, which
+T-SQL accepts only alongside an `ORDER BY` — so paginating without one throws rather than emitting
+SQL the server would reject. `.top(n)` is the separate, SQL-Server-only **manual row cap**, and the
+tool to reach for when you want `TOP (n)` and no ordering. The two are not interchangeable, and
+`.limit()` never silently becomes a `TOP`.
+
+### TOP (SQL Server only)
+
+`.top(n)` is the row cap you apply by hand when you want `TOP (n)` and no ordering. It has no
+equivalent on the other three dialects.
+
+```typescript
+import { MssqlQuery } from '@deebeetech/sqleasy';
+
+const builder = new MssqlQuery().newBuilder();
+
+builder.selectAll().fromTable('users', 'u').top(10);
+// SELECT TOP (10) * FROM [dbo].[users] AS [u];
+```
+
+`.clearTop()` clears an explicit cap again. Combining `.top()` with `.limit()` or `.offset()` throws:
+T-SQL rejects `TOP` in the same SELECT as `OFFSET`/`FETCH` (Msg 10741), and the two express
+different intents anyway — a manual cap is not pagination.
+
 ### GROUP BY / HAVING
 
 ```typescript

@@ -1,3 +1,10 @@
+## [6.0.1](https://github.com/deebee-tech/sqleasy/compare/v6.0.0...v6.0.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* **docs:** document top(), and ship the pagination note to npm ([137bb3c](https://github.com/deebee-tech/sqleasy/commit/137bb3c9ea9577215fbd73c4a7b79aa7e1add79d))
+
 # [6.0.0](https://github.com/deebee-tech/sqleasy/compare/v5.0.0...v6.0.0) (2026-07-16)
 
 
