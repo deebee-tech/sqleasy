@@ -1,3 +1,23 @@
+# [5.0.0](https://github.com/deebee-tech/sqleasy/compare/v4.0.1...v5.0.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* render release notes again, and restore the history they swallowed ([c4db847](https://github.com/deebee-tech/sqleasy/commit/c4db84762b9a905a4e0985358ec8be65fd2fcaa4))
+* resolve CJS types per lane so node16 consumers stop hitting TS1479 ([3ae4a21](https://github.com/deebee-tech/sqleasy/commit/3ae4a21ead7ef774de477360b3295656cda9dc58))
+
+
+### BREAKING CHANGES
+
+* footer, and most of what 3.0.0 broke was in the body.
+
+tests/release-notes.test.ts runs the real plugin against the real config from
+release.config.mjs, so re-adding a skewed preset fails a gate instead of eight
+releases later. Verified it fails against the pre-fix config: the header-only
+output was byte-identical to rendering zero commits.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
 ## [4.0.1](https://github.com/deebee-tech/sqleasy/compare/v4.0.0...v4.0.1) (2026-07-15)
 
 ### Bug Fixes
