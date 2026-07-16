@@ -1,8 +1,20 @@
 # Changelog
 
-## 0.2.0
+## 1.0.0
 
-Tracks the TypeScript `@deebeetech/sqleasy` **6.0.0** golden corpus (was pinned to 4.0.1).
+Tracks the TypeScript `@deebeetech/sqleasy` **6.0.1** golden corpus (was pinned to 6.0.0). No
+behaviour change: 6.0.1 was a documentation release, so all 189 cases are byte-identical to 6.0.0's
+and only the corpus `version` moved. The pin is bumped to keep the two ports on the same tag.
+
+**This is the 1.0.0 release, and it is a versioning change rather than a code change.** The port has
+mirrored the TypeScript source since 0.1.0 and conforms to the shared corpus case-for-case, so the
+`0.x` prefix was understating it. It also cost a signal: under `0.x`, pub's convention makes the
+*minor* the breaking slot, so 0.2.0 spent a minor to say what the rest of the family says with a
+major — `@deebeetech/sqleasy` cut a 6.0.0 for the very same change. From here this package versions
+by the same rules as the TypeScript one: breaking changes take the major, and a shared corpus bump
+that moves emitted SQL is breaking in both languages at once.
+
+Nothing to migrate. If you are on 0.2.0, 1.0.0 emits identical SQL.
 
 **Breaking — the emitted SQL changed.** 6.0.0 fixed three dialect-emission bugs, each of which
 produced SQL the real engine rejected. This port mirrors all three, and the shared corpus pins them:
