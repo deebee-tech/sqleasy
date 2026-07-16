@@ -71,6 +71,25 @@ describe('SqliteQuery limit offset', () => {
     expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 1000 OFFSET 20;');
   });
 
+  // A WHERE suppresses the LIMIT 1000 safety net, but SQLite has no standalone OFFSET — a bare
+  // `OFFSET 20` is a syntax error. `LIMIT -1` is SQLite's "no upper bound" idiom, so this still
+  // means "skip 20, return the rest".
+  it('offset with a where clause emits a sentinel LIMIT -1 rather than a bare OFFSET', () => {
+    const query = new SqliteQuery();
+    const builder = query.newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .where('u', 'active', WhereOperator.Equals, 1)
+      .orderByColumn('u', 'id', OrderByDirection.Ascending)
+      .offset(20);
+
+    const sql = builder.parseRaw();
+    expect(sql).toEqual(
+      'SELECT * FROM "users" AS "u" WHERE "u"."active" = 1 ORDER BY "u"."id" ASC LIMIT -1 OFFSET 20;',
+    );
+  });
+
   it('limit and offset - parse prepared', () => {
     const query = new SqliteQuery();
     const builder = query.newBuilder();

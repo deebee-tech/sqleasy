@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MssqlQuery, WhereOperator } from '../../src';
+import { MssqlQuery, OrderByDirection, WhereOperator } from '../../src';
 
 describe('MssqlQuery top', () => {
   it('top(10) - explicit TOP', () => {
@@ -70,11 +70,33 @@ describe('MssqlQuery top', () => {
   it('no TOP when limit is set', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
-    builder.selectAll().fromTable('users', 'u').limit(10);
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .orderByColumn('u', 'id', OrderByDirection.Ascending)
+      .limit(10);
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'SELECT * FROM [dbo].[users] AS [u] OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;',
+      'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;',
     );
+  });
+
+  // The safety net is automatic, not the designer's manual TOP, so it must not force a TOP into a
+  // paginated query — T-SQL rejects TOP together with OFFSET (Msg 10741). The cap moves to FETCH.
+  it('no TOP when an offset is present; the cap moves into FETCH NEXT', () => {
+    const query = new MssqlQuery();
+    const builder = query.newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .orderByColumn('u', 'id', OrderByDirection.Ascending)
+      .offset(20);
+
+    const sql = builder.parseRaw();
+    expect(sql).toEqual(
+      'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 1000 ROWS ONLY;',
+    );
+    expect(sql).not.toContain('TOP');
   });
 });

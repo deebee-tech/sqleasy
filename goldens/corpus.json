@@ -814,7 +814,10 @@
       "ops": [
         {
           "op": "selectRaws",
-          "sqls": ["COUNT(*) AS total", "MAX(age) AS maxAge"]
+          "sqls": [
+            "COUNT(*) AS total",
+            "MAX(age) AS maxAge"
+          ]
         },
         {
           "op": "fromTable",
@@ -1016,7 +1019,9 @@
     {
       "name": "select distinct with an explicit top",
       "note": "An explicit `top(n)` wins over the safety net and still sits after DISTINCT. MSSQL only: TOP does not exist in the other three dialects (where the same op is silently ignored).",
-      "dialects": ["mssql"],
+      "dialects": [
+        "mssql"
+      ],
       "ops": [
         {
           "op": "distinct"
@@ -1794,7 +1799,10 @@
         },
         {
           "op": "fromRaws",
-          "sqls": ["products AS p", "regions AS r"]
+          "sqls": [
+            "products AS p",
+            "regions AS r"
+          ]
         }
       ],
       "expect": {
@@ -7268,7 +7276,7 @@
     },
     {
       "name": "limit only without an order by",
-      "note": "Highest-value divergence in this area. MySQL/Postgres/SQLite emit `LIMIT 10`; MSSQL emits `OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY` — and does NOT throw for the missing ORDER BY, because the ORDER-BY-required guard only triggers when offset > 0. Also note an explicit limit suppresses MSSQL's TOP safety net entirely: there is no TOP here.",
+      "note": "Highest-value divergence in this area, and the one that pins the top()/limit() split. MySQL/Postgres/SQLite emit `LIMIT 10` — legal and unordered. MSSQL renders EVERY limit as OFFSET/FETCH pagination, and T-SQL accepts OFFSET/FETCH only alongside an ORDER BY (Msg 102), so MSSQL REJECTS this outright. `.limit()` is pagination and needs an order to page against; `.top(n)` is the designer's manual, SQL-Server-only row cap and the tool for an unordered one. A port that quietly emits `TOP (10)` here instead of throwing has conflated the two, and produces a query the caller never asked for. Note an explicit limit also suppresses MSSQL's TOP safety net: even before the guard, there was no TOP here.",
       "ops": [
         {
           "op": "selectAll"
@@ -7285,11 +7293,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;', N'';",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;"
+          "throws": "LimitOffset: ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap"
         },
         "mysql": {
           "prepared": {
@@ -7374,7 +7378,7 @@
     },
     {
       "name": "offset only with an order by and no where clause",
-      "note": "The safety net at its strangest, and worth staring at. With no WHERE and no explicit limit, MySQL/Postgres/SQLite synthesize `LIMIT 1000 OFFSET 20` (single space here — the separator is only added when an explicit limit was set). MSSQL takes a different branch entirely: the TOP safety net fires (TOP (1000)) AND `OFFSET 20 ROWS` is appended, which T-SQL does not actually accept together. Pin it as-is; do not let a port quietly drop either half.",
+      "note": "The automatic row cap, in the two syntaxes it has to wear. With no WHERE and no explicit limit, MySQL/Postgres/SQLite synthesize `LIMIT 1000 OFFSET 20` (single space here — the separator is only added when an explicit limit was set). MSSQL applies the SAME cap but must spell it `FETCH NEXT 1000 ROWS ONLY`, because T-SQL rejects a TOP in the same SELECT as an OFFSET (Msg 10741). So the cap is identical across all four dialects and only the syntax differs. This case previously pinned `TOP (1000) ... OFFSET 20 ROWS`, which SQL Server never accepted; a port must not resurrect it.",
       "ops": [
         {
           "op": "selectAll"
@@ -7398,10 +7402,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT TOP (1000) * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 1000 ROWS ONLY;', N'';",
             "params": []
           },
-          "raw": "SELECT TOP (1000) * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS;"
+          "raw": "SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 1000 ROWS ONLY;"
         },
         "mysql": {
           "prepared": {
@@ -7428,7 +7432,7 @@
     },
     {
       "name": "offset only with a where clause suppresses the default limit",
-      "note": "A WHERE clause is what marks a query 'bounded': it suppresses the LIMIT 1000 / TOP (1000) safety net in every dialect. What is left in MySQL/Postgres/SQLite is a bare `  OFFSET 20` with a LEADING double space and no LIMIT at all. Contrast with the no-where case above — same ops otherwise.",
+      "note": "A WHERE clause is what marks a query \"bounded\": it suppresses the automatic row cap in every dialect — no LIMIT 1000, no TOP (1000), no FETCH NEXT 1000. What is left is offset-only, and this is where all four grammars disagree. Postgres is the only one with a legal standalone OFFSET, so it emits a bare `  OFFSET 20` (LEADING double space). MySQL and SQLite cannot parse that at all (ERROR 1064 / `near \"OFFSET\"`), so each emits its own \"no upper bound\" sentinel limit first: `LIMIT 18446744073709551615` (2^64-1, the documented MySQL idiom — 2^64 is itself a syntax error) and `LIMIT -1`. MSSQL emits `OFFSET 20 ROWS` with no FETCH, which is valid T-SQL. One intent, four spellings; a port that picks one and applies it everywhere breaks three dialects.",
       "ops": [
         {
           "op": "selectAll"
@@ -7469,7 +7473,7 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC  OFFSET 20;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;",
             "params": [
               {
                 "t": "bool",
@@ -7477,7 +7481,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC  OFFSET 20;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;"
         },
         "postgres": {
           "prepared": {
@@ -7493,7 +7497,7 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC  OFFSET 20;",
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 20;",
             "params": [
               {
                 "t": "bool",
@@ -7501,7 +7505,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = true ORDER BY \"u\".\"id\" ASC  OFFSET 20;"
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = true ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 20;"
         }
       }
     },
@@ -7591,7 +7595,9 @@
     },
     {
       "name": "explicit mssql top",
-      "dialects": ["mssql"],
+      "dialects": [
+        "mssql"
+      ],
       "ops": [
         {
           "op": "selectAll"
@@ -7619,7 +7625,9 @@
     {
       "name": "mssql top with a where clause",
       "note": "An explicit TOP wins over both the safety net and the WHERE-suppresses-it rule: TOP (5) is emitted even though the WHERE clause would otherwise mean no TOP at all.",
-      "dialects": ["mssql"],
+      "dialects": [
+        "mssql"
+      ],
       "ops": [
         {
           "op": "selectAll"
@@ -7657,7 +7665,9 @@
     {
       "name": "mssql top combined with limit is refused",
       "note": "Only an EXPLICIT top() conflicts with limit/offset — the implicit TOP (1000) safety net never throws (see 'offset only with an order by and no where clause', where safety-net TOP and OFFSET coexist). The port must therefore track 'top was set by the caller' as distinct state, not infer it from the rendered TOP.",
-      "dialects": ["mssql"],
+      "dialects": [
+        "mssql"
+      ],
       "ops": [
         {
           "op": "selectAll"
@@ -7685,7 +7695,11 @@
     {
       "name": "top is silently ignored by the non-mssql dialects",
       "note": "top() lives on the shared builder, not on the MSSQL builder, so it is callable everywhere — and everywhere else it is a no-op: no TOP, no LIMIT, and (since these dialects have no unbounded-query safety net) no clause at all. A Dart port that throws 'unsupported' on top() for MySQL, or that translates it into LIMIT, diverges. It also must not throw the TOP+LIMIT error outside MSSQL.",
-      "dialects": ["mysql", "postgres", "sqlite"],
+      "dialects": [
+        "mysql",
+        "postgres",
+        "sqlite"
+      ],
       "ops": [
         {
           "op": "selectAll"
@@ -7928,7 +7942,12 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["name", "age", "score", "active"]
+          "columns": [
+            "name",
+            "age",
+            "score",
+            "active"
+          ]
         },
         {
           "op": "insertValues",
@@ -8045,7 +8064,10 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["product_id", "quantity"]
+          "columns": [
+            "product_id",
+            "quantity"
+          ]
         },
         {
           "op": "insertValues",
@@ -8130,7 +8152,9 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         },
         {
           "op": "insertValues",
@@ -8198,7 +8222,11 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["occurred_at", "deleted_at", "note"]
+          "columns": [
+            "occurred_at",
+            "deleted_at",
+            "note"
+          ]
         },
         {
           "op": "insertValues",
@@ -8373,7 +8401,10 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["name", "age"]
+          "columns": [
+            "name",
+            "age"
+          ]
         },
         {
           "op": "insertValues",
@@ -8534,7 +8565,9 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         },
         {
           "op": "insertValues",
@@ -8587,7 +8620,9 @@
       "ops": [
         {
           "op": "insertColumns",
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         },
         {
           "op": "insertValues",
@@ -10094,7 +10129,9 @@
     {
       "name": "mssql top is emitted inside a union branch but dropped inside a cte body",
       "note": "An asymmetry in the MSSQL TOP hook, frozen as-is. The union parser threads the dialect's beforeSelectColumns hook into each branch, so an explicit `.top(n)` on a union branch renders `SELECT TOP (3)`. The CTE parser does NOT thread the hook, so the identical `.top(n)` on a CTE body renders nothing at all. Neither inner statement gets the TOP (1000) safety net (that only fires on a non-inner statement). A Dart port that threads the hook uniformly through both will emit an extra TOP in the CTE and diverge.",
-      "dialects": ["mssql"],
+      "dialects": [
+        "mssql"
+      ],
       "ops": [
         {
           "op": "cte",
@@ -10168,7 +10205,9 @@
     {
       "name": "mssql applies the top safety net to a cte outer query with no where",
       "note": "The unbounded-query guard looks only at the OUTER statement: no WHERE, no LIMIT, not an inner statement, so `TOP (1000)` lands on the outer SELECT even though the real row source is the CTE. The CTE body, being an inner statement, gets no TOP of its own.",
-      "dialects": ["mssql"],
+      "dialects": [
+        "mssql"
+      ],
       "ops": [
         {
           "op": "cte",
@@ -10672,7 +10711,10 @@
             },
             {
               "op": "insertColumns",
-              "columns": ["name", "email"]
+              "columns": [
+                "name",
+                "email"
+              ]
             },
             {
               "op": "insertValues",
@@ -10806,7 +10848,10 @@
             },
             {
               "op": "insertColumns",
-              "columns": ["user_id", "token"]
+              "columns": [
+                "user_id",
+                "token"
+              ]
             },
             {
               "op": "insertValues",
@@ -11167,7 +11212,11 @@
         },
         {
           "op": "insertColumns",
-          "columns": ["name", "age", "email"]
+          "columns": [
+            "name",
+            "age",
+            "email"
+          ]
         },
         {
           "op": "insertValues",
@@ -12538,7 +12587,7 @@
           "operator": "Equals",
           "value": {
             "t": "double",
-            "v": 1e21
+            "v": 1e+21
           }
         }
       ],
@@ -12560,7 +12609,7 @@
               },
               {
                 "t": "num",
-                "v": 1e21
+                "v": 1e+21
               }
             ]
           },
@@ -12576,7 +12625,7 @@
               },
               {
                 "t": "num",
-                "v": 1e21
+                "v": 1e+21
               }
             ]
           },
@@ -12592,7 +12641,7 @@
               },
               {
                 "t": "num",
-                "v": 1e21
+                "v": 1e+21
               }
             ]
           },
@@ -14092,7 +14141,7 @@
     },
     {
       "name": "offset without a limit on an unfiltered query reaches the safety net",
-      "note": "The ONLY route to the MySQL/Postgres/SQLite safety-net LIMIT: defaultLimitOffset runs (offset > 0), sees limit === 0, not an inner statement, and no WHERE — so it emits `LIMIT 1000 OFFSET 5`. MSSQL takes a different branch AND still gets the select-hook TOP, producing `SELECT TOP (1000) ... ORDER BY [u].[id] ASC OFFSET 5 ROWS` with no FETCH NEXT. Nothing in the authored corpus exercises the non-MSSQL safety net at all — it is unreachable without an offset.",
+      "note": "The ONLY route to the MySQL/Postgres/SQLite safety-net LIMIT: defaultLimitOffset runs (offset > 0), sees limit === 0, not an inner statement, and no WHERE — so it emits `LIMIT 1000 OFFSET 5`. MSSQL arrives at the same cap down its own branch and renders it as `FETCH NEXT 1000 ROWS ONLY` with NO TOP, since TOP and OFFSET cannot share a SELECT (Msg 10741). Nothing in the authored corpus exercises the non-MSSQL safety net at all — it is unreachable without an offset.",
       "ops": [
         {
           "op": "selectAll"
@@ -14116,10 +14165,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT TOP (1000) * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS FETCH NEXT 1000 ROWS ONLY;', N'';",
             "params": []
           },
-          "raw": "SELECT TOP (1000) * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS;"
+          "raw": "SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS FETCH NEXT 1000 ROWS ONLY;"
         },
         "mysql": {
           "prepared": {
@@ -14145,8 +14194,8 @@
       }
     },
     {
-      "name": "offset with a where and no limit emits a doubled space",
-      "note": "SPACING, byte-for-byte. to-sql prefixes the limit/offset helper with ' ', and the helper's offset branch starts with ANOTHER leading space (' OFFSET '). With a WHERE present the safety-net LIMIT is suppressed, so nothing sits between them: MySQL/Postgres/SQLite emit `... ORDER BY \"u\".\"id\" ASC  OFFSET 5;` with TWO spaces. MSSQL's branch has no leading space and emits a single one. A port that normalizes whitespace, or that builds the clause list by joining on ' ', collapses the double space and fails on three dialects while passing on MSSQL.",
+      "name": "offset with a where and no limit: only postgres keeps the doubled space",
+      "note": "SPACING, byte-for-byte. to-sql prefixes the limit/offset helper with \" \", and the helper's offset branch starts with ANOTHER leading space (\" OFFSET \"). With a WHERE present the safety-net LIMIT is suppressed, so on Postgres — the one dialect that accepts a standalone OFFSET, and therefore emits nothing between the two spaces — the result is `... ORDER BY \"u\".\"id\" ASC  OFFSET 5;` with TWO spaces. A port that normalizes whitespace, or builds the clause list by joining on \" \", collapses it and fails. MySQL and SQLite fill that gap with their sentinel limit (`LIMIT 18446744073709551615` / `LIMIT -1`) and so emit a single space; MSSQL's branch has no leading space and also emits one.",
       "ops": [
         {
           "op": "selectAll"
@@ -14187,7 +14236,7 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC  OFFSET 5;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 5;",
             "params": [
               {
                 "t": "bool",
@@ -14195,7 +14244,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC  OFFSET 5;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 5;"
         },
         "postgres": {
           "prepared": {
@@ -14211,7 +14260,7 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC  OFFSET 5;",
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 5;",
             "params": [
               {
                 "t": "bool",
@@ -14219,7 +14268,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = true ORDER BY \"u\".\"id\" ASC  OFFSET 5;"
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = true ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 5;"
         }
       }
     },
@@ -14927,7 +14976,7 @@
           "operator": "Equals",
           "value": {
             "t": "double",
-            "v": 1e21
+            "v": 1e+21
           }
         },
         {
@@ -14971,7 +15020,7 @@
             "params": [
               {
                 "t": "num",
-                "v": 1e21
+                "v": 1e+21
               },
               {
                 "t": "num",
@@ -14991,7 +15040,7 @@
             "params": [
               {
                 "t": "num",
-                "v": 1e21
+                "v": 1e+21
               },
               {
                 "t": "num",
@@ -15011,7 +15060,7 @@
             "params": [
               {
                 "t": "num",
-                "v": 1e21
+                "v": 1e+21
               },
               {
                 "t": "num",
@@ -15858,7 +15907,10 @@
             },
             {
               "op": "insertColumns",
-              "columns": ["name", "age"]
+              "columns": [
+                "name",
+                "age"
+              ]
             },
             {
               "op": "insertValues",

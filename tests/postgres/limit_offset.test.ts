@@ -52,6 +52,8 @@ describe('PostgresQuery limit offset', () => {
     );
   });
 
+  // Postgres is the one dialect with a legal standalone OFFSET, so it gets no sentinel LIMIT —
+  // unlike MySQL (LIMIT 2^64-1) and SQLite (LIMIT -1), which cannot parse a bare OFFSET.
   it('offset only with order by', () => {
     const query = new PostgresQuery();
     const builder = query.newBuilder();

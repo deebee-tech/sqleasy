@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { MssqlQuery, OrderByDirection, WhereOperator } from '../../src';
 
 describe('MssqlQuery limit/offset', () => {
-  it('limit only (OFFSET 0 ROWS FETCH NEXT)', () => {
+  // `.limit()` is pagination and renders as OFFSET/FETCH, which T-SQL only accepts alongside an
+  // ORDER BY (Msg 102). Without one this used to emit `OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY` and
+  // the server rejected the statement. `.top(n)` is the unordered row cap.
+  it('limit without ORDER BY throws rather than emitting invalid OFFSET/FETCH', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder
@@ -11,10 +14,41 @@ describe('MssqlQuery limit/offset', () => {
       .where('u', 'active', WhereOperator.Equals, 1)
       .limit(10);
 
+    expect(() => builder.parseRaw()).toThrow('ORDER BY is required when using LIMIT on MSSQL');
+  });
+
+  it('limit only with an ORDER BY (OFFSET 0 ROWS FETCH NEXT)', () => {
+    const query = new MssqlQuery();
+    const builder = query.newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .where('u', 'active', WhereOperator.Equals, 1)
+      .orderByColumn('u', 'id', OrderByDirection.Ascending)
+      .limit(10);
+
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;',
+      'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 ORDER BY [u].[id] ASC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;',
     );
+  });
+
+  // The automatic row cap must ride in the FETCH, never a TOP: T-SQL rejects TOP in the same
+  // SELECT as an OFFSET (Msg 10741).
+  it('offset with no limit caps via FETCH NEXT and emits no TOP', () => {
+    const query = new MssqlQuery();
+    const builder = query.newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .orderByColumn('u', 'id', OrderByDirection.Ascending)
+      .offset(5);
+
+    const sql = builder.parseRaw();
+    expect(sql).toEqual(
+      'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS FETCH NEXT 1000 ROWS ONLY;',
+    );
+    expect(sql).not.toContain('TOP');
   });
 
   it('limit and offset (requires ORDER BY)', () => {

@@ -14,7 +14,7 @@ import { defaultGroupBy } from './default-group-by';
 import { defaultHaving } from './default-having';
 import { defaultInsert } from './default-insert';
 import { defaultJoin } from './default-join';
-import { defaultLimitOffset } from './default-limit-offset';
+import { defaultLimitOffset, safetyNetApplies } from './default-limit-offset';
 import { defaultOrderBy } from './default-order-by';
 import { defaultSelect } from './default-select';
 import { defaultUnion } from './default-union';
@@ -161,6 +161,11 @@ export const defaultToSql = (
  * MSSQL prepends a `TOP` to the SELECT list — an explicit `.top(n)` when set, otherwise a
  * safety-net `TOP (maxRowsReturned)` on an unbounded outer query (no WHERE, no LIMIT, not a
  * subquery). Other dialects need no hook.
+ *
+ * The safety net additionally stands down when the query has an OFFSET: T-SQL rejects TOP in the
+ * same SELECT as OFFSET/FETCH (Msg 10741), so `defaultLimitOffset` emits the identical cap as a
+ * `FETCH NEXT (maxRowsReturned)` instead. An explicit `.top(n)` is unaffected — it conflicts with
+ * limit/offset outright, and `defaultLimitOffset` throws on that combination.
  */
 const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
   if (config.databaseType !== DatabaseType.Mssql) {
@@ -179,11 +184,7 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
         sqlHelper.addSqlSnippet('TOP ');
         sqlHelper.addSqlSnippet(`(${state.customState['top']})`);
         sqlHelper.addSqlSnippet(' ');
-      } else if (
-        !state.isInnerStatement &&
-        state.limit === 0 &&
-        (!state.whereStates || state.whereStates.length === 0)
-      ) {
+      } else if (safetyNetApplies(state) && state.offset === 0) {
         sqlHelper.addSqlSnippet('TOP ');
         sqlHelper.addSqlSnippet(`(${cfg.runtimeConfiguration.maxRowsReturned})`);
         sqlHelper.addSqlSnippet(' ');

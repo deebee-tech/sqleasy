@@ -38,7 +38,10 @@ describe('MysqlQuery limit offset', () => {
     expect(sql).toEqual('SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 1000 OFFSET 20;');
   });
 
-  it('OFFSET with WHERE skips default LIMIT', () => {
+  // A WHERE suppresses the LIMIT 1000 safety net, but MySQL has no standalone OFFSET — a bare
+  // `OFFSET 20` is ERROR 1064. The documented idiom is a sentinel LIMIT of 2^64-1 in front of it,
+  // which caps nothing and preserves "skip 20, return the rest".
+  it('OFFSET with WHERE skips the default LIMIT but keeps a sentinel LIMIT', () => {
     const query = new MysqlQuery();
     const builder = query.newBuilder();
     builder
@@ -50,7 +53,7 @@ describe('MysqlQuery limit offset', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC  OFFSET 20;',
+      'SELECT * FROM `users` AS `u` WHERE `u`.`active` = true ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;',
     );
   });
 
