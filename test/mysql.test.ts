@@ -37,6 +37,111 @@ describe('parseMysqlPlan', () => {
     expect(parseMysqlPlan(raw).fullScan).toBe(true);
   });
 
+  // Verbatim `EXPLAIN FORMAT=JSON` structure from MySQL 8.4 (trimmed to the fields the parser
+  // reads). A UNION's query_block contains NOTHING but union_result: no `table`, no `nested_loop`.
+  // The walker used to stop at the wrappers it knew by name, so it found zero tables here and
+  // reported a clean plan for a query scanning both branches end to end.
+  const unionPlan = (accessTypes: [string, string]) =>
+    JSON.stringify({
+      query_block: {
+        union_result: {
+          table_name: '<union1,2>',
+          access_type: 'ALL', // the temp table it reads back — NOT a base-table scan
+          query_specifications: [
+            {
+              query_block: {
+                cost_info: { query_cost: '20.25' },
+                table: {
+                  table_name: 'p1',
+                  access_type: accessTypes[0],
+                  rows_examined_per_scan: 200,
+                },
+              },
+            },
+            {
+              query_block: {
+                cost_info: { query_cost: '20.25' },
+                table: {
+                  table_name: 'p2',
+                  access_type: accessTypes[1],
+                  rows_examined_per_scan: 200,
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+  it('finds an ALL scan inside a UNION branch', () => {
+    const est = parseMysqlPlan(unionPlan(['ALL', 'ALL']));
+    expect(est.fullScan).toBe(true);
+    expect(est.rows).toBe(200);
+  });
+
+  it('flags a UNION where only one branch scans', () => {
+    expect(parseMysqlPlan(unionPlan(['const', 'ALL'])).fullScan).toBe(true);
+  });
+
+  it("does not mistake union_result's own ALL for a base-table scan", () => {
+    // Both branches are const seeks. union_result still reports access_type ALL for the temporary
+    // table it reads back; counting that would fail every UNION as a full scan.
+    expect(parseMysqlPlan(unionPlan(['const', 'const'])).fullScan).toBe(false);
+  });
+
+  it('finds an ALL scan inside a materialized derived table', () => {
+    // A derived table that cannot be merged (GROUP BY) hangs its real plan off the outer table node.
+    const raw = JSON.stringify({
+      query_block: {
+        table: {
+          table_name: 'd',
+          access_type: 'ref',
+          rows_examined_per_scan: 1,
+          materialized_from_subquery: {
+            query_block: {
+              grouping_operation: {
+                table: { table_name: 'p1', access_type: 'ALL', rows_examined_per_scan: 200 },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(parseMysqlPlan(raw).fullScan).toBe(true);
+  });
+
+  it('finds an ALL scan inside an attached subquery', () => {
+    const raw = JSON.stringify({
+      query_block: {
+        table: { table_name: 'p1', access_type: 'const', rows_examined_per_scan: 1 },
+        attached_subqueries: [
+          {
+            query_block: {
+              table: { table_name: 'p2', access_type: 'ALL', rows_examined_per_scan: 200 },
+            },
+          },
+        ],
+      },
+    });
+    expect(parseMysqlPlan(raw).fullScan).toBe(true);
+  });
+
+  it('finds an ALL scan inside a select-list subquery', () => {
+    const raw = JSON.stringify({
+      query_block: {
+        table: { table_name: 'p1', access_type: 'const', rows_examined_per_scan: 1 },
+        select_list_subqueries: [
+          {
+            query_block: {
+              table: { table_name: 'p2', access_type: 'ALL', rows_examined_per_scan: 200 },
+            },
+          },
+        ],
+      },
+    });
+    expect(parseMysqlPlan(raw).fullScan).toBe(true);
+  });
+
   it('returns an empty estimate for unparseable JSON instead of throwing', () => {
     const est = parseMysqlPlan('not json');
     expect(est.fullScan).toBe(false);

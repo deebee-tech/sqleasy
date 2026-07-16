@@ -13,26 +13,33 @@ export type MysqlConfig = PoolOptions;
 /** `EXPLAIN FORMAT=JSON` shape — only the bits we read. A `table` node is not always a direct child
  * of `query_block`: a JOIN nests it under `nested_loop[]`, ORDER BY under `ordering_operation`, etc. */
 type MysqlTable = { access_type?: string; rows_examined_per_scan?: number };
-type MysqlBlock = {
-  cost_info?: { query_cost?: string };
-  table?: MysqlTable;
-  nested_loop?: MysqlBlock[];
-  ordering_operation?: MysqlBlock;
-  grouping_operation?: MysqlBlock;
-  duplicates_removal?: MysqlBlock;
-};
-type MysqlPlan = { query_block?: MysqlBlock };
+type MysqlPlan = { query_block?: { cost_info?: { query_cost?: string } } };
 
-/** Every `table` node in the plan, however deeply the operation wrappers nest it. */
-function tablesOf(block: MysqlBlock | undefined): MysqlTable[] {
-  if (!block) return [];
-  return [
-    ...(block.table ? [block.table] : []),
-    ...(block.nested_loop ?? []).flatMap(tablesOf),
-    ...tablesOf(block.ordering_operation),
-    ...tablesOf(block.grouping_operation),
-    ...tablesOf(block.duplicates_removal),
-  ];
+/**
+ * Every `table` node in the plan, however deeply it is nested.
+ *
+ * This walks generically instead of naming the wrappers it knows about. Enumerating them is what
+ * broke it before: it recursed `nested_loop`/`ordering_operation`/`grouping_operation`/
+ * `duplicates_removal` and stopped there, so a UNION — whose `query_block` holds nothing but
+ * `union_result.query_specifications[]` — yielded zero tables and reported `fullScan: false` while
+ * scanning both branches. Verified against real MySQL 8.4, the wrappers that can hide a table are at
+ * least: union_result.query_specifications[], materialized_from_subquery, attached_subqueries[],
+ * select_list_subqueries[], optimized_away_subqueries[], having_subqueries[] and
+ * order_by_subqueries[]. Naming those would just move the cliff to the next node MySQL adds.
+ *
+ * Collection stays keyed on the `table` PROPERTY, which is the one thing that reliably marks a table
+ * node. That deliberately excludes `union_result` itself: it carries `access_type: "ALL"` for the
+ * temporary table it reads back, which is not a base-table scan and must not be reported as one.
+ */
+function tablesOf(node: unknown): MysqlTable[] {
+  if (Array.isArray(node)) return node.flatMap(tablesOf);
+  if (node === null || typeof node !== 'object') return [];
+  return Object.entries(node).flatMap(([key, value]) =>
+    // Recurse into the table too — a materialized derived table hangs its inner plan off it.
+    key === 'table' && value !== null && typeof value === 'object'
+      ? [value as MysqlTable, ...tablesOf(value)]
+      : tablesOf(value),
+  );
 }
 
 /** Parse `EXPLAIN FORMAT=JSON` output into the normalized estimate. Exported for unit tests. */
