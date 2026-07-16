@@ -1,3 +1,20 @@
+# [7.0.0](https://github.com/deebee-tech/sqleasy/compare/v6.0.1...v7.0.0) (2026-07-16)
+
+
+* refactor!: remove the automatic row cap; emit the query that was asked for ([5e94dd3](https://github.com/deebee-tech/sqleasy/commit/5e94dd38255136be5bc997f3cab001effd9b2dfe))
+
+
+### BREAKING CHANGES
+
+* `RuntimeConfiguration.maxRowsReturned` is removed; setting it is
+now a type error. Queries that relied on the implicit cap return every matching
+row — replace it with an explicit `.limit()` at the call site. MSSQL no longer
+emits `TOP (1000)` on an unbounded SELECT, MSSQL `.offset()` without a `.limit()`
+no longer appends `FETCH NEXT 1000 ROWS ONLY`, and Postgres/MySQL/SQLite
+`.offset()` without a `.limit()` no longer emit `LIMIT 1000`.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
 ## [6.0.1](https://github.com/deebee-tech/sqleasy/compare/v6.0.0...v6.0.1) (2026-07-16)
 
 

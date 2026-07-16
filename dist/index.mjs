@@ -791,14 +791,6 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 //#endregion
 //#region src/parser/default-limit-offset.ts
 /**
-* Whether the automatic row cap (`maxRowsReturned`) applies: an unbounded outer query — no explicit
-* limit, no WHERE, and not a subquery.
-*
-* Shared with the MSSQL `TOP` hook in to-sql.ts, which decides the same question, so the two cannot
-* drift apart. Note this is the *automatic* cap, distinct from an explicit `.top(n)`.
-*/
-const safetyNetApplies = (state) => state.limit === 0 && !state.isInnerStatement && state.whereStates.length === 0;
-/**
 * Each grammar's idiom for "no upper bound, just skip n rows".
 *
 * MySQL and SQLite have no standalone OFFSET — it only parses as the tail of a LIMIT — so an offset
@@ -817,9 +809,6 @@ const defaultLimitOffset = (state, config, mode) => {
 		if (state.limit > 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
-		} else if (safetyNetApplies(state)) {
-			sqlHelper.addSqlSnippet("LIMIT ");
-			sqlHelper.addSqlSnippet(config.runtimeConfiguration.maxRowsReturned.toString());
 		} else if (state.offset > 0) {
 			const sentinel = unboundedLimit[config.databaseType];
 			if (sentinel !== void 0) {
@@ -844,11 +833,6 @@ const defaultLimitOffset = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet("FETCH NEXT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
-			sqlHelper.addSqlSnippet(" ROWS ONLY");
-		} else if (safetyNetApplies(state)) {
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet("FETCH NEXT ");
-			sqlHelper.addSqlSnippet(config.runtimeConfiguration.maxRowsReturned.toString());
 			sqlHelper.addSqlSnippet(" ROWS ONLY");
 		}
 	}
@@ -1269,25 +1253,19 @@ const defaultToSql = (state, config, mode, options) => {
 	return sqlHelper;
 };
 /**
-* MSSQL prepends a `TOP` to the SELECT list — an explicit `.top(n)` when set, otherwise a
-* safety-net `TOP (maxRowsReturned)` on an unbounded outer query (no WHERE, no LIMIT, not a
-* subquery). Other dialects need no hook.
+* MSSQL prepends a `TOP` to the SELECT list for an explicit `.top(n)`. Other dialects need no hook.
 *
-* The safety net additionally stands down when the query has an OFFSET: T-SQL rejects TOP in the
-* same SELECT as OFFSET/FETCH (Msg 10741), so `defaultLimitOffset` emits the identical cap as a
-* `FETCH NEXT (maxRowsReturned)` instead. An explicit `.top(n)` is unaffected — it conflicts with
-* limit/offset outright, and `defaultLimitOffset` throws on that combination.
+* There is deliberately no automatic cap here. SQLEasy emits the query it was asked for, however
+* unbounded — a row cap is the caller's policy, not the builder's, and one applied behind the
+* caller's back is a silent truncation they never wrote. `.top(n)` is the caller asking; it
+* conflicts with limit/offset outright, and `defaultLimitOffset` throws on that combination.
 */
 const toSqlOptionsFor = (config) => {
 	if (config.databaseType !== DatabaseType.Mssql) return {};
-	return { beforeSelectColumns: (state, cfg, sqlHelper) => {
+	return { beforeSelectColumns: (state, _cfg, sqlHelper) => {
 		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && state.customState["top"] > 0) {
 			sqlHelper.addSqlSnippet("TOP ");
 			sqlHelper.addSqlSnippet(`(${state.customState["top"]})`);
-			sqlHelper.addSqlSnippet(" ");
-		} else if (safetyNetApplies(state) && state.offset === 0) {
-			sqlHelper.addSqlSnippet("TOP ");
-			sqlHelper.addSqlSnippet(`(${cfg.runtimeConfiguration.maxRowsReturned})`);
 			sqlHelper.addSqlSnippet(" ");
 		}
 	} };
@@ -2433,8 +2411,6 @@ var MultiBuilder = class {
 //#region src/configuration/runtime.ts
 /** Options passed when creating Query instances or builders. */
 var RuntimeConfiguration = class {
-	/** Maximum number of rows to return from queries; defaults to 1000. */
-	maxRowsReturned = 1e3;
 	/** Optional host-defined settings carried alongside runtime options. */
 	customConfiguration = void 0;
 };

@@ -10,8 +10,6 @@ type ConfigurationDelimiters = {
 //#region src/configuration/runtime.d.ts
 /** Options passed when creating Query instances or builders. */
 declare class RuntimeConfiguration {
-  /** Maximum number of rows to return from queries; defaults to 1000. */
-  maxRowsReturned: number;
   /** Optional host-defined settings carried alongside runtime options. */
   customConfiguration: any | undefined;
 }
