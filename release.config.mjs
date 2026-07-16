@@ -19,6 +19,12 @@ export default {
       '@semantic-release/commit-analyzer',
       {
         // Default Angular parser rejects `feat!:`; conventionalcommits supports it.
+        //
+        // ⚠ A body line that OPENS with `BREAKING CHANGE` is a footer, and the parser does not read
+        // English. v5.0.0 is a real, published, spurious major because a commit body contained the
+        // sentence "that removes the BREAKING CHANGE footer" — a commit ABOUT the footer became one.
+        // A version number cannot be taken back, so: when writing about the footer, never start a
+        // line with it. Say "the breaking-change footer" mid-sentence instead.
         preset: 'conventionalcommits',
       },
     ],
