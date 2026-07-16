@@ -162,6 +162,11 @@ SqlHelper defaultToSql(
 
 /// MSSQL prepends a `TOP` to the SELECT list — an explicit `.top(n)` when set, otherwise a
 /// safety-net `TOP (maxRowsReturned)` on an unbounded outer query. Other dialects need no hook.
+///
+/// The safety net additionally stands down when the query has an OFFSET: T-SQL rejects TOP in the
+/// same SELECT as OFFSET/FETCH (Msg 10741), so [defaultLimitOffset] emits the identical cap as a
+/// `FETCH NEXT (maxRowsReturned)` instead. An explicit `.top(n)` is unaffected — it conflicts with
+/// limit/offset outright, and [defaultLimitOffset] throws on that combination.
 ToSqlOptions toSqlOptionsFor(Dialect config) {
   if (config.databaseType != DatabaseType.mssql) {
     return const ToSqlOptions();
@@ -174,9 +179,7 @@ ToSqlOptions toSqlOptionsFor(Dialect config) {
         sqlHelper.addSqlSnippet('TOP ');
         sqlHelper.addSqlSnippet('(${formatNumber(top)})');
         sqlHelper.addSqlSnippet(' ');
-      } else if (!state.isInnerStatement &&
-          state.limit == 0 &&
-          state.whereStates.isEmpty) {
+      } else if (safetyNetApplies(state) && state.offset == 0) {
         sqlHelper.addSqlSnippet('TOP ');
         sqlHelper
             .addSqlSnippet('(${cfg.runtimeConfiguration.maxRowsReturned})');

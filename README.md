@@ -256,6 +256,12 @@ final builder = PostgresQuery().newBuilder()
   ..offset(20);
 ```
 
+`limit()` is **pagination**: on MSSQL it renders as `OFFSET … ROWS FETCH NEXT … ROWS ONLY`, which
+T-SQL accepts only alongside an `ORDER BY` — so paginating without one throws rather than emitting
+SQL the server would reject. `top(n)` is the separate, SQL-Server-only **manual row cap**, and the
+tool to reach for when you want `TOP (n)` and no ordering. The two are not interchangeable, and
+`limit()` never silently becomes a `TOP`.
+
 ### GROUP BY / HAVING
 
 ```dart

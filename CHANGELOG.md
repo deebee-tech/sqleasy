@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.0
+
+Tracks the TypeScript `@deebeetech/sqleasy` **6.0.0** golden corpus (was pinned to 4.0.1).
+
+**Breaking — the emitted SQL changed.** 6.0.0 fixed three dialect-emission bugs, each of which
+produced SQL the real engine rejected. This port mirrors all three, and the shared corpus pins them:
+seven golden expectations moved across five cases, and Postgres changed nowhere.
+
+- **MSSQL `limit()` without an `orderByColumn()` now throws.** It rendered
+  `OFFSET 0 ROWS FETCH NEXT n ROWS ONLY`, which T-SQL refuses without an ORDER BY (Msg 102). MSSQL
+  renders every limit as OFFSET/FETCH pagination, so pagination without an order to page against is
+  a caller error. It deliberately does not fall back to `TOP`: `top(n)` is the explicit,
+  SQL-Server-only row cap, and `limit()` is pagination.
+- **MSSQL no longer emits `TOP` alongside an `OFFSET`.** T-SQL rejects the combination (Msg 10741),
+  which made every `offset()` on an unfiltered query invalid. The automatic `maxRowsReturned` cap now
+  rides in the FETCH — `... OFFSET 5 ROWS FETCH NEXT 1000 ROWS ONLY`. With no offset, the safety net
+  still emits `TOP`.
+- **MySQL and SQLite `offset()` without a `limit()` no longer emit a bare `OFFSET`.** Neither grammar
+  has a standalone OFFSET (MySQL ERROR 1064, SQLite `near "OFFSET"`). Each now emits its own
+  "no upper bound" idiom first: `LIMIT 18446744073709551615` and `LIMIT -1`. Postgres accepts a bare
+  OFFSET and is untouched.
+
+Conformance passes on the Dart VM and under dart2js.
+
 ## 0.1.3
 
 Tracks the TypeScript `@deebeetech/sqleasy` **4.0.1** golden corpus (was pinned to 3.0.0).
