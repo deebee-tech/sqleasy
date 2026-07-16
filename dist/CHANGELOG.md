@@ -1,3 +1,19 @@
+# [6.0.0](https://github.com/deebee-tech/sqleasy/compare/v5.0.0...v6.0.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **parser:** stop emitting invalid pagination SQL on mssql, mysql and sqlite ([897989d](https://github.com/deebee-tech/sqleasy/commit/897989d0b2c9a6c9f8ae175eb80fbcc00b481149))
+
+
+### BREAKING CHANGES
+
+* **parser:** MSSQL `.limit(n)` without an ORDER BY now throws instead of
+emitting SQL that SQL Server rejected. MSSQL `.offset()` on an unfiltered query
+emits `FETCH NEXT (maxRowsReturned)` where it emitted a `TOP`, and MySQL/SQLite
+`.offset()` without a `.limit()` now emit a sentinel LIMIT. Every changed string
+was a statement no engine would run.
+
 # [5.0.0](https://github.com/deebee-tech/sqleasy/compare/v4.0.1...v5.0.0) (2026-07-16)
 
 
@@ -9,14 +25,17 @@
 
 ### BREAKING CHANGES
 
-* footer, and most of what 3.0.0 broke was in the body.
+**There are none.** 5.0.0 is 4.0.1 plus the two bug fixes above — upgrade from any 4.x with no
+changes.
 
-tests/release-notes.test.ts runs the real plugin against the real config from
-release.config.mjs, so re-adding a skewed preset fails a gate instead of eight
-releases later. Verified it fails against the pre-fix config: the header-only
-output was byte-identical to rendering zero commits.
+This section is an accident, and it stays here rather than being quietly deleted, because the
+version number cannot be taken back. The first commit above carried the sentence _"that removes the
+BREAKING CHANGE footer"_ — describing the very mechanism it was fixing. The commit-analyzer does not
+read English: it saw a line opening with those two words, took the rest of the sentence as the
+footer's body, and cut a major. A commit message *about* a breaking-change footer became one.
 
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+The fix it describes is real and is working — this is the first entry since 2.0.0 to render its Bug
+Fixes at all, which is exactly the bug it set out to repair.
 
 ## [4.0.1](https://github.com/deebee-tech/sqleasy/compare/v4.0.0...v4.0.1) (2026-07-15)
 

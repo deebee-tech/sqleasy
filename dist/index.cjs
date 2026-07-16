@@ -791,6 +791,26 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 };
 //#endregion
 //#region src/parser/default-limit-offset.ts
+/**
+* Whether the automatic row cap (`maxRowsReturned`) applies: an unbounded outer query — no explicit
+* limit, no WHERE, and not a subquery.
+*
+* Shared with the MSSQL `TOP` hook in to-sql.ts, which decides the same question, so the two cannot
+* drift apart. Note this is the *automatic* cap, distinct from an explicit `.top(n)`.
+*/
+const safetyNetApplies = (state) => state.limit === 0 && !state.isInnerStatement && state.whereStates.length === 0;
+/**
+* Each grammar's idiom for "no upper bound, just skip n rows".
+*
+* MySQL and SQLite have no standalone OFFSET — it only parses as the tail of a LIMIT — so an offset
+* without a limit needs a sentinel limit in front of it or the statement is a syntax error (MySQL
+* 1064, SQLite `near "OFFSET"`). MySQL's documented idiom is the largest unsigned BIGINT, 2^64-1;
+* 2^64 is itself a syntax error. Postgres is deliberately absent: a bare OFFSET is valid there.
+*/
+const unboundedLimit = {
+	[DatabaseType.Mysql]: "18446744073709551615",
+	[DatabaseType.Sqlite]: "-1"
+};
 const defaultLimitOffset = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.limit === 0 && state.offset === 0) return sqlHelper;
@@ -798,10 +818,15 @@ const defaultLimitOffset = (state, config, mode) => {
 		if (state.limit > 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
-		}
-		if (state.limit === 0 && !state.isInnerStatement && state.whereStates.length === 0) {
+		} else if (safetyNetApplies(state)) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(config.runtimeConfiguration.maxRowsReturned.toString());
+		} else if (state.offset > 0) {
+			const sentinel = unboundedLimit[config.databaseType];
+			if (sentinel !== void 0) {
+				sqlHelper.addSqlSnippet("LIMIT ");
+				sqlHelper.addSqlSnippet(sentinel);
+			}
 		}
 		if (state.offset > 0) {
 			if (state.limit > 0) sqlHelper.addSqlSnippet(" ");
@@ -821,9 +846,17 @@ const defaultLimitOffset = (state, config, mode) => {
 			sqlHelper.addSqlSnippet("FETCH NEXT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
 			sqlHelper.addSqlSnippet(" ROWS ONLY");
+		} else if (safetyNetApplies(state)) {
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippet("FETCH NEXT ");
+			sqlHelper.addSqlSnippet(config.runtimeConfiguration.maxRowsReturned.toString());
+			sqlHelper.addSqlSnippet(" ROWS ONLY");
 		}
 	}
-	if (state.offset > 0 && state.orderByStates.length === 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+	if (state.orderByStates.length === 0) {
+		if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+		if (config.databaseType === DatabaseType.Mssql && state.limit > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap");
+	}
 	return sqlHelper;
 };
 //#endregion
@@ -1240,6 +1273,11 @@ const defaultToSql = (state, config, mode, options) => {
 * MSSQL prepends a `TOP` to the SELECT list — an explicit `.top(n)` when set, otherwise a
 * safety-net `TOP (maxRowsReturned)` on an unbounded outer query (no WHERE, no LIMIT, not a
 * subquery). Other dialects need no hook.
+*
+* The safety net additionally stands down when the query has an OFFSET: T-SQL rejects TOP in the
+* same SELECT as OFFSET/FETCH (Msg 10741), so `defaultLimitOffset` emits the identical cap as a
+* `FETCH NEXT (maxRowsReturned)` instead. An explicit `.top(n)` is unaffected — it conflicts with
+* limit/offset outright, and `defaultLimitOffset` throws on that combination.
 */
 const toSqlOptionsFor = (config) => {
 	if (config.databaseType !== DatabaseType.Mssql) return {};
@@ -1248,7 +1286,7 @@ const toSqlOptionsFor = (config) => {
 			sqlHelper.addSqlSnippet("TOP ");
 			sqlHelper.addSqlSnippet(`(${state.customState["top"]})`);
 			sqlHelper.addSqlSnippet(" ");
-		} else if (!state.isInnerStatement && state.limit === 0 && (!state.whereStates || state.whereStates.length === 0)) {
+		} else if (safetyNetApplies(state) && state.offset === 0) {
 			sqlHelper.addSqlSnippet("TOP ");
 			sqlHelper.addSqlSnippet(`(${cfg.runtimeConfiguration.maxRowsReturned})`);
 			sqlHelper.addSqlSnippet(" ");

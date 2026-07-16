@@ -1,3 +1,19 @@
+# [6.0.0](https://github.com/deebee-tech/sqleasy/compare/v5.0.0...v6.0.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* **parser:** stop emitting invalid pagination SQL on mssql, mysql and sqlite ([897989d](https://github.com/deebee-tech/sqleasy/commit/897989d0b2c9a6c9f8ae175eb80fbcc00b481149))
+
+
+### BREAKING CHANGES
+
+* **parser:** MSSQL `.limit(n)` without an ORDER BY now throws instead of
+emitting SQL that SQL Server rejected. MSSQL `.offset()` on an unfiltered query
+emits `FETCH NEXT (maxRowsReturned)` where it emitted a `TOP`, and MySQL/SQLite
+`.offset()` without a `.limit()` now emit a sentinel LIMIT. Every changed string
+was a statement no engine would run.
+
 # [5.0.0](https://github.com/deebee-tech/sqleasy/compare/v4.0.1...v5.0.0) (2026-07-16)
 
 
