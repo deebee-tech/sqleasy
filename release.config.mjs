@@ -8,7 +8,14 @@ export default {
   plugins: [
     // Default Angular parser rejects `feat!:`; conventionalcommits supports it.
     ['@semantic-release/commit-analyzer', { preset: 'conventionalcommits' }],
-    ['@semantic-release/release-notes-generator', { preset: 'conventionalcommits' }],
+    // NO `preset` here, deliberately. Pointing this at 'conventionalcommits' resolves the
+    // top-level conventional-changelog-conventionalcommits (v10), whose new
+    // `{commits, parser, writer, whatBump}` export shape this plugin's bundled
+    // conventional-changelog-writer@8 cannot read -- it silently rendered 1.0.0 and 1.1.0 as
+    // bare headers, which is why this package's entire CHANGELOG is empty.
+    // Omitting it uses the writer's own version-locked angular preset, which parses `feat!:`
+    // and renders the breaking body. test/release-notes.test.ts pins this.
+    '@semantic-release/release-notes-generator',
     ['@semantic-release/changelog', { changelogFile: 'CHANGELOG.md' }],
     // Keep jsr.json's version in lockstep with the release.
     [
