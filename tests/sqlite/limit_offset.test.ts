@@ -58,7 +58,10 @@ describe('SqliteQuery limit offset', () => {
     expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;');
   });
 
-  it('offset without explicit limit adds default limit', () => {
+  // SQLite has no standalone OFFSET — a bare `OFFSET 20` is a syntax error — so "skip 20, return the
+  // rest" needs a limit in front of it. `LIMIT -1` is SQLite's "no upper bound" idiom: it caps
+  // nothing. Through 6.x this emitted `LIMIT 1000` from the automatic cap, which capped plenty.
+  it('offset without an explicit limit emits the unbounded sentinel LIMIT -1', () => {
     const query = new SqliteQuery();
     const builder = query.newBuilder();
     builder
@@ -68,12 +71,11 @@ describe('SqliteQuery limit offset', () => {
       .offset(20);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 1000 OFFSET 20;');
+    expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT -1 OFFSET 20;');
   });
 
-  // A WHERE suppresses the LIMIT 1000 safety net, but SQLite has no standalone OFFSET — a bare
-  // `OFFSET 20` is a syntax error. `LIMIT -1` is SQLite's "no upper bound" idiom, so this still
-  // means "skip 20, return the rest".
+  // Same sentinel with a WHERE present — the clause has no bearing on it now that there is no
+  // automatic cap for a WHERE to suppress.
   it('offset with a where clause emits a sentinel LIMIT -1 rather than a bare OFFSET', () => {
     const query = new SqliteQuery();
     const builder = query.newBuilder();

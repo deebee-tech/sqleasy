@@ -122,20 +122,9 @@ describe('Configuration', () => {
   });
 
   describe('RuntimeConfiguration', () => {
-    it('has default maxRowsReturned of 1000', () => {
-      const defaultRc = new RuntimeConfiguration();
-      expect(defaultRc.maxRowsReturned).toBe(1000);
-    });
-
     it('has default customConfiguration of undefined', () => {
       const defaultRc = new RuntimeConfiguration();
       expect(defaultRc.customConfiguration).toBeUndefined();
-    });
-
-    it('accepts custom maxRowsReturned', () => {
-      const customRc = new RuntimeConfiguration();
-      customRc.maxRowsReturned = 500;
-      expect(customRc.maxRowsReturned).toBe(500);
     });
 
     it('accepts custom customConfiguration', () => {
@@ -146,9 +135,9 @@ describe('Configuration', () => {
 
     it('passes through to configuration runtimeConfiguration', () => {
       const customRc = new RuntimeConfiguration();
-      customRc.maxRowsReturned = 250;
+      customRc.customConfiguration = { timeout: 30 };
       const config = mssqlConfiguration(customRc);
-      expect(config.runtimeConfiguration.maxRowsReturned).toBe(250);
+      expect(config.runtimeConfiguration.customConfiguration).toEqual({ timeout: 30 });
     });
   });
 });

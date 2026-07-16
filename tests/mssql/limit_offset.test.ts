@@ -33,9 +33,10 @@ describe('MssqlQuery limit/offset', () => {
     );
   });
 
-  // The automatic row cap must ride in the FETCH, never a TOP: T-SQL rejects TOP in the same
-  // SELECT as an OFFSET (Msg 10741).
-  it('offset with no limit caps via FETCH NEXT and emits no TOP', () => {
+  // T-SQL spells "skip 5, return the rest" as a bare `OFFSET 5 ROWS`. Nothing is appended: through
+  // 6.x the automatic cap added a `FETCH NEXT 1000 ROWS ONLY` here, silently rewriting "the rest"
+  // into "the next 1000".
+  it('offset with no limit emits a bare OFFSET, with no FETCH and no TOP', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder
@@ -45,10 +46,9 @@ describe('MssqlQuery limit/offset', () => {
       .offset(5);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual(
-      'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS FETCH NEXT 1000 ROWS ONLY;',
-    );
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS;');
     expect(sql).not.toContain('TOP');
+    expect(sql).not.toContain('FETCH');
   });
 
   it('limit and offset (requires ORDER BY)', () => {

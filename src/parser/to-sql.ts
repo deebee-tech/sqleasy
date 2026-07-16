@@ -14,7 +14,7 @@ import { defaultGroupBy } from './default-group-by';
 import { defaultHaving } from './default-having';
 import { defaultInsert } from './default-insert';
 import { defaultJoin } from './default-join';
-import { defaultLimitOffset, safetyNetApplies } from './default-limit-offset';
+import { defaultLimitOffset } from './default-limit-offset';
 import { defaultOrderBy } from './default-order-by';
 import { defaultSelect } from './default-select';
 import { defaultUnion } from './default-union';
@@ -158,14 +158,12 @@ export const defaultToSql = (
 };
 
 /**
- * MSSQL prepends a `TOP` to the SELECT list — an explicit `.top(n)` when set, otherwise a
- * safety-net `TOP (maxRowsReturned)` on an unbounded outer query (no WHERE, no LIMIT, not a
- * subquery). Other dialects need no hook.
+ * MSSQL prepends a `TOP` to the SELECT list for an explicit `.top(n)`. Other dialects need no hook.
  *
- * The safety net additionally stands down when the query has an OFFSET: T-SQL rejects TOP in the
- * same SELECT as OFFSET/FETCH (Msg 10741), so `defaultLimitOffset` emits the identical cap as a
- * `FETCH NEXT (maxRowsReturned)` instead. An explicit `.top(n)` is unaffected — it conflicts with
- * limit/offset outright, and `defaultLimitOffset` throws on that combination.
+ * There is deliberately no automatic cap here. SQLEasy emits the query it was asked for, however
+ * unbounded — a row cap is the caller's policy, not the builder's, and one applied behind the
+ * caller's back is a silent truncation they never wrote. `.top(n)` is the caller asking; it
+ * conflicts with limit/offset outright, and `defaultLimitOffset` throws on that combination.
  */
 const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
   if (config.databaseType !== DatabaseType.Mssql) {
@@ -173,7 +171,7 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
   }
 
   return {
-    beforeSelectColumns: (state: QueryState, cfg: Dialect, sqlHelper: SqlHelper) => {
+    beforeSelectColumns: (state: QueryState, _cfg: Dialect, sqlHelper: SqlHelper) => {
       if (
         state.customState !== null &&
         state.customState !== undefined &&
@@ -183,10 +181,6 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
       ) {
         sqlHelper.addSqlSnippet('TOP ');
         sqlHelper.addSqlSnippet(`(${state.customState['top']})`);
-        sqlHelper.addSqlSnippet(' ');
-      } else if (safetyNetApplies(state) && state.offset === 0) {
-        sqlHelper.addSqlSnippet('TOP ');
-        sqlHelper.addSqlSnippet(`(${cfg.runtimeConfiguration.maxRowsReturned})`);
         sqlHelper.addSqlSnippet(' ');
       }
     },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MssqlQuery, RuntimeConfiguration, DatabaseType } from '../../src';
+import { MssqlQuery, OrderByDirection, RuntimeConfiguration, DatabaseType } from '../../src';
 
 describe('MssqlQuery factory', () => {
   it('configuration returns MssqlConfiguration', () => {
@@ -9,23 +9,25 @@ describe('MssqlQuery factory', () => {
     expect(config.defaultOwner).toEqual('dbo');
   });
 
-  it('newBuilder with custom RuntimeConfiguration', () => {
+  it('newBuilder accepts a one-off RuntimeConfiguration', () => {
     const query = new MssqlQuery();
     const rc = new RuntimeConfiguration();
-    rc.maxRowsReturned = 500;
+    rc.customConfiguration = { timeout: 30 };
     const builder = query.newBuilder(rc);
-    builder.selectAll().fromTable('users', 'u');
-    const sql = builder.parseRaw();
-    expect(sql).toContain('TOP (500)');
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .orderByColumn('u', 'id', OrderByDirection.Ascending)
+      .limit(500);
+
+    expect(builder.parseRaw()).toContain('FETCH NEXT 500 ROWS ONLY');
   });
 
-  it('constructor with custom RuntimeConfiguration', () => {
+  it('constructor carries customConfiguration into the dialect', () => {
     const rc = new RuntimeConfiguration();
-    rc.maxRowsReturned = 100;
+    rc.customConfiguration = { timeout: 30 };
     const query = new MssqlQuery(rc);
-    const builder = query.newBuilder();
-    builder.selectAll().fromTable('users', 'u');
-    const sql = builder.parseRaw();
-    expect(sql).toContain('TOP (100)');
+
+    expect(query.configuration().runtimeConfiguration.customConfiguration).toEqual({ timeout: 30 });
   });
 });

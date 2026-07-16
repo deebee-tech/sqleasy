@@ -11,22 +11,27 @@ describe('MssqlQuery top', () => {
     expect(sql).toEqual('SELECT TOP (10) * FROM [dbo].[users] AS [u];');
   });
 
-  it('clearTop reverts to safety net', () => {
+  it('clearTop removes the TOP entirely', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder.selectAll().fromTable('users', 'u').top(10).clearTop();
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u];');
+    expect(sql).not.toContain('TOP');
   });
 
-  it('TOP safety net (maxRowsReturned=1000 when no WHERE/no limit/not inner)', () => {
+  // Through 6.x an unbounded outer query silently collected a `TOP (1000)` from the automatic
+  // `maxRowsReturned` cap. The cap is gone: a row limit is the caller's policy, and one applied
+  // behind their back is a truncation they never wrote. This pins that it never comes back.
+  it('emits no automatic TOP on an unbounded query', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder.selectAll().fromTable('users', 'u');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u];');
+    expect(sql).not.toContain('TOP');
   });
 
   it('no TOP when WHERE clause present', () => {
@@ -54,7 +59,7 @@ describe('MssqlQuery top', () => {
     );
   });
 
-  it('explicit TOP with WHERE (TOP overrides safety net)', () => {
+  it('explicit TOP with WHERE', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder
@@ -82,9 +87,10 @@ describe('MssqlQuery top', () => {
     );
   });
 
-  // The safety net is automatic, not the designer's manual TOP, so it must not force a TOP into a
-  // paginated query — T-SQL rejects TOP together with OFFSET (Msg 10741). The cap moves to FETCH.
-  it('no TOP when an offset is present; the cap moves into FETCH NEXT', () => {
+  // "Skip 20 and return the rest" is exactly what the caller asked for, and T-SQL spells it with a
+  // bare OFFSET. Through 6.x this collected a `FETCH NEXT 1000 ROWS ONLY` from the automatic cap,
+  // which quietly turned "the rest" into "the next 1000".
+  it('offset without a limit emits a bare OFFSET and no FETCH', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder
@@ -94,9 +100,8 @@ describe('MssqlQuery top', () => {
       .offset(20);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual(
-      'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 1000 ROWS ONLY;',
-    );
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS;');
     expect(sql).not.toContain('TOP');
+    expect(sql).not.toContain('FETCH');
   });
 });

@@ -14,7 +14,7 @@ describe('MssqlQuery cte', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1) SELECT TOP (1000) * FROM [active_users] AS [au];',
+      'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1) SELECT * FROM [active_users] AS [au];',
     );
   });
 
@@ -33,7 +33,7 @@ describe('MssqlQuery cte', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1), [recent_orders] AS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100) SELECT TOP (1000) * FROM [active_users] AS [au];',
+      'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1), [recent_orders] AS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100) SELECT * FROM [active_users] AS [au];',
     );
   });
 
@@ -53,7 +53,7 @@ describe('MssqlQuery cte', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'WITH RECURSIVE [numbers] AS (SELECT 1 AS n FROM (SELECT 1 AS x) AS [dummy] UNION ALL SELECT [n] + 1 AS n FROM [numbers] WHERE [n] < 10) SELECT TOP (1000) * FROM [numbers];',
+      'WITH RECURSIVE [numbers] AS (SELECT 1 AS n FROM (SELECT 1 AS x) AS [dummy] UNION ALL SELECT [n] + 1 AS n FROM [numbers] WHERE [n] < 10) SELECT * FROM [numbers];',
     );
   });
 
@@ -64,7 +64,7 @@ describe('MssqlQuery cte', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'WITH [constants] AS (SELECT 1 AS one, 2 AS two) SELECT TOP (1000) * FROM [constants];',
+      'WITH [constants] AS (SELECT 1 AS one, 2 AS two) SELECT * FROM [constants];',
     );
   });
 

@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { MssqlQuery, WhereOperator } from '../../src';
 
 describe('MssqlQuery select', () => {
-  it('select all (with TOP 1000 safety net)', () => {
+  it('select all', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder.selectAll().fromTable('users', 'u');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u];');
   });
 
-  it('select all with WHERE (no TOP safety net)', () => {
+  it('select all with WHERE', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
     builder.selectAll().fromTable('users', 'u').where('u', 'id', WhereOperator.Equals, 1);
@@ -115,7 +115,7 @@ describe('MssqlQuery select', () => {
     builder.distinct().selectAll().fromTable('users', 'u');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT DISTINCT TOP (1000) * FROM [dbo].[users] AS [u];');
+    expect(sql).toEqual('SELECT DISTINCT * FROM [dbo].[users] AS [u];');
   });
 
   it('distinct with top', () => {

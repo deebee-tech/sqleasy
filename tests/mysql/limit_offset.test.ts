@@ -25,7 +25,10 @@ describe('MysqlQuery limit offset', () => {
     expect(sql).toEqual('SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 10  OFFSET 5;');
   });
 
-  it('OFFSET only with ORDER BY (default LIMIT applied)', () => {
+  // MySQL has no standalone OFFSET — a bare `OFFSET 20` is ERROR 1064 — so "skip 20, return the
+  // rest" needs a limit in front of it. 2^64-1 is the documented sentinel: it caps nothing. Through
+  // 6.x this emitted `LIMIT 1000` from the automatic cap, which capped plenty.
+  it('OFFSET only with ORDER BY emits the unbounded sentinel LIMIT', () => {
     const query = new MysqlQuery();
     const builder = query.newBuilder();
     builder
@@ -35,13 +38,14 @@ describe('MysqlQuery limit offset', () => {
       .offset(20);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 1000 OFFSET 20;');
+    expect(sql).toEqual(
+      'SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;',
+    );
   });
 
-  // A WHERE suppresses the LIMIT 1000 safety net, but MySQL has no standalone OFFSET — a bare
-  // `OFFSET 20` is ERROR 1064. The documented idiom is a sentinel LIMIT of 2^64-1 in front of it,
-  // which caps nothing and preserves "skip 20, return the rest".
-  it('OFFSET with WHERE skips the default LIMIT but keeps a sentinel LIMIT', () => {
+  // Same sentinel with a WHERE present — the clause has no bearing on it now that there is no
+  // automatic cap for a WHERE to suppress.
+  it('OFFSET with WHERE keeps the sentinel LIMIT', () => {
     const query = new MysqlQuery();
     const builder = query.newBuilder();
     builder

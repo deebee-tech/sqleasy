@@ -8,7 +8,7 @@ describe('MssqlQuery from', () => {
     builder.selectAll().fromTable('users', 'u');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u];');
   });
 
   it('fromTables multiple', () => {
@@ -20,7 +20,7 @@ describe('MssqlQuery from', () => {
     ]);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u], [dbo].[orders] AS [o];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u], [dbo].[orders] AS [o];');
   });
 
   it('fromTableWithOwner', () => {
@@ -29,7 +29,7 @@ describe('MssqlQuery from', () => {
     builder.selectAll().fromTableWithOwner('sales', 'users', 'u');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [sales].[users] AS [u];');
+    expect(sql).toEqual('SELECT * FROM [sales].[users] AS [u];');
   });
 
   it('fromTablesWithOwner', () => {
@@ -41,9 +41,7 @@ describe('MssqlQuery from', () => {
     ]);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual(
-      'SELECT TOP (1000) * FROM [sales].[users] AS [u], [billing].[orders] AS [o];',
-    );
+    expect(sql).toEqual('SELECT * FROM [sales].[users] AS [u], [billing].[orders] AS [o];');
   });
 
   it('fromRaw', () => {
@@ -52,7 +50,7 @@ describe('MssqlQuery from', () => {
     builder.selectAll().fromRaw('[dbo].[users] AS [u]');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u];');
   });
 
   it('fromRaws', () => {
@@ -61,7 +59,7 @@ describe('MssqlQuery from', () => {
     builder.selectAll().fromRaws(['[dbo].[users] AS [u]', '[dbo].[orders] AS [o]']);
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users] AS [u], [dbo].[orders] AS [o];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u], [dbo].[orders] AS [o];');
   });
 
   it('fromWithBuilder (derived table subquery)', () => {
@@ -73,7 +71,7 @@ describe('MssqlQuery from', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'SELECT TOP (1000) * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1) AS [subq];',
+      'SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1) AS [subq];',
     );
   });
 
@@ -83,6 +81,6 @@ describe('MssqlQuery from', () => {
     builder.selectAll().fromTable('users', '');
 
     const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT TOP (1000) * FROM [dbo].[users];');
+    expect(sql).toEqual('SELECT * FROM [dbo].[users];');
   });
 });

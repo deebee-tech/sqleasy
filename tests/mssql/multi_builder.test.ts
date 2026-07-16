@@ -14,7 +14,7 @@ describe('MssqlQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN TRANSACTION; SELECT TOP (1000) * FROM [dbo].[users] AS [u];SELECT TOP (1000) * FROM [dbo].[orders] AS [o];COMMIT TRANSACTION; ',
+      'BEGIN TRANSACTION; SELECT * FROM [dbo].[users] AS [u];SELECT * FROM [dbo].[orders] AS [o];COMMIT TRANSACTION; ',
     );
   });
 

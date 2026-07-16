@@ -11,23 +11,21 @@ describe('PostgresQuery factory', () => {
     expect(config.transactionDelimiters.end).toEqual('COMMIT');
   });
 
-  it('newBuilder with custom RuntimeConfiguration', () => {
+  it('newBuilder accepts a one-off RuntimeConfiguration', () => {
     const query = new PostgresQuery();
     const rc = new RuntimeConfiguration();
-    rc.maxRowsReturned = 500;
+    rc.customConfiguration = { timeout: 30 };
     const builder = query.newBuilder(rc);
     builder.selectAll().fromTable('users', 'u').limit(500);
-    const sql = builder.parseRaw();
-    expect(sql).toContain('LIMIT 500');
+
+    expect(builder.parseRaw()).toContain('LIMIT 500');
   });
 
-  it('constructor with custom RuntimeConfiguration', () => {
+  it('constructor carries customConfiguration into the dialect', () => {
     const rc = new RuntimeConfiguration();
-    rc.maxRowsReturned = 100;
+    rc.customConfiguration = { timeout: 30 };
     const query = new PostgresQuery(rc);
-    const builder = query.newBuilder();
-    builder.selectAll().fromTable('users', 'u').limit(100);
-    const sql = builder.parseRaw();
-    expect(sql).toContain('LIMIT 100');
+
+    expect(query.configuration().runtimeConfiguration.customConfiguration).toEqual({ timeout: 30 });
   });
 });

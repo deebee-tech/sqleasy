@@ -457,17 +457,32 @@ builder.parseRaw(); // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42
 
 ## Configuration
 
-Pass a `RuntimeConfiguration` to customize behavior:
+Pass a `RuntimeConfiguration` to carry host-defined settings alongside a query:
 
 ```typescript
 import { PostgresQuery, RuntimeConfiguration } from '@deebeetech/sqleasy';
 
 const rc = new RuntimeConfiguration();
-rc.maxRowsReturned = 500;
 rc.customConfiguration = { timeout: 30 };
 
 const query = new PostgresQuery(rc);
 ```
+
+### SQLEasy never caps your rows
+
+There is no automatic row limit. `SELECT * FROM users` with no `WHERE` compiles to exactly that, on
+every dialect, and will happily return every row in the table. If you want a bound, say so —
+`.limit()` to paginate, or `.top(n)` on SQL Server for an unordered cap.
+
+This is deliberate. A cap the builder applies on its own is a truncation the caller never wrote and
+cannot see in their own code: the query looks complete, the results look complete, and the rows are
+simply missing. Deciding how many rows are too many needs to know what the query is _for_, which is
+something only the caller knows. So SQLEasy emits what you asked for, and leaves the policy to you.
+
+> Removed in **7.0.0**, along with `RuntimeConfiguration.maxRowsReturned`, which drove it. Before
+> that a default cap of 1000 applied — but only ever coherently on SQL Server, where an unbounded
+> `SELECT` collected a `TOP (1000)` while the identical query on Postgres returned everything. If you
+> set `maxRowsReturned`, replace it with an explicit `.limit()` at your call sites.
 
 ## Migrating from 1.x
 
