@@ -3,7 +3,6 @@ import { BuilderType } from '../enums/builder-type';
 import { DatabaseType } from '../enums/database-type';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
-import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { GroupByColumnRef, GroupByState } from '../state/group-by';

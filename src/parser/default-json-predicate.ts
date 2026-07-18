@@ -1,8 +1,6 @@
 import type { Dialect } from '../configuration/configuration';
-import { BuilderType } from '../enums/builder-type';
 import { DatabaseType } from '../enums/database-type';
 import { FullTextMode } from '../enums/full-text-mode';
-import { JsonExtractMode } from '../enums/json-extract-mode';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
@@ -10,7 +8,6 @@ import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 import type { WhereState } from '../state/where';
-import { WhereOperator } from '../enums/where-operator';
 import { emitComparisonPredicate } from './comparison-operator';
 import {
   emitFullTextPredicate,

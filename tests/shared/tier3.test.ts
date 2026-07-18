@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   FullTextMode,
   JsonExtractMode,
-  JoinOperator,
   MssqlQuery,
   MysqlQuery,
   OrderByDirection,

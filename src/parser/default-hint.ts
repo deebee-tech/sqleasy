@@ -6,7 +6,6 @@ import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
-import type { HintState } from '../state/hint';
 import type { QueryState } from '../state/query';
 
 /** MySQL index hint text immediately after a table reference (`USE INDEX (idx)`). */
