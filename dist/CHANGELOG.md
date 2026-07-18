@@ -1,3 +1,18 @@
+# [8.0.0](https://github.com/deebee-tech/sqleasy/compare/v7.0.0...v8.0.0) (2026-07-18)
+
+
+* fix!: correct dialect SQL emit, HAVING combinators, and MySQL guards ([ac27d32](https://github.com/deebee-tech/sqleasy/commit/ac27d32c8609475a3864aff449298035f9f24a5d))
+
+
+### BREAKING CHANGES
+
+* emitted SQL and some error paths change for recursive
+CTEs, HAVING chains, MySQL owners/FULL OUTER, Equals+null, and OrderBy
+None; clearSelect now clears distinct; new clear* helpers and ParserArea
+values are part of the public surface.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
 # [7.0.0](https://github.com/deebee-tech/sqleasy/compare/v6.0.1...v7.0.0) (2026-07-16)
 
 
