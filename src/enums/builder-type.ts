@@ -11,14 +11,48 @@ export const BuilderType = {
   FromTable: 'FromTable',
   /** FROM clause using raw SQL text. */
   FromRaw: 'FromRaw',
+  /** FROM table-valued function / set-returning function call. */
+  FromFunction: 'FromFunction',
+  /** FROM LATERAL derived table. */
+  FromLateral: 'FromLateral',
   /** GROUP BY on a column reference. */
   GroupByColumn: 'GroupByColumn',
   /** GROUP BY using raw SQL. */
   GroupByRaw: 'GroupByRaw',
+  /** GROUP BY ROLLUP (...). */
+  GroupByRollup: 'GroupByRollup',
+  /** GROUP BY CUBE (...). */
+  GroupByCube: 'GroupByCube',
+  /** GROUP BY GROUPING SETS (...). */
+  GroupByGroupingSets: 'GroupByGroupingSets',
   /** HAVING condition (standard form). */
   Having: 'Having',
   /** HAVING clause using raw SQL. */
   HavingRaw: 'HavingRaw',
+  /** HAVING column BETWEEN low AND high. */
+  HavingBetween: 'HavingBetween',
+  /** Opens a parenthesized HAVING group. */
+  HavingGroupBegin: 'HavingGroupBegin',
+  /** Nested HAVING built from a sub-builder. */
+  HavingGroupBuilder: 'HavingGroupBuilder',
+  /** Closes a parenthesized HAVING group. */
+  HavingGroupEnd: 'HavingGroupEnd',
+  /** HAVING EXISTS (subquery from builder). */
+  HavingExistsBuilder: 'HavingExistsBuilder',
+  /** HAVING IN (subquery from builder). */
+  HavingInBuilder: 'HavingInBuilder',
+  /** HAVING IN (literal value list). */
+  HavingInValues: 'HavingInValues',
+  /** HAVING NOT EXISTS (subquery from builder). */
+  HavingNotExistsBuilder: 'HavingNotExistsBuilder',
+  /** HAVING NOT IN (subquery from builder). */
+  HavingNotInBuilder: 'HavingNotInBuilder',
+  /** HAVING NOT IN (literal value list). */
+  HavingNotInValues: 'HavingNotInValues',
+  /** HAVING column IS NOT NULL. */
+  HavingNotNull: 'HavingNotNull',
+  /** HAVING column IS NULL. */
+  HavingNull: 'HavingNull',
   /** INSERT values or body as raw SQL. */
   InsertRaw: 'InsertRaw',
   /** JOIN defined via a nested builder. */
@@ -43,6 +77,10 @@ export const BuilderType = {
   SelectColumn: 'SelectColumn',
   /** SELECT list entry as raw SQL. */
   SelectRaw: 'SelectRaw',
+  /** SELECT list entry for a window function (`fn(...) OVER (...)`). */
+  SelectWindow: 'SelectWindow',
+  /** SELECT list JSON path extraction. */
+  SelectJsonExtract: 'SelectJsonExtract',
   /** UPDATE SET column assignment. */
   UpdateColumn: 'UpdateColumn',
   /** UPDATE fragment as raw SQL. */
@@ -87,6 +125,18 @@ export const BuilderType = {
   WhereNull: 'WhereNull',
   /** WHERE fragment as raw SQL. */
   WhereRaw: 'WhereRaw',
+  /** WHERE JSON path extract comparison. */
+  WhereJsonExtract: 'WhereJsonExtract',
+  /** WHERE JSON containment (`@>` / `JSON_CONTAINS`). */
+  WhereJsonContains: 'WhereJsonContains',
+  /** WHERE full-text search predicate. */
+  WhereFullText: 'WhereFullText',
+  /** HAVING JSON path extract comparison. */
+  HavingJsonExtract: 'HavingJsonExtract',
+  /** HAVING JSON containment. */
+  HavingJsonContains: 'HavingJsonContains',
+  /** HAVING full-text search predicate. */
+  HavingFullText: 'HavingFullText',
 } as const;
 
 /** One of the {@link BuilderType} discriminator values. */

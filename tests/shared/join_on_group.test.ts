@@ -73,4 +73,23 @@ describe('join ON groups', () => {
 
     expect(builder.parsePrepared().sql).toContain('()');
   });
+
+  it('auto-ANDs consecutive ON predicates without an explicit and()', () => {
+    const builder = new PostgresQuery().newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .joinTable(JoinType.Inner, 'orders', 'o', (j) => {
+        j.on('u', 'id', JoinOperator.Equals, 'o', 'user_id').onValue(
+          'o',
+          'amount',
+          JoinOperator.GreaterThan,
+          10,
+        );
+      });
+
+    expect(builder.parsePrepared().sql).toContain(
+      'ON "u"."id" = "o"."user_id" AND "o"."amount" > $1',
+    );
+  });
 });

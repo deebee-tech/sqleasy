@@ -10,6 +10,8 @@ export type CteState = {
   builderType: BuilderType;
   /** CTE name as declared in WITH. */
   name: string;
+  /** Optional explicit column list: `WITH name (col1, col2) AS (...)`. Empty omits it. */
+  columns: string[];
   /** Whether this CTE is declared as RECURSIVE. */
   recursive: boolean;
   /** Nested query state for the CTE body, when not using raw SQL. */
@@ -22,6 +24,7 @@ export type CteState = {
 export const createCteState = (): CteState => ({
   builderType: BuilderType.None,
   name: '',
+  columns: [],
   recursive: false,
   subquery: undefined,
   raw: undefined,

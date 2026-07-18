@@ -16,6 +16,12 @@ export const JoinType = {
   FullOuter: 'FullOuter',
   /** CROSS JOIN. */
   Cross: 'Cross',
+  /** LATERAL derived table (Postgres/MySQL `JOIN LATERAL`; MSSQL maps to `CROSS APPLY`). */
+  Lateral: 'Lateral',
+  /** MSSQL `CROSS APPLY` (Postgres/MySQL: `CROSS JOIN LATERAL`). */
+  CrossApply: 'CrossApply',
+  /** MSSQL `OUTER APPLY` (Postgres/MySQL: `LEFT JOIN LATERAL`). */
+  OuterApply: 'OuterApply',
   /** No join type / not applicable. */
   None: 'None',
 } as const;

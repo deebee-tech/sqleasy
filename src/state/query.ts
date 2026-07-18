@@ -1,3 +1,5 @@
+import type { HintState } from './hint';
+import type { CallState } from './call';
 import type { CteState } from './cte';
 import type { FromState } from './from';
 import type { GroupByState } from './group-by';
@@ -5,9 +7,12 @@ import type { HavingState } from './having';
 import type { InsertState } from './insert';
 import type { JoinState } from './join';
 import type { OrderByState } from './order-by';
+import type { ReturningState } from './returning';
+import type { RowLockState } from './row-lock';
 import type { SelectState } from './select';
 import type { UnionState } from './union';
 import type { UpdateState } from './update';
+import type { UpsertState } from './upsert';
 import type { WhereState } from './where';
 import { QueryType } from '../enums/query-type';
 
@@ -42,16 +47,38 @@ export type QueryState = {
   insertState: InsertState | undefined;
   /** UPDATE SET assignments in declaration order. */
   updateStates: UpdateState[];
+  /** INSERT conflict clause (upsert); undefined when not configured. */
+  upsertState: UpsertState | undefined;
+  /** RETURNING/OUTPUT clause for INSERT/UPDATE/DELETE; undefined when not configured. */
+  returningState: ReturningState | undefined;
+  /** Row-locking clause for SELECT (`FOR UPDATE`/`FOR SHARE`); undefined when not configured. */
+  rowLock: RowLockState | undefined;
+  /** Stored procedure/function call state; undefined for non-Call queries. */
+  callState: CallState | undefined;
   /** True when this state represents a nested subquery, not the outer query. */
   isInnerStatement: boolean;
   /** Maximum row count (0 often means unset; dialect-specific). */
   limit: number;
+  /** When true, emit `WITH TIES` alongside the row limit (dialect-specific). */
+  limitWithTies?: boolean;
   /** Rows to skip before returning (0 often means unset). */
   offset: number;
   /** Whether SELECT DISTINCT was requested. */
   distinct: boolean;
+  /**
+   * `DISTINCT ON (...)` columns (Postgres only); undefined/empty omits it. Mutually exclusive
+   * with {@link distinct} — setting both throws at parse time.
+   */
+  distinctOnColumns: { tableNameOrAlias: string; columnName: string }[] | undefined;
   /** Opaque hook for dialect- or app-specific extensions. */
   customState: any | undefined;
+  /**
+   * Index into {@link fromStates} for the UPDATE/DELETE target table.
+   * Set by `updateTable` / `deleteFrom` so a prior `fromTable` cannot steal the target.
+   */
+  mutationTargetIndex: number | undefined;
+  /** Structured/raw query hints in declaration order. */
+  hintStates?: HintState[];
 };
 
 /** Creates a {@link QueryState} with default field values (an empty SELECT). */
@@ -69,9 +96,17 @@ export const createQueryState = (): QueryState => ({
   cteStates: [],
   insertState: undefined,
   updateStates: [],
+  upsertState: undefined,
+  returningState: undefined,
+  rowLock: undefined,
+  callState: undefined,
   isInnerStatement: false,
   limit: 0,
+  limitWithTies: false,
   offset: 0,
   distinct: false,
+  distinctOnColumns: undefined,
   customState: undefined,
+  mutationTargetIndex: undefined,
+  hintStates: [],
 });

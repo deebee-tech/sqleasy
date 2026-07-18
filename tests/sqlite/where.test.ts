@@ -252,7 +252,7 @@ describe('SqliteQuery where', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'SELECT * FROM "users" AS "u" WHERE "u"."age" > 18 "u"."status" = \'active\';',
+      'SELECT * FROM "users" AS "u" WHERE "u"."age" > 18 AND "u"."status" = \'active\';',
     );
   });
 

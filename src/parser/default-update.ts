@@ -7,22 +7,32 @@ import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import { defaultJoin } from './default-join';
+import { assertMutationJoinsSupported, renderPostgresMutationFrom } from './default-mutation-join';
+import { emitMssqlOutputClause } from './default-returning';
+import { resolveMutationTarget } from './mutation-target';
+import type { ToSqlOptions } from './to-sql';
 
-export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
+export const defaultUpdate = (
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): SqlHelper => {
   const sqlHelper = new SqlHelper(mode);
-
-  if (state.fromStates.length === 0) {
-    throw new ParserError(ParserArea.Update, 'UPDATE requires a table');
-  }
 
   if (state.updateStates.length === 0) {
     throw new ParserError(ParserArea.Update, 'UPDATE requires at least one SET column');
   }
 
+  assertMutationJoinsSupported(state, config, ParserArea.Update);
+
+  const hasJoins = state.joinStates.length > 0;
+
   const delim = config.identifierDelimiters;
   const quote = (s: string) => quoteIdentifier(s, delim);
 
-  const fromState = state.fromStates[0]!;
+  const fromState = resolveMutationTarget(state, ParserArea.Update, 'UPDATE requires a table');
   const owner = fromState.owner ?? '';
   const alias = fromState.alias ?? '';
 
@@ -32,18 +42,27 @@ export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMo
 
   const qualified = (owner !== '' ? quote(owner) + '.' : '') + quote(fromState.tableName ?? '');
   // T-SQL has no `UPDATE table AS alias` — the alias must come from a FROM clause:
-  // `UPDATE [alias] SET ... FROM [tbl] AS [alias]` (appended after the SET list below).
-  const mssqlAliased = alias !== '' && config.databaseType === DatabaseType.Mssql;
+  // `UPDATE [alias] SET ... FROM [tbl] AS [alias]` (appended after the SET list below). A
+  // join-backed UPDATE needs that same FROM form even without an explicit alias, since the
+  // JOIN target(s) must attach to a FROM item.
+  const mssqlAliased = config.databaseType === DatabaseType.Mssql && (alias !== '' || hasJoins);
 
   sqlHelper.addSqlSnippet('UPDATE ');
 
   if (mssqlAliased) {
-    sqlHelper.addSqlSnippet(quote(alias));
+    sqlHelper.addSqlSnippet(alias !== '' ? quote(alias) : qualified);
   } else {
     sqlHelper.addSqlSnippet(qualified);
     if (alias !== '') {
       sqlHelper.addSqlSnippet(' AS ');
       sqlHelper.addSqlSnippet(quote(alias));
+    }
+
+    // MySQL's multi-table UPDATE puts the joined tables directly after the target, before SET.
+    if (hasJoins && config.databaseType === DatabaseType.Mysql) {
+      const join = defaultJoin(state, config, mode, options);
+      sqlHelper.addSqlSnippet(' ');
+      sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
     }
   }
 
@@ -65,11 +84,34 @@ export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMo
     }
   }
 
+  // T-SQL requires OUTPUT after SET and before FROM/WHERE; PG/SQLite/MySQL have no such
+  // requirement — their RETURNING/upsert equivalents are trailing clauses handled by the
+  // caller (`to-sql.ts`) after this statement returns.
+  if (state.returningState && config.databaseType === DatabaseType.Mssql) {
+    emitMssqlOutputClause(sqlHelper, config, state.returningState, 'INSERTED', ParserArea.Update);
+  }
+
   if (mssqlAliased) {
     sqlHelper.addSqlSnippet(' FROM ');
     sqlHelper.addSqlSnippet(qualified);
-    sqlHelper.addSqlSnippet(' AS ');
-    sqlHelper.addSqlSnippet(quote(alias));
+    if (alias !== '') {
+      sqlHelper.addSqlSnippet(' AS ');
+      sqlHelper.addSqlSnippet(quote(alias));
+    }
+
+    if (hasJoins) {
+      const join = defaultJoin(state, config, mode, options);
+      sqlHelper.addSqlSnippet(' ');
+      sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
+    }
+  }
+
+  // Postgres cannot JOIN the target row to a from_item directly — that condition is a WHERE
+  // predicate instead, assembled by the caller (`to-sql.ts`) via `buildPostgresMutationJoinPredicate`.
+  if (hasJoins && config.databaseType === DatabaseType.Postgres) {
+    const from = renderPostgresMutationFrom(config, state, mode, options, ParserArea.Update);
+    sqlHelper.addSqlSnippet(' FROM ');
+    sqlHelper.addSqlSnippetWithValues(from.getSql(), from.getValues());
   }
 
   return sqlHelper;

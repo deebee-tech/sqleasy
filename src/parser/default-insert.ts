@@ -6,8 +6,18 @@ import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import { emitMssqlOutputClause } from './default-returning';
+import { emitUpsertClause, isMysqlInsertIgnore } from './default-upsert';
+import { emitMssqlMergeInsert } from './default-merge';
+import type { ToSqlOptions } from './to-sql';
+import { defaultToSql } from './to-sql';
 
-export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
+export const defaultInsert = (
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): SqlHelper => {
   const sqlHelper = new SqlHelper(mode);
 
   if (!state.insertState) {
@@ -21,11 +31,24 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
     return sqlHelper;
   }
 
+  if (
+    state.upsertState &&
+    config.databaseType === DatabaseType.Mssql
+  ) {
+    return emitMssqlMergeInsert(state, config, mode, options);
+  }
+
   if (!insertState.tableName) {
     throw new ParserError(ParserArea.Insert, 'INSERT requires a table');
   }
 
-  sqlHelper.addSqlSnippet('INSERT INTO ');
+  sqlHelper.addSqlSnippet('INSERT ');
+
+  if (isMysqlInsertIgnore(state.upsertState, config)) {
+    sqlHelper.addSqlSnippet('IGNORE ');
+  }
+
+  sqlHelper.addSqlSnippet('INTO ');
 
   if (insertState.owner && insertState.owner !== '') {
     if (config.databaseType === DatabaseType.Mysql) {
@@ -47,6 +70,32 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
       }
     }
     sqlHelper.addSqlSnippet(')');
+  }
+
+  // T-SQL requires OUTPUT before VALUES; PG/SQLite/MySQL's RETURNING/ON DUPLICATE equivalents
+  // are trailing clauses, handled by the caller (`to-sql.ts`) after this statement returns.
+  if (state.returningState && config.databaseType === DatabaseType.Mssql) {
+    emitMssqlOutputClause(sqlHelper, config, state.returningState, 'INSERTED', ParserArea.Insert);
+  }
+
+  if (insertState.selectSubquery) {
+    if (insertState.values.length > 0) {
+      throw new ParserError(
+        ParserArea.Insert,
+        'INSERT cannot combine a SELECT source with VALUES rows',
+      );
+    }
+
+    sqlHelper.addSqlSnippet(' ');
+
+    const subHelper = defaultToSql(insertState.selectSubquery, config, mode, options);
+    sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+
+    if (state.upsertState) {
+      emitUpsertClause(sqlHelper, config, state.upsertState, ParserArea.Insert);
+    }
+
+    return sqlHelper;
   }
 
   if (insertState.values.length === 0) {
@@ -82,6 +131,10 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
     if (r < insertState.values.length - 1) {
       sqlHelper.addSqlSnippet(', ');
     }
+  }
+
+  if (state.upsertState) {
+    emitUpsertClause(sqlHelper, config, state.upsertState, ParserArea.Insert);
   }
 
   return sqlHelper;

@@ -13,14 +13,48 @@ const BuilderType = {
 	FromTable: "FromTable",
 	/** FROM clause using raw SQL text. */
 	FromRaw: "FromRaw",
+	/** FROM table-valued function / set-returning function call. */
+	FromFunction: "FromFunction",
+	/** FROM LATERAL derived table. */
+	FromLateral: "FromLateral",
 	/** GROUP BY on a column reference. */
 	GroupByColumn: "GroupByColumn",
 	/** GROUP BY using raw SQL. */
 	GroupByRaw: "GroupByRaw",
+	/** GROUP BY ROLLUP (...). */
+	GroupByRollup: "GroupByRollup",
+	/** GROUP BY CUBE (...). */
+	GroupByCube: "GroupByCube",
+	/** GROUP BY GROUPING SETS (...). */
+	GroupByGroupingSets: "GroupByGroupingSets",
 	/** HAVING condition (standard form). */
 	Having: "Having",
 	/** HAVING clause using raw SQL. */
 	HavingRaw: "HavingRaw",
+	/** HAVING column BETWEEN low AND high. */
+	HavingBetween: "HavingBetween",
+	/** Opens a parenthesized HAVING group. */
+	HavingGroupBegin: "HavingGroupBegin",
+	/** Nested HAVING built from a sub-builder. */
+	HavingGroupBuilder: "HavingGroupBuilder",
+	/** Closes a parenthesized HAVING group. */
+	HavingGroupEnd: "HavingGroupEnd",
+	/** HAVING EXISTS (subquery from builder). */
+	HavingExistsBuilder: "HavingExistsBuilder",
+	/** HAVING IN (subquery from builder). */
+	HavingInBuilder: "HavingInBuilder",
+	/** HAVING IN (literal value list). */
+	HavingInValues: "HavingInValues",
+	/** HAVING NOT EXISTS (subquery from builder). */
+	HavingNotExistsBuilder: "HavingNotExistsBuilder",
+	/** HAVING NOT IN (subquery from builder). */
+	HavingNotInBuilder: "HavingNotInBuilder",
+	/** HAVING NOT IN (literal value list). */
+	HavingNotInValues: "HavingNotInValues",
+	/** HAVING column IS NOT NULL. */
+	HavingNotNull: "HavingNotNull",
+	/** HAVING column IS NULL. */
+	HavingNull: "HavingNull",
 	/** INSERT values or body as raw SQL. */
 	InsertRaw: "InsertRaw",
 	/** JOIN defined via a nested builder. */
@@ -45,6 +79,10 @@ const BuilderType = {
 	SelectColumn: "SelectColumn",
 	/** SELECT list entry as raw SQL. */
 	SelectRaw: "SelectRaw",
+	/** SELECT list entry for a window function (`fn(...) OVER (...)`). */
+	SelectWindow: "SelectWindow",
+	/** SELECT list JSON path extraction. */
+	SelectJsonExtract: "SelectJsonExtract",
 	/** UPDATE SET column assignment. */
 	UpdateColumn: "UpdateColumn",
 	/** UPDATE fragment as raw SQL. */
@@ -88,7 +126,136 @@ const BuilderType = {
 	/** WHERE column IS NULL. */
 	WhereNull: "WhereNull",
 	/** WHERE fragment as raw SQL. */
-	WhereRaw: "WhereRaw"
+	WhereRaw: "WhereRaw",
+	/** WHERE JSON path extract comparison. */
+	WhereJsonExtract: "WhereJsonExtract",
+	/** WHERE JSON containment (`@>` / `JSON_CONTAINS`). */
+	WhereJsonContains: "WhereJsonContains",
+	/** WHERE full-text search predicate. */
+	WhereFullText: "WhereFullText",
+	/** HAVING JSON path extract comparison. */
+	HavingJsonExtract: "HavingJsonExtract",
+	/** HAVING JSON containment. */
+	HavingJsonContains: "HavingJsonContains",
+	/** HAVING full-text search predicate. */
+	HavingFullText: "HavingFullText"
+};
+//#endregion
+//#region src/enums/call-kind.ts
+/**
+* Whether a {@link QueryBuilder.callProcedure}/{@link QueryBuilder.callFunction} invocation
+* targets a stored procedure or a stored function — the two are emitted differently on every
+* dialect (a `CALL`/`EXEC` statement vs. an expression usable in a `SELECT`).
+*/
+const CallKind = {
+	/** A stored procedure, invoked as its own statement (`CALL name(...)` / `EXEC name ...`). */
+	Procedure: "Procedure",
+	/** A stored function, invoked as a `SELECT` expression (`SELECT name(...)`). */
+	Function: "Function"
+};
+//#endregion
+//#region src/enums/call-param-direction.ts
+/**
+* The calling convention for one {@link QueryBuilder.callProcedure}/{@link
+* QueryBuilder.callFunction} argument. OUT/INOUT are meaningful only for procedures — see {@link
+* QueryBuilder.procParamOut}/{@link QueryBuilder.procParamInOut}.
+*/
+const CallParamDirection = {
+	/** An input value, bound like any other parameter. */
+	In: "In",
+	/** An output-only slot (MSSQL: a declared local variable; MySQL: a session variable). */
+	Out: "Out",
+	/** Both an input value and an output slot. */
+	InOut: "InOut"
+};
+//#endregion
+//#region src/enums/call-return-intent.ts
+/**
+* What a {@link QueryBuilder.callFunction} call is expected to return, which decides whether
+* Postgres/MSSQL wrap the invocation in `SELECT expr` (a single scalar) or `SELECT * FROM expr`
+* (a set-returning / table-valued function). MySQL has no table-valued functions and refuses
+* {@link ResultSet}.
+*/
+const CallReturnIntent = {
+	/** No return value. Only meaningful for procedures — never valid for {@link QueryBuilder.callFunction}. */
+	Void: "Void",
+	/** A single scalar value: `SELECT name(...)`. */
+	Scalar: "Scalar",
+	/** A set-returning / table-valued function: `SELECT * FROM name(...)`. */
+	ResultSet: "ResultSet"
+};
+//#endregion
+//#region src/enums/full-text-mode.ts
+/**
+* Full-text search match mode — not every dialect supports every mode; unsupported combos throw
+* at parse time.
+*/
+const FullTextMode = {
+	/** Natural-language / plain search (PG `plainto_tsquery`, MySQL natural mode, MSSQL `FREETEXT`). */
+	Natural: "Natural",
+	/** Boolean / structured query (PG `to_tsquery`, MySQL boolean mode, MSSQL `CONTAINS`). */
+	Boolean: "Boolean",
+	/** Phrase search where the dialect distinguishes it (MySQL `IN BOOLEAN MODE` phrase, PG phrase). */
+	Phrase: "Phrase"
+};
+//#endregion
+//#region src/enums/hint-kind.ts
+/**
+* Structured query-hint kinds. Each dialect accepts a different subset; unsupported combos throw
+* at parse time. Use {@link QueryBuilder.hintRaw} for hints this enum cannot express.
+*/
+const HintKind = {
+	/** MySQL `USE INDEX (name)` on a FROM/JOIN table reference. */
+	UseIndex: "UseIndex",
+	/** MySQL `FORCE INDEX (name)` on a FROM/JOIN table reference. */
+	ForceIndex: "ForceIndex",
+	/** MSSQL trailing `OPTION (...)` clause on a SELECT. */
+	MssqlOption: "MssqlOption",
+	/** Dialect-specific raw hint SQL — caller owns correctness. */
+	Raw: "Raw"
+};
+//#endregion
+//#region src/enums/json-extract-mode.ts
+/**
+* Whether a JSON path read returns text (`->>` / `JSON_UNQUOTE`) or a JSON value (`->` /
+* `JSON_EXTRACT`).
+*/
+const JsonExtractMode = {
+	/** Text extraction (`->>` on Postgres, `JSON_UNQUOTE(JSON_EXTRACT(...))` elsewhere). */
+	Text: "Text",
+	/** JSON value extraction (`->` on Postgres, `JSON_EXTRACT` elsewhere). */
+	Object: "Object"
+};
+//#endregion
+//#region src/enums/parser-area.ts
+/**
+* Indicates which SQL clause produced a parser error for clearer diagnostics.
+*/
+const ParserArea = {
+	/** SELECT list or projections. */
+	Select: "Select",
+	/** FROM clause. */
+	From: "From",
+	/** JOIN definitions. */
+	Join: "Join",
+	/** WHERE clause. */
+	Where: "Where",
+	/** HAVING clause. */
+	Having: "Having",
+	/** ORDER BY clause. */
+	OrderBy: "OrderBy",
+	/** LIMIT, OFFSET, FETCH, TOP, etc. */
+	LimitOffset: "LimitOffset",
+	/** INSERT statement. */
+	Insert: "Insert",
+	/** UPDATE statement. */
+	Update: "Update",
+	/** DELETE statement. */
+	Delete: "Delete",
+	/** Stored procedure/function invocation. */
+	Call: "Call",
+	/** Cross-clause or unspecified area. */
+	General: "General"
 };
 //#endregion
 //#region src/enums/join-type.ts
@@ -110,8 +277,30 @@ const JoinType = {
 	FullOuter: "FullOuter",
 	/** CROSS JOIN. */
 	Cross: "Cross",
+	/** LATERAL derived table (Postgres/MySQL `JOIN LATERAL`; MSSQL maps to `CROSS APPLY`). */
+	Lateral: "Lateral",
+	/** MSSQL `CROSS APPLY` (Postgres/MySQL: `CROSS JOIN LATERAL`). */
+	CrossApply: "CrossApply",
+	/** MSSQL `OUTER APPLY` (Postgres/MySQL: `LEFT JOIN LATERAL`). */
+	OuterApply: "OuterApply",
 	/** No join type / not applicable. */
 	None: "None"
+};
+//#endregion
+//#region src/enums/nulls-order.ts
+/**
+* `NULLS FIRST` / `NULLS LAST` placement for an ORDER BY term (top-level or inside a window's
+* `OVER (... ORDER BY ...)`). Postgres and SQLite have native syntax; MySQL and MSSQL have
+* neither, and get an equivalent `CASE WHEN col IS NULL THEN … END` sort-key emulation — see
+* `default-order-by.ts`.
+*/
+const NullsOrder = {
+	/** No explicit NULL placement — dialect default (NULLS LAST for ASC, NULLS FIRST for DESC, per SQL:2003). */
+	None: "None",
+	/** NULLs sort before all non-NULL values. */
+	First: "First",
+	/** NULLs sort after all non-NULL values. */
+	Last: "Last"
 };
 //#endregion
 //#region src/enums/order-by-direction.ts
@@ -139,7 +328,49 @@ const QueryType = {
 	/** UPDATE statement. */
 	Update: "Update",
 	/** DELETE statement. */
-	Delete: "Delete"
+	Delete: "Delete",
+	/** Stored procedure/function invocation (`CALL`/`EXEC`/`SELECT func(...)`). */
+	Call: "Call"
+};
+//#endregion
+//#region src/enums/row-lock-mode.ts
+/**
+* The row-locking mode requested for a SELECT (`FOR UPDATE` / `FOR SHARE` and MSSQL's
+* table-hint equivalents).
+*/
+const RowLockMode = {
+	/** No row lock requested. */
+	None: "None",
+	/** Exclusive row lock — blocks other writers (`FOR UPDATE`, MSSQL `WITH (UPDLOCK, ROWLOCK)`). */
+	ForUpdate: "ForUpdate",
+	/** Shared row lock — blocks writers, allows other readers (`FOR SHARE`, MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
+	ForShare: "ForShare"
+};
+//#endregion
+//#region src/enums/row-lock-wait.ts
+/**
+* Wait behavior for a {@link RowLockMode}, when the requested rows are already locked.
+*/
+const RowLockWait = {
+	/** Block until the lock is available (the dialect's default wait behavior). */
+	Default: "Default",
+	/** Fail immediately instead of waiting (`NOWAIT`). */
+	Nowait: "Nowait",
+	/** Silently skip already-locked rows instead of waiting (`SKIP LOCKED`, MSSQL `READPAST`). */
+	SkipLocked: "SkipLocked"
+};
+//#endregion
+//#region src/enums/upsert-action.ts
+/**
+* The conflict-resolution action for an INSERT's upsert clause.
+*/
+const UpsertAction = {
+	/** No upsert clause configured. */
+	None: "None",
+	/** Conflicting rows are silently skipped (PG/SQLite `DO NOTHING`, MySQL `INSERT IGNORE`). */
+	DoNothing: "DoNothing",
+	/** Conflicting rows are updated (PG/SQLite `DO UPDATE SET`, MySQL `ON DUPLICATE KEY UPDATE`). */
+	DoUpdate: "DoUpdate"
 };
 //#endregion
 //#region src/enums/where-operator.ts
@@ -164,7 +395,41 @@ const WhereOperator = {
 	/** Pattern match (LIKE) — the bound value carries any `%`/`_` wildcards. */
 	Like: "Like",
 	/** Negated pattern match (NOT LIKE). */
-	NotLike: "NotLike"
+	NotLike: "NotLike",
+	/**
+	* Case-insensitive pattern match. Native `ILIKE` on Postgres; on MySQL, SQLite, and MSSQL
+	* (none of which have `ILIKE`) it is rewritten to `LOWER(col) LIKE LOWER(?)`.
+	*/
+	Ilike: "Ilike",
+	/** Negated case-insensitive pattern match — see {@link WhereOperator.Ilike}. */
+	NotIlike: "NotIlike",
+	/**
+	* Null-safe inequality: true unless both sides are equal, treating two `NULL`s as equal
+	* (unlike `<>`, which is `NULL` — never true — whenever either side is `NULL`). Native `IS
+	* DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL has no
+	* equivalent and throws.
+	*/
+	IsDistinctFrom: "IsDistinctFrom",
+	/**
+	* Null-safe equality: true when both sides are equal OR both are `NULL` (unlike `=`, which is
+	* `NULL` whenever either side is `NULL`). Native `IS NOT DISTINCT FROM` on Postgres/SQLite;
+	* MySQL rewrites to its native `<=>` operator; MSSQL has no equivalent and throws.
+	*/
+	IsNotDistinctFrom: "IsNotDistinctFrom"
+};
+//#endregion
+//#region src/helpers/parser-error.ts
+/** Error thrown when SQL parsing fails; {@link ParserError.name} is `QueryParserError`. */
+var ParserError = class extends Error {
+	/**
+	* @param parserArea - Phase or region of the parser where the error occurred.
+	* @param message - Human-readable parse error description.
+	*/
+	constructor(parserArea, message) {
+		const finalMessage = `${parserArea}: ${message}`;
+		super(finalMessage);
+		this.name = "QueryParserError";
+	}
 };
 //#endregion
 //#region src/enums/database-type.ts
@@ -197,35 +462,6 @@ const MultiBuilderTransactionState = {
 	None: "None"
 };
 //#endregion
-//#region src/enums/parser-area.ts
-/**
-* Indicates which SQL clause produced a parser error for clearer diagnostics.
-*/
-const ParserArea = {
-	/** SELECT list or projections. */
-	Select: "Select",
-	/** FROM clause. */
-	From: "From",
-	/** JOIN definitions. */
-	Join: "Join",
-	/** WHERE clause. */
-	Where: "Where",
-	/** HAVING clause. */
-	Having: "Having",
-	/** ORDER BY clause. */
-	OrderBy: "OrderBy",
-	/** LIMIT, OFFSET, FETCH, TOP, etc. */
-	LimitOffset: "LimitOffset",
-	/** INSERT statement. */
-	Insert: "Insert",
-	/** UPDATE statement. */
-	Update: "Update",
-	/** DELETE statement. */
-	Delete: "Delete",
-	/** Cross-clause or unspecified area. */
-	General: "General"
-};
-//#endregion
 //#region src/enums/parser-mode.ts
 /**
 * Whether values are inlined into the SQL (Raw) or surfaced as bound parameters (Prepared).
@@ -237,20 +473,6 @@ const ParserMode = {
 	Prepared: "Prepared",
 	/** No mode / unused. */
 	None: "None"
-};
-//#endregion
-//#region src/helpers/parser-error.ts
-/** Error thrown when SQL parsing fails; {@link ParserError.name} is `QueryParserError`. */
-var ParserError = class extends Error {
-	/**
-	* @param parserArea - Phase or region of the parser where the error occurred.
-	* @param message - Human-readable parse error description.
-	*/
-	constructor(parserArea, message) {
-		const finalMessage = `${parserArea}: ${message}`;
-		super(finalMessage);
-		this.name = "QueryParserError";
-	}
 };
 //#endregion
 //#region src/helpers/sql.ts
@@ -376,6 +598,170 @@ function quoteIdentifier(name, delimiters) {
 	return delimiters.begin + escaped + delimiters.end;
 }
 //#endregion
+//#region src/parser/default-call.ts
+const AREA = ParserArea.Call;
+/**
+* `name`/variable identifiers are spliced into the SQL as bare syntax (`@name`, `name :=`), never
+* through {@link quoteIdentifier} — quoting a T-SQL local variable or a MySQL session variable is
+* not valid syntax at all. Since that text is not a bound value either, it must be restricted to a
+* safe identifier shape here, or a caller-supplied name could inject arbitrary SQL.
+*/
+const SAFE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const assertSafeParamName = (name) => {
+	if (!SAFE_NAME_PATTERN.test(name)) throw new ParserError(AREA, `invalid parameter/variable name: "${name}"`);
+};
+const qualifiedCallName = (config, owner, name) => {
+	let out = "";
+	if (owner && owner !== "") out += quoteIdentifier(owner, config.identifierDelimiters) + ".";
+	out += quoteIdentifier(name, config.identifierDelimiters);
+	return out;
+};
+/** Emits one argument's value/raw text — shared by every dialect's `In`/`InOut` handling. */
+const emitArgValue = (sqlHelper, param) => {
+	if (param.raw !== void 0) {
+		sqlHelper.addSqlSnippet(param.raw);
+		return;
+	}
+	sqlHelper.addDynamicValue(param.value);
+};
+const emitPostgresArgs = (sqlHelper, params) => {
+	sqlHelper.addSqlSnippet("(");
+	let sawNamed = false;
+	for (let i = 0; i < params.length; i++) {
+		const param = params[i];
+		const named = param.name !== void 0;
+		if (named) sawNamed = true;
+		else if (sawNamed) throw new ParserError(AREA, "a positional argument cannot follow a named argument");
+		if (named) {
+			assertSafeParamName(param.name);
+			sqlHelper.addSqlSnippet(param.name + " := ");
+		}
+		if (param.raw !== void 0) sqlHelper.addSqlSnippet(param.raw);
+		else if (param.direction === CallParamDirection.Out) sqlHelper.addDynamicValue(null);
+		else sqlHelper.addDynamicValue(param.value);
+		if (i < params.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(")");
+};
+const emitPostgresCall = (sqlHelper, config, callState) => {
+	if (callState.kind === CallKind.Procedure) sqlHelper.addSqlSnippet("CALL ");
+	else if (callState.returnIntent === CallReturnIntent.ResultSet) sqlHelper.addSqlSnippet("SELECT * FROM ");
+	else sqlHelper.addSqlSnippet("SELECT ");
+	sqlHelper.addSqlSnippet(qualifiedCallName(config, callState.owner, callState.name));
+	emitPostgresArgs(sqlHelper, callState.params);
+};
+const emitMysqlArgs = (sqlHelper, params) => {
+	sqlHelper.addSqlSnippet("(");
+	for (let i = 0; i < params.length; i++) {
+		const param = params[i];
+		if (param.name !== void 0 && param.direction === CallParamDirection.In) throw new ParserError(AREA, "MySQL does not support named parameters in CALL");
+		if (param.raw !== void 0) sqlHelper.addSqlSnippet(param.raw);
+		else if (param.direction === CallParamDirection.Out || param.direction === CallParamDirection.InOut) {
+			if (!param.name) throw new ParserError(AREA, "OUT/INOUT parameters require a session variable name on MySQL");
+			assertSafeParamName(param.name);
+			sqlHelper.addSqlSnippet("@" + param.name);
+		} else sqlHelper.addDynamicValue(param.value);
+		if (i < params.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(")");
+};
+const emitMysqlCall = (sqlHelper, config, callState) => {
+	if (callState.kind === CallKind.Function) {
+		if (callState.returnIntent === CallReturnIntent.ResultSet) throw new ParserError(AREA, "MySQL does not support table-valued functions");
+		sqlHelper.addSqlSnippet("SELECT ");
+		sqlHelper.addSqlSnippet(qualifiedCallName(config, callState.owner, callState.name));
+		emitMysqlArgs(sqlHelper, callState.params);
+		return;
+	}
+	for (const param of callState.params) if (param.direction === CallParamDirection.InOut) {
+		assertSafeParamName(param.name);
+		sqlHelper.addSqlSnippet("SET @" + param.name + " = ");
+		sqlHelper.addDynamicValue(param.value);
+		sqlHelper.addSqlSnippet("; ");
+	}
+	sqlHelper.addSqlSnippet("CALL ");
+	sqlHelper.addSqlSnippet(qualifiedCallName(config, callState.owner, callState.name));
+	emitMysqlArgs(sqlHelper, callState.params);
+};
+const emitMssqlDeclarations = (sqlHelper, params) => {
+	for (const param of params) {
+		if (param.direction !== CallParamDirection.Out && param.direction !== CallParamDirection.InOut) continue;
+		if (!param.name) throw new ParserError(AREA, "OUT/INOUT parameters require a variable name on MSSQL");
+		if (!param.sqlType) throw new ParserError(AREA, "OUT/INOUT parameters require an explicit sqlType on MSSQL");
+		assertSafeParamName(param.name);
+		sqlHelper.addSqlSnippet("DECLARE @" + param.name + " " + param.sqlType);
+		if (param.direction === CallParamDirection.InOut) {
+			sqlHelper.addSqlSnippet(" = ");
+			sqlHelper.addDynamicValue(param.value);
+		}
+		sqlHelper.addSqlSnippet("; ");
+	}
+};
+const emitMssqlProcedureArgs = (sqlHelper, params) => {
+	if (params.length === 0) return;
+	sqlHelper.addSqlSnippet(" ");
+	let sawNamed = false;
+	for (let i = 0; i < params.length; i++) {
+		const param = params[i];
+		const hasVariable = param.direction === CallParamDirection.Out || param.direction === CallParamDirection.InOut;
+		if (hasVariable || param.name !== void 0) sawNamed = true;
+		else if (sawNamed) throw new ParserError(AREA, "a positional argument cannot follow a named argument");
+		if (hasVariable) sqlHelper.addSqlSnippet("@" + param.name + " = @" + param.name + " OUTPUT");
+		else if (param.raw !== void 0) sqlHelper.addSqlSnippet(param.raw);
+		else {
+			if (param.name !== void 0) {
+				assertSafeParamName(param.name);
+				sqlHelper.addSqlSnippet("@" + param.name + " = ");
+			}
+			sqlHelper.addDynamicValue(param.value);
+		}
+		if (i < params.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+};
+const emitMssqlFunctionArgs = (sqlHelper, params) => {
+	sqlHelper.addSqlSnippet("(");
+	for (let i = 0; i < params.length; i++) {
+		const param = params[i];
+		if (param.name !== void 0) throw new ParserError(AREA, "MSSQL does not support named parameters when invoking a function");
+		emitArgValue(sqlHelper, param);
+		if (i < params.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(")");
+};
+const emitMssqlCall = (sqlHelper, config, callState) => {
+	emitMssqlDeclarations(sqlHelper, callState.params);
+	if (callState.kind === CallKind.Procedure) {
+		sqlHelper.addSqlSnippet("EXEC ");
+		sqlHelper.addSqlSnippet(qualifiedCallName(config, callState.owner, callState.name));
+		emitMssqlProcedureArgs(sqlHelper, callState.params);
+		return;
+	}
+	sqlHelper.addSqlSnippet(callState.returnIntent === CallReturnIntent.ResultSet ? "SELECT * FROM " : "SELECT ");
+	sqlHelper.addSqlSnippet(qualifiedCallName(config, callState.owner, callState.name));
+	emitMssqlFunctionArgs(sqlHelper, callState.params);
+};
+/**
+* Renders a `CALL`/`EXEC`/`SELECT func(...)` statement for {@link QueryState.callState}. SQLite has
+* no stored procedures or functions at all and refuses every call outright. OUT/INOUT parameters
+* are refused for functions on every dialect — a function's result is its return expression, not
+* an output parameter, and none of the `SELECT`-based function emissions below have anywhere to
+* put one.
+*/
+const defaultCall = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (!state.callState) throw new ParserError(AREA, "No call state provided");
+	const callState = state.callState;
+	if (!callState.name) throw new ParserError(AREA, "callProcedure/callFunction requires a name");
+	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(AREA, "SQLite does not support stored procedures or functions (CALL/EXEC)");
+	if (callState.kind === CallKind.Function) {
+		for (const param of callState.params) if (param.direction !== CallParamDirection.In) throw new ParserError(AREA, "OUT/INOUT parameters are only supported for procedure calls, not functions");
+	}
+	if (config.databaseType === DatabaseType.Postgres) emitPostgresCall(sqlHelper, config, callState);
+	else if (config.databaseType === DatabaseType.Mysql) emitMysqlCall(sqlHelper, config, callState);
+	else emitMssqlCall(sqlHelper, config, callState);
+	return sqlHelper;
+};
+//#endregion
 //#region src/parser/default-cte.ts
 const defaultCte = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
@@ -385,6 +771,14 @@ const defaultCte = (state, config, mode, options) => {
 	for (let i = 0; i < state.cteStates.length; i++) {
 		const cteState = state.cteStates[i];
 		sqlHelper.addSqlSnippet(quoteIdentifier(cteState.name, config.identifierDelimiters));
+		if (cteState.columns.length > 0) {
+			sqlHelper.addSqlSnippet(" (");
+			cteState.columns.forEach((column, columnIndex) => {
+				sqlHelper.addSqlSnippet(quoteIdentifier(column, config.identifierDelimiters));
+				if (columnIndex < cteState.columns.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(")");
+		}
 		sqlHelper.addSqlSnippet(" AS (");
 		if (cteState.builderType === BuilderType.CteRaw) sqlHelper.addSqlSnippet(cteState.raw ?? "");
 		else if (cteState.subquery) {
@@ -394,208 +788,6 @@ const defaultCte = (state, config, mode, options) => {
 		sqlHelper.addSqlSnippet(")");
 		if (i < state.cteStates.length - 1) sqlHelper.addSqlSnippet(", ");
 		else sqlHelper.addSqlSnippet(" ");
-	}
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-delete.ts
-const defaultDelete = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.fromStates.length === 0) throw new ParserError(ParserArea.Delete, "DELETE requires a table");
-	const delim = config.identifierDelimiters;
-	const quote = (s) => quoteIdentifier(s, delim);
-	const fromState = state.fromStates[0];
-	const owner = fromState.owner ?? "";
-	const alias = fromState.alias ?? "";
-	if (owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Delete, "MySQL does not support table owners");
-	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
-	if (alias !== "" && config.databaseType === DatabaseType.Mssql) {
-		sqlHelper.addSqlSnippet("DELETE ");
-		sqlHelper.addSqlSnippet(quote(alias));
-		sqlHelper.addSqlSnippet(" FROM ");
-		sqlHelper.addSqlSnippet(qualified);
-		sqlHelper.addSqlSnippet(" AS ");
-		sqlHelper.addSqlSnippet(quote(alias));
-		return sqlHelper;
-	}
-	sqlHelper.addSqlSnippet("DELETE FROM ");
-	sqlHelper.addSqlSnippet(qualified);
-	if (alias !== "") {
-		sqlHelper.addSqlSnippet(" AS ");
-		sqlHelper.addSqlSnippet(quote(alias));
-	}
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-from.ts
-const defaultFrom = (state, config, mode, options) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.fromStates.length === 0) throw new ParserError(ParserArea.From, "No tables to select from");
-	sqlHelper.addSqlSnippet("FROM ");
-	state.fromStates.forEach((fromState, i) => {
-		if (fromState.builderType === BuilderType.FromRaw) {
-			sqlHelper.addSqlSnippet(fromState.raw ?? "");
-			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-		if (fromState.builderType === BuilderType.FromTable) {
-			if (fromState.owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
-			if (fromState.owner !== "") {
-				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
-				sqlHelper.addSqlSnippet(".");
-			}
-			sqlHelper.addSqlSnippet(quoteIdentifier(fromState.tableName, config.identifierDelimiters));
-			if (fromState.alias !== "") {
-				sqlHelper.addSqlSnippet(" AS ");
-				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
-			}
-			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-		if (fromState.builderType === BuilderType.FromBuilder) {
-			const subHelper = defaultToSql(fromState.subquery, config, mode, options);
-			sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
-			if (fromState.alias !== "") {
-				sqlHelper.addSqlSnippet(" AS ");
-				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
-			}
-			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
-		}
-	});
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-group-by.ts
-const defaultGroupBy = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.groupByStates.length === 0) return sqlHelper;
-	sqlHelper.addSqlSnippet("GROUP BY ");
-	state.groupByStates.forEach((groupByState, i) => {
-		if (groupByState.builderType === BuilderType.GroupByRaw) {
-			sqlHelper.addSqlSnippet(groupByState.raw ?? "");
-			if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-		if (groupByState.builderType === BuilderType.GroupByColumn) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(groupByState.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(groupByState.columnName, config.identifierDelimiters));
-			if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-	});
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-having.ts
-const isHavingPredicate = (state) => state.builderType === BuilderType.Having || state.builderType === BuilderType.HavingRaw;
-const defaultHaving = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.havingStates.length === 0) return sqlHelper;
-	if (state.groupByStates.length === 0) throw new ParserError(ParserArea.Having, "HAVING requires a GROUP BY clause");
-	sqlHelper.addSqlSnippet("HAVING ");
-	for (let i = 0; i < state.havingStates.length; i++) {
-		const havingState = state.havingStates[i];
-		const prev = i > 0 ? state.havingStates[i - 1] : void 0;
-		if (i === 0 && (havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "First HAVING operator cannot be AND or OR");
-		if (i === state.havingStates.length - 1 && (havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "AND or OR cannot be used as the last HAVING operator");
-		if ((havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or) && prev && (prev.builderType === BuilderType.And || prev.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "AND or OR cannot be used consecutively");
-		if (havingState.builderType === BuilderType.And) {
-			sqlHelper.addSqlSnippet(" AND ");
-			continue;
-		}
-		if (havingState.builderType === BuilderType.Or) {
-			sqlHelper.addSqlSnippet(" OR ");
-			continue;
-		}
-		if (i > 0 && prev && isHavingPredicate(prev) && isHavingPredicate(havingState)) sqlHelper.addSqlSnippet(" AND ");
-		if (havingState.builderType === BuilderType.HavingRaw) {
-			sqlHelper.addSqlSnippet(havingState.raw ?? "");
-			continue;
-		}
-		if (havingState.builderType === BuilderType.Having) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(havingState.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(havingState.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" ");
-			const value = havingState.values[0];
-			if ((havingState.whereOperator === WhereOperator.Equals || havingState.whereOperator === WhereOperator.NotEquals) && (value === null || value === void 0)) {
-				sqlHelper.addSqlSnippet(havingState.whereOperator === WhereOperator.Equals ? "IS NULL" : "IS NOT NULL");
-				continue;
-			}
-			switch (havingState.whereOperator) {
-				case WhereOperator.Equals:
-					sqlHelper.addSqlSnippet("=");
-					break;
-				case WhereOperator.NotEquals:
-					sqlHelper.addSqlSnippet("<>");
-					break;
-				case WhereOperator.GreaterThan:
-					sqlHelper.addSqlSnippet(">");
-					break;
-				case WhereOperator.GreaterThanOrEquals:
-					sqlHelper.addSqlSnippet(">=");
-					break;
-				case WhereOperator.LessThan:
-					sqlHelper.addSqlSnippet("<");
-					break;
-				case WhereOperator.LessThanOrEquals:
-					sqlHelper.addSqlSnippet("<=");
-					break;
-				case WhereOperator.Like:
-					sqlHelper.addSqlSnippet("LIKE");
-					break;
-				case WhereOperator.NotLike:
-					sqlHelper.addSqlSnippet("NOT LIKE");
-					break;
-				default: throw new ParserError(ParserArea.Having, `Unsupported HAVING operator: ${havingState.whereOperator}`);
-			}
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addDynamicValue(value);
-			continue;
-		}
-	}
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-insert.ts
-const defaultInsert = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (!state.insertState) throw new ParserError(ParserArea.Insert, "No insert state provided");
-	const insertState = state.insertState;
-	if (insertState.raw) {
-		sqlHelper.addSqlSnippet(insertState.raw);
-		return sqlHelper;
-	}
-	if (!insertState.tableName) throw new ParserError(ParserArea.Insert, "INSERT requires a table");
-	sqlHelper.addSqlSnippet("INSERT INTO ");
-	if (insertState.owner && insertState.owner !== "") {
-		if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Insert, "MySQL does not support table owners");
-		sqlHelper.addSqlSnippet(quoteIdentifier(insertState.owner, config.identifierDelimiters));
-		sqlHelper.addSqlSnippet(".");
-	}
-	sqlHelper.addSqlSnippet(quoteIdentifier(insertState.tableName, config.identifierDelimiters));
-	if (insertState.columns.length > 0) {
-		sqlHelper.addSqlSnippet(" (");
-		for (let i = 0; i < insertState.columns.length; i++) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(insertState.columns[i], config.identifierDelimiters));
-			if (i < insertState.columns.length - 1) sqlHelper.addSqlSnippet(", ");
-		}
-		sqlHelper.addSqlSnippet(")");
-	}
-	if (insertState.values.length === 0) throw new ParserError(ParserArea.Insert, "INSERT requires at least one VALUES row");
-	const columnCount = insertState.columns.length;
-	sqlHelper.addSqlSnippet(" VALUES ");
-	for (let r = 0; r < insertState.values.length; r++) {
-		sqlHelper.addSqlSnippet("(");
-		const row = insertState.values[r];
-		if (columnCount > 0 && row.length !== columnCount) throw new ParserError(ParserArea.Insert, `INSERT column count (${columnCount}) does not match value count (${row.length}) for row ${r + 1}`);
-		for (let c = 0; c < row.length; c++) {
-			sqlHelper.addDynamicValue(row[c]);
-			if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
-		}
-		sqlHelper.addSqlSnippet(")");
-		if (r < insertState.values.length - 1) sqlHelper.addSqlSnippet(", ");
 	}
 	return sqlHelper;
 };
@@ -619,6 +811,14 @@ const JoinOnOperator = {
 	And: "And",
 	/** Logical OR between ON parts. */
 	Or: "Or",
+	/** `ON column IN (values)` — see {@link JoinOnBuilder.onIn}. */
+	InValues: "InValues",
+	/** `ON column NOT IN (values)` — see {@link JoinOnBuilder.onNotIn}. */
+	NotInValues: "NotInValues",
+	/** `ON column BETWEEN low AND high` — see {@link JoinOnBuilder.onBetween}. */
+	Between: "Between",
+	/** `ON column NOT BETWEEN low AND high` — see {@link JoinOnBuilder.onNotBetween}. */
+	NotBetween: "NotBetween",
 	/** No operator / unused slot. */
 	None: "None"
 };
@@ -641,7 +841,52 @@ const JoinOperator = {
 	/** Less than or equal (<=). */
 	LessThanOrEquals: "LessThanOrEquals",
 	/** No operator specified. */
-	None: "None"
+	None: "None",
+	/** Pattern match (LIKE) — usable in both `on` (column-to-column) and `onValue` (column-to-value). */
+	Like: "Like",
+	/** Negated pattern match (NOT LIKE). */
+	NotLike: "NotLike"
+};
+//#endregion
+//#region src/parser/default-hint.ts
+/** MySQL index hint text immediately after a table reference (`USE INDEX (idx)`). */
+const mysqlIndexHintForTable = (state, config, tableNameOrAlias) => {
+	const hints = state.hintStates ?? [];
+	if (hints.length === 0) return "";
+	const indexHints = hints.filter((hint) => (hint.kind === HintKind.UseIndex || hint.kind === HintKind.ForceIndex) && hint.tableNameOrAlias === tableNameOrAlias && hint.indexName);
+	if (indexHints.length === 0) return "";
+	if (config.databaseType !== DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL");
+	let sql = "";
+	for (const hint of indexHints) sql += (hint.kind === HintKind.ForceIndex ? " FORCE INDEX (" : " USE INDEX (") + quoteIdentifier(hint.indexName, config.identifierDelimiters) + ")";
+	return sql;
+};
+/** Trailing MSSQL `OPTION (...)` and raw hints appended after the SELECT statement body. */
+const emitTrailingHints = (sqlHelper, state, config) => {
+	const hints = state.hintStates ?? [];
+	if (hints.length === 0) return;
+	for (const hint of hints) {
+		if (hint.kind === HintKind.MssqlOption) {
+			if (config.databaseType !== DatabaseType.Mssql) throw new ParserError(ParserArea.General, "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects");
+			if (!hint.optionText || hint.optionText.trim() === "") throw new ParserError(ParserArea.General, "hintMssqlOption requires non-empty option text");
+			sqlHelper.addSqlSnippet(" OPTION (");
+			sqlHelper.addSqlSnippet(hint.optionText);
+			sqlHelper.addSqlSnippet(")");
+			continue;
+		}
+		if (hint.kind === HintKind.Raw) {
+			if (!hint.raw || hint.raw.trim() === "") throw new ParserError(ParserArea.General, "hintRaw requires non-empty SQL");
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippet(hint.raw);
+		}
+	}
+};
+/** Validates that no unsupported hint kinds remain unhandled at parse time. */
+const validateHints = (state, config, area) => {
+	const hints = state.hintStates ?? [];
+	if (hints.length === 0) return;
+	for (const hint of hints) if (hint.kind === HintKind.UseIndex || hint.kind === HintKind.ForceIndex) {
+		if (config.databaseType !== DatabaseType.Mysql) throw new ParserError(area, "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere");
+	}
 };
 //#endregion
 //#region src/parser/default-join.ts
@@ -678,6 +923,31 @@ const defaultJoin = (state, config, mode, options) => {
 			case JoinType.Cross:
 				sqlHelper.addSqlSnippet("CROSS JOIN ");
 				break;
+			case JoinType.Lateral:
+				if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.Join, "SQLite does not support LATERAL joins");
+				if (config.databaseType === DatabaseType.Mssql) throw new ParserError(ParserArea.Join, "MSSQL LATERAL joins use CROSS APPLY/OUTER APPLY — use joinCrossApply/joinOuterApply");
+				sqlHelper.addSqlSnippet("JOIN LATERAL ");
+				break;
+			case JoinType.CrossApply:
+				if (config.databaseType === DatabaseType.Mssql) {
+					sqlHelper.addSqlSnippet("CROSS APPLY ");
+					break;
+				}
+				if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) {
+					sqlHelper.addSqlSnippet("CROSS JOIN LATERAL ");
+					break;
+				}
+				throw new ParserError(ParserArea.Join, "SQLite does not support CROSS APPLY/LATERAL joins");
+			case JoinType.OuterApply:
+				if (config.databaseType === DatabaseType.Mssql) {
+					sqlHelper.addSqlSnippet("OUTER APPLY ");
+					break;
+				}
+				if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) {
+					sqlHelper.addSqlSnippet("LEFT JOIN LATERAL ");
+					break;
+				}
+				throw new ParserError(ParserArea.Join, "SQLite does not support OUTER APPLY/LATERAL joins");
 		}
 		if (joinState.builderType === BuilderType.JoinTable) {
 			if (joinState.owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Join, "MySQL does not support table owners");
@@ -686,6 +956,7 @@ const defaultJoin = (state, config, mode, options) => {
 				sqlHelper.addSqlSnippet(".");
 			}
 			sqlHelper.addSqlSnippet(quoteIdentifier(joinState.tableName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ""));
 			if (joinState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
@@ -707,9 +978,12 @@ const defaultJoin = (state, config, mode, options) => {
 	}
 	return sqlHelper;
 };
-const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
-	if (joinOnStates.length === 0) return sqlHelper;
-	sqlHelper.addSqlSnippet(" ON ");
+/**
+* Renders a JOIN's ON condition list *without* the leading `" ON "` keyword — the shared core
+* used both for a normal JOIN and (via {@link renderJoinOnConditions}) for translating a
+* join-backed UPDATE/DELETE's ON conditions into a Postgres `WHERE` predicate.
+*/
+const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 	for (let i = 0; i < joinOnStates.length; i++) {
 		const on = joinOnStates[i];
 		const prevOn = i > 0 ? joinOnStates[i - 1] : void 0;
@@ -733,6 +1007,10 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 			spaceAfter();
 			continue;
 		}
+		const isPredicateOperator = (joinOnOperator) => joinOnOperator === JoinOnOperator.On || joinOnOperator === JoinOnOperator.Value || joinOnOperator === JoinOnOperator.Raw || joinOnOperator === JoinOnOperator.InValues || joinOnOperator === JoinOnOperator.NotInValues || joinOnOperator === JoinOnOperator.Between || joinOnOperator === JoinOnOperator.NotBetween;
+		const endsOnExpression = prevOn && (isPredicateOperator(prevOn.joinOnOperator) || prevOn.joinOnOperator === JoinOnOperator.GroupEnd);
+		const startsOnExpression = isPredicateOperator(on.joinOnOperator) || on.joinOnOperator === JoinOnOperator.GroupBegin;
+		if (i > 0 && endsOnExpression && startsOnExpression) sqlHelper.addSqlSnippet("AND ");
 		if (on.joinOnOperator === JoinOnOperator.GroupBegin) {
 			sqlHelper.addSqlSnippet("(");
 			continue;
@@ -771,6 +1049,12 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 				case JoinOperator.LessThanOrEquals:
 					sqlHelper.addSqlSnippet("<=");
 					break;
+				case JoinOperator.Like:
+					sqlHelper.addSqlSnippet("LIKE");
+					break;
+				case JoinOperator.NotLike:
+					sqlHelper.addSqlSnippet("NOT LIKE");
+					break;
 			}
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasRight, config.identifierDelimiters));
@@ -803,13 +1087,1106 @@ const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
 				case JoinOperator.LessThanOrEquals:
 					sqlHelper.addSqlSnippet("<=");
 					break;
+				case JoinOperator.Like:
+					sqlHelper.addSqlSnippet("LIKE");
+					break;
+				case JoinOperator.NotLike:
+					sqlHelper.addSqlSnippet("NOT LIKE");
+					break;
 			}
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addDynamicValue(on.valueRight);
 			spaceAfter();
 			continue;
 		}
+		if (on.joinOnOperator === JoinOnOperator.InValues || on.joinOnOperator === JoinOnOperator.NotInValues) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(on.joinOnOperator === JoinOnOperator.NotInValues ? " NOT IN (" : " IN (");
+			const values = on.valuesRight ?? [];
+			values.forEach((value, valueIndex) => {
+				sqlHelper.addDynamicValue(value);
+				if (valueIndex < values.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (on.joinOnOperator === JoinOnOperator.Between || on.joinOnOperator === JoinOnOperator.NotBetween) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(on.joinOnOperator === JoinOnOperator.NotBetween ? " NOT BETWEEN " : " BETWEEN ");
+			const [lower, upper] = on.valuesRight ?? [];
+			sqlHelper.addDynamicValue(lower);
+			sqlHelper.addSqlSnippet(" AND ");
+			sqlHelper.addDynamicValue(upper);
+			spaceAfter();
+			continue;
+		}
 	}
+	return sqlHelper;
+};
+const defaultJoinOns = (sqlHelper, config, joinOnStates) => {
+	if (joinOnStates.length === 0) return sqlHelper;
+	sqlHelper.addSqlSnippet(" ON ");
+	return renderJoinOnPredicate(sqlHelper, config, joinOnStates);
+};
+/**
+* Renders a JOIN's ON conditions as a standalone boolean expression (no leading `ON`/`WHERE`
+* keyword). Used to translate join-backed UPDATE/DELETE ON conditions into a Postgres `WHERE`
+* predicate, since Postgres's `UPDATE ... FROM` / `DELETE ... USING` do not support `JOIN ... ON`
+* syntax directly.
+*/
+const renderJoinOnConditions = (sqlHelper, config, joinOnStates) => {
+	return renderJoinOnPredicate(sqlHelper, config, joinOnStates);
+};
+//#endregion
+//#region src/parser/default-mutation-join.ts
+/**
+* Join-backed UPDATE/DELETE support (`.join(...)` combined with `.updateTable`/`.deleteFrom`).
+*
+* MySQL and MSSQL both accept full `JOIN ... ON` syntax directly in their multi-table UPDATE /
+* `UPDATE ... FROM` / `DELETE ... FROM` grammars, so `default-update.ts`/`default-delete.ts`
+* reuse `defaultJoin` verbatim for those two. Postgres's `UPDATE ... FROM` / `DELETE ... USING`
+* cannot join the *target* row to a `from_item` with `JOIN ... ON` — that condition has to be a
+* `WHERE` predicate — so Postgres gets a plain comma-separated `from_item` list here
+* ({@link renderPostgresMutationFrom}) plus a translated `WHERE` predicate
+* ({@link buildPostgresMutationJoinPredicate}), assembled by `to-sql.ts`. SQLite has no
+* multi-table UPDATE/DELETE syntax at all, so joins are rejected outright.
+*/
+const assertMutationJoinsSupported = (state, config, area) => {
+	if (state.joinStates.length === 0) return;
+	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(area, "SQLite does not support joins in UPDATE/DELETE; rewrite the join as a correlated subquery");
+};
+const emitPostgresFromItem = (sqlHelper, config, mode, options, joinState, area) => {
+	if (joinState.builderType === BuilderType.JoinRaw) throw new ParserError(area, "Raw JOIN fragments are not supported in a Postgres join-backed UPDATE/DELETE; use a raw WHERE/FROM instead");
+	if (joinState.joinType !== JoinType.Inner && joinState.joinType !== JoinType.Cross) throw new ParserError(area, "Postgres UPDATE...FROM/DELETE...USING only supports INNER or CROSS joins — the ON condition is translated into a WHERE predicate, which cannot express OUTER JOIN semantics");
+	if (joinState.builderType === BuilderType.JoinTable) {
+		if (joinState.owner && joinState.owner !== "") {
+			sqlHelper.addSqlSnippet(quoteIdentifier(joinState.owner, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+		}
+		sqlHelper.addSqlSnippet(quoteIdentifier(joinState.tableName, config.identifierDelimiters));
+		if (joinState.alias && joinState.alias !== "") {
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
+		}
+		return;
+	}
+	const subHelper = defaultToSql(joinState.subquery, config, mode, options);
+	sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
+	if (joinState.alias && joinState.alias !== "") {
+		sqlHelper.addSqlSnippet(" AS ");
+		sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
+	}
+};
+/** Renders `.join(...)` targets as a comma-separated Postgres `from_item` list (no `JOIN`/`ON`). */
+const renderPostgresMutationFrom = (config, state, mode, options, area) => {
+	const sqlHelper = new SqlHelper(mode);
+	state.joinStates.forEach((joinState, i) => {
+		emitPostgresFromItem(sqlHelper, config, mode, options, joinState, area);
+		if (i < state.joinStates.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	return sqlHelper;
+};
+/**
+* Translates every `.join(...)` call's ON conditions into a single ANDed `WHERE` predicate
+* (no leading `WHERE`/`AND` keyword). CROSS joins contribute no predicate (unconditional).
+* Each join's own conditions are parenthesized when it has more than one, so combining them
+* with `AND` never changes their internal `AND`/`OR` precedence.
+*/
+const buildPostgresMutationJoinPredicate = (config, state, mode) => {
+	const sqlHelper = new SqlHelper(mode);
+	let wroteAny = false;
+	for (const joinState of state.joinStates) {
+		if (joinState.joinType === JoinType.Cross || joinState.joinOnStates.length === 0) continue;
+		if (wroteAny) sqlHelper.addSqlSnippet(" AND ");
+		const wrapInParens = joinState.joinOnStates.length > 1;
+		if (wrapInParens) sqlHelper.addSqlSnippet("(");
+		renderJoinOnConditions(sqlHelper, config, joinState.joinOnStates);
+		if (wrapInParens) sqlHelper.addSqlSnippet(")");
+		wroteAny = true;
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-returning.ts
+const emitColumnList$1 = (sqlHelper, config, columns, prefix) => {
+	for (let i = 0; i < columns.length; i++) {
+		if (prefix) sqlHelper.addSqlSnippet(prefix + ".");
+		sqlHelper.addSqlSnippet(quoteIdentifier(columns[i], config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+};
+const emitColumnsOrRaw = (sqlHelper, config, returningState, prefix, area) => {
+	if (returningState.raw) {
+		sqlHelper.addSqlSnippet(returningState.raw);
+		return;
+	}
+	if (returningState.columns.length === 0) throw new ParserError(area, "RETURNING/OUTPUT requires at least one column");
+	emitColumnList$1(sqlHelper, config, returningState.columns, prefix);
+};
+/**
+* MSSQL's `OUTPUT` clause. Placed inline by the caller — before `VALUES` for INSERT, before
+* `FROM`/`WHERE` for UPDATE, before `WHERE` for DELETE — because, unlike PG/SQLite's trailing
+* `RETURNING`, T-SQL requires `OUTPUT` in the middle of the statement.
+*/
+const emitMssqlOutputClause = (sqlHelper, config, returningState, prefix, area) => {
+	sqlHelper.addSqlSnippet(" OUTPUT ");
+	emitColumnsOrRaw(sqlHelper, config, returningState, prefix, area);
+};
+/**
+* PG/SQLite's trailing `RETURNING` clause, appended after the whole INSERT/UPDATE/DELETE
+* statement (including its WHERE). MySQL has no equivalent and refuses it here with a clear
+* error rather than silently dropping the columns the caller asked for.
+*/
+const emitTrailingReturningClause = (sqlHelper, config, returningState, area) => {
+	if (config.databaseType === DatabaseType.Mysql) throw new ParserError(area, "MySQL does not support RETURNING");
+	sqlHelper.addSqlSnippet(" RETURNING ");
+	emitColumnsOrRaw(sqlHelper, config, returningState, void 0, area);
+};
+//#endregion
+//#region src/parser/mutation-target.ts
+/**
+* Resolves the table targeted by UPDATE or DELETE.
+*
+* Prefers the `updateTable` / `deleteFrom` entry tracked by {@link QueryState.mutationTargetIndex}.
+* Falls back to the sole `fromStates` entry when no mutation index is set. Refuses ambiguous
+* stacks (multiple FROM sources without a recorded mutation target).
+*/
+const resolveMutationTarget = (state, area, missingMessage) => {
+	if (state.fromStates.length === 0) throw new ParserError(area, missingMessage);
+	if (state.mutationTargetIndex !== void 0) {
+		const target = state.fromStates[state.mutationTargetIndex];
+		if (!target) throw new ParserError(area, missingMessage);
+		return target;
+	}
+	if (state.fromStates.length > 1) throw new ParserError(area, "Ambiguous UPDATE/DELETE target: call updateTable/deleteFrom after fromTable, or clearFrom first");
+	return state.fromStates[0];
+};
+//#endregion
+//#region src/parser/default-delete.ts
+const defaultDelete = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(mode);
+	assertMutationJoinsSupported(state, config, ParserArea.Delete);
+	const hasJoins = state.joinStates.length > 0;
+	const delim = config.identifierDelimiters;
+	const quote = (s) => quoteIdentifier(s, delim);
+	const fromState = resolveMutationTarget(state, ParserArea.Delete, "DELETE requires a table");
+	const owner = fromState.owner ?? "";
+	const alias = fromState.alias ?? "";
+	if (owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Delete, "MySQL does not support table owners");
+	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
+	if (config.databaseType === DatabaseType.Mssql && (alias !== "" || hasJoins)) {
+		sqlHelper.addSqlSnippet("DELETE ");
+		sqlHelper.addSqlSnippet(alias !== "" ? quote(alias) : qualified);
+		if (state.returningState) emitMssqlOutputClause(sqlHelper, config, state.returningState, "DELETED", ParserArea.Delete);
+		sqlHelper.addSqlSnippet(" FROM ");
+		sqlHelper.addSqlSnippet(qualified);
+		if (alias !== "") {
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(quote(alias));
+		}
+		if (hasJoins) {
+			const join = defaultJoin(state, config, mode, options);
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
+		}
+		return sqlHelper;
+	}
+	if (hasJoins && config.databaseType === DatabaseType.Mysql) {
+		sqlHelper.addSqlSnippet("DELETE ");
+		sqlHelper.addSqlSnippet(alias !== "" ? quote(alias) : qualified);
+		sqlHelper.addSqlSnippet(" FROM ");
+		sqlHelper.addSqlSnippet(qualified);
+		if (alias !== "") {
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(quote(alias));
+		}
+		const join = defaultJoin(state, config, mode, options);
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
+		return sqlHelper;
+	}
+	sqlHelper.addSqlSnippet("DELETE FROM ");
+	sqlHelper.addSqlSnippet(qualified);
+	if (alias !== "") {
+		sqlHelper.addSqlSnippet(" AS ");
+		sqlHelper.addSqlSnippet(quote(alias));
+	}
+	if (state.returningState && config.databaseType === DatabaseType.Mssql) emitMssqlOutputClause(sqlHelper, config, state.returningState, "DELETED", ParserArea.Delete);
+	if (hasJoins && config.databaseType === DatabaseType.Postgres) {
+		const using = renderPostgresMutationFrom(config, state, mode, options, ParserArea.Delete);
+		sqlHelper.addSqlSnippet(" USING ");
+		sqlHelper.addSqlSnippetWithValues(using.getSql(), using.getValues());
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-row-lock.ts
+/**
+* Trailing `FOR UPDATE`/`FOR SHARE` clause for Postgres/MySQL, appended after the whole SELECT
+* (including ORDER BY/LIMIT). SQLite has no row-level locking at all and refuses it. MSSQL emits
+* nothing here — its locking is a `WITH (...)` table hint on each FROM table; see
+* {@link mssqlRowLockHint}.
+*/
+const emitTrailingRowLockClause = (sqlHelper, config, rowLock) => {
+	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite does not support row locking (FOR UPDATE/FOR SHARE)");
+	if (config.databaseType === DatabaseType.Mssql) return;
+	sqlHelper.addSqlSnippet(" ");
+	sqlHelper.addSqlSnippet(rowLock.mode === RowLockMode.ForUpdate ? "FOR UPDATE" : "FOR SHARE");
+	if (rowLock.wait === RowLockWait.Nowait) sqlHelper.addSqlSnippet(" NOWAIT");
+	else if (rowLock.wait === RowLockWait.SkipLocked) sqlHelper.addSqlSnippet(" SKIP LOCKED");
+};
+/**
+* MSSQL has no `FOR UPDATE`/`FOR SHARE` clause — the nearest equivalent is a `WITH (...)`
+* locking hint on the table reference itself. `UPDLOCK`/`HOLDLOCK` approximate `FOR
+* UPDATE`/`FOR SHARE`; `ROWLOCK` asks for row- (not page/table-) granularity; `NOWAIT`/
+* `READPAST` approximate `NOWAIT`/`SKIP LOCKED`.
+*/
+const mssqlRowLockHint = (rowLock) => {
+	const strength = rowLock.mode === RowLockMode.ForUpdate ? "UPDLOCK, ROWLOCK" : "HOLDLOCK, ROWLOCK";
+	if (rowLock.wait === RowLockWait.Nowait) return ` WITH (${strength}, NOWAIT)`;
+	if (rowLock.wait === RowLockWait.SkipLocked) return ` WITH (${strength}, READPAST)`;
+	return ` WITH (${strength})`;
+};
+//#endregion
+//#region src/parser/default-from.ts
+const defaultFrom = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (state.fromStates.length === 0) throw new ParserError(ParserArea.From, "No tables to select from");
+	sqlHelper.addSqlSnippet("FROM ");
+	state.fromStates.forEach((fromState, i) => {
+		if (fromState.builderType === BuilderType.FromRaw) {
+			sqlHelper.addSqlSnippet(fromState.raw ?? "");
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (fromState.builderType === BuilderType.FromTable) {
+			if (fromState.owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
+			if (fromState.owner !== "") {
+				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
+				sqlHelper.addSqlSnippet(".");
+			}
+			sqlHelper.addSqlSnippet(quoteIdentifier(fromState.tableName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, fromState.alias ?? fromState.tableName ?? ""));
+			if (fromState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
+			}
+			if (state.rowLock && config.databaseType === DatabaseType.Mssql) sqlHelper.addSqlSnippet(mssqlRowLockHint(state.rowLock));
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (fromState.builderType === BuilderType.FromBuilder) {
+			const subHelper = defaultToSql(fromState.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
+			if (fromState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
+			}
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (fromState.builderType === BuilderType.FromLateral) {
+			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.From, "SQLite does not support LATERAL derived tables");
+			if (config.databaseType === DatabaseType.Mssql) throw new ParserError(ParserArea.From, "MSSQL LATERAL belongs in APPLY joins — use joinCrossApply/joinOuterApply");
+			const subHelper = defaultToSql(fromState.subquery, config, mode, options);
+			sqlHelper.addSqlSnippet("LATERAL (");
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			if (fromState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
+			}
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (fromState.builderType === BuilderType.FromFunction) {
+			if (fromState.owner && fromState.owner !== "") {
+				if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
+				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
+				sqlHelper.addSqlSnippet(".");
+			}
+			const fnName = fromState.functionName ?? "";
+			if (config.databaseType === DatabaseType.Sqlite) sqlHelper.addSqlSnippet(fnName);
+			else sqlHelper.addSqlSnippet(quoteIdentifier(fnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet("(");
+			const params = fromState.functionParams ?? [];
+			params.forEach((param, paramIndex) => {
+				sqlHelper.addDynamicValue(param);
+				if (paramIndex < params.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(")");
+			if (fromState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
+			}
+			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+	});
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/comparison-operator.ts
+/**
+* Emits `<column> <operator> <value>` for a comparison predicate — the shared core of WHERE's
+* and HAVING's `col op value` term, so the two clauses can never drift on operator semantics.
+*
+* `columnSql` must already be the fully quoted/qualified column reference (e.g. `"u"."id"`).
+* `area` selects the {@link ParserError} area for an unsupported operator, so the message still
+* says `Where:` or `Having:` as appropriate.
+*/
+const emitComparisonPredicate = (sqlHelper, config, columnSql, whereOperator, value, area) => {
+	if ((whereOperator === WhereOperator.Equals || whereOperator === WhereOperator.NotEquals) && (value === null || value === void 0)) {
+		sqlHelper.addSqlSnippet(columnSql);
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippet(whereOperator === WhereOperator.Equals ? "IS NULL" : "IS NOT NULL");
+		return;
+	}
+	if (whereOperator === WhereOperator.IsDistinctFrom || whereOperator === WhereOperator.IsNotDistinctFrom) {
+		const isNotDistinct = whereOperator === WhereOperator.IsNotDistinctFrom;
+		if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
+			sqlHelper.addSqlSnippet(columnSql);
+			sqlHelper.addSqlSnippet(isNotDistinct ? " IS NOT DISTINCT FROM " : " IS DISTINCT FROM ");
+			sqlHelper.addDynamicValue(value);
+			return;
+		}
+		if (config.databaseType === DatabaseType.Mysql) {
+			if (isNotDistinct) {
+				sqlHelper.addSqlSnippet(columnSql);
+				sqlHelper.addSqlSnippet(" <=> ");
+				sqlHelper.addDynamicValue(value);
+				return;
+			}
+			sqlHelper.addSqlSnippet("NOT (");
+			sqlHelper.addSqlSnippet(columnSql);
+			sqlHelper.addSqlSnippet(" <=> ");
+			sqlHelper.addDynamicValue(value);
+			sqlHelper.addSqlSnippet(")");
+			return;
+		}
+		throw new ParserError(area, "MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL");
+	}
+	if (whereOperator === WhereOperator.Ilike || whereOperator === WhereOperator.NotIlike) {
+		const negate = whereOperator === WhereOperator.NotIlike;
+		if (config.databaseType === DatabaseType.Postgres) {
+			sqlHelper.addSqlSnippet(columnSql);
+			sqlHelper.addSqlSnippet(negate ? " NOT ILIKE " : " ILIKE ");
+			sqlHelper.addDynamicValue(value);
+			return;
+		}
+		sqlHelper.addSqlSnippet("LOWER(");
+		sqlHelper.addSqlSnippet(columnSql);
+		sqlHelper.addSqlSnippet(negate ? ") NOT LIKE LOWER(" : ") LIKE LOWER(");
+		sqlHelper.addDynamicValue(value);
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	sqlHelper.addSqlSnippet(columnSql);
+	sqlHelper.addSqlSnippet(" ");
+	switch (whereOperator) {
+		case WhereOperator.Equals:
+			sqlHelper.addSqlSnippet("=");
+			break;
+		case WhereOperator.NotEquals:
+			sqlHelper.addSqlSnippet("<>");
+			break;
+		case WhereOperator.GreaterThan:
+			sqlHelper.addSqlSnippet(">");
+			break;
+		case WhereOperator.GreaterThanOrEquals:
+			sqlHelper.addSqlSnippet(">=");
+			break;
+		case WhereOperator.LessThan:
+			sqlHelper.addSqlSnippet("<");
+			break;
+		case WhereOperator.LessThanOrEquals:
+			sqlHelper.addSqlSnippet("<=");
+			break;
+		case WhereOperator.Like:
+			sqlHelper.addSqlSnippet("LIKE");
+			break;
+		case WhereOperator.NotLike:
+			sqlHelper.addSqlSnippet("NOT LIKE");
+			break;
+		default: throw new ParserError(area, `Unsupported ${area.toUpperCase()} operator: ${whereOperator}`);
+	}
+	sqlHelper.addSqlSnippet(" ");
+	sqlHelper.addDynamicValue(value);
+};
+//#endregion
+//#region src/parser/default-full-text.ts
+const columnRef$1 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+/**
+* Emits a dialect-specific full-text predicate for one or more columns and a bound query term.
+* The query value is appended by the caller via {@link SqlHelper.addDynamicValue}.
+*/
+const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
+	if (columns.length === 0) throw new ParserError(area, "Full-text search requires at least one column");
+	if (config.databaseType === DatabaseType.Postgres) {
+		if (mode === FullTextMode.Phrase) throw new ParserError(area, "Postgres phrase full-text search is not structured yet — use whereMatchRaw or plainto_tsquery in raw SQL");
+		if (columns.length === 1) {
+			const col = columns[0];
+			sqlHelper.addSqlSnippet("to_tsvector(");
+			sqlHelper.addSqlSnippet(JSON.stringify("english"));
+			sqlHelper.addSqlSnippet(", ");
+			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			sqlHelper.addSqlSnippet(") @@ ");
+			sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? "to_tsquery(" : "plainto_tsquery(");
+			sqlHelper.addSqlSnippet(JSON.stringify("english"));
+			sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		sqlHelper.addSqlSnippet("to_tsvector(");
+		sqlHelper.addSqlSnippet(JSON.stringify("english"));
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addSqlSnippet("concat(");
+		columns.forEach((col, i) => {
+			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ' ', ");
+		});
+		sqlHelper.addSqlSnippet(")) @@ ");
+		sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? "to_tsquery(" : "plainto_tsquery(");
+		sqlHelper.addSqlSnippet(JSON.stringify("english"));
+		sqlHelper.addSqlSnippet(", ");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mysql) {
+		sqlHelper.addSqlSnippet("MATCH (");
+		columns.forEach((col, i) => {
+			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		sqlHelper.addSqlSnippet(") AGAINST (");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mssql) {
+		if (columns.length !== 1) throw new ParserError(area, "MSSQL CONTAINS/FREETEXT accepts a single column — pass one column or use whereMatchRaw");
+		const col = columns[0];
+		if (mode === FullTextMode.Natural) {
+			sqlHelper.addSqlSnippet("FREETEXT(");
+			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		sqlHelper.addSqlSnippet("CONTAINS(");
+		sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+		sqlHelper.addSqlSnippet(", ");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Sqlite) {
+		if (columns.length !== 1) throw new ParserError(area, "SQLite FTS MATCH accepts a single FTS column — pass one column or use whereMatchRaw");
+		if (mode !== FullTextMode.Natural && mode !== FullTextMode.Boolean) throw new ParserError(area, "SQLite FTS only supports Natural/Boolean-style MATCH queries");
+		const col = columns[0];
+		sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+		sqlHelper.addSqlSnippet(" MATCH ");
+		return;
+	}
+	throw new ParserError(area, `Full-text search is not supported on ${config.databaseType}`);
+};
+/** Emits the closing syntax after the bound full-text query value (MySQL `AGAINST (...)` only). */
+const emitFullTextValueSuffix = (sqlHelper, config, mode) => {
+	if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mssql) {
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mysql) {
+		if (mode === FullTextMode.Boolean || mode === FullTextMode.Phrase) {
+			sqlHelper.addSqlSnippet(" IN BOOLEAN MODE)");
+			return;
+		}
+		sqlHelper.addSqlSnippet(" IN NATURAL LANGUAGE MODE)");
+	}
+};
+//#endregion
+//#region src/parser/default-json.ts
+const columnRef = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+const pgPathLiteral = (path) => {
+	return `'${path.replaceAll("'", "''")}'`;
+};
+/**
+* Emits a dialect-specific JSON path extraction expression for `column` at `path`.
+* `path` is a single Postgres key segment (`'email'`) or a JSON path (`'$.email'`) on other dialects.
+*/
+const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnName, path, mode, area) => {
+	const col = columnRef(config, tableNameOrAlias, columnName);
+	if (config.databaseType === DatabaseType.Postgres) {
+		sqlHelper.addSqlSnippet(col);
+		sqlHelper.addSqlSnippet(mode === JsonExtractMode.Text ? "->>" : "->");
+		sqlHelper.addSqlSnippet(pgPathLiteral(path));
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mysql) {
+		if (mode === JsonExtractMode.Text) {
+			sqlHelper.addSqlSnippet("JSON_UNQUOTE(JSON_EXTRACT(");
+			sqlHelper.addSqlSnippet(col);
+			sqlHelper.addSqlSnippet(", ");
+			sqlHelper.addSqlSnippet(JSON.stringify(path));
+			sqlHelper.addSqlSnippet("))");
+			return;
+		}
+		sqlHelper.addSqlSnippet("JSON_EXTRACT(");
+		sqlHelper.addSqlSnippet(col);
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addSqlSnippet(JSON.stringify(path));
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mssql) {
+		if (mode === JsonExtractMode.Object) {
+			sqlHelper.addSqlSnippet("JSON_QUERY(");
+			sqlHelper.addSqlSnippet(col);
+			sqlHelper.addSqlSnippet(", ");
+			sqlHelper.addSqlSnippet(JSON.stringify(path));
+			sqlHelper.addSqlSnippet(")");
+			return;
+		}
+		sqlHelper.addSqlSnippet("JSON_VALUE(");
+		sqlHelper.addSqlSnippet(col);
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addSqlSnippet(JSON.stringify(path));
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Sqlite) {
+		if (mode === JsonExtractMode.Object) throw new ParserError(area, "SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw");
+		sqlHelper.addSqlSnippet("json_extract(");
+		sqlHelper.addSqlSnippet(col);
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addSqlSnippet(JSON.stringify(path));
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	throw new ParserError(area, `JSON extract is not supported on ${config.databaseType}`);
+};
+/** Emits `column @> value` / `JSON_CONTAINS` / equivalent containment predicate (lhs only). */
+const emitJsonContainsExpression = (sqlHelper, config, tableNameOrAlias, columnName, area) => {
+	const col = columnRef(config, tableNameOrAlias, columnName);
+	if (config.databaseType === DatabaseType.Postgres) {
+		sqlHelper.addSqlSnippet(col);
+		sqlHelper.addSqlSnippet(" @> ");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mysql) {
+		sqlHelper.addSqlSnippet("JSON_CONTAINS(");
+		sqlHelper.addSqlSnippet(col);
+		sqlHelper.addSqlSnippet(", ");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, "MSSQL has no JSON containment operator — use whereJsonExtract or whereRaw with OPENJSON/JSON_QUERY");
+	throw new ParserError(area, "SQLite does not support JSON containment — use whereJsonExtract or whereRaw");
+};
+//#endregion
+//#region src/parser/default-json-predicate.ts
+const emitJsonExtractPredicate = (sqlHelper, config, mode, state, area) => {
+	if (!state.tableNameOrAlias || !state.columnName || !state.jsonPath || !state.jsonExtractMode) throw new ParserError(area, "JSON extract predicate requires table, column, path, and mode");
+	emitJsonExtractExpression(sqlHelper, config, state.tableNameOrAlias, state.columnName, state.jsonPath, state.jsonExtractMode, area);
+	const scratch = new SqlHelper(mode);
+	emitComparisonPredicate(scratch, config, "___json___", state.whereOperator, state.values[0], area);
+	let tail = scratch.getSql();
+	if (tail.startsWith("___json___ ")) tail = tail.slice(11);
+	else if (tail.startsWith("LOWER(___json___)")) tail = "LOWER(" + tail.slice(17);
+	else if (tail.startsWith("NOT (___json___")) tail = "NOT (" + tail.slice(15);
+	sqlHelper.addSqlSnippet(" ");
+	sqlHelper.addSqlSnippetWithValues(tail, scratch.getValues());
+};
+const emitJsonContainsPredicate = (sqlHelper, config, state, area) => {
+	if (!state.tableNameOrAlias || !state.columnName) throw new ParserError(area, "JSON contains predicate requires table and column");
+	emitJsonContainsExpression(sqlHelper, config, state.tableNameOrAlias, state.columnName, area);
+	sqlHelper.addDynamicValue(state.values[0]);
+	if (config.databaseType === DatabaseType.Postgres) sqlHelper.addSqlSnippet("::jsonb");
+	if (config.databaseType === DatabaseType.Mysql) sqlHelper.addSqlSnippet(")");
+};
+const emitFullTextMatchPredicate = (sqlHelper, config, columns, mode, value, area) => {
+	emitFullTextPredicate(sqlHelper, config, columns, mode, area);
+	sqlHelper.addDynamicValue(value);
+	emitFullTextValueSuffix(sqlHelper, config, mode);
+};
+/** Emits one GROUP BY column reference. */
+const emitGroupByColumnRef = (sqlHelper, config, tableNameOrAlias, columnName) => {
+	sqlHelper.addSqlSnippet(quoteIdentifier(tableNameOrAlias, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(".");
+	sqlHelper.addSqlSnippet(quoteIdentifier(columnName, config.identifierDelimiters));
+};
+//#endregion
+//#region src/parser/default-group-by.ts
+const emitColumnList = (sqlHelper, config, columns) => {
+	columns.forEach((column, i) => {
+		emitGroupByColumnRef(sqlHelper, config, column.tableNameOrAlias, column.columnName);
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+};
+const collectPlainColumns = (groupByStates) => groupByStates.filter((state) => state.builderType === BuilderType.GroupByColumn).map((state) => ({
+	tableNameOrAlias: state.tableNameOrAlias ?? "",
+	columnName: state.columnName ?? ""
+}));
+const defaultGroupBy = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (state.groupByStates.length === 0) return sqlHelper;
+	const modifier = state.groupByStates.find((groupByState) => groupByState.builderType === BuilderType.GroupByRollup || groupByState.builderType === BuilderType.GroupByCube || groupByState.builderType === BuilderType.GroupByGroupingSets);
+	const plainColumns = collectPlainColumns(state.groupByStates);
+	sqlHelper.addSqlSnippet("GROUP BY ");
+	if (!modifier) {
+		state.groupByStates.forEach((groupByState, i) => {
+			if (groupByState.builderType === BuilderType.GroupByRaw) {
+				sqlHelper.addSqlSnippet(groupByState.raw ?? "");
+				if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+				return;
+			}
+			if (groupByState.builderType === BuilderType.GroupByColumn) {
+				emitGroupByColumnRef(sqlHelper, config, groupByState.tableNameOrAlias ?? "", groupByState.columnName ?? "");
+				if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			}
+		});
+		return sqlHelper;
+	}
+	if (modifier.builderType === BuilderType.GroupByRollup) {
+		const columns = modifier.groupingSets && modifier.groupingSets.length === 1 ? modifier.groupingSets[0] : plainColumns;
+		if (columns.length === 0) throw new ParserError(ParserArea.General, "ROLLUP requires at least one grouping column");
+		if (config.databaseType === DatabaseType.Mysql) {
+			emitColumnList(sqlHelper, config, columns);
+			sqlHelper.addSqlSnippet(" WITH ROLLUP");
+			return sqlHelper;
+		}
+		sqlHelper.addSqlSnippet("ROLLUP (");
+		emitColumnList(sqlHelper, config, columns);
+		sqlHelper.addSqlSnippet(")");
+		return sqlHelper;
+	}
+	if (modifier.builderType === BuilderType.GroupByCube) {
+		const columns = modifier.groupingSets && modifier.groupingSets.length === 1 ? modifier.groupingSets[0] : plainColumns;
+		if (columns.length === 0) throw new ParserError(ParserArea.General, "CUBE requires at least one grouping column");
+		if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.General, "MySQL has no CUBE — use groupByRollup/groupByGroupingSets or groupByRaw");
+		sqlHelper.addSqlSnippet("CUBE (");
+		emitColumnList(sqlHelper, config, columns);
+		sqlHelper.addSqlSnippet(")");
+		return sqlHelper;
+	}
+	const sets = modifier.groupingSets ?? [];
+	if (sets.length === 0) throw new ParserError(ParserArea.General, "GROUPING SETS requires at least one column set");
+	if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.General, "MySQL has no GROUPING SETS — use groupByRollup or groupByRaw");
+	sqlHelper.addSqlSnippet("GROUPING SETS (");
+	sets.forEach((set, setIndex) => {
+		sqlHelper.addSqlSnippet("(");
+		emitColumnList(sqlHelper, config, set);
+		sqlHelper.addSqlSnippet(")");
+		if (setIndex < sets.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-having.ts
+/**
+* HAVING mirrors WHERE's predicate set exactly (BETWEEN, IN, NULL checks, EXISTS, groups) —
+* see `default-where.ts`, whose combinator/spacing rules this file follows term for term.
+*/
+const HAVING_PREDICATE_TYPES = /* @__PURE__ */ new Set([
+	BuilderType.Having,
+	BuilderType.HavingRaw,
+	BuilderType.HavingBetween,
+	BuilderType.HavingExistsBuilder,
+	BuilderType.HavingInBuilder,
+	BuilderType.HavingInValues,
+	BuilderType.HavingNotExistsBuilder,
+	BuilderType.HavingNotInBuilder,
+	BuilderType.HavingNotInValues,
+	BuilderType.HavingNotNull,
+	BuilderType.HavingNull,
+	BuilderType.HavingJsonExtract,
+	BuilderType.HavingJsonContains,
+	BuilderType.HavingFullText
+]);
+const isHavingPredicate = (state) => HAVING_PREDICATE_TYPES.has(state.builderType);
+/** True when the prior token ends an expression that can be AND-joined to the next. */
+const endsHavingExpression = (state) => isHavingPredicate(state) || state.builderType === BuilderType.HavingGroupEnd;
+/** True when the current token starts an expression that can follow an auto-AND. */
+const startsHavingExpression = (state) => isHavingPredicate(state) || state.builderType === BuilderType.HavingGroupBegin;
+const defaultHaving = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (state.havingStates.length === 0) return sqlHelper;
+	if (state.groupByStates.length === 0) throw new ParserError(ParserArea.Having, "HAVING requires a GROUP BY clause");
+	sqlHelper.addSqlSnippet("HAVING ");
+	for (let i = 0; i < state.havingStates.length; i++) {
+		const cur = state.havingStates[i];
+		const prev = i > 0 ? state.havingStates[i - 1] : void 0;
+		const next = i < state.havingStates.length - 1 ? state.havingStates[i + 1] : void 0;
+		const spaceAfter = () => {
+			if (i < state.havingStates.length - 1 && next?.builderType !== BuilderType.HavingGroupEnd) sqlHelper.addSqlSnippet(" ");
+		};
+		if (i === 0 && (cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "First HAVING operator cannot be AND or OR");
+		if (i === state.havingStates.length - 1 && (cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "AND or OR cannot be used as the last HAVING operator");
+		if ((cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or) && (prev?.builderType === BuilderType.And || prev?.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "AND or OR cannot be used consecutively");
+		if ((cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or) && prev?.builderType === BuilderType.HavingGroupBegin) throw new ParserError(ParserArea.Having, "AND or OR cannot be used directly after a group begin");
+		if (cur.builderType === BuilderType.HavingGroupBegin && i === state.havingStates.length - 1) throw new ParserError(ParserArea.Having, "Group begin cannot be the last HAVING operator");
+		if (cur.builderType === BuilderType.HavingGroupEnd && i === 0) throw new ParserError(ParserArea.Having, "Group end cannot be the first HAVING operator");
+		if (cur.builderType === BuilderType.And) {
+			sqlHelper.addSqlSnippet("AND");
+			if (i < state.havingStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			continue;
+		}
+		if (cur.builderType === BuilderType.Or) {
+			sqlHelper.addSqlSnippet("OR");
+			spaceAfter();
+			continue;
+		}
+		if (i > 0 && prev && endsHavingExpression(prev) && startsHavingExpression(cur)) sqlHelper.addSqlSnippet("AND ");
+		if (cur.builderType === BuilderType.HavingGroupBegin) {
+			sqlHelper.addSqlSnippet("(");
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingGroupEnd) {
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingRaw) {
+			sqlHelper.addSqlSnippet(cur.raw ?? "");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingGroupBuilder) {
+			if (!cur.subquery || cur.subquery.havingStates.length === 0) throw new ParserError(ParserArea.Having, "HAVING group cannot be empty");
+			const subHelper = defaultHaving({
+				...cur.subquery,
+				groupByStates: state.groupByStates
+			}, config, mode);
+			let inner = subHelper.getSql();
+			if (inner.startsWith("HAVING ")) inner = inner.slice(7);
+			if (inner.trim() === "") throw new ParserError(ParserArea.Having, "HAVING group cannot be empty");
+			sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.Having) {
+			emitComparisonPredicate(sqlHelper, config, quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Having);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingBetween) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippet("BETWEEN ");
+			sqlHelper.addDynamicValue(cur.values[0]);
+			sqlHelper.addSqlSnippet(" AND ");
+			sqlHelper.addDynamicValue(cur.values[1]);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingExistsBuilder) {
+			sqlHelper.addSqlSnippet("EXISTS (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingInBuilder) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IN (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingInValues) {
+			if (cur.values.length === 0) throw new ParserError(ParserArea.Having, "IN requires at least one value");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IN (");
+			for (let j = 0; j < cur.values.length; j++) {
+				sqlHelper.addDynamicValue(cur.values[j]);
+				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
+			}
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingNotExistsBuilder) {
+			sqlHelper.addSqlSnippet("NOT EXISTS (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingNotInBuilder) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" NOT IN (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingNotInValues) {
+			if (cur.values.length === 0) throw new ParserError(ParserArea.Having, "NOT IN requires at least one value");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" NOT IN (");
+			for (let j = 0; j < cur.values.length; j++) {
+				sqlHelper.addDynamicValue(cur.values[j]);
+				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
+			}
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingNotNull) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IS NOT NULL");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingNull) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IS NULL");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingJsonExtract) {
+			emitJsonExtractPredicate(sqlHelper, config, mode, cur, ParserArea.Having);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingJsonContains) {
+			emitJsonContainsPredicate(sqlHelper, config, cur, ParserArea.Having);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingFullText) {
+			emitFullTextMatchPredicate(sqlHelper, config, cur.fullTextColumns ?? [], cur.fullTextMode ?? FullTextMode.Natural, cur.values[0], ParserArea.Having);
+			spaceAfter();
+			continue;
+		}
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-upsert.ts
+/**
+* MySQL spells "skip conflicting rows" as an `INSERT IGNORE` prefix, not a trailing clause —
+* `defaultInsert` calls this to decide whether to emit `IGNORE` right after `INSERT `.
+*/
+const isMysqlInsertIgnore = (upsertState, config) => config.databaseType === DatabaseType.Mysql && upsertState !== void 0 && upsertState.action === UpsertAction.DoNothing;
+const emitSetList = (sqlHelper, config, upsertState, area) => {
+	if (upsertState.updateRaw) {
+		sqlHelper.addSqlSnippet(upsertState.updateRaw);
+		return;
+	}
+	if (upsertState.updateColumns.length === 0) throw new ParserError(area, "Upsert DO UPDATE requires at least one SET column");
+	for (let i = 0; i < upsertState.updateColumns.length; i++) {
+		const column = upsertState.updateColumns[i];
+		sqlHelper.addSqlSnippet(quoteIdentifier(column.columnName, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(" = ");
+		sqlHelper.addDynamicValue(column.value);
+		if (i < upsertState.updateColumns.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+};
+const emitConflictColumns = (sqlHelper, config, columns) => {
+	sqlHelper.addSqlSnippet("(");
+	for (let i = 0; i < columns.length; i++) {
+		sqlHelper.addSqlSnippet(quoteIdentifier(columns[i], config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(")");
+};
+/**
+* Emits the trailing conflict clause after `VALUES (...)`: PG/SQLite `ON CONFLICT ...`, MySQL
+* `ON DUPLICATE KEY UPDATE ...` (its `DoNothing` case is instead an `INSERT IGNORE` prefix — see
+* {@link isMysqlInsertIgnore} — and emits nothing here). MSSQL upsert is emitted as a `MERGE`
+* statement by {@link defaultInsert} instead of calling this function.
+*/
+const emitUpsertClause = (sqlHelper, config, upsertState, area) => {
+	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, "MSSQL upsert is emitted as MERGE by defaultInsert — this path should not run");
+	if (config.databaseType === DatabaseType.Mysql) {
+		if (upsertState.action === UpsertAction.DoNothing) return;
+		sqlHelper.addSqlSnippet(" ON DUPLICATE KEY UPDATE ");
+		emitSetList(sqlHelper, config, upsertState, area);
+		return;
+	}
+	sqlHelper.addSqlSnippet(" ON CONFLICT");
+	if (upsertState.conflictColumns.length > 0) {
+		sqlHelper.addSqlSnippet(" ");
+		emitConflictColumns(sqlHelper, config, upsertState.conflictColumns);
+	}
+	if (upsertState.action === UpsertAction.DoNothing) {
+		sqlHelper.addSqlSnippet(" DO NOTHING");
+		return;
+	}
+	if (upsertState.conflictColumns.length === 0) throw new ParserError(area, "ON CONFLICT DO UPDATE requires at least one conflict column");
+	sqlHelper.addSqlSnippet(" DO UPDATE SET ");
+	emitSetList(sqlHelper, config, upsertState, area);
+};
+//#endregion
+//#region src/parser/default-merge.ts
+const emitMergeSetList = (sqlHelper, config, upsertState, targetAlias, sourceAlias, columns) => {
+	if (upsertState.updateRaw) {
+		sqlHelper.addSqlSnippet(upsertState.updateRaw);
+		return;
+	}
+	const updates = upsertState.updateColumns.length > 0 ? upsertState.updateColumns : columns.map((column) => ({
+		columnName: column,
+		value: void 0
+	}));
+	if (updates.length === 0) throw new ParserError(ParserArea.Insert, "MERGE DO UPDATE requires at least one SET column");
+	for (let i = 0; i < updates.length; i++) {
+		const update = updates[i];
+		sqlHelper.addSqlSnippet(quoteIdentifier(update.columnName, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(" = ");
+		sqlHelper.addSqlSnippet(quoteIdentifier(sourceAlias, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(".");
+		sqlHelper.addSqlSnippet(quoteIdentifier(update.columnName, config.identifierDelimiters));
+		if (i < updates.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+};
+/**
+* Emits a T-SQL `MERGE` upsert instead of `INSERT ... VALUES` when {@link QueryState.upsertState}
+* is set on MSSQL.
+*/
+const emitMssqlMergeInsert = (state, config, mode, options) => {
+	if (config.databaseType !== DatabaseType.Mssql) throw new ParserError(ParserArea.Insert, "MERGE upsert emission is MSSQL-only");
+	if (!state.insertState || !state.upsertState) throw new ParserError(ParserArea.Insert, "MERGE requires INSERT upsert state");
+	const insertState = state.insertState;
+	const upsertState = state.upsertState;
+	const sqlHelper = new SqlHelper(mode);
+	if (!insertState.tableName) throw new ParserError(ParserArea.Insert, "MERGE requires a target table");
+	const targetAlias = "target";
+	const sourceAlias = "source";
+	const columns = insertState.columns;
+	if (columns.length === 0) throw new ParserError(ParserArea.Insert, "MERGE requires an explicit INSERT column list");
+	if (upsertState.conflictColumns.length === 0) throw new ParserError(ParserArea.Insert, "MERGE requires at least one conflict column");
+	sqlHelper.addSqlSnippet("MERGE INTO ");
+	if (insertState.owner && insertState.owner !== "") {
+		sqlHelper.addSqlSnippet(quoteIdentifier(insertState.owner, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(".");
+	}
+	sqlHelper.addSqlSnippet(quoteIdentifier(insertState.tableName, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(" AS ");
+	sqlHelper.addSqlSnippet(quoteIdentifier(targetAlias, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(" USING (");
+	if (insertState.selectSubquery) {
+		const subHelper = defaultToSql(insertState.selectSubquery, config, mode, options);
+		sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+	} else {
+		if (insertState.values.length === 0) throw new ParserError(ParserArea.Insert, "MERGE requires VALUES or INSERT SELECT source rows");
+		if (insertState.values.length !== 1) throw new ParserError(ParserArea.Insert, "MERGE currently supports a single VALUES row — use insertSelect for multi-row sources");
+		sqlHelper.addSqlSnippet("VALUES (");
+		const row = insertState.values[0];
+		if (row.length !== columns.length) throw new ParserError(ParserArea.Insert, `MERGE column count (${columns.length}) does not match value count (${row.length})`);
+		for (let c = 0; c < row.length; c++) {
+			sqlHelper.addDynamicValue(row[c]);
+			if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+		sqlHelper.addSqlSnippet(")");
+	}
+	sqlHelper.addSqlSnippet(") AS ");
+	sqlHelper.addSqlSnippet(quoteIdentifier(sourceAlias, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(" (");
+	for (let i = 0; i < columns.length; i++) {
+		sqlHelper.addSqlSnippet(quoteIdentifier(columns[i], config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(") ON ");
+	for (let i = 0; i < upsertState.conflictColumns.length; i++) {
+		const conflictColumn = upsertState.conflictColumns[i];
+		sqlHelper.addSqlSnippet(quoteIdentifier(targetAlias, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(".");
+		sqlHelper.addSqlSnippet(quoteIdentifier(conflictColumn, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(" = ");
+		sqlHelper.addSqlSnippet(quoteIdentifier(sourceAlias, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(".");
+		sqlHelper.addSqlSnippet(quoteIdentifier(conflictColumn, config.identifierDelimiters));
+		if (i < upsertState.conflictColumns.length - 1) sqlHelper.addSqlSnippet(" AND ");
+	}
+	sqlHelper.addSqlSnippet(" WHEN NOT MATCHED BY TARGET THEN INSERT (");
+	for (let i = 0; i < columns.length; i++) {
+		sqlHelper.addSqlSnippet(quoteIdentifier(columns[i], config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(") VALUES (");
+	for (let i = 0; i < columns.length; i++) {
+		sqlHelper.addSqlSnippet(quoteIdentifier(sourceAlias, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(".");
+		sqlHelper.addSqlSnippet(quoteIdentifier(columns[i], config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(")");
+	if (upsertState.action === UpsertAction.DoUpdate) {
+		sqlHelper.addSqlSnippet(" WHEN MATCHED THEN UPDATE SET ");
+		emitMergeSetList(sqlHelper, config, upsertState, targetAlias, sourceAlias, columns);
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-insert.ts
+const defaultInsert = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (!state.insertState) throw new ParserError(ParserArea.Insert, "No insert state provided");
+	const insertState = state.insertState;
+	if (insertState.raw) {
+		sqlHelper.addSqlSnippet(insertState.raw);
+		return sqlHelper;
+	}
+	if (state.upsertState && config.databaseType === DatabaseType.Mssql) return emitMssqlMergeInsert(state, config, mode, options);
+	if (!insertState.tableName) throw new ParserError(ParserArea.Insert, "INSERT requires a table");
+	sqlHelper.addSqlSnippet("INSERT ");
+	if (isMysqlInsertIgnore(state.upsertState, config)) sqlHelper.addSqlSnippet("IGNORE ");
+	sqlHelper.addSqlSnippet("INTO ");
+	if (insertState.owner && insertState.owner !== "") {
+		if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Insert, "MySQL does not support table owners");
+		sqlHelper.addSqlSnippet(quoteIdentifier(insertState.owner, config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(".");
+	}
+	sqlHelper.addSqlSnippet(quoteIdentifier(insertState.tableName, config.identifierDelimiters));
+	if (insertState.columns.length > 0) {
+		sqlHelper.addSqlSnippet(" (");
+		for (let i = 0; i < insertState.columns.length; i++) {
+			sqlHelper.addSqlSnippet(quoteIdentifier(insertState.columns[i], config.identifierDelimiters));
+			if (i < insertState.columns.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+		sqlHelper.addSqlSnippet(")");
+	}
+	if (state.returningState && config.databaseType === DatabaseType.Mssql) emitMssqlOutputClause(sqlHelper, config, state.returningState, "INSERTED", ParserArea.Insert);
+	if (insertState.selectSubquery) {
+		if (insertState.values.length > 0) throw new ParserError(ParserArea.Insert, "INSERT cannot combine a SELECT source with VALUES rows");
+		sqlHelper.addSqlSnippet(" ");
+		const subHelper = defaultToSql(insertState.selectSubquery, config, mode, options);
+		sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+		if (state.upsertState) emitUpsertClause(sqlHelper, config, state.upsertState, ParserArea.Insert);
+		return sqlHelper;
+	}
+	if (insertState.values.length === 0) throw new ParserError(ParserArea.Insert, "INSERT requires at least one VALUES row");
+	const columnCount = insertState.columns.length;
+	sqlHelper.addSqlSnippet(" VALUES ");
+	for (let r = 0; r < insertState.values.length; r++) {
+		sqlHelper.addSqlSnippet("(");
+		const row = insertState.values[r];
+		if (columnCount > 0 && row.length !== columnCount) throw new ParserError(ParserArea.Insert, `INSERT column count (${columnCount}) does not match value count (${row.length}) for row ${r + 1}`);
+		for (let c = 0; c < row.length; c++) {
+			sqlHelper.addDynamicValue(row[c]);
+			if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
+		}
+		sqlHelper.addSqlSnippet(")");
+		if (r < insertState.values.length - 1) sqlHelper.addSqlSnippet(", ");
+	}
+	if (state.upsertState) emitUpsertClause(sqlHelper, config, state.upsertState, ParserArea.Insert);
 	return sqlHelper;
 };
 //#endregion
@@ -830,6 +2207,19 @@ const defaultLimitOffset = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.limit === 0 && state.offset === 0) return sqlHelper;
 	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
+		if (state.limitWithTies) {
+			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.LimitOffset, "SQLite does not support WITH TIES");
+			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
+			if (state.offset > 0) {
+				sqlHelper.addSqlSnippet("OFFSET ");
+				sqlHelper.addSqlSnippet(state.offset.toString());
+				sqlHelper.addSqlSnippet(" ROWS ");
+			}
+			sqlHelper.addSqlSnippet("FETCH FIRST ");
+			sqlHelper.addSqlSnippet(state.limit.toString());
+			sqlHelper.addSqlSnippet(" ROWS WITH TIES");
+			return sqlHelper;
+		}
 		if (state.limit > 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
@@ -857,10 +2247,11 @@ const defaultLimitOffset = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet("FETCH NEXT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
-			sqlHelper.addSqlSnippet(" ROWS ONLY");
+			sqlHelper.addSqlSnippet(state.limitWithTies ? " ROWS WITH TIES" : " ROWS ONLY");
 		}
 	}
 	if (state.orderByStates.length === 0) {
+		if (state.limitWithTies) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using WITH TIES");
 		if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
 		if (config.databaseType === DatabaseType.Mssql && state.limit > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap");
 	}
@@ -868,6 +2259,27 @@ const defaultLimitOffset = (state, config, mode) => {
 };
 //#endregion
 //#region src/parser/default-order-by.ts
+/**
+* Emits one `<column> [ASC|DESC] [NULLS FIRST|NULLS LAST]` sort term. Shared by the top-level
+* ORDER BY clause and a window's `OVER (... ORDER BY ...)` — both sort NULLs the same way.
+*
+* Postgres/SQLite have native `NULLS FIRST`/`NULLS LAST`. MySQL/MSSQL have neither, so a
+* requested placement is emulated with a leading `CASE WHEN col IS NULL THEN … END` sort key —
+* portable to both (MSSQL's `IS NULL` is a predicate, not a boolean expression, so it cannot be
+* selected directly the way MySQL's can; `CASE` works on every dialect here).
+*/
+const emitOrderByTerm = (sqlHelper, config, tableNameOrAlias, columnName, direction, nulls) => {
+	const columnSql = quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+	const hasNativeNulls = config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite;
+	if (nulls !== NullsOrder.None && !hasNativeNulls) {
+		const nullsFirst = nulls === NullsOrder.First;
+		sqlHelper.addSqlSnippet(`CASE WHEN ${columnSql} IS NULL THEN ${nullsFirst ? "0" : "1"} ELSE ${nullsFirst ? "1" : "0"} END, `);
+	}
+	sqlHelper.addSqlSnippet(columnSql);
+	if (direction === OrderByDirection.Ascending) sqlHelper.addSqlSnippet(" ASC");
+	else if (direction === OrderByDirection.Descending) sqlHelper.addSqlSnippet(" DESC");
+	if (nulls !== NullsOrder.None && hasNativeNulls) sqlHelper.addSqlSnippet(nulls === NullsOrder.First ? " NULLS FIRST" : " NULLS LAST");
+};
 const defaultOrderBy = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.orderByStates.length === 0) return sqlHelper;
@@ -879,15 +2291,104 @@ const defaultOrderBy = (state, config, mode) => {
 			return;
 		}
 		if (orderByState.builderType === BuilderType.OrderByColumn) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(orderByState.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(orderByState.columnName, config.identifierDelimiters));
-			if (orderByState.direction === OrderByDirection.Ascending) sqlHelper.addSqlSnippet(" ASC");
-			else if (orderByState.direction === OrderByDirection.Descending) sqlHelper.addSqlSnippet(" DESC");
+			emitOrderByTerm(sqlHelper, config, orderByState.tableNameOrAlias, orderByState.columnName, orderByState.direction, orderByState.nulls);
 			if (i < state.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
 			return;
 		}
 	});
+	return sqlHelper;
+};
+//#endregion
+//#region src/enums/frame-bound-type.ts
+/**
+* One endpoint of a window function's frame clause (`ROWS`/`RANGE BETWEEN ... AND ...`).
+*/
+const FrameBoundType = {
+	/** `UNBOUNDED PRECEDING` — the frame's start, extending to the first row of the partition. */
+	UnboundedPreceding: "UnboundedPreceding",
+	/** `N PRECEDING` — offset rows/range before the current row; see the bound's `offset`. */
+	Preceding: "Preceding",
+	/** `CURRENT ROW`. */
+	CurrentRow: "CurrentRow",
+	/** `N FOLLOWING` — offset rows/range after the current row; see the bound's `offset`. */
+	Following: "Following",
+	/** `UNBOUNDED FOLLOWING` — the frame's end, extending to the last row of the partition. */
+	UnboundedFollowing: "UnboundedFollowing"
+};
+//#endregion
+//#region src/enums/frame-unit.ts
+/**
+* The unit a window function's frame clause counts in — physical rows, or logical value range.
+*/
+const FrameUnit = {
+	/** `ROWS` — counts physical rows relative to the current row. */
+	Rows: "Rows",
+	/** `RANGE` — counts by logical value distance (or, with unbounded/current-row bounds, groups of peers). */
+	Range: "Range"
+};
+//#endregion
+//#region src/parser/default-window.ts
+const emitFrameBound = (sqlHelper, bound) => {
+	switch (bound.type) {
+		case FrameBoundType.UnboundedPreceding:
+			sqlHelper.addSqlSnippet("UNBOUNDED PRECEDING");
+			break;
+		case FrameBoundType.Preceding:
+			sqlHelper.addSqlSnippet(`${bound.offset ?? 0} PRECEDING`);
+			break;
+		case FrameBoundType.CurrentRow:
+			sqlHelper.addSqlSnippet("CURRENT ROW");
+			break;
+		case FrameBoundType.Following:
+			sqlHelper.addSqlSnippet(`${bound.offset ?? 0} FOLLOWING`);
+			break;
+		case FrameBoundType.UnboundedFollowing:
+			sqlHelper.addSqlSnippet("UNBOUNDED FOLLOWING");
+			break;
+	}
+};
+/**
+* Renders a window's `OVER (...)` clause: `PARTITION BY`, `ORDER BY` (with `NULLS FIRST`/`LAST`
+* — see {@link emitOrderByTerm}), and an optional `ROWS`/`RANGE` frame. Standard SQL, identical
+* across all four dialects, so there is no dialect branching here.
+*/
+const defaultWindow = (windowState, config, mode) => {
+	const sqlHelper = new SqlHelper(mode);
+	sqlHelper.addSqlSnippet("OVER (");
+	let needsSpace = false;
+	if (windowState.partitionByStates.length > 0) {
+		sqlHelper.addSqlSnippet("PARTITION BY ");
+		windowState.partitionByStates.forEach((partition, i) => {
+			if (partition.raw !== void 0) sqlHelper.addSqlSnippet(partition.raw);
+			else sqlHelper.addSqlSnippet(quoteIdentifier(partition.tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(partition.columnName, config.identifierDelimiters));
+			if (i < windowState.partitionByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		needsSpace = true;
+	}
+	if (windowState.orderByStates.length > 0) {
+		if (needsSpace) sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippet("ORDER BY ");
+		windowState.orderByStates.forEach((orderBy, i) => {
+			if (orderBy.raw !== void 0) sqlHelper.addSqlSnippet(orderBy.raw);
+			else emitOrderByTerm(sqlHelper, config, orderBy.tableNameOrAlias, orderBy.columnName, orderBy.direction, orderBy.nulls);
+			if (i < windowState.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		needsSpace = true;
+	}
+	if (windowState.frame) {
+		if (needsSpace) sqlHelper.addSqlSnippet(" ");
+		if (windowState.frame.raw !== void 0) sqlHelper.addSqlSnippet(windowState.frame.raw);
+		else {
+			sqlHelper.addSqlSnippet(windowState.frame.unit === FrameUnit.Rows ? "ROWS " : "RANGE ");
+			if (windowState.frame.end) {
+				sqlHelper.addSqlSnippet("BETWEEN ");
+				emitFrameBound(sqlHelper, windowState.frame.start);
+				sqlHelper.addSqlSnippet(" AND ");
+				emitFrameBound(sqlHelper, windowState.frame.end);
+			} else emitFrameBound(sqlHelper, windowState.frame.start);
+		}
+	}
+	sqlHelper.addSqlSnippet(")");
 	return sqlHelper;
 };
 //#endregion
@@ -896,7 +2397,18 @@ const defaultSelect = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.selectStates.length === 0) throw new ParserError(ParserArea.Select, "Select statement must have at least one select state");
 	sqlHelper.addSqlSnippet("SELECT ");
-	if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
+	if (state.distinctOnColumns && state.distinctOnColumns.length > 0) {
+		if (config.databaseType !== DatabaseType.Postgres) throw new ParserError(ParserArea.Select, "DISTINCT ON is only supported on Postgres");
+		if (state.distinct) throw new ParserError(ParserArea.Select, "Cannot combine distinct() with distinctOn()");
+		sqlHelper.addSqlSnippet("DISTINCT ON (");
+		state.distinctOnColumns.forEach((column, i) => {
+			sqlHelper.addSqlSnippet(quoteIdentifier(column.tableNameOrAlias, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(".");
+			sqlHelper.addSqlSnippet(quoteIdentifier(column.columnName, config.identifierDelimiters));
+			if (i < state.distinctOnColumns.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		sqlHelper.addSqlSnippet(") ");
+	} else if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
 	if (options?.beforeSelectColumns) options.beforeSelectColumns(state, config, sqlHelper);
 	for (let i = 0; i < state.selectStates.length; i++) {
 		const selectState = state.selectStates[i];
@@ -920,9 +2432,34 @@ const defaultSelect = (state, config, mode, options) => {
 			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
 			continue;
 		}
+		if (selectState.builderType === BuilderType.SelectWindow) {
+			sqlHelper.addSqlSnippet(selectState.raw ?? "");
+			sqlHelper.addSqlSnippet(" ");
+			const windowHelper = defaultWindow(selectState.window ?? {
+				partitionByStates: [],
+				orderByStates: [],
+				frame: void 0
+			}, config, mode);
+			sqlHelper.addSqlSnippetWithValues(windowHelper.getSql(), windowHelper.getValues());
+			if (selectState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+			}
+			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			continue;
+		}
 		if (selectState.builderType === BuilderType.SelectBuilder) {
 			const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
+			if (selectState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+			}
+			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			continue;
+		}
+		if (selectState.builderType === BuilderType.SelectJsonExtract) {
+			emitJsonExtractExpression(sqlHelper, config, selectState.tableNameOrAlias ?? "", selectState.columnName ?? "", selectState.jsonPath ?? "", selectState.jsonExtractMode ?? JsonExtractMode.Text, ParserArea.Select);
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
@@ -965,25 +2502,31 @@ const defaultUnion = (state, config, mode, options) => {
 };
 //#endregion
 //#region src/parser/default-update.ts
-const defaultUpdate = (state, config, mode) => {
+const defaultUpdate = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
-	if (state.fromStates.length === 0) throw new ParserError(ParserArea.Update, "UPDATE requires a table");
 	if (state.updateStates.length === 0) throw new ParserError(ParserArea.Update, "UPDATE requires at least one SET column");
+	assertMutationJoinsSupported(state, config, ParserArea.Update);
+	const hasJoins = state.joinStates.length > 0;
 	const delim = config.identifierDelimiters;
 	const quote = (s) => quoteIdentifier(s, delim);
-	const fromState = state.fromStates[0];
+	const fromState = resolveMutationTarget(state, ParserArea.Update, "UPDATE requires a table");
 	const owner = fromState.owner ?? "";
 	const alias = fromState.alias ?? "";
 	if (owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Update, "MySQL does not support table owners");
 	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
-	const mssqlAliased = alias !== "" && config.databaseType === DatabaseType.Mssql;
+	const mssqlAliased = config.databaseType === DatabaseType.Mssql && (alias !== "" || hasJoins);
 	sqlHelper.addSqlSnippet("UPDATE ");
-	if (mssqlAliased) sqlHelper.addSqlSnippet(quote(alias));
+	if (mssqlAliased) sqlHelper.addSqlSnippet(alias !== "" ? quote(alias) : qualified);
 	else {
 		sqlHelper.addSqlSnippet(qualified);
 		if (alias !== "") {
 			sqlHelper.addSqlSnippet(" AS ");
 			sqlHelper.addSqlSnippet(quote(alias));
+		}
+		if (hasJoins && config.databaseType === DatabaseType.Mysql) {
+			const join = defaultJoin(state, config, mode, options);
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
 		}
 	}
 	sqlHelper.addSqlSnippet(" SET ");
@@ -997,16 +2540,50 @@ const defaultUpdate = (state, config, mode) => {
 		}
 		if (i < state.updateStates.length - 1) sqlHelper.addSqlSnippet(", ");
 	}
+	if (state.returningState && config.databaseType === DatabaseType.Mssql) emitMssqlOutputClause(sqlHelper, config, state.returningState, "INSERTED", ParserArea.Update);
 	if (mssqlAliased) {
 		sqlHelper.addSqlSnippet(" FROM ");
 		sqlHelper.addSqlSnippet(qualified);
-		sqlHelper.addSqlSnippet(" AS ");
-		sqlHelper.addSqlSnippet(quote(alias));
+		if (alias !== "") {
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(quote(alias));
+		}
+		if (hasJoins) {
+			const join = defaultJoin(state, config, mode, options);
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
+		}
+	}
+	if (hasJoins && config.databaseType === DatabaseType.Postgres) {
+		const from = renderPostgresMutationFrom(config, state, mode, options, ParserArea.Update);
+		sqlHelper.addSqlSnippet(" FROM ");
+		sqlHelper.addSqlSnippetWithValues(from.getSql(), from.getValues());
 	}
 	return sqlHelper;
 };
 //#endregion
 //#region src/parser/default-where.ts
+const WHERE_PREDICATE_TYPES = /* @__PURE__ */ new Set([
+	BuilderType.Where,
+	BuilderType.WhereRaw,
+	BuilderType.WhereBetween,
+	BuilderType.WhereExistsBuilder,
+	BuilderType.WhereInBuilder,
+	BuilderType.WhereInValues,
+	BuilderType.WhereNotExistsBuilder,
+	BuilderType.WhereNotInBuilder,
+	BuilderType.WhereNotInValues,
+	BuilderType.WhereNotNull,
+	BuilderType.WhereNull,
+	BuilderType.WhereJsonExtract,
+	BuilderType.WhereJsonContains,
+	BuilderType.WhereFullText
+]);
+const isWherePredicate = (state) => WHERE_PREDICATE_TYPES.has(state.builderType);
+/** True when the prior token ends an expression that can be AND-joined to the next. */
+const endsWhereExpression = (state) => isWherePredicate(state) || state.builderType === BuilderType.WhereGroupEnd;
+/** True when the current token starts an expression that can follow an auto-AND. */
+const startsWhereExpression = (state) => isWherePredicate(state) || state.builderType === BuilderType.WhereGroupBegin;
 const defaultWhere = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.whereStates.length === 0) return sqlHelper;
@@ -1034,6 +2611,7 @@ const defaultWhere = (state, config, mode, options) => {
 			spaceAfter();
 			continue;
 		}
+		if (i > 0 && prev && endsWhereExpression(prev) && startsWhereExpression(cur)) sqlHelper.addSqlSnippet("AND ");
 		if (cur.builderType === BuilderType.WhereGroupBegin) {
 			sqlHelper.addSqlSnippet("(");
 			continue;
@@ -1049,55 +2627,17 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereGroupBuilder) {
-			if (cur.subquery) {
-				const subHelper = defaultWhere(cur.subquery, config, mode);
-				let inner = subHelper.getSql();
-				if (inner.startsWith("WHERE ")) inner = inner.slice(6);
-				sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
-			}
+			if (!cur.subquery || cur.subquery.whereStates.length === 0) throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
+			const subHelper = defaultWhere(cur.subquery, config, mode);
+			let inner = subHelper.getSql();
+			if (inner.startsWith("WHERE ")) inner = inner.slice(6);
+			if (inner.trim() === "") throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
+			sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
 			spaceAfter();
 			continue;
 		}
 		if (cur.builderType === BuilderType.Where) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" ");
-			const value = cur.values[0];
-			if ((cur.whereOperator === WhereOperator.Equals || cur.whereOperator === WhereOperator.NotEquals) && (value === null || value === void 0)) {
-				sqlHelper.addSqlSnippet(cur.whereOperator === WhereOperator.Equals ? "IS NULL" : "IS NOT NULL");
-				spaceAfter();
-				continue;
-			}
-			switch (cur.whereOperator) {
-				case WhereOperator.Equals:
-					sqlHelper.addSqlSnippet("=");
-					break;
-				case WhereOperator.NotEquals:
-					sqlHelper.addSqlSnippet("<>");
-					break;
-				case WhereOperator.GreaterThan:
-					sqlHelper.addSqlSnippet(">");
-					break;
-				case WhereOperator.GreaterThanOrEquals:
-					sqlHelper.addSqlSnippet(">=");
-					break;
-				case WhereOperator.LessThan:
-					sqlHelper.addSqlSnippet("<");
-					break;
-				case WhereOperator.LessThanOrEquals:
-					sqlHelper.addSqlSnippet("<=");
-					break;
-				case WhereOperator.Like:
-					sqlHelper.addSqlSnippet("LIKE");
-					break;
-				case WhereOperator.NotLike:
-					sqlHelper.addSqlSnippet("NOT LIKE");
-					break;
-				default: throw new ParserError(ParserArea.Where, `Unsupported WHERE operator: ${cur.whereOperator}`);
-			}
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addDynamicValue(value);
+			emitComparisonPredicate(sqlHelper, config, quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Where);
 			spaceAfter();
 			continue;
 		}
@@ -1195,11 +2735,54 @@ const defaultWhere = (state, config, mode, options) => {
 			spaceAfter();
 			continue;
 		}
+		if (cur.builderType === BuilderType.WhereJsonExtract) {
+			emitJsonExtractPredicate(sqlHelper, config, mode, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereJsonContains) {
+			emitJsonContainsPredicate(sqlHelper, config, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereFullText) {
+			emitFullTextMatchPredicate(sqlHelper, config, cur.fullTextColumns ?? [], cur.fullTextMode ?? FullTextMode.Natural, cur.values[0], ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
 	}
 	return sqlHelper;
 };
 //#endregion
 //#region src/parser/to-sql.ts
+/**
+* Emits the ` WHERE ...` clause for a join-backed UPDATE/DELETE. For MySQL/MSSQL the join's ON
+* conditions were already emitted inline as real `JOIN ... ON` syntax by `defaultUpdate`/
+* `defaultDelete`, so this is just the caller's own `.where(...)` predicates, unchanged. For
+* Postgres, the join's ON conditions cannot live in `FROM`/`USING` — see
+* `default-mutation-join.ts` — so they are translated into a `WHERE` predicate here and ANDed
+* in front of the caller's own predicates.
+*/
+const emitMutationWhere = (sqlHelper, state, config, mode, options) => {
+	const joinPredicate = state.joinStates.length > 0 && config.databaseType === DatabaseType.Postgres ? buildPostgresMutationJoinPredicate(config, state, mode) : void 0;
+	if (!joinPredicate || joinPredicate.getSql() === "") {
+		if (state.whereStates.length > 0) {
+			const where = defaultWhere(state, config, mode, options);
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+		}
+		return;
+	}
+	sqlHelper.addSqlSnippet(" WHERE ");
+	sqlHelper.addSqlSnippetWithValues(joinPredicate.getSql(), joinPredicate.getValues());
+	if (state.whereStates.length > 0) {
+		const where = defaultWhere(state, config, mode, options);
+		let whereSql = where.getSql();
+		if (whereSql.startsWith("WHERE ")) whereSql = whereSql.slice(6);
+		sqlHelper.addSqlSnippet(" AND ");
+		sqlHelper.addSqlSnippetWithValues(whereSql, where.getValues());
+	}
+};
 /**
 * Renders a {@link QueryState} to SQL by walking its clauses in order. Pure and
 * dialect-driven: everything dialect-specific comes from {@link Dialect} `config`, except
@@ -1213,34 +2796,41 @@ const defaultToSql = (state, config, mode, options) => {
 		const cte = defaultCte(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
 	}
+	if (state.rowLock && state.queryType !== QueryType.Select) throw new ParserError(ParserArea.General, "FOR UPDATE/FOR SHARE requires a SELECT query");
+	if (state.upsertState && state.queryType !== QueryType.Insert) throw new ParserError(ParserArea.Insert, "Upsert (ON CONFLICT) requires INSERT");
+	if (state.callState && state.queryType !== QueryType.Call) throw new ParserError(ParserArea.Call, "Procedure/function call state requires queryType Call");
+	if (state.queryType === QueryType.Call) {
+		if (state.cteStates.length > 0) throw new ParserError(ParserArea.Call, "A CTE cannot be combined with a procedure/function call");
+		if (state.returningState) throw new ParserError(ParserArea.Call, "RETURNING/OUTPUT cannot be combined with a procedure/function call");
+		const call = defaultCall(state, config, mode);
+		sqlHelper.addSqlSnippetWithValues(call.getSql(), call.getValues());
+		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
+		return sqlHelper;
+	}
 	if (state.queryType === QueryType.Insert) {
-		const insert = defaultInsert(state, config, mode);
+		const insert = defaultInsert(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(insert.getSql(), insert.getValues());
+		if (state.returningState && config.databaseType !== DatabaseType.Mssql) emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Insert);
 		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 		return sqlHelper;
 	}
 	if (state.queryType === QueryType.Update) {
-		const update = defaultUpdate(state, config, mode);
+		const update = defaultUpdate(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
-		if (state.whereStates.length > 0) {
-			const where = defaultWhere(state, config, mode, options);
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
-		}
+		emitMutationWhere(sqlHelper, state, config, mode, options);
+		if (state.returningState && config.databaseType !== DatabaseType.Mssql) emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Update);
 		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 		return sqlHelper;
 	}
 	if (state.queryType === QueryType.Delete) {
-		const del = defaultDelete(state, config, mode);
+		const del = defaultDelete(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
-		if (state.whereStates.length > 0) {
-			const where = defaultWhere(state, config, mode, options);
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
-		}
+		emitMutationWhere(sqlHelper, state, config, mode, options);
+		if (state.returningState && config.databaseType !== DatabaseType.Mssql) emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Delete);
 		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 		return sqlHelper;
 	}
+	if (state.returningState) throw new ParserError(ParserArea.General, "RETURNING/OUTPUT requires INSERT, UPDATE, or DELETE");
 	const sel = defaultSelect(state, config, mode, options);
 	sqlHelper.addSqlSnippetWithValues(sel.getSql(), sel.getValues());
 	const from = defaultFrom(state, config, mode, options);
@@ -1262,7 +2852,7 @@ const defaultToSql = (state, config, mode, options) => {
 		sqlHelper.addSqlSnippetWithValues(groupBy.getSql(), groupBy.getValues());
 	}
 	if (state.havingStates.length > 0) {
-		const having = defaultHaving(state, config, mode);
+		const having = defaultHaving(state, config, mode, options);
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(having.getSql(), having.getValues());
 	}
@@ -1276,11 +2866,15 @@ const defaultToSql = (state, config, mode, options) => {
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(orderBy.getSql(), orderBy.getValues());
 	}
-	if (state.limit > 0 || state.offset > 0) {
+	if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
 		const limitOffset = defaultLimitOffset(state, config, mode);
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(limitOffset.getSql(), limitOffset.getValues());
 	}
+	if (state.limitWithTies && config.databaseType === DatabaseType.Mssql && state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
+	if (state.rowLock) emitTrailingRowLockClause(sqlHelper, config, state.rowLock);
+	validateHints(state, config, ParserArea.General);
+	emitTrailingHints(sqlHelper, state, config);
 	if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 	return sqlHelper;
 };
@@ -1461,6 +3055,7 @@ const createInsertState = () => ({
 	tableName: void 0,
 	columns: [],
 	values: [],
+	selectSubquery: void 0,
 	raw: void 0
 });
 //#endregion
@@ -1480,18 +3075,27 @@ const createQueryState = () => ({
 	cteStates: [],
 	insertState: void 0,
 	updateStates: [],
+	upsertState: void 0,
+	returningState: void 0,
+	rowLock: void 0,
+	callState: void 0,
 	isInnerStatement: false,
 	limit: 0,
+	limitWithTies: false,
 	offset: 0,
 	distinct: false,
-	customState: void 0
+	distinctOnColumns: void 0,
+	customState: void 0,
+	mutationTargetIndex: void 0,
+	hintStates: []
 });
 //#endregion
 //#region src/builder/join-on.ts
 /**
-* Fluent builder for a JOIN's `ON` condition list — `on`/`onValue` comparisons, `onRaw`
-* fragments, `and`/`or` combinators, and parenthesized `onGroup`s. One class for every
-* dialect; {@link states} hands the accumulated conditions to the join clause parser.
+* Fluent builder for a JOIN's `ON` condition list — `on`/`onValue` comparisons (including
+* `JoinOperator.Like`/`NotLike`), `onIn`/`onBetween` (and their `NOT` variants), `onRaw`
+* fragments, `and`/`or` combinators, and parenthesized `onGroup`s. One class for every dialect;
+* {@link states} hands the accumulated conditions to the join clause parser.
 */
 var JoinOnBuilder = class JoinOnBuilder {
 	#states = [];
@@ -1509,7 +3113,8 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight: void 0,
 			columnRight: void 0,
 			raw: void 0,
-			valueRight: void 0
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		return this;
 	};
@@ -1522,7 +3127,8 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight,
 			columnRight,
 			raw: void 0,
-			valueRight: void 0
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		return this;
 	};
@@ -1535,7 +3141,8 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight: void 0,
 			columnRight: void 0,
 			raw: void 0,
-			valueRight: void 0
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		const child = this.#child();
 		builder(child);
@@ -1548,7 +3155,8 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight: void 0,
 			columnRight: void 0,
 			raw: void 0,
-			valueRight: void 0
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		return this;
 	};
@@ -1561,7 +3169,8 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight: void 0,
 			columnRight: void 0,
 			raw,
-			valueRight: void 0
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		return this;
 	};
@@ -1574,7 +3183,68 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight: void 0,
 			columnRight: void 0,
 			raw: void 0,
-			valueRight
+			valueRight,
+			valuesRight: void 0
+		});
+		return this;
+	};
+	/** `ON column IN (values)`. */
+	onIn = (aliasLeft, columnLeft, values) => {
+		this.#states.push({
+			joinOperator: JoinOperator.None,
+			joinOnOperator: JoinOnOperator.InValues,
+			aliasLeft,
+			columnLeft,
+			aliasRight: void 0,
+			columnRight: void 0,
+			raw: void 0,
+			valueRight: void 0,
+			valuesRight: [...values]
+		});
+		return this;
+	};
+	/** `ON column NOT IN (values)`. */
+	onNotIn = (aliasLeft, columnLeft, values) => {
+		this.#states.push({
+			joinOperator: JoinOperator.None,
+			joinOnOperator: JoinOnOperator.NotInValues,
+			aliasLeft,
+			columnLeft,
+			aliasRight: void 0,
+			columnRight: void 0,
+			raw: void 0,
+			valueRight: void 0,
+			valuesRight: [...values]
+		});
+		return this;
+	};
+	/** `ON column BETWEEN value1 AND value2`. */
+	onBetween = (aliasLeft, columnLeft, value1, value2) => {
+		this.#states.push({
+			joinOperator: JoinOperator.None,
+			joinOnOperator: JoinOnOperator.Between,
+			aliasLeft,
+			columnLeft,
+			aliasRight: void 0,
+			columnRight: void 0,
+			raw: void 0,
+			valueRight: void 0,
+			valuesRight: [value1, value2]
+		});
+		return this;
+	};
+	/** `ON column NOT BETWEEN value1 AND value2`. */
+	onNotBetween = (aliasLeft, columnLeft, value1, value2) => {
+		this.#states.push({
+			joinOperator: JoinOperator.None,
+			joinOnOperator: JoinOnOperator.NotBetween,
+			aliasLeft,
+			columnLeft,
+			aliasRight: void 0,
+			columnRight: void 0,
+			raw: void 0,
+			valueRight: void 0,
+			valuesRight: [value1, value2]
 		});
 		return this;
 	};
@@ -1587,12 +3257,105 @@ var JoinOnBuilder = class JoinOnBuilder {
 			aliasRight: void 0,
 			columnRight: void 0,
 			raw: void 0,
-			valueRight: void 0
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		return this;
 	};
 	states = () => {
 		return this.#states;
+	};
+};
+//#endregion
+//#region src/state/window.ts
+/** Creates a {@link WindowState} with default field values (an empty `OVER ()`). */
+const createWindowState = () => ({
+	partitionByStates: [],
+	orderByStates: [],
+	frame: void 0
+});
+//#endregion
+//#region src/builder/window.ts
+/**
+* Fluent builder for a window function's `OVER (...)` clause — `PARTITION BY`, `ORDER BY`
+* (with `NULLS FIRST`/`NULLS LAST`), and an optional `ROWS`/`RANGE` frame. One class for every
+* dialect; {@link state} hands the accumulated clause to {@link QueryBuilder.selectWindow}.
+*/
+var WindowBuilder = class {
+	#state = createWindowState();
+	partitionByColumn = (tableNameOrAlias, columnName) => {
+		this.#state.partitionByStates.push({
+			tableNameOrAlias,
+			columnName,
+			raw: void 0
+		});
+		return this;
+	};
+	partitionByColumns = (columns) => {
+		columns.forEach((column) => {
+			this.partitionByColumn(column.tableNameOrAlias, column.columnName);
+		});
+		return this;
+	};
+	partitionByRaw = (raw) => {
+		this.#state.partitionByStates.push({
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			raw
+		});
+		return this;
+	};
+	orderByColumn = (tableNameOrAlias, columnName, direction = OrderByDirection.None, nulls = NullsOrder.None) => {
+		this.#state.orderByStates.push({
+			tableNameOrAlias,
+			columnName,
+			direction,
+			nulls,
+			raw: void 0
+		});
+		return this;
+	};
+	orderByRaw = (raw) => {
+		this.#state.orderByStates.push({
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			direction: OrderByDirection.None,
+			nulls: NullsOrder.None,
+			raw
+		});
+		return this;
+	};
+	/** Sets a structured `ROWS`/`RANGE BETWEEN start AND end` frame. Omit `end` for the SQL-standard single-bound shorthand (implicitly `AND CURRENT ROW`). */
+	frame = (unit, startType, startOffset, endType, endOffset) => {
+		this.#state.frame = {
+			unit,
+			start: {
+				type: startType,
+				offset: startOffset
+			},
+			end: endType ? {
+				type: endType,
+				offset: endOffset
+			} : void 0,
+			raw: void 0
+		};
+		return this;
+	};
+	/** Raw-SQL form of {@link frame} for expressions the structured bounds can't express. */
+	frameRaw = (raw) => {
+		this.#state.frame = {
+			unit: FrameUnit.Rows,
+			start: {
+				type: FrameBoundType.CurrentRow,
+				offset: void 0
+			},
+			end: void 0,
+			raw
+		};
+		return this;
+	};
+	state = () => {
+		return this.#state;
 	};
 };
 //#endregion
@@ -1625,6 +3388,7 @@ var QueryBuilder = class QueryBuilder {
 				columnName: void 0,
 				whereOperator: WhereOperator.None,
 				raw: void 0,
+				subquery: void 0,
 				values: []
 			});
 			return this;
@@ -1661,6 +3425,7 @@ var QueryBuilder = class QueryBuilder {
 	};
 	clearHaving = () => {
 		this.#state.havingStates = [];
+		this.#combinatorTarget = "where";
 		return this;
 	};
 	clearJoin = () => {
@@ -1669,6 +3434,7 @@ var QueryBuilder = class QueryBuilder {
 	};
 	clearLimit = () => {
 		this.#state.limit = 0;
+		this.#state.limitWithTies = false;
 		return this;
 	};
 	clearOffset = () => {
@@ -1682,10 +3448,27 @@ var QueryBuilder = class QueryBuilder {
 	clearSelect = () => {
 		this.#state.selectStates = [];
 		this.#state.distinct = false;
+		this.#state.distinctOnColumns = void 0;
 		return this;
 	};
 	clearDistinct = () => {
 		this.#state.distinct = false;
+		return this;
+	};
+	/**
+	* Postgres-only `DISTINCT ON (...)`: keeps only the first row (per the query's `ORDER BY`)
+	* for each distinct combination of the given columns. Mutually exclusive with {@link distinct}
+	* — combining them throws at parse time. Throws on every other dialect, which has no equivalent.
+	*/
+	distinctOn = (columns) => {
+		this.#state.distinctOnColumns = columns.map((column) => ({
+			tableNameOrAlias: column.tableNameOrAlias,
+			columnName: column.columnName
+		}));
+		return this;
+	};
+	clearDistinctOn = () => {
+		this.#state.distinctOnColumns = void 0;
 		return this;
 	};
 	clearWhere = () => {
@@ -1702,13 +3485,33 @@ var QueryBuilder = class QueryBuilder {
 	};
 	clearInsert = () => {
 		this.#state.insertState = void 0;
+		this.#state.upsertState = void 0;
 		if (this.#state.queryType === QueryType.Insert) this.#state.queryType = QueryType.Select;
 		return this;
 	};
 	clearUpdate = () => {
 		this.#state.updateStates = [];
+		this.#clearMutationTarget();
 		if (this.#state.queryType === QueryType.Update) this.#state.queryType = QueryType.Select;
 		return this;
+	};
+	/** Clears the DELETE target table and resets sticky Delete query type. */
+	clearDelete = () => {
+		this.#clearMutationTarget();
+		if (this.#state.queryType === QueryType.Delete) this.#state.queryType = QueryType.Select;
+		return this;
+	};
+	#clearMutationTarget = () => {
+		if (this.#state.mutationTargetIndex !== void 0) {
+			this.#state.fromStates.splice(this.#state.mutationTargetIndex, 1);
+			this.#state.mutationTargetIndex = void 0;
+		}
+	};
+	#markSelectQuery = () => {
+		if (this.#state.queryType === QueryType.Delete || this.#state.queryType === QueryType.Update || this.#state.queryType === QueryType.Insert || this.#state.queryType === QueryType.Call) {
+			this.#state.queryType = QueryType.Select;
+			this.#state.mutationTargetIndex = void 0;
+		}
 	};
 	distinct = () => {
 		this.#state.distinct = true;
@@ -1776,6 +3579,68 @@ var QueryBuilder = class QueryBuilder {
 			alias,
 			subquery: child.state(),
 			raw: void 0
+		});
+		return this;
+	};
+	/** Postgres/MySQL `FROM LATERAL (subquery) AS alias`. MSSQL/SQLite throw — use APPLY on MSSQL. */
+	fromLateral = (alias, builder) => {
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.fromStates.push({
+			builderType: BuilderType.FromLateral,
+			owner: void 0,
+			tableName: void 0,
+			alias,
+			subquery: child.state(),
+			raw: void 0,
+			functionName: void 0,
+			functionParams: void 0
+		});
+		return this;
+	};
+	/**
+	* Table-valued / set-returning function in the FROM clause (`FROM fn(...) AS alias`).
+	* Dialect-specific: Postgres/MSSQL TVFs, SQLite helpers like `json_each`.
+	*/
+	fromTableFunction = (functionName, alias, params = []) => {
+		this.#state.fromStates.push({
+			builderType: BuilderType.FromFunction,
+			owner: this.#config.defaultOwner,
+			tableName: void 0,
+			alias,
+			subquery: void 0,
+			raw: void 0,
+			functionName,
+			functionParams: [...params]
+		});
+		return this;
+	};
+	/** {@link fromTableFunction} with an explicit schema/owner qualifier. */
+	fromTableFunctionWithOwner = (owner, functionName, alias, params = []) => {
+		this.#state.fromStates.push({
+			builderType: BuilderType.FromFunction,
+			owner,
+			tableName: void 0,
+			alias,
+			subquery: void 0,
+			raw: void 0,
+			functionName,
+			functionParams: [...params]
+		});
+		return this;
+	};
+	/** Raw-SQL table source when structured TVF helpers are insufficient. */
+	fromFunctionRaw = (rawFrom, alias) => {
+		this.#state.fromStates.push({
+			builderType: BuilderType.FromRaw,
+			owner: void 0,
+			tableName: void 0,
+			alias,
+			subquery: void 0,
+			raw: rawFrom,
+			functionName: void 0,
+			functionParams: void 0
 		});
 		return this;
 	};
@@ -1854,27 +3719,72 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/** MSSQL `CROSS APPLY` / Postgres+MySQL `CROSS JOIN LATERAL`. SQLite throws. */
+	joinCrossApply = (alias, builder, joinOnBuilder) => {
+		return this.#joinApply(JoinType.CrossApply, alias, builder, joinOnBuilder);
+	};
+	/** MSSQL `OUTER APPLY` / Postgres+MySQL `LEFT JOIN LATERAL`. SQLite throws. */
+	joinOuterApply = (alias, builder, joinOnBuilder) => {
+		return this.#joinApply(JoinType.OuterApply, alias, builder, joinOnBuilder);
+	};
+	/** Postgres/MySQL `JOIN LATERAL (subquery) AS alias ON ...`. MSSQL/SQLite throw. */
+	joinLateral = (alias, builder, joinOnBuilder) => {
+		return this.#joinApply(JoinType.Lateral, alias, builder, joinOnBuilder);
+	};
+	#joinApply = (joinType, alias, builder, joinOnBuilder) => {
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		const joinOnBuilderInstance = new JoinOnBuilder(this.#config);
+		if (joinOnBuilder) joinOnBuilder(joinOnBuilderInstance);
+		this.#state.joinStates.push({
+			builderType: BuilderType.JoinBuilder,
+			joinType,
+			owner: void 0,
+			tableName: void 0,
+			alias,
+			subquery: child.state(),
+			raw: void 0,
+			joinOnStates: joinOnBuilderInstance.states()
+		});
+		return this;
+	};
 	limit = (limit) => {
+		if (!Number.isFinite(limit) || limit <= 0 || !Number.isInteger(limit)) throw new ParserError(ParserArea.LimitOffset, "LIMIT must be a positive integer");
 		this.#state.limit = limit;
+		return this;
+	};
+	/**
+	* Limits rows and includes tied rows at the cutoff (`FETCH FIRST n ROWS WITH TIES` and dialect
+	* equivalents). Requires `ORDER BY` under the same rules as {@link limit}.
+	*/
+	limitWithTies = (limit) => {
+		this.limit(limit);
+		this.#state.limitWithTies = true;
+		return this;
+	};
+	clearLimitWithTies = () => {
+		this.#state.limitWithTies = false;
 		return this;
 	};
 	offset = (offset) => {
 		this.#state.offset = offset;
 		return this;
 	};
-	orderByColumn = (tableNameOrAlias, columnName, direction) => {
+	orderByColumn = (tableNameOrAlias, columnName, direction, nulls = NullsOrder.None) => {
 		this.#state.orderByStates.push({
 			builderType: BuilderType.OrderByColumn,
 			tableNameOrAlias,
 			columnName,
 			direction,
+			nulls,
 			raw: void 0
 		});
 		return this;
 	};
 	orderByColumns = (columns) => {
 		columns.forEach((column) => {
-			this.orderByColumn(column.tableNameOrAlias, column.columnName, column.direction);
+			this.orderByColumn(column.tableNameOrAlias, column.columnName, column.direction, column.nulls ?? NullsOrder.None);
 		});
 		return this;
 	};
@@ -1884,6 +3794,7 @@ var QueryBuilder = class QueryBuilder {
 			tableNameOrAlias: void 0,
 			columnName: void 0,
 			direction: OrderByDirection.Ascending,
+			nulls: NullsOrder.None,
 			raw: rawOrderBy
 		});
 		return this;
@@ -1907,24 +3818,28 @@ var QueryBuilder = class QueryBuilder {
 		return parseRaw(this.state(), this.#config);
 	};
 	selectAll = () => {
+		this.#markSelectQuery();
 		this.#state.selectStates.push({
 			builderType: BuilderType.SelectAll,
 			tableNameOrAlias: void 0,
 			columnName: void 0,
 			alias: void 0,
 			subquery: void 0,
-			raw: void 0
+			raw: void 0,
+			window: void 0
 		});
 		return this;
 	};
 	selectColumn = (tableNameOrAlias, columnName, columnAlias) => {
+		this.#markSelectQuery();
 		this.#state.selectStates.push({
 			builderType: BuilderType.SelectColumn,
 			tableNameOrAlias,
 			columnName,
 			alias: columnAlias,
 			subquery: void 0,
-			raw: void 0
+			raw: void 0,
+			window: void 0
 		});
 		return this;
 	};
@@ -1935,13 +3850,15 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	selectRaw = (rawSelect) => {
+		this.#markSelectQuery();
 		this.#state.selectStates.push({
 			builderType: BuilderType.SelectRaw,
 			tableNameOrAlias: void 0,
 			columnName: void 0,
 			alias: void 0,
 			subquery: void 0,
-			raw: rawSelect
+			raw: rawSelect,
+			window: void 0
 		});
 		return this;
 	};
@@ -1952,6 +3869,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	selectWithBuilder = (alias, builder) => {
+		this.#markSelectQuery();
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
@@ -1961,7 +3879,47 @@ var QueryBuilder = class QueryBuilder {
 			columnName: void 0,
 			alias,
 			subquery: child.state(),
-			raw: void 0
+			raw: void 0,
+			window: void 0
+		});
+		return this;
+	};
+	/**
+	* Adds a window function to the SELECT list: `fn OVER (...)`. `fn` is the function's call
+	* expression, emitted verbatim (e.g. `'ROW_NUMBER()'`, `'SUM("o"."amount")'`) — like
+	* {@link selectRaw}, it is not quoted/escaped, so quote any identifiers inside it yourself.
+	* The `OVER` clause itself (`PARTITION BY`/`ORDER BY`/frame) is structured, via {@link WindowBuilder}.
+	*/
+	selectWindow = (fn, over, alias) => {
+		this.#markSelectQuery();
+		const windowBuilder = new WindowBuilder();
+		over(windowBuilder);
+		this.#state.selectStates.push({
+			builderType: BuilderType.SelectWindow,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			alias,
+			subquery: void 0,
+			raw: fn,
+			window: windowBuilder.state()
+		});
+		return this;
+	};
+	/**
+	* Dialect-aware JSON path extraction in the SELECT list (`->`/`->>`/`JSON_EXTRACT`/`JSON_VALUE`).
+	*/
+	selectJsonExtract = (tableNameOrAlias, columnName, path, mode = JsonExtractMode.Text, alias = "") => {
+		this.#markSelectQuery();
+		this.#state.selectStates.push({
+			builderType: BuilderType.SelectJsonExtract,
+			tableNameOrAlias,
+			columnName,
+			alias,
+			subquery: void 0,
+			raw: void 0,
+			window: void 0,
+			jsonPath: path,
+			jsonExtractMode: mode
 		});
 		return this;
 	};
@@ -1994,6 +3952,11 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/**
+	* @param tableNameOrAlias - Unused: `EXISTS (subquery)` never references the outer column.
+	*   Kept for wire parity with the golden corpus; prefer {@link whereExists} in new code.
+	* @param columnName - Unused; see `tableNameOrAlias`.
+	*/
 	whereExistsWithBuilder = (tableNameOrAlias, columnName, builder) => {
 		this.#combinatorTarget = "where";
 		const child = this.#child();
@@ -2003,6 +3966,23 @@ var QueryBuilder = class QueryBuilder {
 			builderType: BuilderType.WhereExistsBuilder,
 			tableNameOrAlias,
 			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: child.state(),
+			values: []
+		});
+		return this;
+	};
+	/** `WHERE EXISTS (subquery)` — the same clause as {@link whereExistsWithBuilder} without its unused table/column parameters. */
+	whereExists = (builder) => {
+		this.#combinatorTarget = "where";
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.whereStates.push({
+			builderType: BuilderType.WhereExistsBuilder,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
 			whereOperator: WhereOperator.None,
 			raw: void 0,
 			subquery: child.state(),
@@ -2024,6 +4004,7 @@ var QueryBuilder = class QueryBuilder {
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
+		if (child.state().whereStates.length === 0) throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereGroupBuilder,
 			tableNameOrAlias: void 0,
@@ -2062,6 +4043,7 @@ var QueryBuilder = class QueryBuilder {
 	};
 	whereInValues = (tableNameOrAlias, columnName, values) => {
 		this.#combinatorTarget = "where";
+		values = [...values];
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereInValues,
 			tableNameOrAlias,
@@ -2073,6 +4055,11 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/**
+	* @param tableNameOrAlias - Unused: `NOT EXISTS (subquery)` never references the outer column.
+	*   Kept for wire parity with the golden corpus; prefer {@link whereNotExists} in new code.
+	* @param columnName - Unused; see `tableNameOrAlias`.
+	*/
 	whereNotExistsWithBuilder = (tableNameOrAlias, columnName, builder) => {
 		this.#combinatorTarget = "where";
 		const child = this.#child();
@@ -2082,6 +4069,23 @@ var QueryBuilder = class QueryBuilder {
 			builderType: BuilderType.WhereNotExistsBuilder,
 			tableNameOrAlias,
 			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: child.state(),
+			values: []
+		});
+		return this;
+	};
+	/** `WHERE NOT EXISTS (subquery)` — the same clause as {@link whereNotExistsWithBuilder} without its unused table/column parameters. */
+	whereNotExists = (builder) => {
+		this.#combinatorTarget = "where";
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.whereStates.push({
+			builderType: BuilderType.WhereNotExistsBuilder,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
 			whereOperator: WhereOperator.None,
 			raw: void 0,
 			subquery: child.state(),
@@ -2107,6 +4111,7 @@ var QueryBuilder = class QueryBuilder {
 	};
 	whereNotInValues = (tableNameOrAlias, columnName, values) => {
 		this.#combinatorTarget = "where";
+		values = [...values];
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereNotInValues,
 			tableNameOrAlias,
@@ -2163,12 +4168,72 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/** Compare a dialect-specific JSON path extraction against a bound value. */
+	whereJsonExtract = (tableNameOrAlias, columnName, path, mode, whereOperator, value) => {
+		this.#combinatorTarget = "where";
+		this.#state.whereStates.push({
+			builderType: BuilderType.WhereJsonExtract,
+			tableNameOrAlias,
+			columnName,
+			whereOperator,
+			raw: void 0,
+			subquery: void 0,
+			values: [value],
+			jsonPath: path,
+			jsonExtractMode: mode,
+			fullTextMode: void 0,
+			fullTextColumns: void 0
+		});
+		return this;
+	};
+	/** JSON containment (`@>` / `JSON_CONTAINS`) against a bound JSON document. */
+	whereJsonContains = (tableNameOrAlias, columnName, value) => {
+		this.#combinatorTarget = "where";
+		this.#state.whereStates.push({
+			builderType: BuilderType.WhereJsonContains,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values: [value],
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			fullTextMode: void 0,
+			fullTextColumns: void 0
+		});
+		return this;
+	};
+	/** Dialect-aware full-text predicate over one or more columns. */
+	whereMatch = (columns, query, mode = FullTextMode.Natural) => {
+		this.#combinatorTarget = "where";
+		this.#state.whereStates.push({
+			builderType: BuilderType.WhereFullText,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values: [query],
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			fullTextMode: mode,
+			fullTextColumns: columns.map((column) => ({
+				tableNameOrAlias: column.tableNameOrAlias,
+				columnName: column.columnName
+			}))
+		});
+		return this;
+	};
+	/** Raw full-text SQL when structured {@link whereMatch} cannot express the predicate. */
+	whereMatchRaw = (rawWhere) => this.whereRaw(rawWhere);
 	groupByColumn = (tableNameOrAlias, columnName) => {
 		this.#state.groupByStates.push({
 			builderType: BuilderType.GroupByColumn,
 			tableNameOrAlias,
 			columnName,
-			raw: void 0
+			raw: void 0,
+			groupingSets: void 0
 		});
 		return this;
 	};
@@ -2183,13 +4248,47 @@ var QueryBuilder = class QueryBuilder {
 			builderType: BuilderType.GroupByRaw,
 			tableNameOrAlias: void 0,
 			columnName: void 0,
-			raw: rawGroupBy
+			raw: rawGroupBy,
+			groupingSets: void 0
 		});
 		return this;
 	};
 	groupByRaws = (rawGroupBys) => {
 		rawGroupBys.forEach((rawGroupBy) => {
 			this.groupByRaw(rawGroupBy);
+		});
+		return this;
+	};
+	/** `GROUP BY ROLLUP (...)` (MySQL: trailing `WITH ROLLUP` when columns were already grouped). */
+	groupByRollup = (columns = []) => {
+		this.#state.groupByStates.push({
+			builderType: BuilderType.GroupByRollup,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			raw: void 0,
+			groupingSets: columns.length > 0 ? [columns] : void 0
+		});
+		return this;
+	};
+	/** `GROUP BY CUBE (...)` — not supported on MySQL (throws at parse time). */
+	groupByCube = (columns = []) => {
+		this.#state.groupByStates.push({
+			builderType: BuilderType.GroupByCube,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			raw: void 0,
+			groupingSets: columns.length > 0 ? [columns] : void 0
+		});
+		return this;
+	};
+	/** `GROUP BY GROUPING SETS ((...), (...))` — not supported on MySQL (throws at parse time). */
+	groupByGroupingSets = (sets) => {
+		this.#state.groupByStates.push({
+			builderType: BuilderType.GroupByGroupingSets,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			raw: void 0,
+			groupingSets: sets
 		});
 		return this;
 	};
@@ -2201,6 +4300,7 @@ var QueryBuilder = class QueryBuilder {
 			columnName,
 			whereOperator,
 			raw: void 0,
+			subquery: void 0,
 			values: [value]
 		});
 		return this;
@@ -2213,6 +4313,7 @@ var QueryBuilder = class QueryBuilder {
 			columnName: void 0,
 			whereOperator: WhereOperator.None,
 			raw: rawHaving,
+			subquery: void 0,
 			values: []
 		});
 		return this;
@@ -2220,6 +4321,229 @@ var QueryBuilder = class QueryBuilder {
 	havingRaws = (rawHavings) => {
 		rawHavings.forEach((rawHaving) => {
 			this.havingRaw(rawHaving);
+		});
+		return this;
+	};
+	havingJsonExtract = (tableNameOrAlias, columnName, path, mode, whereOperator, value) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingJsonExtract,
+			tableNameOrAlias,
+			columnName,
+			whereOperator,
+			raw: void 0,
+			subquery: void 0,
+			values: [value],
+			jsonPath: path,
+			jsonExtractMode: mode,
+			fullTextMode: void 0,
+			fullTextColumns: void 0
+		});
+		return this;
+	};
+	havingJsonContains = (tableNameOrAlias, columnName, value) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingJsonContains,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values: [value],
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			fullTextMode: void 0,
+			fullTextColumns: void 0
+		});
+		return this;
+	};
+	havingMatch = (columns, query, mode = FullTextMode.Natural) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingFullText,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values: [query],
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			fullTextMode: mode,
+			fullTextColumns: columns.map((column) => ({
+				tableNameOrAlias: column.tableNameOrAlias,
+				columnName: column.columnName
+			}))
+		});
+		return this;
+	};
+	havingBetween = (tableNameOrAlias, columnName, value1, value2) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingBetween,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.Equals,
+			raw: void 0,
+			subquery: void 0,
+			values: [value1, value2]
+		});
+		return this;
+	};
+	/** `HAVING EXISTS (subquery)` — mirrors {@link whereExists} for the HAVING clause. */
+	havingExists = (builder) => {
+		this.#combinatorTarget = "having";
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingExistsBuilder,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: child.state(),
+			values: []
+		});
+		return this;
+	};
+	/** `HAVING NOT EXISTS (subquery)` — mirrors {@link whereNotExists} for the HAVING clause. */
+	havingNotExists = (builder) => {
+		this.#combinatorTarget = "having";
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingNotExistsBuilder,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: child.state(),
+			values: []
+		});
+		return this;
+	};
+	/** Opens a parenthesized HAVING group — mirrors {@link whereGroup} for the HAVING clause. */
+	havingGroup(builder) {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingGroupBegin,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			values: [],
+			subquery: void 0
+		});
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		if (child.state().havingStates.length === 0) throw new ParserError(ParserArea.Having, "HAVING group cannot be empty");
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingGroupBuilder,
+			tableNameOrAlias: void 0,
+			columnName: void 0,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			values: [],
+			subquery: child.state()
+		});
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingGroupEnd,
+			tableNameOrAlias: "",
+			columnName: "",
+			whereOperator: WhereOperator.None,
+			raw: "",
+			values: [],
+			subquery: child.state()
+		});
+		return this;
+	}
+	havingInWithBuilder = (tableNameOrAlias, columnName, builder) => {
+		this.#combinatorTarget = "having";
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingInBuilder,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: child.state(),
+			values: []
+		});
+		return this;
+	};
+	havingInValues = (tableNameOrAlias, columnName, values) => {
+		this.#combinatorTarget = "having";
+		values = [...values];
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingInValues,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values
+		});
+		return this;
+	};
+	havingNotInWithBuilder = (tableNameOrAlias, columnName, builder) => {
+		this.#combinatorTarget = "having";
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingNotInBuilder,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: child.state(),
+			values: []
+		});
+		return this;
+	};
+	havingNotInValues = (tableNameOrAlias, columnName, values) => {
+		this.#combinatorTarget = "having";
+		values = [...values];
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingNotInValues,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values
+		});
+		return this;
+	};
+	havingNotNull = (tableNameOrAlias, columnName) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingNotNull,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values: []
+		});
+		return this;
+	};
+	havingNull = (tableNameOrAlias, columnName) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingNull,
+			tableNameOrAlias,
+			columnName,
+			whereOperator: WhereOperator.None,
+			raw: void 0,
+			subquery: void 0,
+			values: []
 		});
 		return this;
 	};
@@ -2239,18 +4563,31 @@ var QueryBuilder = class QueryBuilder {
 	};
 	insertColumns = (columns) => {
 		if (!this.#state.insertState) this.#state.insertState = createInsertState();
-		this.#state.insertState.columns = columns;
+		this.#state.insertState.columns = [...columns];
 		return this;
 	};
 	insertValues = (values) => {
 		if (!this.#state.insertState) this.#state.insertState = createInsertState();
-		this.#state.insertState.values.push(values);
+		this.#state.insertState.values.push([...values]);
 		return this;
 	};
 	insertRaw = (raw) => {
 		this.#state.queryType = QueryType.Insert;
 		if (!this.#state.insertState) this.#state.insertState = createInsertState();
 		this.#state.insertState.raw = raw;
+		return this;
+	};
+	/**
+	* `INSERT ... SELECT`: the row values come from a sub-query instead of a literal `VALUES`
+	* list. Mutually exclusive with {@link insertValues} — providing both throws at parse time.
+	*/
+	insertSelect = (builder) => {
+		this.#state.queryType = QueryType.Insert;
+		if (!this.#state.insertState) this.#state.insertState = createInsertState();
+		const child = this.#child();
+		builder(child);
+		child.state().isInnerStatement = true;
+		this.#state.insertState.selectSubquery = child.state();
 		return this;
 	};
 	updateTable = (tableName, alias) => {
@@ -2263,6 +4600,7 @@ var QueryBuilder = class QueryBuilder {
 			subquery: void 0,
 			raw: void 0
 		});
+		this.#state.mutationTargetIndex = this.#state.fromStates.length - 1;
 		return this;
 	};
 	updateTableWithOwner = (owner, tableName, alias) => {
@@ -2275,6 +4613,7 @@ var QueryBuilder = class QueryBuilder {
 			subquery: void 0,
 			raw: void 0
 		});
+		this.#state.mutationTargetIndex = this.#state.fromStates.length - 1;
 		return this;
 	};
 	set = (columnName, value) => {
@@ -2311,6 +4650,7 @@ var QueryBuilder = class QueryBuilder {
 			subquery: void 0,
 			raw: void 0
 		});
+		this.#state.mutationTargetIndex = this.#state.fromStates.length - 1;
 		return this;
 	};
 	deleteFromWithOwner = (owner, tableName, alias) => {
@@ -2323,6 +4663,7 @@ var QueryBuilder = class QueryBuilder {
 			subquery: void 0,
 			raw: void 0
 		});
+		this.#state.mutationTargetIndex = this.#state.fromStates.length - 1;
 		return this;
 	};
 	union = (builder) => {
@@ -2369,26 +4710,30 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
-	cte = (name, builder) => {
+	/** @param columns - Optional explicit column list: `WITH name (col1, col2) AS (...)`. Omit/empty leaves it out. */
+	cte = (name, builder, columns = []) => {
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
 		this.#state.cteStates.push({
 			builderType: BuilderType.CteBuilder,
 			name,
+			columns: [...columns],
 			recursive: false,
 			subquery: child.state(),
 			raw: void 0
 		});
 		return this;
 	};
-	cteRecursive = (name, builder) => {
+	/** @param columns - Optional explicit column list — see {@link cte}. Recursive CTEs commonly need one, since the recursive member's SELECT list can't always be inferred from the anchor alone. */
+	cteRecursive = (name, builder, columns = []) => {
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
 		this.#state.cteStates.push({
 			builderType: BuilderType.CteBuilder,
 			name,
+			columns: [...columns],
 			recursive: true,
 			subquery: child.state(),
 			raw: void 0
@@ -2399,6 +4744,7 @@ var QueryBuilder = class QueryBuilder {
 		this.#state.cteStates.push({
 			builderType: BuilderType.CteRaw,
 			name,
+			columns: [],
 			recursive: false,
 			subquery: void 0,
 			raw
@@ -2417,6 +4763,317 @@ var QueryBuilder = class QueryBuilder {
 	top = (top) => {
 		if (!this.#state.customState) this.#state.customState = {};
 		this.#state.customState["top"] = top;
+		return this;
+	};
+	/**
+	* Returns the given columns from an INSERT/UPDATE/DELETE: PG/SQLite `RETURNING`, MSSQL
+	* `OUTPUT INSERTED.…`/`OUTPUT DELETED.…`. MySQL has no equivalent and throws at parse time.
+	*/
+	returning = (columns) => {
+		this.#state.returningState = {
+			columns: [...columns],
+			raw: void 0
+		};
+		return this;
+	};
+	/** Raw-SQL form of {@link returning} for expressions the structured column list cannot express. */
+	returningRaw = (raw) => {
+		this.#state.returningState = {
+			columns: [],
+			raw
+		};
+		return this;
+	};
+	clearReturning = () => {
+		this.#state.returningState = void 0;
+		return this;
+	};
+	/**
+	* INSERT conflict clause: silently skip conflicting rows (PG/SQLite `ON CONFLICT ... DO
+	* NOTHING`, MySQL `INSERT IGNORE`). On MSSQL, upsert is emitted as a `MERGE` statement.
+	*
+	* @param conflictColumns - Conflict target for PG/SQLite. Ignored on MySQL, which infers the
+	*   conflicting key from the table's own constraints; kept so one call shape works everywhere.
+	*/
+	onConflictDoNothing = (conflictColumns = []) => {
+		this.#state.upsertState = {
+			action: UpsertAction.DoNothing,
+			conflictColumns: [...conflictColumns],
+			updateColumns: [],
+			updateRaw: void 0
+		};
+		return this;
+	};
+	/**
+	* INSERT conflict clause: update the existing row (PG/SQLite `ON CONFLICT ... DO UPDATE SET`,
+	* MySQL `ON DUPLICATE KEY UPDATE`). On MSSQL, upsert is emitted as a `MERGE` statement.
+	*
+	* @param conflictColumns - Conflict target for PG/SQLite. Ignored on MySQL; see {@link onConflictDoNothing}.
+	*/
+	onConflictDoUpdate = (conflictColumns, updates) => {
+		this.#state.upsertState = {
+			action: UpsertAction.DoUpdate,
+			conflictColumns: [...conflictColumns],
+			updateColumns: updates.map((update) => ({
+				columnName: update.columnName,
+				value: update.value
+			})),
+			updateRaw: void 0
+		};
+		return this;
+	};
+	/** Raw-SQL form of {@link onConflictDoUpdate}'s SET list for expressions columns can't express. */
+	onConflictDoUpdateRaw = (conflictColumns, raw) => {
+		this.#state.upsertState = {
+			action: UpsertAction.DoUpdate,
+			conflictColumns: [...conflictColumns],
+			updateColumns: [],
+			updateRaw: raw
+		};
+		return this;
+	};
+	clearUpsert = () => {
+		this.#state.upsertState = void 0;
+		return this;
+	};
+	/** Exclusive row lock on the SELECT's result rows (`FOR UPDATE`; MSSQL `WITH (UPDLOCK, ROWLOCK)`). */
+	forUpdate = () => {
+		this.#state.rowLock = {
+			mode: RowLockMode.ForUpdate,
+			wait: RowLockWait.Default
+		};
+		return this;
+	};
+	/** {@link forUpdate}, failing immediately instead of waiting on an already-locked row. */
+	forUpdateNowait = () => {
+		this.#state.rowLock = {
+			mode: RowLockMode.ForUpdate,
+			wait: RowLockWait.Nowait
+		};
+		return this;
+	};
+	/** {@link forUpdate}, silently skipping already-locked rows instead of waiting. */
+	forUpdateSkipLocked = () => {
+		this.#state.rowLock = {
+			mode: RowLockMode.ForUpdate,
+			wait: RowLockWait.SkipLocked
+		};
+		return this;
+	};
+	/** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
+	forShare = () => {
+		this.#state.rowLock = {
+			mode: RowLockMode.ForShare,
+			wait: RowLockWait.Default
+		};
+		return this;
+	};
+	/** {@link forShare}, failing immediately instead of waiting on an already-locked row. */
+	forShareNowait = () => {
+		this.#state.rowLock = {
+			mode: RowLockMode.ForShare,
+			wait: RowLockWait.Nowait
+		};
+		return this;
+	};
+	/** {@link forShare}, silently skipping already-locked rows instead of waiting. */
+	forShareSkipLocked = () => {
+		this.#state.rowLock = {
+			mode: RowLockMode.ForShare,
+			wait: RowLockWait.SkipLocked
+		};
+		return this;
+	};
+	clearRowLock = () => {
+		this.#state.rowLock = void 0;
+		return this;
+	};
+	/** MySQL `USE INDEX (index)` on a FROM/JOIN table alias. Other dialects throw at parse time. */
+	hintUseIndex = (tableNameOrAlias, indexName) => {
+		(this.#state.hintStates ??= []).push({
+			kind: HintKind.UseIndex,
+			tableNameOrAlias,
+			indexName,
+			optionText: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	/** MySQL `FORCE INDEX (index)` on a FROM/JOIN table alias. */
+	hintForceIndex = (tableNameOrAlias, indexName) => {
+		(this.#state.hintStates ??= []).push({
+			kind: HintKind.ForceIndex,
+			tableNameOrAlias,
+			indexName,
+			optionText: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	/** MSSQL trailing `OPTION (...)` clause, e.g. `hintMssqlOption('RECOMPILE')`. */
+	hintMssqlOption = (optionText) => {
+		(this.#state.hintStates ??= []).push({
+			kind: HintKind.MssqlOption,
+			tableNameOrAlias: void 0,
+			indexName: void 0,
+			optionText,
+			raw: void 0
+		});
+		return this;
+	};
+	/**
+	* Documented raw hint escape hatch — caller owns dialect correctness (e.g. Postgres
+	* `/*+ SeqScan(users) *\/` comments, optimizer-specific syntax).
+	*/
+	hintRaw = (rawHint) => {
+		(this.#state.hintStates ??= []).push({
+			kind: HintKind.Raw,
+			tableNameOrAlias: void 0,
+			indexName: void 0,
+			optionText: void 0,
+			raw: rawHint
+		});
+		return this;
+	};
+	clearHints = () => {
+		this.#state.hintStates = [];
+		return this;
+	};
+	#requireCallState = () => {
+		if (!this.#state.callState) throw new ParserError(ParserArea.Call, "call a procParam* method only after callProcedure/callFunction");
+		return this.#state.callState;
+	};
+	/** Invokes a stored procedure: Postgres/MySQL `CALL`, MSSQL `EXEC`. Not supported on SQLite. */
+	callProcedure = (name) => {
+		this.#state.queryType = QueryType.Call;
+		this.#state.callState = {
+			kind: CallKind.Procedure,
+			owner: this.#config.defaultOwner,
+			name,
+			returnIntent: CallReturnIntent.Void,
+			params: []
+		};
+		return this;
+	};
+	/** {@link callProcedure}, qualified with an explicit schema/owner. */
+	callProcedureWithOwner = (owner, name) => {
+		this.#state.queryType = QueryType.Call;
+		this.#state.callState = {
+			kind: CallKind.Procedure,
+			owner,
+			name,
+			returnIntent: CallReturnIntent.Void,
+			params: []
+		};
+		return this;
+	};
+	/**
+	* Invokes a stored function as an expression: `SELECT name(...)` (or, with
+	* {@link CallReturnIntent.ResultSet}, `SELECT * FROM name(...)` for a set-returning /
+	* table-valued function — refused on MySQL, which has none). Not supported on SQLite.
+	*/
+	callFunction = (name, returnIntent = CallReturnIntent.Scalar) => {
+		if (returnIntent === CallReturnIntent.Void) throw new ParserError(ParserArea.Call, "callFunction requires CallReturnIntent.Scalar or CallReturnIntent.ResultSet");
+		this.#state.queryType = QueryType.Call;
+		this.#state.callState = {
+			kind: CallKind.Function,
+			owner: this.#config.defaultOwner,
+			name,
+			returnIntent,
+			params: []
+		};
+		return this;
+	};
+	/** {@link callFunction}, qualified with an explicit schema/owner. */
+	callFunctionWithOwner = (owner, name, returnIntent = CallReturnIntent.Scalar) => {
+		if (returnIntent === CallReturnIntent.Void) throw new ParserError(ParserArea.Call, "callFunction requires CallReturnIntent.Scalar or CallReturnIntent.ResultSet");
+		this.#state.queryType = QueryType.Call;
+		this.#state.callState = {
+			kind: CallKind.Function,
+			owner,
+			name,
+			returnIntent,
+			params: []
+		};
+		return this;
+	};
+	/** Appends a positional IN argument. */
+	procParam = (value) => {
+		this.#requireCallState().params.push({
+			direction: CallParamDirection.In,
+			name: void 0,
+			value,
+			sqlType: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	/** Appends several positional IN arguments in order. */
+	procParams = (values) => {
+		values.forEach((value) => this.procParam(value));
+		return this;
+	};
+	/**
+	* Appends a named IN argument (Postgres `name := value`, MSSQL `@name = value`). Not supported
+	* on MySQL, which has no named-argument call syntax — throws at parse time.
+	*/
+	procParamNamed = (name, value) => {
+		this.#requireCallState().params.push({
+			direction: CallParamDirection.In,
+			name,
+			value,
+			sqlType: void 0,
+			raw: void 0
+		});
+		return this;
+	};
+	/** Appends a positional argument as raw SQL, emitted verbatim (e.g. a computed expression). */
+	procParamRaw = (raw) => {
+		this.#requireCallState().params.push({
+			direction: CallParamDirection.In,
+			name: void 0,
+			value: void 0,
+			sqlType: void 0,
+			raw
+		});
+		return this;
+	};
+	/**
+	* Appends an output-only argument to a **procedure** call (refused on function calls — a
+	* function's result is its return expression, not an output parameter). `name` is the MSSQL
+	* declared variable / MySQL session variable identifier — required on both, conventionally the
+	* same as the procedure's own parameter name; Postgres has no variables and reads the OUT value
+	* back as a result column of the `CALL` instead, so `name` there only matters if you also want
+	* this argument to use named-call syntax.
+	*
+	* @param sqlType - The MSSQL `DECLARE`d type (e.g. `'INT'`, `'NVARCHAR(50)'`). Required on
+	*   MSSQL — throws at parse time if omitted there. Ignored on Postgres/MySQL.
+	*/
+	procParamOut = (name, sqlType) => {
+		this.#requireCallState().params.push({
+			direction: CallParamDirection.Out,
+			name,
+			value: void 0,
+			sqlType,
+			raw: void 0
+		});
+		return this;
+	};
+	/** {@link procParamOut}, additionally seeding the variable/argument with an initial `value`. */
+	procParamInOut = (name, value, sqlType) => {
+		this.#requireCallState().params.push({
+			direction: CallParamDirection.InOut,
+			name,
+			value,
+			sqlType,
+			raw: void 0
+		});
+		return this;
+	};
+	/** Clears a previously configured procedure/function call. */
+	clearCall = () => {
+		this.#state.callState = void 0;
+		if (this.#state.queryType === QueryType.Call) this.#state.queryType = QueryType.Select;
 		return this;
 	};
 };
@@ -2671,11 +5328,22 @@ var SqliteQuery = class {
 	};
 };
 //#endregion
+//#region src/state/call.ts
+/** Creates a {@link CallState} with default field values. */
+const createCallState = () => ({
+	kind: CallKind.Procedure,
+	owner: void 0,
+	name: "",
+	returnIntent: CallReturnIntent.Void,
+	params: []
+});
+//#endregion
 //#region src/state/cte.ts
 /** Creates a {@link CteState} with default field values. */
 const createCteState = () => ({
 	builderType: BuilderType.None,
 	name: "",
+	columns: [],
 	recursive: false,
 	subquery: void 0,
 	raw: void 0
@@ -2689,7 +5357,9 @@ const createFromState = () => ({
 	tableName: void 0,
 	alias: void 0,
 	subquery: void 0,
-	raw: void 0
+	raw: void 0,
+	functionName: void 0,
+	functionParams: void 0
 });
 //#endregion
 //#region src/state/group-by.ts
@@ -2698,7 +5368,8 @@ const createGroupByState = () => ({
 	builderType: BuilderType.None,
 	tableNameOrAlias: void 0,
 	columnName: void 0,
-	raw: void 0
+	raw: void 0,
+	groupingSets: void 0
 });
 //#endregion
 //#region src/state/having.ts
@@ -2709,7 +5380,22 @@ const createHavingState = () => ({
 	columnName: void 0,
 	whereOperator: WhereOperator.None,
 	raw: void 0,
-	values: []
+	subquery: void 0,
+	values: [],
+	jsonPath: void 0,
+	jsonExtractMode: void 0,
+	fullTextMode: void 0,
+	fullTextColumns: void 0
+});
+//#endregion
+//#region src/state/hint.ts
+/** Creates a {@link HintState} with default field values. */
+const createHintState = () => ({
+	kind: HintKind.Raw,
+	tableNameOrAlias: void 0,
+	indexName: void 0,
+	optionText: void 0,
+	raw: void 0
 });
 //#endregion
 //#region src/state/join-on.ts
@@ -2722,7 +5408,8 @@ const createJoinOnState = () => ({
 	columnRight: void 0,
 	joinOnOperator: JoinOnOperator.None,
 	raw: void 0,
-	valueRight: void 0
+	valueRight: void 0,
+	valuesRight: void 0
 });
 //#endregion
 //#region src/state/join.ts
@@ -2745,7 +5432,22 @@ const createOrderByState = () => ({
 	tableNameOrAlias: void 0,
 	columnName: void 0,
 	direction: OrderByDirection.None,
+	nulls: NullsOrder.None,
 	raw: void 0
+});
+//#endregion
+//#region src/state/returning.ts
+/** Creates a {@link ReturningState} with default field values. */
+const createReturningState = () => ({
+	columns: [],
+	raw: void 0
+});
+//#endregion
+//#region src/state/row-lock.ts
+/** Creates a {@link RowLockState} with default field values. */
+const createRowLockState = () => ({
+	mode: RowLockMode.None,
+	wait: RowLockWait.Default
 });
 //#endregion
 //#region src/state/select.ts
@@ -2756,7 +5458,10 @@ const createSelectState = () => ({
 	columnName: void 0,
 	alias: void 0,
 	subquery: void 0,
-	raw: void 0
+	raw: void 0,
+	window: void 0,
+	jsonPath: void 0,
+	jsonExtractMode: void 0
 });
 //#endregion
 //#region src/state/union.ts
@@ -2776,6 +5481,15 @@ const createUpdateState = () => ({
 	raw: void 0
 });
 //#endregion
+//#region src/state/upsert.ts
+/** Creates an {@link UpsertState} with default field values. */
+const createUpsertState = () => ({
+	action: UpsertAction.None,
+	conflictColumns: [],
+	updateColumns: [],
+	updateRaw: void 0
+});
+//#endregion
 //#region src/state/where.ts
 /** Creates a {@link WhereState} with default field values. */
 const createWhereState = () => ({
@@ -2785,41 +5499,64 @@ const createWhereState = () => ({
 	whereOperator: WhereOperator.None,
 	raw: void 0,
 	subquery: void 0,
-	values: []
+	values: [],
+	jsonPath: void 0,
+	jsonExtractMode: void 0,
+	fullTextMode: void 0,
+	fullTextColumns: void 0
 });
 //#endregion
 exports.BuilderType = BuilderType;
+exports.CallKind = CallKind;
+exports.CallParamDirection = CallParamDirection;
+exports.CallReturnIntent = CallReturnIntent;
 exports.DatabaseType = DatabaseType;
+exports.FrameBoundType = FrameBoundType;
+exports.FrameUnit = FrameUnit;
+exports.FullTextMode = FullTextMode;
+exports.HintKind = HintKind;
 exports.JoinOnBuilder = JoinOnBuilder;
 exports.JoinOnOperator = JoinOnOperator;
 exports.JoinOperator = JoinOperator;
 exports.JoinType = JoinType;
+exports.JsonExtractMode = JsonExtractMode;
 exports.MssqlQuery = MssqlQuery;
 exports.MultiBuilder = MultiBuilder;
 exports.MultiBuilderTransactionState = MultiBuilderTransactionState;
 exports.MysqlQuery = MysqlQuery;
+exports.NullsOrder = NullsOrder;
 exports.OrderByDirection = OrderByDirection;
 exports.ParserArea = ParserArea;
 exports.ParserError = ParserError;
 exports.PostgresQuery = PostgresQuery;
 exports.QueryBuilder = QueryBuilder;
 exports.QueryType = QueryType;
+exports.RowLockMode = RowLockMode;
+exports.RowLockWait = RowLockWait;
 exports.RuntimeConfiguration = RuntimeConfiguration;
 exports.SqliteQuery = SqliteQuery;
+exports.UpsertAction = UpsertAction;
 exports.WhereOperator = WhereOperator;
+exports.WindowBuilder = WindowBuilder;
+exports.createCallState = createCallState;
 exports.createCteState = createCteState;
 exports.createFromState = createFromState;
 exports.createGroupByState = createGroupByState;
 exports.createHavingState = createHavingState;
+exports.createHintState = createHintState;
 exports.createInsertState = createInsertState;
 exports.createJoinOnState = createJoinOnState;
 exports.createJoinState = createJoinState;
 exports.createOrderByState = createOrderByState;
 exports.createQueryState = createQueryState;
+exports.createReturningState = createReturningState;
+exports.createRowLockState = createRowLockState;
 exports.createSelectState = createSelectState;
 exports.createUnionState = createUnionState;
 exports.createUpdateState = createUpdateState;
+exports.createUpsertState = createUpsertState;
 exports.createWhereState = createWhereState;
+exports.createWindowState = createWindowState;
 exports.defaultToSql = defaultToSql;
 exports.mssqlConfiguration = mssqlConfiguration;
 exports.mysqlConfiguration = mysqlConfiguration;

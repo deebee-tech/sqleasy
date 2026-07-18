@@ -20,8 +20,10 @@ export type JoinOnState = {
   joinOnOperator: JoinOnOperator;
   /** Raw SQL for this join condition when not using structured fields. */
   raw: string | undefined;
-  /** Right-hand value when the RHS is a literal or parameter. */
+  /** Right-hand value when the RHS is a literal or parameter (`onValue`). */
   valueRight: any | undefined;
+  /** Right-hand value list for `onIn`/`onNotIn` (any length) or `onBetween`/`onNotBetween` (exactly two). */
+  valuesRight: any[] | undefined;
 };
 
 /** Creates a {@link JoinOnState} with default field values. */
@@ -34,4 +36,5 @@ export const createJoinOnState = (): JoinOnState => ({
   joinOnOperator: JoinOnOperator.None,
   raw: undefined,
   valueRight: undefined,
+  valuesRight: undefined,
 });

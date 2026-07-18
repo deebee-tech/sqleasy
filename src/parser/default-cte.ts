@@ -33,6 +33,19 @@ export const defaultCte = (
     const cteState = state.cteStates[i]!;
 
     sqlHelper.addSqlSnippet(quoteIdentifier(cteState.name, config.identifierDelimiters));
+
+    if (cteState.columns.length > 0) {
+      sqlHelper.addSqlSnippet(' (');
+      cteState.columns.forEach((column, columnIndex) => {
+        sqlHelper.addSqlSnippet(quoteIdentifier(column, config.identifierDelimiters));
+
+        if (columnIndex < cteState.columns.length - 1) {
+          sqlHelper.addSqlSnippet(', ');
+        }
+      });
+      sqlHelper.addSqlSnippet(')');
+    }
+
     sqlHelper.addSqlSnippet(' AS (');
 
     if (cteState.builderType === BuilderType.CteRaw) {

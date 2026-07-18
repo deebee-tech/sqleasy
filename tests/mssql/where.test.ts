@@ -179,18 +179,17 @@ describe('MssqlQuery where', () => {
     );
   });
 
-  it('whereGroup (nested parentheses)', () => {
+  it('whereGroup rejects an empty group', () => {
     const query = new MssqlQuery();
     const builder = query.newBuilder();
-    builder
-      .selectAll()
-      .fromTable('users', 'u')
-      .where('u', 'active', WhereOperator.Equals, 1)
-      .and()
-      .whereGroup(() => {});
-
-    const sql = builder.parseRaw();
-    expect(sql).toEqual('SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = 1 AND ();');
+    expect(() =>
+      builder
+        .selectAll()
+        .fromTable('users', 'u')
+        .where('u', 'active', WhereOperator.Equals, 1)
+        .and()
+        .whereGroup(() => {}),
+    ).toThrow(/WHERE group cannot be empty/);
   });
 
   it('whereRaw', () => {

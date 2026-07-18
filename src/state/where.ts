@@ -1,6 +1,14 @@
 import { BuilderType } from '../enums/builder-type';
+import { FullTextMode } from '../enums/full-text-mode';
+import { JsonExtractMode } from '../enums/json-extract-mode';
 import { WhereOperator } from '../enums/where-operator';
 import type { QueryState } from './query';
+
+/** Column reference for a multi-column full-text predicate. */
+export type FullTextColumnRef = {
+  tableNameOrAlias: string;
+  columnName: string;
+};
 
 /**
  * Holds state for one WHERE predicate (column op value, subquery, or raw).
@@ -21,6 +29,14 @@ export type WhereState = {
   subquery: QueryState | undefined;
   /** Bound parameter values for this predicate. */
   values: any[];
+  /** JSON path segment or JSONPath string for JSON predicates. */
+  jsonPath?: string;
+  /** Text vs JSON-object extraction for JSON predicates. */
+  jsonExtractMode?: JsonExtractMode;
+  /** Full-text match mode. */
+  fullTextMode?: FullTextMode;
+  /** Columns searched by a full-text predicate. */
+  fullTextColumns?: FullTextColumnRef[];
 };
 
 /** Creates a {@link WhereState} with default field values. */
@@ -32,4 +48,8 @@ export const createWhereState = (): WhereState => ({
   raw: undefined,
   subquery: undefined,
   values: [],
+  jsonPath: undefined,
+  jsonExtractMode: undefined,
+  fullTextMode: undefined,
+  fullTextColumns: undefined,
 });

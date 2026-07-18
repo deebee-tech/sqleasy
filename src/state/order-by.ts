@@ -1,4 +1,5 @@
 import { BuilderType } from '../enums/builder-type';
+import { NullsOrder } from '../enums/nulls-order';
 import { OrderByDirection } from '../enums/order-by-direction';
 
 /**
@@ -14,6 +15,8 @@ export type OrderByState = {
   columnName: string | undefined;
   /** ASC, DESC, or none. */
   direction: OrderByDirection;
+  /** `NULLS FIRST`/`NULLS LAST` placement; `None` omits it (dialect default). Ignored for `raw`. */
+  nulls: NullsOrder;
   /** Raw SQL for this ORDER BY term when not using structured fields. */
   raw: string | undefined;
 };
@@ -24,5 +27,6 @@ export const createOrderByState = (): OrderByState => ({
   tableNameOrAlias: undefined,
   columnName: undefined,
   direction: OrderByDirection.None,
+  nulls: NullsOrder.None,
   raw: undefined,
 });

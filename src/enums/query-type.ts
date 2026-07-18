@@ -10,6 +10,8 @@ export const QueryType = {
   Update: 'Update',
   /** DELETE statement. */
   Delete: 'Delete',
+  /** Stored procedure/function invocation (`CALL`/`EXEC`/`SELECT func(...)`). */
+  Call: 'Call',
 } as const;
 
 /** One of the {@link QueryType} statement kinds. */

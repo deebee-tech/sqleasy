@@ -13,6 +13,7 @@ import type { JoinOnState } from '../state/join-on';
 import type { QueryState } from '../state/query';
 import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
+import { mysqlIndexHintForTable } from './default-hint';
 
 export const defaultJoin = (
   state: QueryState,
@@ -61,6 +62,38 @@ export const defaultJoin = (
       case JoinType.Cross:
         sqlHelper.addSqlSnippet('CROSS JOIN ');
         break;
+      case JoinType.Lateral:
+        if (config.databaseType === DatabaseType.Sqlite) {
+          throw new ParserError(ParserArea.Join, 'SQLite does not support LATERAL joins');
+        }
+        if (config.databaseType === DatabaseType.Mssql) {
+          throw new ParserError(
+            ParserArea.Join,
+            'MSSQL LATERAL joins use CROSS APPLY/OUTER APPLY — use joinCrossApply/joinOuterApply',
+          );
+        }
+        sqlHelper.addSqlSnippet('JOIN LATERAL ');
+        break;
+      case JoinType.CrossApply:
+        if (config.databaseType === DatabaseType.Mssql) {
+          sqlHelper.addSqlSnippet('CROSS APPLY ');
+          break;
+        }
+        if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) {
+          sqlHelper.addSqlSnippet('CROSS JOIN LATERAL ');
+          break;
+        }
+        throw new ParserError(ParserArea.Join, 'SQLite does not support CROSS APPLY/LATERAL joins');
+      case JoinType.OuterApply:
+        if (config.databaseType === DatabaseType.Mssql) {
+          sqlHelper.addSqlSnippet('OUTER APPLY ');
+          break;
+        }
+        if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) {
+          sqlHelper.addSqlSnippet('LEFT JOIN LATERAL ');
+          break;
+        }
+        throw new ParserError(ParserArea.Join, 'SQLite does not support OUTER APPLY/LATERAL joins');
     }
 
     if (joinState.builderType === BuilderType.JoinTable) {
@@ -74,6 +107,10 @@ export const defaultJoin = (
       }
 
       sqlHelper.addSqlSnippet(quoteIdentifier(joinState.tableName, config.identifierDelimiters));
+
+      sqlHelper.addSqlSnippet(
+        mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ''),
+      );
 
       if (joinState.alias !== '') {
         sqlHelper.addSqlSnippet(' AS ');
@@ -110,17 +147,16 @@ export const defaultJoin = (
   return sqlHelper;
 };
 
-const defaultJoinOns = (
+/**
+ * Renders a JOIN's ON condition list *without* the leading `" ON "` keyword — the shared core
+ * used both for a normal JOIN and (via {@link renderJoinOnConditions}) for translating a
+ * join-backed UPDATE/DELETE's ON conditions into a Postgres `WHERE` predicate.
+ */
+const renderJoinOnPredicate = (
   sqlHelper: SqlHelper,
   config: Dialect,
   joinOnStates: JoinOnState[],
 ): SqlHelper => {
-  if (joinOnStates.length === 0) {
-    return sqlHelper;
-  }
-
-  sqlHelper.addSqlSnippet(' ON ');
-
   for (let i = 0; i < joinOnStates.length; i++) {
     const on = joinOnStates[i]!;
     const prevOn = i > 0 ? joinOnStates[i - 1] : undefined;
@@ -191,6 +227,25 @@ const defaultJoinOns = (
       continue;
     }
 
+    // Consecutive ON predicates without an explicit AND/OR are joined with AND.
+    const isPredicateOperator = (joinOnOperator: JoinOnOperator | undefined): boolean =>
+      joinOnOperator === JoinOnOperator.On ||
+      joinOnOperator === JoinOnOperator.Value ||
+      joinOnOperator === JoinOnOperator.Raw ||
+      joinOnOperator === JoinOnOperator.InValues ||
+      joinOnOperator === JoinOnOperator.NotInValues ||
+      joinOnOperator === JoinOnOperator.Between ||
+      joinOnOperator === JoinOnOperator.NotBetween;
+    const endsOnExpression =
+      prevOn &&
+      (isPredicateOperator(prevOn.joinOnOperator) ||
+        prevOn.joinOnOperator === JoinOnOperator.GroupEnd);
+    const startsOnExpression =
+      isPredicateOperator(on.joinOnOperator) || on.joinOnOperator === JoinOnOperator.GroupBegin;
+    if (i > 0 && endsOnExpression && startsOnExpression) {
+      sqlHelper.addSqlSnippet('AND ');
+    }
+
     if (on.joinOnOperator === JoinOnOperator.GroupBegin) {
       sqlHelper.addSqlSnippet('(');
       continue;
@@ -236,6 +291,12 @@ const defaultJoinOns = (
         case JoinOperator.LessThanOrEquals:
           sqlHelper.addSqlSnippet('<=');
           break;
+        case JoinOperator.Like:
+          sqlHelper.addSqlSnippet('LIKE');
+          break;
+        case JoinOperator.NotLike:
+          sqlHelper.addSqlSnippet('NOT LIKE');
+          break;
       }
 
       sqlHelper.addSqlSnippet(' ');
@@ -274,6 +335,12 @@ const defaultJoinOns = (
         case JoinOperator.LessThanOrEquals:
           sqlHelper.addSqlSnippet('<=');
           break;
+        case JoinOperator.Like:
+          sqlHelper.addSqlSnippet('LIKE');
+          break;
+        case JoinOperator.NotLike:
+          sqlHelper.addSqlSnippet('NOT LIKE');
+          break;
       }
 
       sqlHelper.addSqlSnippet(' ');
@@ -283,7 +350,83 @@ const defaultJoinOns = (
       spaceAfter();
       continue;
     }
+
+    if (
+      on.joinOnOperator === JoinOnOperator.InValues ||
+      on.joinOnOperator === JoinOnOperator.NotInValues
+    ) {
+      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet('.');
+      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+
+      sqlHelper.addSqlSnippet(
+        on.joinOnOperator === JoinOnOperator.NotInValues ? ' NOT IN (' : ' IN (',
+      );
+
+      const values = on.valuesRight ?? [];
+      values.forEach((value, valueIndex) => {
+        sqlHelper.addDynamicValue(value);
+
+        if (valueIndex < values.length - 1) {
+          sqlHelper.addSqlSnippet(', ');
+        }
+      });
+
+      sqlHelper.addSqlSnippet(')');
+
+      spaceAfter();
+      continue;
+    }
+
+    if (
+      on.joinOnOperator === JoinOnOperator.Between ||
+      on.joinOnOperator === JoinOnOperator.NotBetween
+    ) {
+      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet('.');
+      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+
+      sqlHelper.addSqlSnippet(
+        on.joinOnOperator === JoinOnOperator.NotBetween ? ' NOT BETWEEN ' : ' BETWEEN ',
+      );
+
+      const [lower, upper] = on.valuesRight ?? [];
+      sqlHelper.addDynamicValue(lower);
+      sqlHelper.addSqlSnippet(' AND ');
+      sqlHelper.addDynamicValue(upper);
+
+      spaceAfter();
+      continue;
+    }
   }
 
   return sqlHelper;
+};
+
+const defaultJoinOns = (
+  sqlHelper: SqlHelper,
+  config: Dialect,
+  joinOnStates: JoinOnState[],
+): SqlHelper => {
+  if (joinOnStates.length === 0) {
+    return sqlHelper;
+  }
+
+  sqlHelper.addSqlSnippet(' ON ');
+
+  return renderJoinOnPredicate(sqlHelper, config, joinOnStates);
+};
+
+/**
+ * Renders a JOIN's ON conditions as a standalone boolean expression (no leading `ON`/`WHERE`
+ * keyword). Used to translate join-backed UPDATE/DELETE ON conditions into a Postgres `WHERE`
+ * predicate, since Postgres's `UPDATE ... FROM` / `DELETE ... USING` do not support `JOIN ... ON`
+ * syntax directly.
+ */
+export const renderJoinOnConditions = (
+  sqlHelper: SqlHelper,
+  config: Dialect,
+  joinOnStates: JoinOnState[],
+): SqlHelper => {
+  return renderJoinOnPredicate(sqlHelper, config, joinOnStates);
 };

@@ -1,11 +1,15 @@
 import type { Dialect } from '../configuration/configuration';
 import { BuilderType } from '../enums/builder-type';
+import { DatabaseType } from '../enums/database-type';
+import { JsonExtractMode } from '../enums/json-extract-mode';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import { defaultWindow } from './default-window';
+import { emitJsonExtractExpression } from './default-json';
 import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 
@@ -26,7 +30,29 @@ export const defaultSelect = (
 
   sqlHelper.addSqlSnippet('SELECT ');
 
-  if (state.distinct) {
+  if (state.distinctOnColumns && state.distinctOnColumns.length > 0) {
+    if (config.databaseType !== DatabaseType.Postgres) {
+      throw new ParserError(ParserArea.Select, 'DISTINCT ON is only supported on Postgres');
+    }
+
+    if (state.distinct) {
+      throw new ParserError(ParserArea.Select, 'Cannot combine distinct() with distinctOn()');
+    }
+
+    sqlHelper.addSqlSnippet('DISTINCT ON (');
+    state.distinctOnColumns.forEach((column, i) => {
+      sqlHelper.addSqlSnippet(
+        quoteIdentifier(column.tableNameOrAlias, config.identifierDelimiters),
+      );
+      sqlHelper.addSqlSnippet('.');
+      sqlHelper.addSqlSnippet(quoteIdentifier(column.columnName, config.identifierDelimiters));
+
+      if (i < state.distinctOnColumns!.length - 1) {
+        sqlHelper.addSqlSnippet(', ');
+      }
+    });
+    sqlHelper.addSqlSnippet(') ');
+  } else if (state.distinct) {
     sqlHelper.addSqlSnippet('DISTINCT ');
   }
 
@@ -72,10 +98,56 @@ export const defaultSelect = (
       continue;
     }
 
+    if (selectState.builderType === BuilderType.SelectWindow) {
+      sqlHelper.addSqlSnippet(selectState.raw ?? '');
+      sqlHelper.addSqlSnippet(' ');
+
+      const windowHelper = defaultWindow(
+        selectState.window ?? { partitionByStates: [], orderByStates: [], frame: undefined },
+        config,
+        mode,
+      );
+      sqlHelper.addSqlSnippetWithValues(windowHelper.getSql(), windowHelper.getValues());
+
+      if (selectState.alias !== '') {
+        sqlHelper.addSqlSnippet(' AS ');
+        sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+      }
+
+      if (i < state.selectStates.length - 1) {
+        sqlHelper.addSqlSnippet(', ');
+      }
+
+      continue;
+    }
+
     if (selectState.builderType === BuilderType.SelectBuilder) {
       const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 
       sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
+
+      if (selectState.alias !== '') {
+        sqlHelper.addSqlSnippet(' AS ');
+        sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+      }
+
+      if (i < state.selectStates.length - 1) {
+        sqlHelper.addSqlSnippet(', ');
+      }
+
+      continue;
+    }
+
+    if (selectState.builderType === BuilderType.SelectJsonExtract) {
+      emitJsonExtractExpression(
+        sqlHelper,
+        config,
+        selectState.tableNameOrAlias ?? '',
+        selectState.columnName ?? '',
+        selectState.jsonPath ?? '',
+        selectState.jsonExtractMode ?? JsonExtractMode.Text,
+        ParserArea.Select,
+      );
 
       if (selectState.alias !== '') {
         sqlHelper.addSqlSnippet(' AS ');

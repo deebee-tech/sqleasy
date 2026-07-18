@@ -1,9 +1,15 @@
 import {
+  CallReturnIntent,
+  FrameBoundType,
+  FrameUnit,
+  FullTextMode,
   JoinOperator,
   JoinType,
+  JsonExtractMode,
   MssqlQuery,
   MultiBuilderTransactionState,
   MysqlQuery,
+  NullsOrder,
   OrderByDirection,
   PostgresQuery,
   QueryBuilder,
@@ -11,6 +17,7 @@ import {
   WhereOperator,
   type JoinOnBuilder,
   type MultiBuilder,
+  type WindowBuilder,
 } from '../../src';
 import type { Case, Dialect, Expectation, InputValue, Op, OutputValue } from './types';
 
@@ -103,6 +110,18 @@ const applyJoinOn = (b: JoinOnBuilder, onOps: Op[]): void => {
       case 'onRaw':
         b.onRaw(str(op, 'sql'));
         break;
+      case 'onIn':
+        b.onIn(str(op, 'alias'), str(op, 'column'), list<InputValue>(op, 'values').map(toValue));
+        break;
+      case 'onNotIn':
+        b.onNotIn(str(op, 'alias'), str(op, 'column'), list<InputValue>(op, 'values').map(toValue));
+        break;
+      case 'onBetween':
+        b.onBetween(str(op, 'alias'), str(op, 'column'), val(op, 'from'), val(op, 'to'));
+        break;
+      case 'onNotBetween':
+        b.onNotBetween(str(op, 'alias'), str(op, 'column'), val(op, 'from'), val(op, 'to'));
+        break;
       case 'onGroup':
         b.onGroup((sub) => applyJoinOn(sub, ops(op)));
         break;
@@ -114,6 +133,44 @@ const applyJoinOn = (b: JoinOnBuilder, onOps: Op[]): void => {
         break;
       default:
         throw new Error(`conformance driver: unknown join-on op "${op.op}"`);
+    }
+  }
+};
+
+const applyWindow = (w: WindowBuilder, windowOps: Op[]): void => {
+  for (const op of windowOps) {
+    switch (op.op) {
+      case 'partitionByColumn':
+        w.partitionByColumn(str(op, 'table'), str(op, 'column'));
+        break;
+      case 'partitionByRaw':
+        w.partitionByRaw(str(op, 'sql'));
+        break;
+      case 'orderByColumn':
+        w.orderByColumn(
+          str(op, 'table'),
+          str(op, 'column'),
+          (op.direction as OrderByDirection | undefined) ?? OrderByDirection.None,
+          (op.nulls as NullsOrder | undefined) ?? NullsOrder.None,
+        );
+        break;
+      case 'orderByRaw':
+        w.orderByRaw(str(op, 'sql'));
+        break;
+      case 'frame':
+        w.frame(
+          op.unit as FrameUnit,
+          op.startType as FrameBoundType,
+          op.startOffset as number | undefined,
+          op.endType as FrameBoundType | undefined,
+          op.endOffset as number | undefined,
+        );
+        break;
+      case 'frameRaw':
+        w.frameRaw(str(op, 'sql'));
+        break;
+      default:
+        throw new Error(`conformance driver: unknown window op "${op.op}"`);
     }
   }
 };
@@ -146,8 +203,28 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'selectWithBuilder':
         b.selectWithBuilder(str(op, 'alias'), (sub) => apply(sub, ops(op)));
         break;
+      case 'selectWindow':
+        b.selectWindow(str(op, 'fn'), (w) => applyWindow(w, ops(op, 'over')), opt(op, 'alias'));
+        break;
+      case 'selectJsonExtract':
+        b.selectJsonExtract(
+          str(op, 'table'),
+          str(op, 'column'),
+          str(op, 'path'),
+          (op.mode as JsonExtractMode | undefined) ?? JsonExtractMode.Text,
+          opt(op, 'alias'),
+        );
+        break;
       case 'distinct':
         b.distinct();
+        break;
+      case 'distinctOn':
+        b.distinctOn(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+        );
         break;
 
       // ---- FROM ----
@@ -173,6 +250,27 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         break;
       case 'fromWithBuilder':
         b.fromWithBuilder(str(op, 'alias'), (sub) => apply(sub, ops(op)));
+        break;
+      case 'fromLateral':
+        b.fromLateral(str(op, 'alias'), (sub) => apply(sub, ops(op)));
+        break;
+      case 'fromTableFunction':
+        b.fromTableFunction(
+          str(op, 'name'),
+          str(op, 'alias'),
+          list<InputValue>(op, 'params').map(toValue),
+        );
+        break;
+      case 'fromTableFunctionWithOwner':
+        b.fromTableFunctionWithOwner(
+          str(op, 'owner'),
+          str(op, 'name'),
+          str(op, 'alias'),
+          list<InputValue>(op, 'params').map(toValue),
+        );
+        break;
+      case 'fromFunctionRaw':
+        b.fromFunctionRaw(str(op, 'sql'), str(op, 'alias'));
         break;
 
       // ---- JOIN ----
@@ -200,6 +298,25 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         break;
       case 'joinRaw':
         b.joinRaw(str(op, 'sql'));
+        break;
+      case 'joinCrossApply':
+        b.joinCrossApply(
+          str(op, 'alias'),
+          (sub) => apply(sub, ops(op)),
+          op.on ? (j) => applyJoinOn(j, ops(op, 'on')) : undefined,
+        );
+        break;
+      case 'joinOuterApply':
+        b.joinOuterApply(
+          str(op, 'alias'),
+          (sub) => apply(sub, ops(op)),
+          op.on ? (j) => applyJoinOn(j, ops(op, 'on')) : undefined,
+        );
+        break;
+      case 'joinLateral':
+        b.joinLateral(str(op, 'alias'), (sub) => apply(sub, ops(op)), (j) =>
+          applyJoinOn(j, ops(op, 'on')),
+        );
         break;
 
       // ---- WHERE ----
@@ -249,6 +366,38 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           apply(sub, ops(op)),
         );
         break;
+      case 'whereExists':
+        b.whereExists((sub) => apply(sub, ops(op)));
+        break;
+      case 'whereNotExists':
+        b.whereNotExists((sub) => apply(sub, ops(op)));
+        break;
+      case 'whereJsonExtract':
+        b.whereJsonExtract(
+          str(op, 'table'),
+          str(op, 'column'),
+          str(op, 'path'),
+          op.mode as JsonExtractMode,
+          op.operator as WhereOperator,
+          val(op),
+        );
+        break;
+      case 'whereJsonContains':
+        b.whereJsonContains(str(op, 'table'), str(op, 'column'), val(op));
+        break;
+      case 'whereMatch':
+        b.whereMatch(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+          str(op, 'query'),
+          (op.mode as FullTextMode | undefined) ?? FullTextMode.Natural,
+        );
+        break;
+      case 'whereMatchRaw':
+        b.whereMatchRaw(str(op, 'sql'));
+        break;
       case 'and':
         b.and();
         break;
@@ -263,16 +412,108 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'groupByRaw':
         b.groupByRaw(str(op, 'sql'));
         break;
+      case 'groupByRollup':
+        b.groupByRollup(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+        );
+        break;
+      case 'groupByCube':
+        b.groupByCube(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+        );
+        break;
+      case 'groupByGroupingSets':
+        b.groupByGroupingSets(
+          list<{ sets: { table: string; column: string }[] }>(op, 'sets').map((entry) =>
+            entry.sets.map((c) => ({
+              tableNameOrAlias: c.table,
+              columnName: c.column,
+            })),
+          ),
+        );
+        break;
       case 'having':
         b.having(str(op, 'table'), str(op, 'column'), op.operator as WhereOperator, val(op));
         break;
       case 'havingRaw':
         b.havingRaw(str(op, 'sql'));
         break;
+      case 'havingBetween':
+        b.havingBetween(str(op, 'table'), str(op, 'column'), val(op, 'from'), val(op, 'to'));
+        break;
+      case 'havingInValues':
+        b.havingInValues(
+          str(op, 'table'),
+          str(op, 'column'),
+          list<InputValue>(op, 'values').map(toValue),
+        );
+        break;
+      case 'havingNotInValues':
+        b.havingNotInValues(
+          str(op, 'table'),
+          str(op, 'column'),
+          list<InputValue>(op, 'values').map(toValue),
+        );
+        break;
+      case 'havingNull':
+        b.havingNull(str(op, 'table'), str(op, 'column'));
+        break;
+      case 'havingNotNull':
+        b.havingNotNull(str(op, 'table'), str(op, 'column'));
+        break;
+      case 'havingGroup':
+        b.havingGroup((sub) => apply(sub, ops(op)));
+        break;
+      case 'havingInWithBuilder':
+        b.havingInWithBuilder(str(op, 'table'), str(op, 'column'), (sub) => apply(sub, ops(op)));
+        break;
+      case 'havingNotInWithBuilder':
+        b.havingNotInWithBuilder(str(op, 'table'), str(op, 'column'), (sub) => apply(sub, ops(op)));
+        break;
+      case 'havingExists':
+        b.havingExists((sub) => apply(sub, ops(op)));
+        break;
+      case 'havingNotExists':
+        b.havingNotExists((sub) => apply(sub, ops(op)));
+        break;
+      case 'havingJsonExtract':
+        b.havingJsonExtract(
+          str(op, 'table'),
+          str(op, 'column'),
+          str(op, 'path'),
+          op.mode as JsonExtractMode,
+          op.operator as WhereOperator,
+          val(op),
+        );
+        break;
+      case 'havingJsonContains':
+        b.havingJsonContains(str(op, 'table'), str(op, 'column'), val(op));
+        break;
+      case 'havingMatch':
+        b.havingMatch(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+          str(op, 'query'),
+          (op.mode as FullTextMode | undefined) ?? FullTextMode.Natural,
+        );
+        break;
 
       // ---- ORDER BY / LIMIT ----
       case 'orderByColumn':
-        b.orderByColumn(str(op, 'table'), str(op, 'column'), op.direction as OrderByDirection);
+        b.orderByColumn(
+          str(op, 'table'),
+          str(op, 'column'),
+          (op.direction as OrderByDirection | undefined) ?? OrderByDirection.None,
+          (op.nulls as NullsOrder | undefined) ?? NullsOrder.None,
+        );
         break;
       case 'orderByRaw':
         b.orderByRaw(str(op, 'sql'));
@@ -280,11 +521,32 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'limit':
         b.limit(op.n as number);
         break;
+      case 'limitWithTies':
+        b.limitWithTies(op.n as number);
+        break;
       case 'offset':
         b.offset(op.n as number);
         break;
       case 'top':
         b.top(op.n as number);
+        break;
+      case 'forUpdate':
+        b.forUpdate();
+        break;
+      case 'forUpdateNowait':
+        b.forUpdateNowait();
+        break;
+      case 'forUpdateSkipLocked':
+        b.forUpdateSkipLocked();
+        break;
+      case 'forShare':
+        b.forShare();
+        break;
+      case 'forShareNowait':
+        b.forShareNowait();
+        break;
+      case 'forShareSkipLocked':
+        b.forShareSkipLocked();
         break;
 
       // ---- INSERT / UPDATE / DELETE ----
@@ -302,6 +564,24 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         break;
       case 'insertRaw':
         b.insertRaw(str(op, 'sql'));
+        break;
+      case 'insertSelect':
+        b.insertSelect((sub) => apply(sub, ops(op)));
+        break;
+      case 'onConflictDoNothing':
+        b.onConflictDoNothing(list<string>(op, 'conflictColumns'));
+        break;
+      case 'onConflictDoUpdate':
+        b.onConflictDoUpdate(
+          list<string>(op, 'conflictColumns'),
+          list<{ column: string; value: InputValue }>(op, 'updates').map((u) => ({
+            columnName: u.column,
+            value: toValue(u.value),
+          })),
+        );
+        break;
+      case 'onConflictDoUpdateRaw':
+        b.onConflictDoUpdateRaw(list<string>(op, 'conflictColumns'), str(op, 'sql'));
         break;
       case 'updateTable':
         b.updateTable(str(op, 'table'), str(op, 'alias'));
@@ -321,6 +601,12 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'deleteFromWithOwner':
         b.deleteFromWithOwner(str(op, 'owner'), str(op, 'table'), str(op, 'alias'));
         break;
+      case 'returning':
+        b.returning(list<string>(op, 'columns'));
+        break;
+      case 'returningRaw':
+        b.returningRaw(str(op, 'sql'));
+        break;
 
       // ---- SET OPERATIONS / CTE ----
       case 'union':
@@ -336,13 +622,68 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         b.except((sub) => apply(sub, ops(op)));
         break;
       case 'cte':
-        b.cte(str(op, 'name'), (sub) => apply(sub, ops(op)));
+        b.cte(str(op, 'name'), (sub) => apply(sub, ops(op)), list<string>(op, 'columns'));
         break;
       case 'cteRecursive':
-        b.cteRecursive(str(op, 'name'), (sub) => apply(sub, ops(op)));
+        b.cteRecursive(str(op, 'name'), (sub) => apply(sub, ops(op)), list<string>(op, 'columns'));
         break;
       case 'cteRaw':
         b.cteRaw(str(op, 'name'), str(op, 'sql'));
+        break;
+
+      // ---- CALL (stored procedures / functions) ----
+      case 'callProcedure':
+        b.callProcedure(str(op, 'name'));
+        break;
+      case 'callProcedureWithOwner':
+        b.callProcedureWithOwner(str(op, 'owner'), str(op, 'name'));
+        break;
+      case 'callFunction':
+        b.callFunction(str(op, 'name'), op.returnIntent as CallReturnIntent | undefined);
+        break;
+      case 'callFunctionWithOwner':
+        b.callFunctionWithOwner(
+          str(op, 'owner'),
+          str(op, 'name'),
+          op.returnIntent as CallReturnIntent | undefined,
+        );
+        break;
+      case 'procParam':
+        b.procParam(val(op));
+        break;
+      case 'procParams':
+        b.procParams(list<InputValue>(op, 'values').map(toValue));
+        break;
+      case 'procParamNamed':
+        b.procParamNamed(str(op, 'name'), val(op));
+        break;
+      case 'procParamRaw':
+        b.procParamRaw(str(op, 'sql'));
+        break;
+      case 'procParamOut':
+        b.procParamOut(str(op, 'name'), op.sqlType as string | undefined);
+        break;
+      case 'procParamInOut':
+        b.procParamInOut(str(op, 'name'), val(op), op.sqlType as string | undefined);
+        break;
+      case 'clearCall':
+        b.clearCall();
+        break;
+
+      case 'hintUseIndex':
+        b.hintUseIndex(str(op, 'table'), str(op, 'index'));
+        break;
+      case 'hintForceIndex':
+        b.hintForceIndex(str(op, 'table'), str(op, 'index'));
+        break;
+      case 'hintMssqlOption':
+        b.hintMssqlOption(str(op, 'option'));
+        break;
+      case 'hintRaw':
+        b.hintRaw(str(op, 'sql'));
+        break;
+      case 'clearHints':
+        b.clearHints();
         break;
 
       default:

@@ -7,15 +7,20 @@ import { QueryType } from '../enums/query-type';
 import { ParserError } from '../helpers/parser-error';
 import { renderPlaceholders, SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import { defaultCall } from './default-call';
 import { defaultCte } from './default-cte';
 import { defaultDelete } from './default-delete';
 import { defaultFrom } from './default-from';
 import { defaultGroupBy } from './default-group-by';
 import { defaultHaving } from './default-having';
+import { emitTrailingHints, validateHints } from './default-hint';
 import { defaultInsert } from './default-insert';
 import { defaultJoin } from './default-join';
 import { defaultLimitOffset } from './default-limit-offset';
+import { buildPostgresMutationJoinPredicate } from './default-mutation-join';
 import { defaultOrderBy } from './default-order-by';
+import { emitTrailingReturningClause } from './default-returning';
+import { emitTrailingRowLockClause } from './default-row-lock';
 import { defaultSelect } from './default-select';
 import { defaultUnion } from './default-union';
 import { defaultUpdate } from './default-update';
@@ -34,6 +39,49 @@ export type PreparedSql = {
 /** Hooks the dialect can inject into the shared clause walk (e.g. MSSQL's `TOP`). */
 export type ToSqlOptions = {
   beforeSelectColumns?: (state: QueryState, config: Dialect, sqlHelper: SqlHelper) => void;
+};
+
+/**
+ * Emits the ` WHERE ...` clause for a join-backed UPDATE/DELETE. For MySQL/MSSQL the join's ON
+ * conditions were already emitted inline as real `JOIN ... ON` syntax by `defaultUpdate`/
+ * `defaultDelete`, so this is just the caller's own `.where(...)` predicates, unchanged. For
+ * Postgres, the join's ON conditions cannot live in `FROM`/`USING` — see
+ * `default-mutation-join.ts` — so they are translated into a `WHERE` predicate here and ANDed
+ * in front of the caller's own predicates.
+ */
+const emitMutationWhere = (
+  sqlHelper: SqlHelper,
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): void => {
+  const joinPredicate =
+    state.joinStates.length > 0 && config.databaseType === DatabaseType.Postgres
+      ? buildPostgresMutationJoinPredicate(config, state, mode)
+      : undefined;
+
+  if (!joinPredicate || joinPredicate.getSql() === '') {
+    if (state.whereStates.length > 0) {
+      const where = defaultWhere(state, config, mode, options);
+      sqlHelper.addSqlSnippet(' ');
+      sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+    }
+    return;
+  }
+
+  sqlHelper.addSqlSnippet(' WHERE ');
+  sqlHelper.addSqlSnippetWithValues(joinPredicate.getSql(), joinPredicate.getValues());
+
+  if (state.whereStates.length > 0) {
+    const where = defaultWhere(state, config, mode, options);
+    let whereSql = where.getSql();
+    if (whereSql.startsWith('WHERE ')) {
+      whereSql = whereSql.slice('WHERE '.length);
+    }
+    sqlHelper.addSqlSnippet(' AND ');
+    sqlHelper.addSqlSnippetWithValues(whereSql, where.getValues());
+  }
 };
 
 /**
@@ -59,9 +107,52 @@ export const defaultToSql = (
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
   }
 
+  if (state.rowLock && state.queryType !== QueryType.Select) {
+    throw new ParserError(ParserArea.General, 'FOR UPDATE/FOR SHARE requires a SELECT query');
+  }
+
+  if (state.upsertState && state.queryType !== QueryType.Insert) {
+    throw new ParserError(ParserArea.Insert, 'Upsert (ON CONFLICT) requires INSERT');
+  }
+
+  if (state.callState && state.queryType !== QueryType.Call) {
+    throw new ParserError(ParserArea.Call, 'Procedure/function call state requires queryType Call');
+  }
+
+  if (state.queryType === QueryType.Call) {
+    if (state.cteStates.length > 0) {
+      throw new ParserError(
+        ParserArea.Call,
+        'A CTE cannot be combined with a procedure/function call',
+      );
+    }
+
+    if (state.returningState) {
+      throw new ParserError(
+        ParserArea.Call,
+        'RETURNING/OUTPUT cannot be combined with a procedure/function call',
+      );
+    }
+
+    const call = defaultCall(state, config, mode);
+    sqlHelper.addSqlSnippetWithValues(call.getSql(), call.getValues());
+
+    if (!state.isInnerStatement) {
+      sqlHelper.addSqlSnippet(';');
+    }
+    return sqlHelper;
+  }
+
   if (state.queryType === QueryType.Insert) {
-    const insert = defaultInsert(state, config, mode);
+    const insert = defaultInsert(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(insert.getSql(), insert.getValues());
+
+    // PG/SQLite's RETURNING is trailing; MSSQL's OUTPUT was already emitted inline by
+    // `defaultInsert` (before VALUES), and MySQL has no equivalent (`defaultReturning` throws).
+    if (state.returningState && config.databaseType !== DatabaseType.Mssql) {
+      emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Insert);
+    }
+
     if (!state.isInnerStatement) {
       sqlHelper.addSqlSnippet(';');
     }
@@ -69,13 +160,13 @@ export const defaultToSql = (
   }
 
   if (state.queryType === QueryType.Update) {
-    const update = defaultUpdate(state, config, mode);
+    const update = defaultUpdate(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
 
-    if (state.whereStates.length > 0) {
-      const where = defaultWhere(state, config, mode, options);
-      sqlHelper.addSqlSnippet(' ');
-      sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+    emitMutationWhere(sqlHelper, state, config, mode, options);
+
+    if (state.returningState && config.databaseType !== DatabaseType.Mssql) {
+      emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Update);
     }
 
     if (!state.isInnerStatement) {
@@ -85,19 +176,26 @@ export const defaultToSql = (
   }
 
   if (state.queryType === QueryType.Delete) {
-    const del = defaultDelete(state, config, mode);
+    const del = defaultDelete(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
 
-    if (state.whereStates.length > 0) {
-      const where = defaultWhere(state, config, mode, options);
-      sqlHelper.addSqlSnippet(' ');
-      sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
+    emitMutationWhere(sqlHelper, state, config, mode, options);
+
+    if (state.returningState && config.databaseType !== DatabaseType.Mssql) {
+      emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Delete);
     }
 
     if (!state.isInnerStatement) {
       sqlHelper.addSqlSnippet(';');
     }
     return sqlHelper;
+  }
+
+  if (state.returningState) {
+    throw new ParserError(
+      ParserArea.General,
+      'RETURNING/OUTPUT requires INSERT, UPDATE, or DELETE',
+    );
   }
 
   const sel = defaultSelect(state, config, mode, options);
@@ -126,7 +224,7 @@ export const defaultToSql = (
   }
 
   if (state.havingStates.length > 0) {
-    const having = defaultHaving(state, config, mode);
+    const having = defaultHaving(state, config, mode, options);
     sqlHelper.addSqlSnippet(' ');
     sqlHelper.addSqlSnippetWithValues(having.getSql(), having.getValues());
   }
@@ -143,12 +241,25 @@ export const defaultToSql = (
     sqlHelper.addSqlSnippetWithValues(orderBy.getSql(), orderBy.getValues());
   }
 
-  if (state.limit > 0 || state.offset > 0) {
+  if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
     const limitOffset = defaultLimitOffset(state, config, mode);
 
     sqlHelper.addSqlSnippet(' ');
     sqlHelper.addSqlSnippetWithValues(limitOffset.getSql(), limitOffset.getValues());
   }
+
+  if (state.limitWithTies && config.databaseType === DatabaseType.Mssql && state.limit <= 0) {
+    throw new ParserError(ParserArea.LimitOffset, 'limitWithTies requires a positive limit');
+  }
+
+  // Trailing `FOR UPDATE`/`FOR SHARE` (PG/MySQL). MSSQL's equivalent is a `WITH (...)` hint
+  // already emitted on each FROM table by `defaultFrom`; SQLite has no row locking and throws.
+  if (state.rowLock) {
+    emitTrailingRowLockClause(sqlHelper, config, state.rowLock);
+  }
+
+  validateHints(state, config, ParserArea.General);
+  emitTrailingHints(sqlHelper, state, config);
 
   if (!state.isInnerStatement) {
     sqlHelper.addSqlSnippet(';');

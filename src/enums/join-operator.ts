@@ -16,6 +16,10 @@ export const JoinOperator = {
   LessThanOrEquals: 'LessThanOrEquals',
   /** No operator specified. */
   None: 'None',
+  /** Pattern match (LIKE) — usable in both `on` (column-to-column) and `onValue` (column-to-value). */
+  Like: 'Like',
+  /** Negated pattern match (NOT LIKE). */
+  NotLike: 'NotLike',
 } as const;
 
 /** One of the {@link JoinOperator} comparison values. */

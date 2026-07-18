@@ -96,6 +96,14 @@ builder.clearAll();
 builder.distinct().selectColumn('u', 'name', '').fromTable('users', 'u');
 // SELECT DISTINCT "u"."name" FROM "public"."users" AS "u";
 
+// DISTINCT ON (Postgres only — every other dialect throws a ParserError)
+builder.clearAll();
+builder
+  .distinctOn([{ tableNameOrAlias: 'u', columnName: 'email' }])
+  .selectAll()
+  .fromTable('users', 'u');
+// SELECT DISTINCT ON ("u"."email") * FROM "public"."users" AS "u";
+
 // Raw expression
 builder.clearAll();
 builder.selectRaw('COUNT(*) AS total').fromTable('users', 'u');
@@ -110,6 +118,51 @@ builder
   })
   .fromTable('users', 'u');
 // SELECT *, (SELECT COUNT(*) FROM "public"."orders" AS "o") AS "orderCount" FROM "public"."users" AS "u";
+```
+
+### Window Functions
+
+`.selectWindow(fn, over, alias)` adds `fn OVER (...)` to the SELECT list. `fn` is the window
+function's call expression, emitted verbatim (like `.selectRaw()`, it is not quoted/escaped) —
+`over` builds the structured `PARTITION BY`/`ORDER BY`/frame clause. Standard SQL, rendered
+identically across all four dialects.
+
+```typescript
+import { FrameBoundType, FrameUnit } from '@deebeetech/sqleasy';
+
+const builder = new PostgresQuery().newBuilder();
+
+builder
+  .selectColumn('o', 'id', '')
+  .selectWindow(
+    'ROW_NUMBER()',
+    (w) => w.partitionByColumn('o', 'customer_id').orderByColumn('o', 'created_at'),
+    'rn',
+  )
+  .fromTable('orders', 'o');
+// SELECT "o"."id", ROW_NUMBER() OVER (PARTITION BY "o"."customer_id" ORDER BY "o"."created_at") AS "rn"
+//   FROM "public"."orders" AS "o";
+
+// A ROWS/RANGE frame
+builder.clearAll();
+builder
+  .selectColumn('o', 'id', '')
+  .selectWindow(
+    'AVG("o"."total")',
+    (w) =>
+      w
+        .orderByColumn('o', 'created_at')
+        .frame(FrameUnit.Rows, FrameBoundType.Preceding, 1, FrameBoundType.Following, 1),
+    'moving_avg',
+  )
+  .fromTable('orders', 'o');
+// ... AVG("o"."total") OVER (ORDER BY "o"."created_at" ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS "moving_avg" ...
+
+// Raw fragments for expressions the structured builder can't express
+builder.clearAll();
+builder
+  .selectWindow('RANK()', (w) => w.partitionByRaw('"region"').orderByRaw('"total" DESC'), 'r')
+  .fromTable('orders', 'o');
 ```
 
 ### WHERE
@@ -171,6 +224,36 @@ builder
       .or()
       .where('u', 'role', WhereOperator.Equals, 'moderator');
   });
+
+// ILIKE / NOT ILIKE — case-insensitive LIKE. Postgres emits native ILIKE; MySQL, SQLite, and
+// MSSQL (none of which have ILIKE) get an equivalent LOWER(col) LIKE LOWER(?) rewrite.
+builder.clearAll();
+builder
+  .selectAll()
+  .fromTable('users', 'u')
+  .where('u', 'email', WhereOperator.Ilike, '%@example.com');
+
+// EXISTS / NOT EXISTS — whereExists/whereNotExists take only the sub-query builder (no
+// unused table/column). whereExistsWithBuilder/whereNotExistsWithBuilder remain for parity
+// with the wire/corpus format and behave identically.
+builder.clearAll();
+builder
+  .selectAll()
+  .fromTable('users', 'u')
+  .whereExists((sb) => {
+    sb.selectAll().fromTable('orders', 'o').where('o', 'user_id', WhereOperator.Equals, 1);
+  });
+
+// IS DISTINCT FROM / IS NOT DISTINCT FROM — null-safe (in)equality. Native on Postgres/SQLite;
+// MySQL rewrites via its native <=> operator (NOT (a <=> b) / a <=> b); MSSQL has no equivalent
+// (pre-2022 T-SQL) and throws a ParserError.
+builder.clearAll();
+builder
+  .selectAll()
+  .fromTable('orders', 'o')
+  .where('o', 'status', WhereOperator.IsDistinctFrom, 'shipped');
+// Postgres/SQLite: ... WHERE "o"."status" IS DISTINCT FROM shipped;
+// MySQL:           ... WHERE NOT (`o`.`status` <=> shipped);
 ```
 
 ### JOIN
@@ -229,6 +312,16 @@ builder
       jb.on('u', 'id', JoinOperator.Equals, 'recent_orders', 'user_id');
     },
   );
+
+// Richer ON predicates — LIKE/NOT LIKE (via on/onValue), onIn/onNotIn, onBetween/onNotBetween
+builder.clearAll();
+builder
+  .selectAll()
+  .fromTable('orders', 'o')
+  .joinTable(JoinType.Inner, 'customers', 'c', (jb) => {
+    jb.on('o', 'customer_id', JoinOperator.Equals, 'c', 'id').and().onBetween('c', 'tier', 1, 3);
+  });
+// ... INNER JOIN "public"."customers" AS "c" ON "o"."customer_id" = "c"."id" AND "c"."tier" BETWEEN 1 AND 3;
 ```
 
 ### INSERT
@@ -250,6 +343,136 @@ builder
   .insertValues(['John', 'john@example.com'])
   .insertValues(['Jane', 'jane@example.com']);
 // INSERT INTO "public"."users" ("name", "email") VALUES (John, john@example.com), (Jane, jane@example.com);
+
+// INSERT ... SELECT — the row source is a sub-query instead of a literal VALUES list. Mutually
+// exclusive with insertValues (combining the two throws).
+builder.clearAll();
+builder
+  .insertInto('archive')
+  .insertColumns(['id', 'total'])
+  .insertSelect((sub) =>
+    sub
+      .selectColumn('o', 'id', '')
+      .selectColumn('o', 'total', '')
+      .fromTable('orders', 'o')
+      .where('o', 'archived', WhereOperator.Equals, true),
+  );
+// INSERT INTO "public"."archive" ("id", "total")
+//   SELECT "o"."id", "o"."total" FROM "public"."orders" AS "o" WHERE "o"."archived" = true;
+```
+
+### RETURNING / OUTPUT
+
+`.returning()` gets rows back from an `INSERT`/`UPDATE`/`DELETE`: Postgres/SQLite emit a trailing
+`RETURNING`, MSSQL emits an inline `OUTPUT INSERTED.…`/`OUTPUT DELETED.…`. MySQL has no equivalent
+and `.returning()` throws a `ParserError` there rather than silently dropping the columns.
+
+```typescript
+builder.clearAll();
+builder
+  .insertInto('users')
+  .insertColumns(['name'])
+  .insertValues(['John'])
+  .returning(['id', 'name']);
+// Postgres/SQLite: INSERT INTO "public"."users" ("name") VALUES (John) RETURNING "id", "name";
+// MSSQL:           INSERT INTO [dbo].[users] ([name]) OUTPUT INSERTED.[id], INSERTED.[name] VALUES (John);
+
+// Raw form, for expressions the structured column list can't express
+builder.clearAll();
+builder
+  .insertInto('users')
+  .insertColumns(['name'])
+  .insertValues(['John'])
+  .returningRaw('id, LOWER(name) AS name_lower');
+```
+
+### Upsert (INSERT conflict clause)
+
+`.onConflictDoNothing()` / `.onConflictDoUpdate()` handle a conflicting row on `INSERT`: Postgres/SQLite
+get `ON CONFLICT (...) DO NOTHING` / `DO UPDATE SET ...`; MySQL gets `INSERT IGNORE` / `ON DUPLICATE
+KEY UPDATE` instead (its own conflicting-key detection ignores `conflictColumns`, kept only so one
+call shape works on every dialect). MSSQL upsert is emitted as a `MERGE` statement (requires an
+explicit column list and at least one conflict column).
+
+```typescript
+builder.clearAll();
+builder
+  .insertInto('users')
+  .insertColumns(['email', 'name'])
+  .insertValues(['john@example.com', 'John'])
+  .onConflictDoUpdate(['email'], [{ columnName: 'name', value: 'John Updated' }]);
+// Postgres/SQLite: ... ON CONFLICT ("email") DO UPDATE SET "name" = John Updated;
+// MySQL:           ... ON DUPLICATE KEY UPDATE `name` = John Updated;
+
+// Skip conflicting rows entirely
+builder.clearAll();
+builder
+  .insertInto('users')
+  .insertColumns(['email'])
+  .insertValues(['john@example.com'])
+  .onConflictDoNothing(['email']);
+// Postgres/SQLite: ... ON CONFLICT ("email") DO NOTHING;
+// MySQL:           INSERT IGNORE INTO `users` (`email`) VALUES (john@example.com);
+// MSSQL:           MERGE INTO [dbo].[users] AS [target] USING (VALUES (...)) ...;
+```
+
+### JSON operators
+
+Dialect-aware JSON path extraction and containment:
+
+```typescript
+builder
+  .selectJsonExtract('u', 'meta', 'email', JsonExtractMode.Text, 'email')
+  .fromTable('users', 'u')
+  .whereJsonExtract('u', 'meta', 'email', JsonExtractMode.Text, WhereOperator.Equals, 'a@b.c')
+  .whereJsonContains('u', 'meta', { role: 'admin' });
+// Postgres: -> / ->> / @>; MySQL: JSON_EXTRACT / JSON_CONTAINS; MSSQL: JSON_VALUE / JSON_QUERY;
+// SQLite: json_extract (containment throws — use whereRaw).
+```
+
+### Full-text search
+
+```typescript
+builder
+  .fromTable('docs', 'd')
+  .whereMatch([{ tableNameOrAlias: 'd', columnName: 'body' }], 'hello world', FullTextMode.Natural);
+// Postgres: to_tsvector @@ plainto_tsquery; MySQL: MATCH ... AGAINST; MSSQL: FREETEXT/CONTAINS;
+// SQLite: FTS5 column MATCH (requires an FTS virtual table).
+```
+
+### LATERAL / APPLY and table functions
+
+```typescript
+builder
+  .fromTable('orders', 'o')
+  .joinCrossApply('x', (sub) => sub.selectAll().fromTable('line_items', 'li'))
+  .fromTableFunction('generate_series', 'g', [1, 10]);
+// Postgres/MySQL: CROSS JOIN LATERAL; MSSQL: CROSS/OUTER APPLY; SQLite throws for LATERAL.
+```
+
+### GROUPING SETS / CUBE / ROLLUP
+
+```typescript
+builder
+  .groupByColumn('o', 'region')
+  .groupByRollup(); // MySQL: WITH ROLLUP; others: GROUP BY ROLLUP (...)
+```
+
+### FETCH FIRST … WITH TIES
+
+```typescript
+builder.orderByColumn('o', 'total', OrderByDirection.Descending).limitWithTies(5);
+// Postgres/MySQL/MSSQL: FETCH ... WITH TIES; SQLite throws.
+```
+
+### Query hints
+
+Structured hints plus a raw escape hatch:
+
+```typescript
+builder.fromTable('users', 'u').hintUseIndex('u', 'users_email_idx'); // MySQL
+builder.hintMssqlOption('RECOMPILE'); // MSSQL trailing OPTION (...)
+builder.hintRaw('/*+ SeqScan(u) */'); // caller-owned SQL
 ```
 
 ### UPDATE
@@ -272,6 +495,32 @@ builder
   .where('u', 'id', WhereOperator.Equals, 1);
 ```
 
+### Join-backed UPDATE / DELETE
+
+Adding a `.joinTable(...)` to an `UPDATE`/`DELETE` renders real dialect SQL instead of being
+silently dropped: MySQL/MSSQL get a native multi-table `JOIN ... ON`; Postgres translates the
+join's `ON` condition into a `WHERE` predicate (ANDed with any of your own `.where()` calls) and
+renders it as `UPDATE ... FROM` / `DELETE ... USING` — only `INNER`/`CROSS` joins are supported
+there, since translating an `OUTER` join to `WHERE` would silently turn it into an `INNER` join.
+SQLite has no multi-table `UPDATE`/`DELETE` syntax at all and throws a `ParserError`.
+
+```typescript
+builder.clearAll();
+builder
+  .updateTable('orders', 'o')
+  .set('total', 0)
+  .joinTable(JoinType.Inner, 'customers', 'c', (jb) => {
+    jb.on('o', 'customer_id', JoinOperator.Equals, 'c', 'id');
+  })
+  .where('c', 'banned', WhereOperator.Equals, true);
+// MySQL:  UPDATE `orders` AS `o` INNER JOIN `customers` AS `c` ON `o`.`customer_id` = `c`.`id`
+//           SET `total` = 0 WHERE `c`.`banned` = true;
+// MSSQL:  UPDATE [o] SET [total] = 0 FROM [dbo].[orders] AS [o]
+//           INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] WHERE [c].[banned] = true;
+// Postgres: UPDATE "public"."orders" AS "o" SET "total" = 0 FROM "public"."customers" AS "c"
+//           WHERE "o"."customer_id" = "c"."id" AND "c"."banned" = true;
+```
+
 ### DELETE
 
 ```typescript
@@ -279,12 +528,95 @@ const builder = new PostgresQuery().newBuilder();
 
 builder.deleteFrom('users', 'u').where('u', 'id', WhereOperator.Equals, 1);
 // DELETE FROM "public"."users" AS "u" WHERE "u"."id" = 1;
+
+// Join-backed DELETE — see "Join-backed UPDATE / DELETE" above; DELETE...USING mirrors UPDATE...FROM
+builder.clearAll();
+builder
+  .deleteFrom('orders', 'o')
+  .joinTable(JoinType.Inner, 'customers', 'c', (jb) => {
+    jb.on('o', 'customer_id', JoinOperator.Equals, 'c', 'id');
+  })
+  .where('c', 'banned', WhereOperator.Equals, true);
+// Postgres: DELETE FROM "public"."orders" AS "o" USING "public"."customers" AS "c"
+//           WHERE "o"."customer_id" = "c"."id" AND "c"."banned" = true;
 ```
+
+### Stored Procedures & Functions
+
+`.callProcedure()` / `.callFunction()` invoke a stored routine as its own statement family — not a
+raw escape. Arguments are added with `.procParam()` (positional), `.procParamNamed()` (named),
+`.procParamRaw()` (a verbatim expression), and `.procParamOut()` / `.procParamInOut()` for
+output parameters. `.clearCall()` removes a previously configured call.
+
+Emission differs by dialect:
+
+|              | Procedure                               | Function (scalar)      | Function (table-valued)   |
+| ------------ | --------------------------------------- | ---------------------- | ------------------------- |
+| **Postgres** | `CALL name(...)`                        | `SELECT name(...)`     | `SELECT * FROM name(...)` |
+| **MySQL**    | `CALL name(...)`                        | `SELECT name(...)`     | not supported — throws    |
+| **MSSQL**    | `EXEC name ...` (+ `DECLARE` as needed) | `SELECT name(...)`     | `SELECT * FROM name(...)` |
+| **SQLite**   | not supported — throws                  | not supported — throws | not supported — throws    |
+
+```typescript
+import { CallReturnIntent } from '@deebeetech/sqleasy';
+
+builder.clearAll();
+builder.callProcedure('archive_user').procParam(42);
+// Postgres/MySQL: CALL "public"."archive_user"(42); / CALL `archive_user`(42);
+// MSSQL:          EXEC [dbo].[archive_user] 42;
+
+builder.clearAll();
+builder.callFunction('add_two').procParam(1).procParam(2);
+// SELECT "public"."add_two"(1, 2);
+
+// A set-returning / table-valued function
+builder.clearAll();
+builder.callFunction('users_over', CallReturnIntent.ResultSet).procParam(18);
+// Postgres/MSSQL: SELECT * FROM "public"."users_over"(18);
+// MySQL:          throws — no table-valued functions
+```
+
+Named parameters (Postgres `name := value`, MSSQL `@name = value`) are supported on every dialect
+except MySQL, which has no named-argument call syntax and throws. Once a call uses a named
+argument, every later argument in that call must also be named — a positional argument after a
+named one throws, matching the underlying SQL's own rule.
+
+```typescript
+builder.clearAll();
+builder.callProcedure('set_status').procParamNamed('user_id', 1).procParamNamed('status', 'active');
+// Postgres: CALL "public"."set_status"(user_id := 1, status := active);
+// MSSQL:    EXEC [dbo].[set_status] @user_id = 1, @status = active;
+```
+
+OUT/INOUT parameters are procedure-only (a function's result is its return expression, not an
+output parameter — using them on `.callFunction()` throws). `name` doubles as the variable
+identifier MSSQL `DECLARE`s and MySQL references as a session variable — required on both,
+conventionally the same as the routine's own parameter name. Postgres has no variables at all; an
+OUT value simply comes back as a result column of the `CALL`, so its argument slot is just `NULL`.
+
+```typescript
+builder.clearAll();
+builder.callProcedure('archive_user').procParam(42).procParamOut('archived_count', 'INT');
+// MSSQL:    DECLARE @archived_count INT; EXEC [dbo].[archive_user] 42, @archived_count = @archived_count OUTPUT;
+// MySQL:    CALL `archive_user`(42, @archived_count);
+// Postgres: CALL "public"."archive_user"($1, archived_count := $2);  -- 2nd param bound to NULL
+
+// INOUT seeds the variable with an initial value first
+builder.clearAll();
+builder.callProcedure('adjust_balance').procParamInOut('balance', 100, 'INT');
+// MSSQL: DECLARE @balance INT = 100; EXEC [dbo].[adjust_balance] @balance = @balance OUTPUT;
+// MySQL: SET @balance = 100; CALL `adjust_balance`(@balance);
+```
+
+`sqlType` (e.g. `'INT'`, `'NVARCHAR(50)'`) is required for `.procParamOut()`/`.procParamInOut()` on
+MSSQL — it has no way to infer a `DECLARE`d variable's type — and ignored elsewhere. A call cannot
+be combined with a CTE or with `.returning()`; both throw a clear `ParserError` rather than
+silently dropping the clause.
 
 ### ORDER BY / LIMIT / OFFSET
 
 ```typescript
-import { OrderByDirection } from '@deebeetech/sqleasy';
+import { NullsOrder, OrderByDirection } from '@deebeetech/sqleasy';
 
 const builder = new PostgresQuery().newBuilder();
 
@@ -294,6 +626,16 @@ builder
   .orderByColumn('u', 'name', OrderByDirection.Ascending)
   .limit(10)
   .offset(20);
+
+// NULLS FIRST / NULLS LAST — native on Postgres/SQLite; emulated on MySQL/MSSQL with a leading
+// `CASE WHEN col IS NULL THEN ... END` sort key, since neither dialect has the clause.
+builder.clearAll();
+builder
+  .selectAll()
+  .fromTable('orders', 'o')
+  .orderByColumn('o', 'shipped_at', OrderByDirection.Ascending, NullsOrder.Last);
+// Postgres/SQLite: ORDER BY "o"."shipped_at" ASC NULLS LAST;
+// MySQL/MSSQL:     ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC;
 ```
 
 `.limit()` is **pagination**: on MSSQL it renders as `OFFSET … ROWS FETCH NEXT … ROWS ONLY`, which
@@ -301,6 +643,29 @@ T-SQL accepts only alongside an `ORDER BY` — so paginating without one throws 
 SQL the server would reject. `.top(n)` is the separate, SQL-Server-only **manual row cap**, and the
 tool to reach for when you want `TOP (n)` and no ordering. The two are not interchangeable, and
 `.limit()` never silently becomes a `TOP`.
+
+### Row locks (SELECT ... FOR UPDATE / FOR SHARE)
+
+`.forUpdate()` / `.forShare()` lock the SELECT's result rows. Postgres/MySQL append a trailing
+`FOR UPDATE`/`FOR SHARE` (optionally `NOWAIT` or `SKIP LOCKED`); MSSQL has no such clause, so it's
+rewritten as a `WITH (...)` table hint (`UPDLOCK, ROWLOCK` / `HOLDLOCK, ROWLOCK`, with `NOWAIT` /
+`READPAST` for the wait variants) on every base table in the `FROM`. SQLite has no row-level locking
+at all and `.forUpdate()`/`.forShare()` throw a `ParserError` there.
+
+```typescript
+builder.clearAll();
+builder.selectAll().fromTable('users', 'u').where('u', 'id', WhereOperator.Equals, 1).forUpdate();
+// Postgres/MySQL: ... WHERE "u"."id" = 1 FOR UPDATE;
+// MSSQL:          SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK) WHERE [u].[id] = 1;
+
+// Fail fast instead of waiting on an already-locked row
+builder.clearAll();
+builder.selectAll().fromTable('users', 'u').forUpdateNowait();
+
+// Skip already-locked rows instead of waiting
+builder.clearAll();
+builder.selectAll().fromTable('users', 'u').forShareSkipLocked();
+```
 
 ### TOP (SQL Server only)
 
@@ -331,6 +696,18 @@ builder
   .fromTable('users', 'u')
   .groupByColumn('u', 'role')
   .having('u', 'role', WhereOperator.NotEquals, 'guest');
+
+// HAVING has full parity with WHERE: BETWEEN, IN (values or sub-query), NULL checks, EXISTS,
+// and parenthesized groups — sharing WHERE's AND/OR combinator rules term for term.
+builder.clearAll();
+builder
+  .selectColumn('u', 'role', '')
+  .selectRaw('COUNT(*) AS cnt')
+  .fromTable('users', 'u')
+  .groupByColumn('u', 'role')
+  .havingBetween('u', 'cnt', 5, 100)
+  .and()
+  .havingNotInValues('u', 'role', ['guest', 'banned']);
 ```
 
 ### Common Table Expressions (CTEs)
@@ -359,6 +736,20 @@ builder
   })
   .selectAll()
   .fromRaw('"hierarchy" AS "h"');
+
+// Explicit column list — WITH name (col1, col2) AS (...). Standard SQL, rendered identically
+// across all four dialects (only the RECURSIVE keyword itself differs on MSSQL).
+builder.clearAll();
+builder
+  .cte(
+    'recent',
+    (cb) => cb.selectColumn('o', 'id', '').selectColumn('o', 'total', '').fromTable('orders', 'o'),
+    ['id', 'total'],
+  )
+  .selectAll()
+  .fromRaw('"recent" AS "r"');
+// WITH "recent" ("id", "total") AS (SELECT "o"."id", "o"."total" FROM "public"."orders" AS "o")
+//   SELECT * FROM "recent" AS "r";
 ```
 
 ### UNION / INTERSECT / EXCEPT

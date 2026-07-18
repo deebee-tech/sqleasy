@@ -166,8 +166,9 @@ describe('Parser coverage edge cases', () => {
       const query = new SqliteQuery();
       const builder = query.newBuilder();
 
-      builder.updateTable('users', 'u');
+      builder.updateTable('users', 'u').set('name', 'Ada');
       builder.state().fromStates = [];
+      builder.state().mutationTargetIndex = undefined;
 
       expect(() => builder.parseRaw()).toThrow('UPDATE requires a table');
     });
@@ -415,6 +416,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -444,6 +446,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: 'user_id',
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -454,6 +457,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -485,6 +489,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: 'user_id',
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -495,6 +500,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -505,6 +511,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.Equals,
@@ -515,6 +522,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: 'id2',
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -544,6 +552,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -554,6 +563,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.Equals,
@@ -564,6 +574,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: 'uid',
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -595,6 +606,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -624,6 +636,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -653,6 +666,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: 'uid',
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -663,6 +677,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -673,6 +688,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.Equals,
@@ -683,6 +699,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: 'active',
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
           {
             joinOperator: JoinOperator.None,
@@ -693,6 +710,7 @@ describe('Parser coverage edge cases', () => {
             columnRight: undefined,
             raw: undefined,
             valueRight: undefined,
+            valuesRight: undefined,
           },
         ],
       });
@@ -734,6 +752,7 @@ describe('Parser coverage edge cases', () => {
           columnName: 'role',
           whereOperator: WO.Equals,
           raw: undefined,
+          subquery: undefined,
           values: ['admin'],
         },
         {
@@ -742,6 +761,7 @@ describe('Parser coverage edge cases', () => {
           columnName: undefined,
           whereOperator: WO.None,
           raw: undefined,
+          subquery: undefined,
           values: [],
         },
         {
@@ -750,6 +770,7 @@ describe('Parser coverage edge cases', () => {
           columnName: 'cnt',
           whereOperator: WO.GreaterThan,
           raw: undefined,
+          subquery: undefined,
           values: [5],
         },
       );
@@ -774,6 +795,7 @@ describe('Parser coverage edge cases', () => {
           columnName: 'role',
           whereOperator: WO.Equals,
           raw: undefined,
+          subquery: undefined,
           values: ['admin'],
         },
         {
@@ -782,6 +804,7 @@ describe('Parser coverage edge cases', () => {
           columnName: undefined,
           whereOperator: WO.None,
           raw: undefined,
+          subquery: undefined,
           values: [],
         },
         {
@@ -790,6 +813,7 @@ describe('Parser coverage edge cases', () => {
           columnName: 'cnt',
           whereOperator: WO.LessThan,
           raw: undefined,
+          subquery: undefined,
           values: [10],
         },
       );
@@ -809,6 +833,7 @@ describe('Parser coverage edge cases', () => {
         columnName: undefined,
         whereOperator: WO.None,
         raw: undefined,
+        subquery: undefined,
         values: [],
       });
 

@@ -4,9 +4,10 @@ import { JoinOperator } from '../enums/join-operator';
 import type { JoinOnState } from '../state/join-on';
 
 /**
- * Fluent builder for a JOIN's `ON` condition list — `on`/`onValue` comparisons, `onRaw`
- * fragments, `and`/`or` combinators, and parenthesized `onGroup`s. One class for every
- * dialect; {@link states} hands the accumulated conditions to the join clause parser.
+ * Fluent builder for a JOIN's `ON` condition list — `on`/`onValue` comparisons (including
+ * `JoinOperator.Like`/`NotLike`), `onIn`/`onBetween` (and their `NOT` variants), `onRaw`
+ * fragments, `and`/`or` combinators, and parenthesized `onGroup`s. One class for every dialect;
+ * {@link states} hands the accumulated conditions to the join clause parser.
  */
 export class JoinOnBuilder {
   #states: JoinOnState[] = [];
@@ -28,6 +29,7 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw: undefined,
       valueRight: undefined,
+      valuesRight: undefined,
     });
 
     return this;
@@ -49,6 +51,7 @@ export class JoinOnBuilder {
       columnRight,
       raw: undefined,
       valueRight: undefined,
+      valuesRight: undefined,
     });
 
     return this;
@@ -64,6 +67,7 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw: undefined,
       valueRight: undefined,
+      valuesRight: undefined,
     });
 
     const child = this.#child();
@@ -84,6 +88,7 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw: undefined,
       valueRight: undefined,
+      valuesRight: undefined,
     });
 
     return this;
@@ -99,6 +104,7 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw,
       valueRight: undefined,
+      valuesRight: undefined,
     });
     return this;
   };
@@ -118,6 +124,71 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw: undefined,
       valueRight,
+      valuesRight: undefined,
+    });
+    return this;
+  };
+
+  /** `ON column IN (values)`. */
+  public onIn = (aliasLeft: string, columnLeft: string, values: any[]): this => {
+    this.#states.push({
+      joinOperator: JoinOperator.None,
+      joinOnOperator: JoinOnOperator.InValues,
+      aliasLeft,
+      columnLeft,
+      aliasRight: undefined,
+      columnRight: undefined,
+      raw: undefined,
+      valueRight: undefined,
+      valuesRight: [...values],
+    });
+    return this;
+  };
+
+  /** `ON column NOT IN (values)`. */
+  public onNotIn = (aliasLeft: string, columnLeft: string, values: any[]): this => {
+    this.#states.push({
+      joinOperator: JoinOperator.None,
+      joinOnOperator: JoinOnOperator.NotInValues,
+      aliasLeft,
+      columnLeft,
+      aliasRight: undefined,
+      columnRight: undefined,
+      raw: undefined,
+      valueRight: undefined,
+      valuesRight: [...values],
+    });
+    return this;
+  };
+
+  /** `ON column BETWEEN value1 AND value2`. */
+  public onBetween = (aliasLeft: string, columnLeft: string, value1: any, value2: any): this => {
+    this.#states.push({
+      joinOperator: JoinOperator.None,
+      joinOnOperator: JoinOnOperator.Between,
+      aliasLeft,
+      columnLeft,
+      aliasRight: undefined,
+      columnRight: undefined,
+      raw: undefined,
+      valueRight: undefined,
+      valuesRight: [value1, value2],
+    });
+    return this;
+  };
+
+  /** `ON column NOT BETWEEN value1 AND value2`. */
+  public onNotBetween = (aliasLeft: string, columnLeft: string, value1: any, value2: any): this => {
+    this.#states.push({
+      joinOperator: JoinOperator.None,
+      joinOnOperator: JoinOnOperator.NotBetween,
+      aliasLeft,
+      columnLeft,
+      aliasRight: undefined,
+      columnRight: undefined,
+      raw: undefined,
+      valueRight: undefined,
+      valuesRight: [value1, value2],
     });
     return this;
   };
@@ -132,6 +203,7 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw: undefined,
       valueRight: undefined,
+      valuesRight: undefined,
     });
 
     return this;

@@ -22,6 +22,8 @@ export const ParserArea = {
   Update: 'Update',
   /** DELETE statement. */
   Delete: 'Delete',
+  /** Stored procedure/function invocation. */
+  Call: 'Call',
   /** Cross-clause or unspecified area. */
   General: 'General',
 } as const;

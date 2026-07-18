@@ -1,3 +1,131 @@
+# [13.0.0](https://github.com/deebee-tech/sqleasy/compare/v12.0.0...v13.0.0) (2026-07-18)
+
+
+### Features
+
+* **where/having/select:** JSON operators — `whereJsonExtract`/`havingJsonExtract`,
+  `whereJsonContains`/`havingJsonContains`, and `selectJsonExtract` with `JsonExtractMode.Text`/
+  `Object`. Postgres emits `->`/`->>`/`@>`; MySQL `JSON_EXTRACT`/`JSON_CONTAINS`; MSSQL
+  `JSON_VALUE`/`JSON_QUERY` (containment throws — use raw SQL); SQLite `json_extract` (object mode
+  throws).
+* **where/having:** full-text search — `whereMatch`/`havingMatch` with `FullTextMode.Natural`/
+  `Boolean`/`Phrase`. Postgres `to_tsvector`/`plainto_tsquery`; MySQL `MATCH ... AGAINST`; MSSQL
+  `FREETEXT`/`CONTAINS`; SQLite FTS `MATCH`. Unsupported mode/dialect combos throw; `whereMatchRaw`
+  is the escape hatch.
+* **insert:** MSSQL upsert via `MERGE` — `onConflictDoNothing`/`onConflictDoUpdate` now emit a T-SQL
+  `MERGE` on MSSQL (requires explicit insert columns and conflict columns). PG/SQLite `ON CONFLICT`
+  and MySQL `INSERT IGNORE`/`ON DUPLICATE KEY UPDATE` unchanged.
+* **from/join:** LATERAL / APPLY — `fromLateral`, `joinCrossApply`, `joinOuterApply`, `joinLateral`.
+  Postgres/MySQL map APPLY to `LATERAL`; MSSQL emits `CROSS`/`OUTER APPLY`; SQLite throws.
+* **from:** set-returning / table-valued functions — `fromTableFunction`/`fromTableFunctionWithOwner`
+  and `fromFunctionRaw`.
+* **groupBy:** `groupByRollup`/`groupByCube`/`groupByGroupingSets` — standard modifiers; MySQL uses
+  `WITH ROLLUP` where applicable and throws on `CUBE`/`GROUPING SETS`.
+* **limit:** `limitWithTies`/`clearLimitWithTies` — `FETCH FIRST/NEXT ... WITH TIES` on
+  Postgres/MySQL/MSSQL; SQLite throws.
+* **hints:** structured query hints — `hintUseIndex`/`hintForceIndex` (MySQL),
+  `hintMssqlOption` (MSSQL `OPTION (...)`), `hintRaw` (documented escape hatch), `clearHints`.
+
+# [12.0.0](https://github.com/deebee-tech/sqleasy/compare/v11.0.0...v12.0.0) (2026-07-18)
+
+
+### Features
+
+* **select:** add window functions — `selectWindow(fn, over, alias)` appends `fn OVER (...)` to
+  the SELECT list; `fn` is the call expression, emitted verbatim like `selectRaw`. The `OVER`
+  clause itself is structured via a new `WindowBuilder`: `partitionByColumn`/`partitionByColumns`/
+  `partitionByRaw`, `orderByColumn`/`orderByRaw` (sharing `ORDER BY`'s `NULLS FIRST`/`LAST`
+  support), and a `ROWS`/`RANGE` `frame`/`frameRaw`. Standard SQL, rendered identically across all
+  four dialects.
+* **cte/cteRecursive:** add an optional explicit column list — `WITH name (col1, col2) AS (...)`.
+  Standard SQL, rendered identically on every dialect; only the `RECURSIVE` keyword itself differs
+  on MSSQL, which keeps the column list regardless.
+* **insert:** add `insertSelect()` — `INSERT ... SELECT`, sourcing rows from a sub-query builder
+  instead of a literal `VALUES` list. Mutually exclusive with `insertValues`; combining the two
+  throws a `ParserError` at parse time.
+* **update/delete:** stop silently dropping `.joinTable(...)` on `UPDATE`/`DELETE` — it now emits
+  real dialect SQL. MySQL/MSSQL get a native multi-table `JOIN ... ON`; Postgres translates the
+  join's `ON` condition into a `WHERE` predicate (ANDed with any existing `.where()` calls) and
+  renders `UPDATE ... FROM` / `DELETE ... USING` (only `INNER`/`CROSS` joins are supported there,
+  since translating an `OUTER` join to `WHERE` would silently turn it into an `INNER` join — that
+  case throws). SQLite has no multi-table `UPDATE`/`DELETE` syntax at all and throws a clear
+  `ParserError` instead of emitting SQL it can't run.
+* **join:** add richer `ON` predicates — `JoinOperator.Like`/`NotLike` (via the existing `on`/
+  `onValue`), plus new `onIn`/`onNotIn`/`onBetween`/`onNotBetween` on `JoinOnBuilder`.
+* **select:** add `distinctOn()`/`clearDistinctOn()` — Postgres' `DISTINCT ON (...)`. Every other
+  dialect throws a `ParserError`, as does combining it with `distinct()`. `clearSelect()` clears it
+  too.
+* **orderBy:** add `NULLS FIRST`/`NULLS LAST` — a `nulls` parameter on `orderByColumn`/
+  `orderByColumns` (and the window builder's `orderByColumn`). Native on Postgres/SQLite; emulated
+  on MySQL/MSSQL with a leading `CASE WHEN col IS NULL THEN ... END` sort key, since neither
+  dialect has the clause.
+* **where/having:** add `WhereOperator.IsDistinctFrom`/`IsNotDistinctFrom` — null-safe
+  (in)equality. Native on Postgres/SQLite; MySQL rewrites via its own null-safe `<=>` operator
+  (`NOT (a <=> b)` / `a <=> b`); MSSQL has no equivalent (pre-2022 T-SQL) and throws a
+  `ParserError`.
+
+# [11.0.0](https://github.com/deebee-tech/sqleasy/compare/v10.0.0...v11.0.0) (2026-07-18)
+
+
+### Features
+
+* **call:** first-class stored procedures/functions — a new statement family, not a raw escape.
+  `callProcedure()`/`callProcedureWithOwner()` and `callFunction()`/`callFunctionWithOwner()` start
+  a call; `procParam()`/`procParamNamed()`/`procParamRaw()` add arguments, and `procParamOut()`/
+  `procParamInOut()` add procedure-only output parameters; `clearCall()` removes it. Postgres emits
+  `CALL name(...)` for procedures and `SELECT name(...)`/`SELECT * FROM name(...)` for functions
+  (scalar vs. set-returning); MySQL emits `CALL name(...)` for procedures and `SELECT name(...)` for
+  functions (it has no table-valued functions — `CallReturnIntent.ResultSet` throws there); MSSQL
+  emits `EXEC name ...`, with `DECLARE`d local variables prepended for OUT/INOUT parameters. SQLite
+  has no stored procedures or functions at all and throws a clear `ParserError`. Named arguments
+  (Postgres `name := value`, MSSQL `@name = value`) are supported everywhere except MySQL, which has
+  no named-argument syntax; a positional argument after a named one throws, matching the underlying
+  SQL's own ordering rule. A call integrates with `parse()`/`parsePrepared()`/`parseRaw()` and
+  `MultiBuilder` like any other statement, but refuses to be combined with a CTE or `returning()`.
+
+# [10.0.0](https://github.com/deebee-tech/sqleasy/compare/v9.0.0...v10.0.0) (2026-07-18)
+
+
+### Features
+
+* **having:** full parity with WHERE — `havingBetween`, `havingInValues`/`havingInWithBuilder`,
+  `havingNotInValues`/`havingNotInWithBuilder`, `havingNull`/`havingNotNull`, `havingExists`/
+  `havingNotExists`, and `havingGroup`, sharing WHERE's combinator/spacing rules term for term.
+* **where/having:** add `WhereOperator.Ilike`/`NotIlike` — case-insensitive LIKE. Postgres emits
+  native `ILIKE`/`NOT ILIKE`; MySQL, SQLite, and MSSQL (none of which have `ILIKE`) get an
+  equivalent `LOWER(col) LIKE LOWER(?)` rewrite.
+* **where:** add `whereExists`/`whereNotExists` — a cleaner EXISTS API without the unused
+  table/column parameters `whereExistsWithBuilder`/`whereNotExistsWithBuilder` never use. Both
+  forms render identically and remain available for wire parity with the golden corpus.
+* **insert/update/delete:** add `returning()`/`returningRaw()`/`clearReturning()`. Postgres/SQLite
+  emit a trailing `RETURNING`; MSSQL emits an inline `OUTPUT INSERTED.…`/`OUTPUT DELETED.…`. MySQL
+  has no equivalent and throws a `ParserError` rather than silently dropping the requested columns.
+* **insert:** add an upsert conflict clause — `onConflictDoNothing()`, `onConflictDoUpdate()`,
+  `onConflictDoUpdateRaw()`, `clearUpsert()`. Postgres/SQLite emit `ON CONFLICT (...) DO NOTHING`/
+  `DO UPDATE SET ...`; MySQL emits `INSERT IGNORE`/`ON DUPLICATE KEY UPDATE` instead. MSSQL upsert
+  (`MERGE`) is deferred to a future release and throws a clear unsupported-feature error.
+* **select:** add row locks — `forUpdate()`/`forShare()`, plus `Nowait`/`SkipLocked` wait variants,
+  and `clearRowLock()`. Postgres/MySQL append a trailing `FOR UPDATE`/`FOR SHARE`; MSSQL has no such
+  clause and gets an equivalent `WITH (UPDLOCK, ROWLOCK)`/`WITH (HOLDLOCK, ROWLOCK)` table hint on
+  every base table instead. SQLite has no row-level locking and throws a `ParserError`.
+
+# [9.0.0](https://github.com/deebee-tech/sqleasy/compare/v8.0.0...v9.0.0) (2026-07-18)
+
+
+### Bug Fixes
+
+* fix!: auto-AND consecutive WHERE/JOIN ON predicates; fix clearUpdate/clearDelete;
+  mutation targets; empty whereGroup; limit validation; defensive list copies
+
+
+### BREAKING CHANGES
+
+* Consecutive `.where().where()` / JOIN `.on().on()` without `.and()`/`.or()`
+  now emit `AND` (matching HAVING). Empty `whereGroup` throws. `limit(0)` and
+  negative limits throw. `clearUpdate` removes the UPDATE-owned FROM target;
+  new `clearDelete` clears sticky DELETE. UPDATE/DELETE prefer the
+  `updateTable`/`deleteFrom` target over a prior `fromTable`.
+
 # [8.0.0](https://github.com/deebee-tech/sqleasy/compare/v7.0.0...v8.0.0) (2026-07-18)
 
 

@@ -286,4 +286,103 @@ describe('Builder state management', () => {
       expect(builder.state().fromStates.length).toBe(0);
     });
   });
+
+  describe('M1 foundation fixes', () => {
+    it('auto-ANDs consecutive WHERE predicates', () => {
+      const builder = query.newBuilder();
+      builder
+        .selectAll()
+        .fromTable('users', 'u')
+        .where('u', 'a', WhereOperator.Equals, 1)
+        .where('u', 'b', WhereOperator.Equals, 2);
+
+      expect(builder.parsePrepared().sql).toContain('WHERE [u].[a] = @p0 AND [u].[b] = @p1');
+    });
+
+    it('clearUpdate removes the UPDATE-owned FROM target', () => {
+      const builder = query.newBuilder();
+      builder.updateTable('users', 'u').set('name', 'Ada');
+      expect(builder.state().fromStates.length).toBe(1);
+
+      builder.clearUpdate();
+      expect(builder.state().fromStates).toEqual([]);
+      expect(builder.state().mutationTargetIndex).toBeUndefined();
+      expect(builder.state().queryType).toBe(QueryType.Select);
+    });
+
+    it('clearDelete clears sticky DELETE query type and target', () => {
+      const builder = query.newBuilder();
+      builder.deleteFrom('users', 'u');
+      expect(builder.state().queryType).toBe(QueryType.Delete);
+
+      builder.clearDelete();
+      expect(builder.state().queryType).toBe(QueryType.Select);
+      expect(builder.state().fromStates).toEqual([]);
+    });
+
+    it('selectAll resets sticky DELETE query type', () => {
+      const builder = query.newBuilder();
+      builder.deleteFrom('users', 'u').selectAll().fromTable('orders', 'o');
+      expect(builder.state().queryType).toBe(QueryType.Select);
+      expect(builder.parsePrepared().sql).toMatch(/^SET NOCOUNT ON;.*SELECT \*/);
+    });
+
+    it('clearHaving resets combinator target to WHERE', () => {
+      const builder = query.newBuilder();
+      builder
+        .selectAll()
+        .fromTable('users', 'u')
+        .groupByColumn('u', 'status')
+        .having('u', 'status', WhereOperator.Equals, 'a')
+        .clearHaving()
+        .where('u', 'id', WhereOperator.Equals, 1)
+        .and()
+        .where('u', 'active', WhereOperator.Equals, true);
+
+      expect(builder.state().havingStates).toEqual([]);
+      const sql = builder.parsePrepared().sql;
+      expect(sql).toContain('WHERE [u].[id] = @p0 AND [u].[active] = @p1');
+      expect(sql).not.toContain('HAVING');
+    });
+
+    it('defensively copies insertColumns / insertValues / whereInValues lists', () => {
+      const cols = ['name'];
+      const vals = ['Ada'];
+      const ids = [1, 2];
+      const builder = query.newBuilder();
+      builder.insertInto('users').insertColumns(cols).insertValues(vals);
+      cols.push('x');
+      vals.push('y');
+      expect(builder.state().insertState?.columns).toEqual(['name']);
+      expect(builder.state().insertState?.values[0]).toEqual(['Ada']);
+
+      const select = query.newBuilder();
+      select.selectAll().fromTable('users', 'u').whereInValues('u', 'id', ids);
+      ids.push(3);
+      expect(select.state().whereStates[0]?.values).toEqual([1, 2]);
+    });
+
+    it('UPDATE prefers updateTable target over a prior fromTable', () => {
+      const builder = query.newBuilder();
+      builder.fromTable('users', 'u').updateTable('orders', 'o').set('total', 1);
+      expect(builder.parsePrepared().sql).toContain('UPDATE [o] SET');
+      expect(builder.parsePrepared().sql).toContain('FROM [dbo].[orders] AS [o]');
+    });
+
+    it('rejects empty whereGroup', () => {
+      const builder = query.newBuilder();
+      expect(() =>
+        builder
+          .selectAll()
+          .fromTable('users', 'u')
+          .whereGroup(() => {}),
+      ).toThrow(/WHERE group cannot be empty/);
+    });
+
+    it('rejects non-positive limit', () => {
+      const builder = query.newBuilder();
+      expect(() => builder.limit(0)).toThrow(/LIMIT must be a positive integer/);
+      expect(() => builder.limit(-1)).toThrow(/LIMIT must be a positive integer/);
+    });
+  });
 });

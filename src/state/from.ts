@@ -2,7 +2,7 @@ import { BuilderType } from '../enums/builder-type';
 import type { QueryState } from './query';
 
 /**
- * Holds state for one FROM source (table, subquery, or raw).
+ * Holds state for one FROM source (table, subquery, lateral, table function, or raw).
  * Populated by the builder; exposed via {@link QueryState.fromStates}.
  */
 export type FromState = {
@@ -18,6 +18,10 @@ export type FromState = {
   subquery: QueryState | undefined;
   /** Raw SQL for this FROM fragment when not using structured fields. */
   raw: string | undefined;
+  /** Table-valued / set-returning function name when {@link builderType} is {@link BuilderType.FromFunction}. */
+  functionName?: string;
+  /** Positional arguments for a table-valued function. */
+  functionParams?: any[];
 };
 
 /** Creates a {@link FromState} with default field values. */
@@ -28,4 +32,6 @@ export const createFromState = (): FromState => ({
   alias: undefined,
   subquery: undefined,
   raw: undefined,
+  functionName: undefined,
+  functionParams: undefined,
 });

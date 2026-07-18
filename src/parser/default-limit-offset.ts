@@ -35,6 +35,27 @@ export const defaultLimitOffset = (
     config.databaseType === DatabaseType.Postgres ||
     config.databaseType === DatabaseType.Sqlite
   ) {
+    if (state.limitWithTies) {
+      if (config.databaseType === DatabaseType.Sqlite) {
+        throw new ParserError(ParserArea.LimitOffset, 'SQLite does not support WITH TIES');
+      }
+
+      if (state.limit <= 0) {
+        throw new ParserError(ParserArea.LimitOffset, 'limitWithTies requires a positive limit');
+      }
+
+      if (state.offset > 0) {
+        sqlHelper.addSqlSnippet('OFFSET ');
+        sqlHelper.addSqlSnippet(state.offset.toString());
+        sqlHelper.addSqlSnippet(' ROWS ');
+      }
+
+      sqlHelper.addSqlSnippet('FETCH FIRST ');
+      sqlHelper.addSqlSnippet(state.limit.toString());
+      sqlHelper.addSqlSnippet(' ROWS WITH TIES');
+      return sqlHelper;
+    }
+
     if (state.limit > 0) {
       sqlHelper.addSqlSnippet('LIMIT ');
       sqlHelper.addSqlSnippet(state.limit.toString());
@@ -85,13 +106,17 @@ export const defaultLimitOffset = (
 
       sqlHelper.addSqlSnippet('FETCH NEXT ');
       sqlHelper.addSqlSnippet(state.limit.toString());
-      sqlHelper.addSqlSnippet(' ROWS ONLY');
+      sqlHelper.addSqlSnippet(state.limitWithTies ? ' ROWS WITH TIES' : ' ROWS ONLY');
     }
   }
 
   // Evaluated after the clause text is built so that MSSQL's TOP/LIMIT conflict above reports
   // first. Both arms are the same guard: pagination needs a deterministic order to page against.
   if (state.orderByStates.length === 0) {
+    if (state.limitWithTies) {
+      throw new ParserError(ParserArea.LimitOffset, 'ORDER BY is required when using WITH TIES');
+    }
+
     if (state.offset > 0) {
       throw new ParserError(ParserArea.LimitOffset, 'ORDER BY is required when using OFFSET');
     }

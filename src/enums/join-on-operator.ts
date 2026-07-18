@@ -16,6 +16,14 @@ export const JoinOnOperator = {
   And: 'And',
   /** Logical OR between ON parts. */
   Or: 'Or',
+  /** `ON column IN (values)` — see {@link JoinOnBuilder.onIn}. */
+  InValues: 'InValues',
+  /** `ON column NOT IN (values)` — see {@link JoinOnBuilder.onNotIn}. */
+  NotInValues: 'NotInValues',
+  /** `ON column BETWEEN low AND high` — see {@link JoinOnBuilder.onBetween}. */
+  Between: 'Between',
+  /** `ON column NOT BETWEEN low AND high` — see {@link JoinOnBuilder.onNotBetween}. */
+  NotBetween: 'NotBetween',
   /** No operator / unused slot. */
   None: 'None',
 } as const;

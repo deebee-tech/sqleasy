@@ -145,6 +145,27 @@ describe('MssqlQuery multi builder', () => {
       'SELECT * FROM [dbo].[products] AS [p] WHERE [p].[id] = 3;SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] = 1;',
     );
   });
+
+  it('reorderBuilders deduplicates repeated names and drops unknown names', () => {
+    const query = new MssqlQuery();
+    const multi = query.newMultiBuilder();
+    multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
+
+    multi.addBuilder('b1').selectAll().fromTable('users', 'u');
+    multi.addBuilder('b2').selectAll().fromTable('orders', 'o');
+
+    multi.reorderBuilders(['b2', 'b2', 'missing', 'b1']);
+
+    expect(multi.states().map((s) => s.builderName)).toEqual(['b2', 'b1']);
+  });
+
+  it('removeBuilder is a no-op for unknown names', () => {
+    const query = new MssqlQuery();
+    const multi = query.newMultiBuilder();
+    multi.addBuilder('b1').selectAll().fromTable('users', 'u');
+    multi.removeBuilder('missing');
+    expect(multi.states()).toHaveLength(1);
+  });
 });
 
 describe('MssqlQuery multi builder parse (prepared)', () => {

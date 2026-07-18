@@ -1,7 +1,13 @@
 import { BuilderType } from '../enums/builder-type';
 
+/** One column reference inside a GROUP BY modifier (`ROLLUP`/`CUBE`/`GROUPING SETS`). */
+export type GroupByColumnRef = {
+  tableNameOrAlias: string;
+  columnName: string;
+};
+
 /**
- * Holds state for one GROUP BY expression (column or raw).
+ * Holds state for one GROUP BY expression (column, raw, or modifier).
  * Populated by the builder; exposed via {@link QueryState.groupByStates}.
  */
 export type GroupByState = {
@@ -13,6 +19,8 @@ export type GroupByState = {
   columnName: string | undefined;
   /** Raw SQL for this GROUP BY term when not using structured fields. */
   raw: string | undefined;
+  /** Column sets for {@link BuilderType.GroupByGroupingSets}. */
+  groupingSets?: GroupByColumnRef[][];
 };
 
 /** Creates a {@link GroupByState} with default field values. */
@@ -21,4 +29,5 @@ export const createGroupByState = (): GroupByState => ({
   tableNameOrAlias: undefined,
   columnName: undefined,
   raw: undefined,
+  groupingSets: undefined,
 });
