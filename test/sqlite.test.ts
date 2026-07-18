@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { DbExecutor } from '../src/index';
 import { createSqliteExecutor } from '../src/sqlite';
@@ -80,6 +83,19 @@ describe('sqlite executor (libsql, in-memory)', () => {
     expect(est.fullScan).toBe(true);
   });
 
+  it('explain() reports fullScan false when an index seek is used', async () => {
+    await fresh();
+    await db.run({ sql: 'CREATE INDEX idx_users_name ON users(name);' });
+    await db.run({ sql: 'INSERT INTO users (id, name) VALUES (?, ?);', params: [1, 'Ada'] });
+    const est = await db.explain({ sql: 'SELECT * FROM users WHERE name = ?;', params: ['Ada'] });
+    expect(est.fullScan).toBe(false);
+  });
+
+  it('explain() rejects multi-statement SQL', async () => {
+    await fresh();
+    await expect(db.explain({ sql: 'SELECT 1; SELECT 2;' })).rejects.toThrow(/single statement/);
+  });
+
   it('runs the exact { sql, params } a SQLEasy SqliteQuery emits', async () => {
     await fresh();
     // Verbatim SqliteQuery().newBuilder() output: double-quoted identifiers, positional `?`.
@@ -92,4 +108,27 @@ describe('sqlite executor (libsql, in-memory)', () => {
     });
     expect(res.rows[0]!.name).toBe('Ada');
   });
+});
+
+describe('sqlite busy retry (local file)', () => {
+  // busy_timeout is 5s and retries add more — allow the lock wait to resolve.
+  it('waits out a brief SQLITE_BUSY on a file database', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sqleasy-engine-'));
+    const file = join(dir, 'busy.db');
+    const holder = createSqliteExecutor({ file });
+    const contender = createSqliteExecutor({ file });
+    try {
+      await holder.run({ sql: 'CREATE TABLE t (id INTEGER PRIMARY KEY);' });
+      // Hold an exclusive write lock, then release it so the contender's busy wait/retry succeeds.
+      await holder.run({ sql: 'BEGIN IMMEDIATE;' });
+      const insert = contender.run({ sql: 'INSERT INTO t (id) VALUES (1);' });
+      await new Promise((r) => setTimeout(r, 100));
+      await holder.run({ sql: 'COMMIT;' });
+      await expect(insert).resolves.toMatchObject({ rowCount: 1 });
+    } finally {
+      await holder.close();
+      await contender.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 20_000);
 });

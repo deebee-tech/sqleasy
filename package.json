@@ -107,11 +107,14 @@
     "typecheck": "tsc --noEmit"
   },
   "packageManager": "pnpm@11.13.0",
+  "engines": {
+    "node": ">=20"
+  },
   "peerDependencies": {
-    "@libsql/client": "*",
-    "mssql": "*",
-    "mysql2": "*",
-    "pg": "*"
+    "@libsql/client": ">=0.14.0",
+    "mssql": ">=10.0.0",
+    "mysql2": ">=3.0.0",
+    "pg": ">=8.0.0"
   },
   "peerDependenciesMeta": {
     "@libsql/client": {

@@ -4,11 +4,17 @@ import { describe, expect, it, vi } from 'vitest';
 const rec = vi.hoisted(() => ({
   events: [] as string[],
   queries: [] as { sql: string; inputs: Record<string, unknown> }[],
+  batches: [] as { sql: string; inputs: Record<string, unknown> }[],
   failOn: undefined as string | undefined,
+  failConnectOnce: false,
+  failShowplanOff: false,
   reset(failOn?: string) {
     this.events = [];
     this.queries = [];
+    this.batches = [];
     this.failOn = failOn;
+    this.failConnectOnce = false;
+    this.failShowplanOff = false;
   },
 }));
 
@@ -26,6 +32,10 @@ vi.mock('mssql', () => {
     }
     async batch(sql: string) {
       rec.events.push(`batch:${sql}`);
+      rec.batches.push({ sql, inputs: { ...this.inputs } });
+      if (rec.failShowplanOff && sql.includes('SHOWPLAN_XML OFF')) {
+        throw new Error('showplan off failed');
+      }
       return { recordset: [] };
     }
   }
@@ -42,6 +52,11 @@ vi.mock('mssql', () => {
   }
   class FakeConnectionPool {
     async connect() {
+      if (rec.failConnectOnce) {
+        rec.failConnectOnce = false;
+        rec.events.push('connect-fail');
+        throw new Error('connect failed');
+      }
       rec.events.push('connect');
       return this;
     }
@@ -96,13 +111,17 @@ describe('toExplainableBatch', () => {
     );
   });
 
-  it('re-declares parameters so the lifted statement compiles', () => {
+  it('re-declares parameters and keeps assigned values for selectivity', () => {
     const sql =
       `SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM t WHERE a LIKE @p0;', ` +
       `N'@p0 nvarchar(max)', @p0 = N'%an%';`;
     expect(toExplainableBatch(sql)).toBe(
-      'DECLARE @p0 nvarchar(max);\nSELECT * FROM t WHERE a LIKE @p0;',
+      "DECLARE @p0 nvarchar(max) = N'%an%';\nSELECT * FROM t WHERE a LIKE @p0;",
     );
+  });
+
+  it('accepts EXECUTE as well as exec', () => {
+    expect(toExplainableBatch(`EXECUTE sp_executesql N'SELECT 1;', N''`)).toBe('SELECT 1;');
   });
 
   it("doesn't stop at a quote that is part of an escaped pair", () => {
@@ -189,10 +208,41 @@ describe('mssql orchestration', () => {
     });
 
     expect(rec.events).toContain('batch:SET SHOWPLAN_XML ON');
-    expect(rec.events).toContain('batch:SELECT * FROM t;'); // the lifted inner statement
+    expect(rec.events).toContain('batch:SELECT * FROM t'); // lifted + trailing ; stripped
     expect(rec.events).toContain('batch:SET SHOWPLAN_XML OFF');
     expect(rec.events).toContain('rollback'); // SHOWPLAN runs in a rolled-back probe transaction
     expect(est).toHaveProperty('fullScan');
+  });
+
+  it('explain() binds @pN params on the SHOWPLAN request', async () => {
+    rec.reset();
+    const db = createMssqlExecutor({ connectionString: 'x' });
+    await db.explain({ sql: 'SELECT * FROM t WHERE id = @p0;', params: [42] });
+    const planBatch = rec.batches.find((b) => b.sql.includes('SELECT * FROM t'));
+    expect(planBatch?.inputs).toEqual({ p0: 42 });
+  });
+
+  it('retires the pool when SHOWPLAN_XML OFF fails', async () => {
+    rec.reset();
+    rec.failShowplanOff = true;
+    const db = createMssqlExecutor({ connectionString: 'x' });
+    await db.explain({ sql: 'SELECT 1;' });
+    expect(rec.events).toContain('close'); // poisoned pool closed
+    // Next call connects on a fresh pool.
+    await db.run({ sql: 'SELECT 1;', params: [] });
+    expect(rec.events.filter((e) => e === 'connect').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('rebuilds the pool after a failed connect so the next call can retry', async () => {
+    rec.reset();
+    rec.failConnectOnce = true;
+    const db = createMssqlExecutor({ connectionString: 'x' });
+    await expect(db.run({ sql: 'SELECT 1;', params: [] })).rejects.toThrow(/connect failed/);
+    expect(rec.events).toContain('connect-fail');
+    expect(rec.events).toContain('close');
+    const res = await db.run({ sql: 'SELECT 1;', params: [] });
+    expect(res.rowCount).toBe(1);
+    expect(rec.events).toContain('connect');
   });
 });
 

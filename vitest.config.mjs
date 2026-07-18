@@ -14,7 +14,7 @@ export default defineConfig({
         'eslint.config.mjs',
         'tsdown.config.ts',
         'vitest.config.mjs',
-        'src/**/index.ts',
+        // keep measuring dialect executors (they live in src/*/index.ts)
       ],
     },
     exclude: [...configDefaults.exclude, 'dist/*', 'coverage/*'],

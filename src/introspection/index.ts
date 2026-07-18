@@ -33,7 +33,8 @@ export type IntrospectDialect = 'postgres' | 'mysql' | 'mssql' | 'sqlite';
  * Read a database's catalog as a {@link SchemaData}, through a supplied {@link DbExecutor}. Choose
  * the `dialect` matching the executor you built — the reader runs that dialect's catalog queries.
  * `schema` scopes the namespace, defaulting per dialect (postgres `public`, mysql the current
- * database, mssql `dbo`, sqlite `main` — sqlite ignores it).
+ * database, mssql `dbo`, sqlite `main`). SQLite only catalogs `main`; a non-`main` `schema` is
+ * rejected rather than silently ignored.
  */
 export function introspectSchema(
   executor: DbExecutor,
@@ -48,6 +49,17 @@ export function introspectSchema(
     case 'mssql':
       return introspectMssql(executor, schema);
     case 'sqlite':
+      if (schema != null && schema !== 'main') {
+        return Promise.reject(
+          new Error(
+            `introspectSqlite: only schema "main" is supported (got ${JSON.stringify(schema)})`,
+          ),
+        );
+      }
       return introspectSqlite(executor);
+    default: {
+      const _exhaustive: never = dialect;
+      return Promise.reject(new Error(`introspectSchema: unknown dialect ${String(_exhaustive)}`));
+    }
   }
 }

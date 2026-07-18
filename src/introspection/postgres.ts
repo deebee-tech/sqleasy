@@ -41,6 +41,10 @@ export async function introspectPostgres(
     params: [target],
   });
 
+  // Pair referencing and referenced columns by ordinal via referential_constraints.
+  // Joining key_column_usage to constraint_column_usage on constraint_name alone cartesian-products
+  // composite FKs (N×N bogus edges). constraint_column_usage.table_schema is the REFERENCED table's
+  // schema — joining it to tc.table_schema also drops cross-schema FKs.
   const fks = await executor.run<{
     table_name: string;
     column_name: string;
@@ -49,14 +53,20 @@ export async function introspectPostgres(
     referenced_column_name: string;
   }>({
     sql: `SELECT kcu.table_name, kcu.column_name,
-              ccu.table_schema AS referenced_table_schema,
-              ccu.table_name AS referenced_table_name,
-              ccu.column_name AS referenced_column_name
+              kcu_ref.table_schema AS referenced_table_schema,
+              kcu_ref.table_name AS referenced_table_name,
+              kcu_ref.column_name AS referenced_column_name
        FROM information_schema.table_constraints tc
        JOIN information_schema.key_column_usage kcu
-         ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
-       JOIN information_schema.constraint_column_usage ccu
-         ON tc.constraint_name = ccu.constraint_name AND tc.table_schema = ccu.table_schema
+         ON tc.constraint_schema = kcu.constraint_schema
+        AND tc.constraint_name = kcu.constraint_name
+       JOIN information_schema.referential_constraints rc
+         ON tc.constraint_schema = rc.constraint_schema
+        AND tc.constraint_name = rc.constraint_name
+       JOIN information_schema.key_column_usage kcu_ref
+         ON rc.unique_constraint_schema = kcu_ref.constraint_schema
+        AND rc.unique_constraint_name = kcu_ref.constraint_name
+        AND kcu.position_in_unique_constraint = kcu_ref.ordinal_position
        WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = $1`,
     params: [target],
   });

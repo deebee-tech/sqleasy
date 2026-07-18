@@ -1,12 +1,13 @@
 import { Pool, type PoolConfig } from 'pg';
+import { explainBody } from '../explain-body';
 import type { DbExecutor, ExplainEstimate, PreparedSql, QueryResult, Row } from '../index';
 
 /** Connection settings — any `pg` `PoolConfig`. Set `statement_timeout` here if you want a
  * per-connection ceiling; the engine imposes none of its own. */
 export type PostgresConfig = PoolConfig;
 
-/** The root of `EXPLAIN (FORMAT JSON)`: cost/rows sit on the top plan; a `Seq Scan` anywhere in the
- * tree is the full-scan signal. */
+/** The root of `EXPLAIN (FORMAT JSON)`: cost/rows sit on the top plan; a sequential scan anywhere
+ * in the tree (including `Parallel Seq Scan`) is the full-scan signal. */
 type PgPlanNode = {
   'Node Type'?: string;
   'Total Cost'?: number;
@@ -14,13 +15,16 @@ type PgPlanNode = {
   Plans?: PgPlanNode[];
 };
 
+const isSeqScanNode = (nodeType: string | undefined): boolean =>
+  nodeType === 'Seq Scan' || nodeType === 'Parallel Seq Scan';
+
 /** Parse `EXPLAIN (FORMAT JSON)` result rows into the normalized estimate. Exported for unit tests. */
 export function parsePgPlan(rows: readonly unknown[]): ExplainEstimate {
   const root = (rows[0] as { 'QUERY PLAN'?: { Plan?: PgPlanNode }[] } | undefined)?.[
     'QUERY PLAN'
   ]?.[0]?.Plan;
   const seqScan = (n: PgPlanNode | undefined): boolean =>
-    !!n && (n['Node Type'] === 'Seq Scan' || (n.Plans ?? []).some(seqScan));
+    !!n && (isSeqScanNode(n['Node Type']) || (n.Plans ?? []).some(seqScan));
   return {
     cost: root?.['Total Cost'],
     rows: root?.['Plan Rows'],
@@ -41,7 +45,8 @@ const toResult = <T>(res: PgResultLike): QueryResult<T> => ({
 
 /**
  * Build a Postgres executor over an EXISTING pool — bring your own `pg` Pool to share one pool
- * across your app (or hand in a test double). {@link createPostgresExecutor} is the usual entry.
+ * across your app (or hand in a test double). {@link close} is a no-op: you own the pool's
+ * lifetime. Prefer {@link createPostgresExecutor} when the engine should create and close the pool.
  */
 export function createPostgresExecutorFromPool(pool: Pool): DbExecutor {
   return {
@@ -53,8 +58,10 @@ export function createPostgresExecutorFromPool(pool: Pool): DbExecutor {
       // Postgres's extended protocol runs exactly ONE statement per parameterized query() — so a
       // batch is NEVER concatenated into one string (its placeholders restart per statement and
       // would misbind). Each statement runs on its own, inside a single checked-out connection so
-      // BEGIN/COMMIT actually wrap them. ROLLBACK on any error; release the client no matter what.
+      // BEGIN/COMMIT actually wrap them. ROLLBACK on any error; release (or destroy) the client
+      // no matter what.
       const client = await pool.connect();
+      let destroy = false;
       try {
         await client.query('BEGIN');
         const results: QueryResult[] = [];
@@ -64,29 +71,47 @@ export function createPostgresExecutorFromPool(pool: Pool): DbExecutor {
         await client.query('COMMIT');
         return results;
       } catch (err) {
-        await client.query('ROLLBACK').catch(() => {});
+        try {
+          await client.query('ROLLBACK');
+        } catch {
+          // A failed ROLLBACK often means the connection is dead — do not return it to the pool.
+          destroy = true;
+        }
         throw err;
       } finally {
-        client.release();
+        client.release(destroy);
       }
     },
 
     async explain(prepared: PreparedSql): Promise<ExplainEstimate> {
       // Plain EXPLAIN never executes the statement (only EXPLAIN ANALYZE does).
-      const res = await pool.query(`EXPLAIN (FORMAT JSON) ${prepared.sql}`, argsOf(prepared));
+      const res = await pool.query(
+        `EXPLAIN (FORMAT JSON) ${explainBody(prepared.sql)}`,
+        argsOf(prepared),
+      );
       return parsePgPlan(res.rows);
     },
 
     async close(): Promise<void> {
-      await pool.end();
+      // Caller-owned pool — ending it here would take down every other user of the shared pool.
     },
   };
 }
 
 /**
- * A Postgres executor backed by a `pg` connection pool (placeholders: `$1`, `$2`, …). Feed it the
- * `{ sql, params }` a `PostgresQuery` builder emits.
+ * A Postgres executor backed by a `pg` connection pool (placeholders: `$1`, `$2`, …). Accepts any
+ * `{ sql, params }` — SQLEasy builders are one producer, not the only one. {@link close} ends the
+ * pool this factory created.
  */
 export function createPostgresExecutor(config: PostgresConfig): DbExecutor {
-  return createPostgresExecutorFromPool(new Pool(config));
+  const pool = new Pool(config);
+  const executor = createPostgresExecutorFromPool(pool);
+  return {
+    run: (prepared) => executor.run(prepared),
+    transaction: (statements) => executor.transaction(statements),
+    explain: (prepared) => executor.explain(prepared),
+    async close() {
+      await pool.end();
+    },
+  };
 }

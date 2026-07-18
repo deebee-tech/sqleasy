@@ -10,12 +10,12 @@
 export type Row = Record<string, unknown>;
 
 /**
- * A prepared statement and its ordered bound parameters — exactly the shape SQLEasy's
- * `parsePrepared()` and `MultiBuilder.preparedStatements()` return.
+ * A prepared statement and its ordered bound parameters.
  *
- * Structural on purpose: the engine accepts any `{ sql, params }`, so it never depends on the
- * builder. `params` is optional/empty for SQL that carries its own values (e.g. SQLEasy's MSSQL
- * `sp_executesql`, whose `params` is always `[]`).
+ * Structural on purpose: the engine accepts any `{ sql, params }` and never depends on a particular
+ * SQL builder. SQLEasy's `parsePrepared()` / `preparedStatements()` produce this shape, but so can
+ * hand-written SQL, another codegen tool, or an ORM adapter. `params` is optional when the SQL
+ * carries its own values (e.g. an mssql `sp_executesql` batch with inlined assignments).
  */
 export type PreparedSql = {
   sql: string;
@@ -58,14 +58,21 @@ export type DbExecutor = {
   run<T = Row>(prepared: PreparedSql): Promise<QueryResult<T>>;
   /**
    * Run several prepared statements as ONE atomic transaction: commit on success, roll back on any
-   * error. This is how you execute a SQLEasy `MultiBuilder` — pass `multi.preparedStatements()`.
-   * Statements run in order, each as its own prepared statement (never concatenated into one string,
-   * which would misbind: placeholder numbering restarts per statement), and each statement's result
-   * is returned in the same order.
+   * error. Statements run in order, each as its own prepared statement (never concatenated into one
+   * string, which would misbind: placeholder numbering restarts per statement), and each statement's
+   * result is returned in the same order. A common producer is SQLEasy's
+   * `MultiBuilder.preparedStatements()`, but any `{ sql, params }[]` works.
    */
   transaction(statements: readonly PreparedSql[]): Promise<QueryResult[]>;
-  /** Ask the planner what a statement would cost WITHOUT running it. Best-effort per backend. */
+  /**
+   * Ask the planner what a statement would cost WITHOUT running it. Best-effort per backend.
+   * Expects a single statement (`explain()` rejects multi-statement batches). Bound `params` are
+   * applied so selectivity reaches the planner.
+   */
   explain(prepared: PreparedSql): Promise<ExplainEstimate>;
-  /** Close the underlying connection/pool. */
+  /**
+   * Release resources this executor owns. Factory-created executors end their pool/client;
+   * `…FromPool` variants are a no-op so a shared app pool is not torn down by accident.
+   */
   close(): Promise<void>;
 };

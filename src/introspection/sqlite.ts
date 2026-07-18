@@ -35,7 +35,9 @@ export async function introspectSqlite(executor: DbExecutor): Promise<SchemaData
         table: t.name,
         name: c.name,
         dataType: c.type || 'TEXT',
-        nullable: c.notnull === 0 && c.pk === 0,
+        // Honour pragma notnull only — SQLite historically allows NULL in non-INTEGER PRIMARY KEY
+        // columns, so forcing PK columns non-nullable misreports the catalog.
+        nullable: c.notnull === 0,
         isPrimaryKey: c.pk > 0,
         defaultValue: c.dflt_value ?? undefined,
       });

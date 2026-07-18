@@ -1,5 +1,5 @@
 import type { Pool } from 'pg';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import type { PreparedSql } from '../src/index';
 import {
   createPostgresExecutor,
@@ -60,6 +60,24 @@ describe('parsePgPlan', () => {
     expect(parsePgPlan([]).fullScan).toBe(false);
     expect(parsePgPlan([{}]).fullScan).toBe(false);
   });
+
+  it('flags Parallel Seq Scan as a full scan', () => {
+    const rows = [
+      {
+        'QUERY PLAN': [
+          {
+            Plan: {
+              'Node Type': 'Gather',
+              'Total Cost': 100,
+              'Plan Rows': 1000,
+              Plans: [{ 'Node Type': 'Parallel Seq Scan', 'Total Cost': 90, 'Plan Rows': 1000 }],
+            },
+          },
+        ],
+      },
+    ];
+    expect(parsePgPlan(rows).fullScan).toBe(true);
+  });
 });
 
 // ─── transaction orchestration: a recording fake pool verifies the exact driver-call sequence ────
@@ -70,17 +88,21 @@ type Call = { sql: string; params?: unknown[] };
 
 class FakeClient {
   released = false;
+  releasedWithDestroy = false;
   constructor(
     private readonly log: Call[],
     private readonly failOn?: string,
+    private readonly failRollback = false,
   ) {}
   async query(sql: string, params?: unknown[]) {
     this.log.push({ sql, params });
+    if (this.failRollback && sql === 'ROLLBACK') throw new Error('rollback failed');
     if (this.failOn && sql.includes(this.failOn)) throw new Error(`boom: ${sql}`);
     return { rows: [], rowCount: 1 };
   }
-  release() {
+  release(err?: Error | boolean) {
     this.released = true;
+    this.releasedWithDestroy = err === true || err instanceof Error;
   }
 }
 
@@ -88,16 +110,24 @@ class FakePool {
   poolQueries: Call[] = [];
   clientQueries: Call[] = [];
   lastClient?: FakeClient;
-  constructor(private readonly failOn?: string) {}
+  ended = false;
+  explainRows: unknown[] | undefined;
+  constructor(
+    private readonly failOn?: string,
+    private readonly failRollback = false,
+  ) {}
   async query(sql: string, params?: unknown[]) {
     this.poolQueries.push({ sql, params });
+    if (this.explainRows) return { rows: this.explainRows, rowCount: this.explainRows.length };
     return { rows: [{ ok: 1 }], rowCount: 1 };
   }
   async connect() {
-    this.lastClient = new FakeClient(this.clientQueries, this.failOn);
+    this.lastClient = new FakeClient(this.clientQueries, this.failOn, this.failRollback);
     return this.lastClient;
   }
-  async end() {}
+  async end() {
+    this.ended = true;
+  }
 }
 
 const asPool = (fake: FakePool): Pool => fake as unknown as Pool;
@@ -145,6 +175,44 @@ describe('postgres transaction orchestration', () => {
     expect(sqls).not.toContain('COMMIT');
     // The client is released even on the failure path — no leaked connection.
     expect(pool.lastClient!.released).toBe(true);
+    expect(pool.lastClient!.releasedWithDestroy).toBe(false);
+  });
+
+  it('destroys the client when ROLLBACK itself fails', async () => {
+    const pool = new FakePool('UPDATE', true);
+    const db = createPostgresExecutorFromPool(asPool(pool));
+    await expect(db.transaction(stmts)).rejects.toThrow();
+    expect(pool.lastClient!.released).toBe(true);
+    expect(pool.lastClient!.releasedWithDestroy).toBe(true);
+  });
+
+  it('explain() wraps EXPLAIN (FORMAT JSON) and binds params', async () => {
+    const pool = new FakePool();
+    pool.explainRows = [
+      {
+        'QUERY PLAN': [{ Plan: { 'Node Type': 'Seq Scan', 'Total Cost': 1, 'Plan Rows': 1 } }],
+      },
+    ];
+    const db = createPostgresExecutorFromPool(asPool(pool));
+    const est = await db.explain({ sql: 'SELECT * FROM t WHERE id = $1;', params: [9] });
+    expect(pool.poolQueries[0]!.sql).toBe('EXPLAIN (FORMAT JSON) SELECT * FROM t WHERE id = $1');
+    expect(pool.poolQueries[0]!.params).toEqual([9]);
+    expect(est.fullScan).toBe(true);
+  });
+
+  it('explain() rejects multi-statement SQL', async () => {
+    const pool = new FakePool();
+    const db = createPostgresExecutorFromPool(asPool(pool));
+    await expect(db.explain({ sql: 'SELECT 1; SELECT 2;', params: [] })).rejects.toThrow(
+      /single statement/,
+    );
+  });
+
+  it('FromPool close() does not end the shared pool', async () => {
+    const pool = new FakePool();
+    const db = createPostgresExecutorFromPool(asPool(pool));
+    await db.close();
+    expect(pool.ended).toBe(false);
   });
 });
 
@@ -160,6 +228,10 @@ describe.skipIf(!DATABASE_URL)('postgres executor (real database)', () => {
 
   afterEach(async () => {
     await db.run({ sql: 'DROP TABLE IF EXISTS _sqleasy_engine_it;' }).catch(() => {});
+  });
+
+  afterAll(async () => {
+    await db.close();
   });
 
   it('binds params and commits a transaction atomically', async () => {

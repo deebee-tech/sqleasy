@@ -5,6 +5,7 @@ import {
   type PoolOptions,
   type ResultSetHeader,
 } from 'mysql2/promise';
+import { explainBody } from '../explain-body';
 import type { DbExecutor, ExplainEstimate, PreparedSql, QueryResult, Row } from '../index';
 
 /** Connection settings — any `mysql2` `PoolOptions`. */
@@ -42,6 +43,10 @@ function tablesOf(node: unknown): MysqlTable[] {
   );
 }
 
+/** Full-table or full-index scan access types — portable "this will hurt" signals. */
+const isFullScanAccess = (accessType: string | undefined): boolean =>
+  accessType === 'ALL' || accessType === 'index';
+
 /** Parse `EXPLAIN FORMAT=JSON` output into the normalized estimate. Exported for unit tests. */
 export function parseMysqlPlan(raw: string): ExplainEstimate {
   let plan: MysqlPlan = {};
@@ -56,8 +61,8 @@ export function parseMysqlPlan(raw: string): ExplainEstimate {
     cost: Number.isFinite(cost) ? cost : undefined,
     // The driving (first) table's scanned rows.
     rows: tables[0]?.rows_examined_per_scan,
-    // `ALL` is MySQL's full-table-scan access type — a scan ANYWHERE in the plan counts.
-    fullScan: tables.some((t) => t.access_type === 'ALL'),
+    // `ALL` = full table scan; `index` = full index scan — either hurts like a full read.
+    fullScan: tables.some((t) => isFullScanAccess(t.access_type)),
     plan: (raw ?? '').slice(0, 500),
   };
 }
@@ -83,7 +88,8 @@ export type MysqlExecutorOptions = {
 
 /**
  * Build a MySQL executor over an EXISTING pool — bring your own `mysql2` Pool to share one across
- * your app (or hand in a test double). {@link createMysqlExecutor} is the usual entry.
+ * your app (or hand in a test double). {@link close} is a no-op: you own the pool's lifetime.
+ * Prefer {@link createMysqlExecutor} when the engine should create and close the pool.
  */
 export function createMysqlExecutorFromPool(
   pool: Pool,
@@ -106,8 +112,9 @@ export function createMysqlExecutorFromPool(
     async transaction(statements: readonly PreparedSql[]): Promise<QueryResult[]> {
       // Driver-level transaction on a single pinned connection — beginTransaction/commit/rollback
       // speak the protocol correctly (no `multipleStatements`, no concatenation). Each statement
-      // runs on its own; ROLLBACK on any error; release the connection no matter what.
+      // runs on its own; ROLLBACK on any error; release (or destroy) the connection no matter what.
       const conn = await pool.getConnection();
+      let destroy = false;
       try {
         await conn.beginTransaction();
         const results: QueryResult[] = [];
@@ -118,34 +125,54 @@ export function createMysqlExecutorFromPool(
         await conn.commit();
         return results;
       } catch (err) {
-        await conn.rollback().catch(() => {});
+        try {
+          await conn.rollback();
+        } catch {
+          // A failed rollback often means the connection is dead — destroy instead of pooling it.
+          destroy = true;
+        }
         throw err;
       } finally {
-        conn.release();
+        if (destroy) conn.destroy();
+        else conn.release();
       }
     },
 
     async explain(prepared: PreparedSql): Promise<ExplainEstimate> {
       // EXPLAIN never executes the statement; FORMAT=JSON is the only form carrying a cost estimate.
-      const [rows] = await query(pool, `EXPLAIN FORMAT=JSON ${prepared.sql}`, argsOf(prepared));
+      const [rows] = await query(
+        pool,
+        `EXPLAIN FORMAT=JSON ${explainBody(prepared.sql)}`,
+        argsOf(prepared),
+      );
       const raw = Array.isArray(rows) ? (rows[0] as { EXPLAIN?: string } | undefined)?.EXPLAIN : '';
       return parseMysqlPlan(raw ?? '');
     },
 
     async close(): Promise<void> {
-      await pool.end();
+      // Caller-owned pool — ending it here would take down every other user of the shared pool.
     },
   };
 }
 
 /**
- * A MySQL / MariaDB executor backed by a `mysql2` connection pool (placeholders: `?`). Feed it the
- * `{ sql, params }` a `MysqlQuery` builder emits. Pass `{ statementTimeoutMs }` for a per-statement
- * ceiling (MySQL has no pool-level knob for it).
+ * A MySQL / MariaDB executor backed by a `mysql2` connection pool (placeholders: `?`). Accepts any
+ * `{ sql, params }` — SQLEasy builders are one producer, not the only one. Pass
+ * `{ statementTimeoutMs }` for a per-statement ceiling (MySQL has no pool-level knob for it).
+ * {@link close} ends the pool this factory created.
  */
 export function createMysqlExecutor(
   config: MysqlConfig,
   opts: MysqlExecutorOptions = {},
 ): DbExecutor {
-  return createMysqlExecutorFromPool(createPool(config), opts);
+  const pool = createPool(config);
+  const executor = createMysqlExecutorFromPool(pool, opts);
+  return {
+    run: (prepared) => executor.run(prepared),
+    transaction: (statements) => executor.transaction(statements),
+    explain: (prepared) => executor.explain(prepared),
+    async close() {
+      await pool.end();
+    },
+  };
 }

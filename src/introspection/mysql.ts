@@ -7,8 +7,13 @@ import type { SchemaData } from './schema';
 export async function introspectMysql(executor: DbExecutor, schema?: string): Promise<SchemaData> {
   let target = schema;
   if (!target) {
-    const r = await executor.run<{ db: string }>({ sql: 'SELECT DATABASE() AS db' });
-    target = r.rows[0]?.db ?? '';
+    const r = await executor.run<{ db: string | null }>({ sql: 'SELECT DATABASE() AS db' });
+    target = r.rows[0]?.db ?? undefined;
+  }
+  if (!target) {
+    throw new Error(
+      'introspectMysql: no schema given and DATABASE() is NULL — USE a database or pass schema',
+    );
   }
 
   // Explicit lowercase aliases: MySQL 8's information_schema returns UPPERCASE column headers unless

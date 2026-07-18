@@ -1,4 +1,5 @@
 import { createClient, type Config, type InArgs, type ResultSet } from '@libsql/client';
+import { explainBody } from '../explain-body';
 import type { DbExecutor, ExplainEstimate, PreparedSql, QueryResult, Row } from '../index';
 
 /**
@@ -27,8 +28,8 @@ const toResult = <T>(rs: ResultSet): QueryResult<T> => {
 };
 
 /**
- * A SQLite / libSQL / Turso executor backed by `@libsql/client` (placeholders: `?`). Feed it the
- * `{ sql, params }` a `SqliteQuery` builder emits.
+ * A SQLite / libSQL / Turso executor backed by `@libsql/client` (placeholders: `?`). Accepts any
+ * `{ sql, params }` — SQLEasy builders are one producer, not the only one.
  */
 export function createSqliteExecutor(config: SqliteConfig): DbExecutor {
   const clientConfig: Config = 'file' in config ? { url: `file:${config.file}` } : config;
@@ -89,7 +90,10 @@ export function createSqliteExecutor(config: SqliteConfig): DbExecutor {
       // SQLite's planner exposes no cost or row estimate — only the plan SHAPE. `SCAN` means a full
       // table scan, `SEARCH` an index seek, so `fullScan` is the only signal this dialect gives.
       const rs = await withBusyRetry(() =>
-        client.execute({ sql: `EXPLAIN QUERY PLAN ${prepared.sql}`, args: argsOf(prepared) }),
+        client.execute({
+          sql: `EXPLAIN QUERY PLAN ${explainBody(prepared.sql)}`,
+          args: argsOf(prepared),
+        }),
       );
       const details = rs.rows.map((r) =>
         String((r as unknown as { detail?: string }).detail ?? ''),

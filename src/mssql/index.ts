@@ -2,6 +2,7 @@
 // destructure. (pg/mysql2/@libsql expose named exports fine.)
 import mssql from 'mssql';
 import type { config as MssqlDriverConfig, IResult } from 'mssql';
+import { trimExplainSql } from '../explain-body';
 import type { DbExecutor, ExplainEstimate, PreparedSql, QueryResult, Row } from '../index';
 
 const { ConnectionPool, Transaction, Request } = mssql;
@@ -29,22 +30,80 @@ function readLiteral(sql: string, from: number): { text: string; end: number } |
 }
 
 /**
- * Turn the mssql dialect's output into something SHOWPLAN can actually cost.
+ * Parse trailing `sp_executesql` value assignments (`@p0 = N'%an%', @p1 = 1`) into a name→value map.
+ * Values keep their original T-SQL spelling so they can be inlined into `DECLARE … = …`.
+ */
+function readAssignments(sql: string, from: number): Map<string, string> {
+  const map = new Map<string, string>();
+  let i = from;
+  while (i < sql.length) {
+    while (i < sql.length && /[\s,]/.test(sql[i]!)) i++;
+    const name = /^@\w+/i.exec(sql.slice(i));
+    if (!name) break;
+    i += name[0].length;
+    while (i < sql.length && /\s/.test(sql[i]!)) i++;
+    if (sql[i] !== '=') break;
+    i++;
+    while (i < sql.length && /\s/.test(sql[i]!)) i++;
+    // N'…' / '…' string, or a bare token (number, NULL, …) up to the next comma/semicolon/end.
+    if (sql[i] === 'N' && sql[i + 1] === "'") {
+      const lit = readLiteral(sql, i + 2);
+      if (!lit) break;
+      map.set(name[0].toLowerCase(), `N'${lit.text.replace(/'/g, "''")}'`);
+      i = lit.end;
+      continue;
+    }
+    if (sql[i] === "'") {
+      const lit = readLiteral(sql, i + 1);
+      if (!lit) break;
+      map.set(name[0].toLowerCase(), `'${lit.text.replace(/'/g, "''")}'`);
+      i = lit.end;
+      continue;
+    }
+    const token = /^[^,;]+/.exec(sql.slice(i));
+    if (!token) break;
+    map.set(name[0].toLowerCase(), token[0].trim());
+    i += token[0].length;
+  }
+  return map;
+}
+
+/** Merge `DECLARE` types with `sp_executesql` assignments: `@p0 int` + `@p0 = 1` → `@p0 int = 1`. */
+function declsWithDefaults(decls: string, assigns: Map<string, string>): string {
+  return decls
+    .split(',')
+    .map((part) => {
+      const trimmed = part.trim();
+      const name = /^(@\w+)/i.exec(trimmed)?.[1];
+      if (!name) return trimmed;
+      const value = assigns.get(name.toLowerCase());
+      return value ? `${trimmed} = ${value}` : trimmed;
+    })
+    .join(', ');
+}
+
+/**
+ * Turn an `sp_executesql` batch into something SHOWPLAN can actually cost.
  *
- * It emits `SET NOCOUNT ON; exec sp_executesql N'<select>', N'<decls>'[, @p0 = …];`. SHOWPLAN does
- * NOT compile dynamic SQL, so explaining the EXEC yields a plan with no cost — the inner statement
- * must be lifted out. When it has parameters, that inner statement references `@p0`, undeclared
- * outside sp_executesql, so re-declare them. The assigned VALUES are dropped on purpose: a cost
- * estimate doesn't need them. Not a wrapped statement ⇒ returned unchanged.
+ * `sp_executesql` wrappers (SQLEasy or hand-written) must be lifted: SHOWPLAN does NOT compile
+ * dynamic SQL, so explaining the EXEC yields a plan with no cost. When the wrapper declares
+ * parameters, re-DECLARE them and keep assigned values when present so selectivity reaches the
+ * planner. Accepts `exec` / `EXECUTE` and `N'…'` string forms. Not a wrapped statement ⇒ returned
+ * unchanged (after {@link explainBody} normalization by the caller).
  */
 export function toExplainableBatch(sql: string): string {
-  const m = /exec\s+sp_executesql\s+N'/i.exec(sql);
+  const m = /exec(?:ute)?\s+sp_executesql\s+N'/i.exec(sql);
   if (!m) return sql;
   const inner = readLiteral(sql, m.index + m[0].length);
   if (!inner) return sql;
   const decl = /^\s*,\s*N'/.exec(sql.slice(inner.end));
-  const decls = decl ? readLiteral(sql, inner.end + decl[0].length)?.text.trim() : '';
-  return decls ? `DECLARE ${decls};\n${inner.text}` : inner.text;
+  if (!decl) return inner.text;
+  const declsLit = readLiteral(sql, inner.end + decl[0].length);
+  if (!declsLit) return inner.text;
+  const decls = declsLit.text.trim();
+  if (!decls) return inner.text;
+  const assigns = readAssignments(sql, declsLit.end);
+  return `DECLARE ${declsWithDefaults(decls, assigns)};\n${inner.text}`;
 }
 
 /** Parse a SHOWPLAN_XML document into the normalized estimate. Exported for unit tests. */
@@ -72,29 +131,24 @@ const toResult = <T>(result: IResult<unknown>): QueryResult<T> => ({
 });
 
 /**
- * SQLEasy's mssql dialect unconditionally prefixes `SET NOCOUNT ON; ` to every statement it emits.
- * NOCOUNT suppresses the DONE row counts that tedious reads, so `rowsAffected` came back `[]` and
- * every INSERT/UPDATE/DELETE routed through here reported `rowCount: 0` — a write that plainly
+ * Some SQL producers (including SQLEasy's mssql dialect) prefix `SET NOCOUNT ON;`. NOCOUNT
+ * suppresses the DONE row counts that tedious reads, so `rowsAffected` came back `[]` and every
+ * INSERT/UPDATE/DELETE routed through here reported `rowCount: 0` — a write that plainly
  * succeeded looked like it had touched nothing.
  *
  * Rewritten rather than stripped: forcing OFF also corrects a session that already had NOCOUNT ON,
  * whereas removing the prefix would just inherit whatever the connection was left in. The match is
  * anchored at the start of the batch, so it cannot fire on the same text inside a string literal —
  * the reason this file refuses to rewrite `?` placeholders by scanning.
- *
- * The real fix belongs upstream in SQLEasy, which has no reason to emit this at all; the prefix is
- * frozen into its cross-language golden corpus, so it cannot move without the Dart port moving in
- * lockstep.
  */
 export const withRowCounts = (sql: string): string =>
   sql.replace(/^\s*SET\s+NOCOUNT\s+ON\s*;/i, 'SET NOCOUNT OFF;');
 
-// Bind params (if any) as @p0..@pN. SQLEasy's mssql dialect inlines its values into the
-// sp_executesql batch and passes `params: []`, so nothing binds on that path; a caller passing bound
-// values must reference @p0.. in their SQL (mssql has no positional `?`). No `?`→`@p` rewriting —
-// that scan corrupts a `?` inside a string literal. query() re-wraps its argument in sp_executesql,
-// which is harmless for both a plain statement and a pre-formed batch (verified against real SQL
-// Server: two sp_executesql inserts in a transaction commit both).
+// Bind params (if any) as @p0..@pN. Callers passing bound values must reference @p0.. in their SQL
+// (mssql has no positional `?`). No `?`→`@p` rewriting — that scan corrupts a `?` inside a string
+// literal. query() re-wraps its argument in sp_executesql, which is harmless for both a plain
+// statement and a pre-formed batch (verified against real SQL Server: two sp_executesql inserts in
+// a transaction commit both).
 type BindableRequest = { input(name: string, value: unknown): unknown };
 const bindParams = <R extends BindableRequest>(request: R, params?: readonly unknown[]): R => {
   (params ?? []).forEach((value, i) => request.input(`p${i}`, value));
@@ -102,8 +156,10 @@ const bindParams = <R extends BindableRequest>(request: R, params?: readonly unk
 };
 
 /**
- * A SQL Server executor backed by an `mssql` connection pool. Feed it the self-contained
- * `sp_executesql` batch a `MssqlQuery` builder emits (its `params` is always `[]`).
+ * A SQL Server executor backed by an `mssql` connection pool. Accepts any `{ sql, params }` —
+ * including self-contained `sp_executesql` batches and plain parameterized SQL using `@p0`… with
+ * `params` bound via {@link Request.input}. There is no `FromPool` variant: this executor owns the
+ * pool so it can rebuild it after a failed connect (mssql caches a rejected connect promise).
  */
 export function createMssqlExecutor(config: MssqlConfig): DbExecutor {
   const makePool = () =>
@@ -123,6 +179,14 @@ export function createMssqlExecutor(config: MssqlConfig): DbExecutor {
       void dead.close().catch(() => {});
       throw e;
     }));
+
+  /** Retire the current pool so a poisoned connection (e.g. SHOWPLAN stuck ON) cannot be reused. */
+  const retirePool = () => {
+    ready = undefined;
+    const dead = pool;
+    pool = makePool();
+    void dead.close().catch(() => {});
+  };
 
   return {
     async run<T = Row>(prepared: PreparedSql): Promise<QueryResult<T>> {
@@ -153,18 +217,27 @@ export function createMssqlExecutor(config: MssqlConfig): DbExecutor {
       await ensureReady();
       // SQL Server has no EXPLAIN. The estimated plan comes from SET SHOWPLAN_XML, which (a) must be
       // the ONLY statement in its batch and (b) is SESSION state — so the SET and the query must run
-      // on the SAME connection. A transaction pins one connection for both; the finally block always
-      // clears the flag and releases it, so SHOWPLAN never leaks onto a connection serving reads.
+      // on the SAME connection. A transaction pins one connection for both. If OFF fails, the pool
+      // is retired so a SHOWPLAN-stuck connection cannot serve later run()/transaction() calls.
       const tx = new Transaction(pool);
       await tx.begin();
+      let retire = false;
       try {
         await new Request(tx).batch('SET SHOWPLAN_XML ON');
-        const res = await new Request(tx).batch(toExplainableBatch(prepared.sql));
+        const request = bindParams(new Request(tx), prepared.params);
+        // Lift sp_executesql first (batches often start with SET NOCOUNT ON; …). The lift may be a
+        // short DECLARE+SELECT batch — trim only; do not reject multi-statement the way PG/MySQL do.
+        const res = await request.batch(trimExplainSql(toExplainableBatch(prepared.sql)));
         const first = res.recordset?.[0] as Row | undefined;
         return parsePlanXml(String(first ? Object.values(first)[0] : ''));
       } finally {
-        await new Request(tx).batch('SET SHOWPLAN_XML OFF').catch(() => {});
+        try {
+          await new Request(tx).batch('SET SHOWPLAN_XML OFF');
+        } catch {
+          retire = true;
+        }
         await tx.rollback().catch(() => {});
+        if (retire) retirePool();
       }
     },
 

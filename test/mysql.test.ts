@@ -1,5 +1,5 @@
 import type { Pool } from 'mysql2/promise';
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import type { PreparedSql } from '../src/index';
 import { createMysqlExecutor, createMysqlExecutorFromPool, parseMysqlPlan } from '../src/mysql';
 
@@ -18,11 +18,18 @@ describe('parseMysqlPlan', () => {
     expect(est.fullScan).toBe(true);
   });
 
-  it('does not flag a scan when every table is an index access', () => {
+  it('does not flag a scan when every table is a seeking index access', () => {
     const raw = JSON.stringify({
       query_block: { table: { access_type: 'ref', rows_examined_per_scan: 2 } },
     });
     expect(parseMysqlPlan(raw).fullScan).toBe(false);
+  });
+
+  it('flags a full index scan (access_type index) as a full scan', () => {
+    const raw = JSON.stringify({
+      query_block: { table: { access_type: 'index', rows_examined_per_scan: 500 } },
+    });
+    expect(parseMysqlPlan(raw).fullScan).toBe(true);
   });
 
   it('finds an ALL scan nested under a JOIN (nested_loop)', () => {
@@ -150,19 +157,24 @@ describe('parseMysqlPlan', () => {
 });
 
 // ─── transaction orchestration: a recording fake pool verifies the driver-call sequence ──────────
-type Call = { sql: string; params?: unknown[] };
+type Call = { sql: string; params?: unknown[]; raw?: unknown };
 
 class FakeConn {
   events: string[] = [];
   queries: Call[] = [];
   released = false;
-  constructor(private readonly failOn?: string) {}
+  destroyed = false;
+  constructor(
+    private readonly failOn?: string,
+    private readonly failRollback = false,
+  ) {}
   async beginTransaction() {
     this.events.push('begin');
   }
-  async query(sql: string, params?: unknown[]) {
-    this.queries.push({ sql, params });
-    if (this.failOn && sql.includes(this.failOn)) throw new Error(`boom: ${sql}`);
+  async query(sql: string | { sql: string; timeout?: number }, params?: unknown[]) {
+    const text = typeof sql === 'string' ? sql : sql.sql;
+    this.queries.push({ sql: text, params, raw: sql });
+    if (this.failOn && text.includes(this.failOn)) throw new Error(`boom: ${text}`);
     return [[], []];
   }
   async commit() {
@@ -170,25 +182,45 @@ class FakeConn {
   }
   async rollback() {
     this.events.push('rollback');
+    if (this.failRollback) throw new Error('rollback failed');
   }
   release() {
     this.released = true;
+  }
+  destroy() {
+    this.destroyed = true;
   }
 }
 
 class FakePool {
   poolQueries: Call[] = [];
   lastConn?: FakeConn;
-  constructor(private readonly failOn?: string) {}
-  async query(sql: string, params?: unknown[]) {
-    this.poolQueries.push({ sql, params });
+  ended = false;
+  constructor(
+    private readonly failOn?: string,
+    private readonly failRollback = false,
+  ) {}
+  async query(sql: string | { sql: string; timeout?: number }, params?: unknown[]) {
+    const text = typeof sql === 'string' ? sql : sql.sql;
+    this.poolQueries.push({ sql: text, params, raw: sql });
+    if (text.startsWith('EXPLAIN')) {
+      return [
+        [{ EXPLAIN: JSON.stringify({ query_block: { table: { access_type: 'ALL' } } }) }],
+        [],
+      ];
+    }
+    if (text.startsWith('INSERT') || text.startsWith('UPDATE') || text.startsWith('DELETE')) {
+      return [{ affectedRows: 3 }, []];
+    }
     return [[{ ok: 1 }], []];
   }
   async getConnection() {
-    this.lastConn = new FakeConn(this.failOn);
+    this.lastConn = new FakeConn(this.failOn, this.failRollback);
     return this.lastConn;
   }
-  async end() {}
+  async end() {
+    this.ended = true;
+  }
 }
 
 const asPool = (fake: FakePool): Pool => fake as unknown as Pool;
@@ -202,8 +234,17 @@ describe('mysql transaction orchestration', () => {
     const pool = new FakePool();
     const db = createMysqlExecutorFromPool(asPool(pool));
     const res = await db.run({ sql: 'SELECT 1;', params: [] });
-    expect(pool.poolQueries).toEqual([{ sql: 'SELECT 1;', params: [] }]);
+    expect(pool.poolQueries.map((q) => ({ sql: q.sql, params: q.params }))).toEqual([
+      { sql: 'SELECT 1;', params: [] },
+    ]);
     expect(res).toEqual({ rows: [{ ok: 1 }], rowCount: 1 });
+  });
+
+  it('run() maps ResultSetHeader.affectedRows for writes', async () => {
+    const pool = new FakePool();
+    const db = createMysqlExecutorFromPool(asPool(pool));
+    const res = await db.run({ sql: 'INSERT INTO t VALUES (?);', params: [1] });
+    expect(res).toEqual({ rows: [], rowCount: 3 });
   });
 
   it('transaction() begins, runs each statement on the connection, commits, and releases', async () => {
@@ -232,33 +273,86 @@ describe('mysql transaction orchestration', () => {
     expect(pool.lastConn!.events).toContain('rollback');
     expect(pool.lastConn!.events).not.toContain('commit');
     expect(pool.lastConn!.released).toBe(true);
+    expect(pool.lastConn!.destroyed).toBe(false);
+  });
+
+  it('destroys the connection when rollback itself fails', async () => {
+    const pool = new FakePool('UPDATE', true);
+    const db = createMysqlExecutorFromPool(asPool(pool));
+    await expect(db.transaction(stmts)).rejects.toThrow();
+    expect(pool.lastConn!.destroyed).toBe(true);
+    expect(pool.lastConn!.released).toBe(false);
+  });
+
+  it('explain() issues EXPLAIN FORMAT=JSON and parses the EXPLAIN column', async () => {
+    const pool = new FakePool();
+    const db = createMysqlExecutorFromPool(asPool(pool));
+    const est = await db.explain({ sql: 'SELECT * FROM t WHERE id = ?;', params: [1] });
+    expect(pool.poolQueries[0]!.sql).toBe('EXPLAIN FORMAT=JSON SELECT * FROM t WHERE id = ?');
+    expect(pool.poolQueries[0]!.params).toEqual([1]);
+    expect(est.fullScan).toBe(true);
+  });
+
+  it('FromPool close() does not end the shared pool', async () => {
+    const pool = new FakePool();
+    const db = createMysqlExecutorFromPool(asPool(pool));
+    await db.close();
+    expect(pool.ended).toBe(false);
   });
 });
 
 // ─── statementTimeoutMs: mysql has no pool-level knob, so it wraps each query in { sql, timeout } ──
 describe('mysql statementTimeoutMs', () => {
-  const firstQueryArg = async (opts?: { statementTimeoutMs?: number }): Promise<unknown> => {
+  const firstQueryArg = async (
+    opts: { statementTimeoutMs?: number } | undefined,
+    via: 'run' | 'transaction' | 'explain',
+  ): Promise<unknown> => {
     let firstArg: unknown;
     const pool = {
       query: async (arg: unknown) => {
-        firstArg = arg;
-        return [[{ ok: 1 }], []];
+        firstArg ??= arg;
+        return [[{ EXPLAIN: '{}' }], []];
       },
+      getConnection: async () => ({
+        beginTransaction: async () => {},
+        query: async (arg: unknown) => {
+          firstArg ??= arg;
+          return [[], []];
+        },
+        commit: async () => {},
+        rollback: async () => {},
+        release: () => {},
+        destroy: () => {},
+      }),
       end: async () => {},
     } as unknown as Pool;
-    await createMysqlExecutorFromPool(pool, opts).run({ sql: 'SELECT 1;', params: [] });
+    const db = createMysqlExecutorFromPool(pool, opts);
+    if (via === 'run') await db.run({ sql: 'SELECT 1;', params: [] });
+    else if (via === 'transaction') await db.transaction([{ sql: 'SELECT 1;', params: [] }]);
+    else await db.explain({ sql: 'SELECT 1;', params: [] });
     return firstArg;
   };
 
   it('wraps the statement in { sql, timeout } when statementTimeoutMs is set', async () => {
-    expect(await firstQueryArg({ statementTimeoutMs: 30_000 })).toEqual({
+    expect(await firstQueryArg({ statementTimeoutMs: 30_000 }, 'run')).toEqual({
       sql: 'SELECT 1;',
       timeout: 30_000,
     });
   });
 
+  it('applies the timeout on transaction and explain paths too', async () => {
+    expect(await firstQueryArg({ statementTimeoutMs: 5_000 }, 'transaction')).toEqual({
+      sql: 'SELECT 1;',
+      timeout: 5_000,
+    });
+    expect(await firstQueryArg({ statementTimeoutMs: 5_000 }, 'explain')).toEqual({
+      sql: 'EXPLAIN FORMAT=JSON SELECT 1',
+      timeout: 5_000,
+    });
+  });
+
   it('passes plain sql (no timeout wrapper) when the option is omitted', async () => {
-    expect(await firstQueryArg()).toBe('SELECT 1;');
+    expect(await firstQueryArg(undefined, 'run')).toBe('SELECT 1;');
   });
 });
 
@@ -268,10 +362,20 @@ const MYSQL_URL = process.env['MYSQL_URL'];
 describe.skipIf(!MYSQL_URL)('mysql executor (real database)', () => {
   const db = createMysqlExecutor({ uri: MYSQL_URL });
 
+  afterAll(async () => {
+    await db.close();
+  });
+
   it('commits a transaction atomically and rolls back on failure', async () => {
     await db.run({ sql: 'DROP TABLE IF EXISTS _sqleasy_engine_it;' });
     await db.run({ sql: 'CREATE TABLE _sqleasy_engine_it (id INT PRIMARY KEY, name TEXT);' });
     try {
+      const insert = await db.run({
+        sql: 'INSERT INTO _sqleasy_engine_it (id, name) VALUES (?, ?);',
+        params: [0, 'seed'],
+      });
+      expect(insert.rowCount).toBe(1);
+
       await db.transaction([
         { sql: 'INSERT INTO _sqleasy_engine_it (id, name) VALUES (?, ?);', params: [1, 'Ada'] },
         { sql: 'INSERT INTO _sqleasy_engine_it (id, name) VALUES (?, ?);', params: [2, 'Grace'] },
@@ -279,7 +383,7 @@ describe.skipIf(!MYSQL_URL)('mysql executor (real database)', () => {
       const committed = await db.run<{ n: number }>({
         sql: 'SELECT COUNT(*) AS n FROM _sqleasy_engine_it;',
       });
-      expect(Number(committed.rows[0]!.n)).toBe(2);
+      expect(Number(committed.rows[0]!.n)).toBe(3);
 
       await expect(
         db.transaction([
@@ -291,7 +395,21 @@ describe.skipIf(!MYSQL_URL)('mysql executor (real database)', () => {
         sql: 'SELECT COUNT(*) AS n FROM _sqleasy_engine_it;',
       });
       // Bob (id 3) must be gone — the failed transaction rolled back as a unit.
-      expect(Number(afterRollback.rows[0]!.n)).toBe(2);
+      expect(Number(afterRollback.rows[0]!.n)).toBe(3);
+    } finally {
+      await db.run({ sql: 'DROP TABLE IF EXISTS _sqleasy_engine_it;' }).catch(() => {});
+    }
+  });
+
+  it('explain() reports a full scan on an unindexed filter', async () => {
+    await db.run({ sql: 'DROP TABLE IF EXISTS _sqleasy_engine_it;' });
+    await db.run({ sql: 'CREATE TABLE _sqleasy_engine_it (id INT PRIMARY KEY, name TEXT);' });
+    try {
+      const est = await db.explain({
+        sql: 'SELECT * FROM _sqleasy_engine_it WHERE name = ?;',
+        params: ['Ada'],
+      });
+      expect(est.fullScan).toBe(true);
     } finally {
       await db.run({ sql: 'DROP TABLE IF EXISTS _sqleasy_engine_it;' }).catch(() => {});
     }

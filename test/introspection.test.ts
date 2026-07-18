@@ -141,6 +141,10 @@ describe('introspectSchema (sqlite, real in-memory libsql)', () => {
 
     expect(schema.tables.find((t) => t.name === 'active_users')!.type).toBe('view');
   });
+
+  it('rejects a non-main schema rather than silently ignoring it', async () => {
+    await expect(introspectSchema(db, 'sqlite', 'other')).rejects.toThrow(/only schema "main"/);
+  });
 });
 
 // ─── real pg / mysql / mssql: gated on a connection env var (a CI service); skipped locally ───────
@@ -223,6 +227,79 @@ for (const t of REAL) {
     });
   });
 }
+
+// Postgres composite + cross-schema FKs — the old information_schema join cartesian-producted
+// composites and dropped cross-schema refs. Only a real server exercises the fixed SQL.
+describe.skipIf(!process.env['DATABASE_URL'])(
+  'introspectSchema (postgres, composite + cross-schema FK)',
+  () => {
+    it('pairs composite FK columns by ordinal and keeps cross-schema references', async () => {
+      const { createPostgresExecutor } = await import('../src/postgres');
+      const db = createPostgresExecutor({ connectionString: process.env['DATABASE_URL'] });
+      const cleanup = [
+        'DROP TABLE IF EXISTS public._se_comp_child CASCADE;',
+        'DROP TABLE IF EXISTS public._se_comp_parent CASCADE;',
+        'DROP TABLE IF EXISTS other._se_xschema_parent CASCADE;',
+        'DROP TABLE IF EXISTS public._se_xschema_child CASCADE;',
+        'DROP SCHEMA IF EXISTS other CASCADE;',
+      ];
+      try {
+        for (const sql of cleanup) await db.run({ sql }).catch(() => {});
+        await db.run({ sql: 'CREATE SCHEMA other;' });
+        await db.run({
+          sql: 'CREATE TABLE public._se_comp_parent (a INT NOT NULL, b INT NOT NULL, PRIMARY KEY (a, b));',
+        });
+        await db.run({
+          sql: `CREATE TABLE public._se_comp_child (
+            a INT NOT NULL, b INT NOT NULL,
+            FOREIGN KEY (a, b) REFERENCES public._se_comp_parent (a, b)
+          );`,
+        });
+        await db.run({
+          sql: 'CREATE TABLE other._se_xschema_parent (id INT PRIMARY KEY);',
+        });
+        await db.run({
+          sql: `CREATE TABLE public._se_xschema_child (
+            id INT PRIMARY KEY,
+            parent_id INT REFERENCES other._se_xschema_parent (id)
+          );`,
+        });
+
+        const schema = await introspectSchema(db, 'postgres', 'public');
+        const child = schema.tables.find((t) => t.name === '_se_comp_child')!;
+        expect(child.foreignKeys).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              columnName: 'a',
+              referencedTable: '_se_comp_parent',
+              referencedColumn: 'a',
+            }),
+            expect.objectContaining({
+              columnName: 'b',
+              referencedTable: '_se_comp_parent',
+              referencedColumn: 'b',
+            }),
+          ]),
+        );
+        // Exactly two edges — not the 2×2 = 4 cartesian product from the old join.
+        expect(child.foreignKeys).toHaveLength(2);
+
+        const xchild = schema.tables.find((t) => t.name === '_se_xschema_child')!;
+        expect(xchild.foreignKeys).toContainEqual(
+          expect.objectContaining({
+            columnName: 'parent_id',
+            referencedTable: '_se_xschema_parent',
+            referencedColumn: 'id',
+            referencedSchema: 'other',
+          }),
+        );
+      } finally {
+        for (const sql of cleanup) await db.run({ sql }).catch(() => {});
+        await db.close();
+      }
+    });
+  },
+);
 
 // Postgres-only: a partitioned table's parent is relkind 'p', not 'r'. The catalog queries filtered
 // on 'r', so a partitioned table came back with no indexes and no row count — reported as a bare,
