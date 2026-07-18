@@ -87,4 +87,12 @@ describe('MysqlQuery update', () => {
     const sql = builder.parseRaw();
     expect(sql).toEqual('UPDATE `users` AS `u` SET `name` = Alice, `updated_at` = NOW();');
   });
+
+  it('updateTableWithOwner with non-empty owner throws', () => {
+    const query = new MysqlQuery();
+    const builder = query.newBuilder();
+    builder.updateTableWithOwner('mydb', 'users', 'u').set('name', 'Alice');
+
+    expect(() => builder.parseRaw()).toThrow('MySQL does not support table owners');
+  });
 });

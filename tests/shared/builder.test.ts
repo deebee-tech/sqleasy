@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MssqlQuery } from '../../src';
 import { WhereOperator } from '../../src/enums/where-operator';
 import { OrderByDirection } from '../../src/enums/order-by-direction';
+import { QueryType } from '../../src/enums/query-type';
 
 describe('Builder state management', () => {
   const query = new MssqlQuery();
@@ -39,6 +40,83 @@ describe('Builder state management', () => {
 
       expect(builder.state().selectStates).toEqual([]);
       expect(builder.state().fromStates.length).toBe(1);
+    });
+
+    it('also clears distinct', () => {
+      const builder = query.newBuilder();
+      builder.distinct().selectColumn('u', 'id', 'id').fromTable('users', 'u');
+      expect(builder.state().distinct).toBe(true);
+
+      builder.clearSelect();
+      expect(builder.state().distinct).toBe(false);
+      expect(builder.state().selectStates).toEqual([]);
+    });
+  });
+
+  describe('clearDistinct', () => {
+    it('clears only distinct', () => {
+      const builder = query.newBuilder();
+      builder.distinct().selectColumn('u', 'id', 'id').fromTable('users', 'u');
+      builder.clearDistinct();
+
+      expect(builder.state().distinct).toBe(false);
+      expect(builder.state().selectStates.length).toBe(1);
+    });
+  });
+
+  describe('clearCte', () => {
+    it('clears only CTE states', () => {
+      const builder = query.newBuilder();
+      builder
+        .cte('active', (b) => {
+          b.selectAll().fromTable('users', 'u');
+        })
+        .selectAll()
+        .fromRaw('[active]');
+      builder.clearCte();
+
+      expect(builder.state().cteStates).toEqual([]);
+      expect(builder.state().selectStates.length).toBe(1);
+    });
+  });
+
+  describe('clearUnion', () => {
+    it('clears only union states', () => {
+      const builder = query.newBuilder();
+      builder
+        .selectAll()
+        .fromTable('users', 'u')
+        .union((ub) => {
+          ub.selectAll().fromTable('archived_users', 'a');
+        });
+      builder.clearUnion();
+
+      expect(builder.state().unionStates).toEqual([]);
+      expect(builder.state().fromStates.length).toBe(1);
+    });
+  });
+
+  describe('clearInsert', () => {
+    it('clears insert state and resets query type to Select', () => {
+      const builder = query.newBuilder();
+      builder.insertInto('users').insertColumns(['name']).insertValues(['Ada']);
+      expect(builder.state().queryType).toBe(QueryType.Insert);
+
+      builder.clearInsert();
+      expect(builder.state().insertState).toBeUndefined();
+      expect(builder.state().queryType).toBe(QueryType.Select);
+    });
+  });
+
+  describe('clearUpdate', () => {
+    it('clears update states and resets query type to Select', () => {
+      const builder = query.newBuilder();
+      builder.updateTable('users', 'u').set('name', 'Ada');
+      expect(builder.state().queryType).toBe(QueryType.Update);
+
+      builder.clearUpdate();
+      expect(builder.state().updateStates).toEqual([]);
+      expect(builder.state().queryType).toBe(QueryType.Select);
     });
   });
 

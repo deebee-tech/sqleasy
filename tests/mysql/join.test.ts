@@ -82,7 +82,7 @@ describe('MysqlQuery join', () => {
     );
   });
 
-  it('FULL OUTER JOIN', () => {
+  it('FULL OUTER JOIN throws', () => {
     const query = new MysqlQuery();
     const builder = query.newBuilder();
     builder
@@ -92,10 +92,20 @@ describe('MysqlQuery join', () => {
         jb.on('u', 'id', JoinOperator.Equals, 'o', 'user_id');
       });
 
-    const sql = builder.parseRaw();
-    expect(sql).toEqual(
-      'SELECT * FROM `users` AS `u` FULL OUTER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`;',
-    );
+    expect(() => builder.parseRaw()).toThrow('MySQL does not support FULL OUTER JOIN');
+  });
+
+  it('joinTableWithOwner with non-empty owner throws', () => {
+    const query = new MysqlQuery();
+    const builder = query.newBuilder();
+    builder
+      .selectAll()
+      .fromTable('users', 'u')
+      .joinTableWithOwner(JoinType.Inner, 'mydb', 'orders', 'o', (jb) => {
+        jb.on('u', 'id', JoinOperator.Equals, 'o', 'user_id');
+      });
+
+    expect(() => builder.parseRaw()).toThrow('MySQL does not support table owners');
   });
 
   it('CROSS JOIN', () => {

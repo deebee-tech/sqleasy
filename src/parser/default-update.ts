@@ -12,11 +12,11 @@ export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMo
   const sqlHelper = new SqlHelper(mode);
 
   if (state.fromStates.length === 0) {
-    throw new ParserError(ParserArea.General, 'UPDATE requires a table');
+    throw new ParserError(ParserArea.Update, 'UPDATE requires a table');
   }
 
   if (state.updateStates.length === 0) {
-    throw new ParserError(ParserArea.General, 'UPDATE requires at least one SET column');
+    throw new ParserError(ParserArea.Update, 'UPDATE requires at least one SET column');
   }
 
   const delim = config.identifierDelimiters;
@@ -25,6 +25,11 @@ export const defaultUpdate = (state: QueryState, config: Dialect, mode: ParserMo
   const fromState = state.fromStates[0]!;
   const owner = fromState.owner ?? '';
   const alias = fromState.alias ?? '';
+
+  if (owner !== '' && config.databaseType === DatabaseType.Mysql) {
+    throw new ParserError(ParserArea.Update, 'MySQL does not support table owners');
+  }
+
   const qualified = (owner !== '' ? quote(owner) + '.' : '') + quote(fromState.tableName ?? '');
   // T-SQL has no `UPDATE table AS alias` — the alias must come from a FROM clause:
   // `UPDATE [alias] SET ... FROM [tbl] AS [alias]` (appended after the SET list below).

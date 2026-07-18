@@ -7,9 +7,15 @@ import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 
-export const defaultFrom = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
+export const defaultFrom = (
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): SqlHelper => {
   const sqlHelper = new SqlHelper(mode);
 
   if (state.fromStates.length === 0) {
@@ -52,7 +58,7 @@ export const defaultFrom = (state: QueryState, config: Dialect, mode: ParserMode
     }
 
     if (fromState.builderType === BuilderType.FromBuilder) {
-      const subHelper = defaultToSql(fromState.subquery, config, mode);
+      const subHelper = defaultToSql(fromState.subquery, config, mode, options);
 
       // Merge the subquery's bound values, not just its SQL — else its `?`/`$n` placeholders ship
       // with no parameters and bind NULL (a filtered bounded-count then matches zero rows).

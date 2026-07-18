@@ -26,6 +26,15 @@ describe('SqliteQuery order by', () => {
     expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."created_at" DESC;');
   });
 
+  it('order by with OrderByDirection.None omits ASC/DESC', () => {
+    const query = new SqliteQuery();
+    const builder = query.newBuilder();
+    builder.selectAll().fromTable('users', 'u').orderByColumn('u', 'name', OrderByDirection.None);
+
+    const sql = builder.parseRaw();
+    expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."name";');
+  });
+
   it('order by multiple columns', () => {
     const query = new SqliteQuery();
     const builder = query.newBuilder();

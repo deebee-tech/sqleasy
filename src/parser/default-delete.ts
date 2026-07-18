@@ -11,7 +11,7 @@ export const defaultDelete = (state: QueryState, config: Dialect, mode: ParserMo
   const sqlHelper = new SqlHelper(mode);
 
   if (state.fromStates.length === 0) {
-    throw new ParserError(ParserArea.General, 'DELETE requires a table');
+    throw new ParserError(ParserArea.Delete, 'DELETE requires a table');
   }
 
   const delim = config.identifierDelimiters;
@@ -20,6 +20,11 @@ export const defaultDelete = (state: QueryState, config: Dialect, mode: ParserMo
   const fromState = state.fromStates[0]!;
   const owner = fromState.owner ?? '';
   const alias = fromState.alias ?? '';
+
+  if (owner !== '' && config.databaseType === DatabaseType.Mysql) {
+    throw new ParserError(ParserArea.Delete, 'MySQL does not support table owners');
+  }
+
   const qualified = (owner !== '' ? quote(owner) + '.' : '') + quote(fromState.tableName ?? '');
 
   // T-SQL has no `DELETE FROM table AS alias` — the aliased form is

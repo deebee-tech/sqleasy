@@ -55,7 +55,7 @@ export const defaultToSql = (
   }
 
   if (state.cteStates.length > 0) {
-    const cte = defaultCte(state, config, mode);
+    const cte = defaultCte(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
   }
 
@@ -73,7 +73,7 @@ export const defaultToSql = (
     sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
 
     if (state.whereStates.length > 0) {
-      const where = defaultWhere(state, config, mode);
+      const where = defaultWhere(state, config, mode, options);
       sqlHelper.addSqlSnippet(' ');
       sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
     }
@@ -89,7 +89,7 @@ export const defaultToSql = (
     sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
 
     if (state.whereStates.length > 0) {
-      const where = defaultWhere(state, config, mode);
+      const where = defaultWhere(state, config, mode, options);
       sqlHelper.addSqlSnippet(' ');
       sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
     }
@@ -103,18 +103,18 @@ export const defaultToSql = (
   const sel = defaultSelect(state, config, mode, options);
   sqlHelper.addSqlSnippetWithValues(sel.getSql(), sel.getValues());
 
-  const from = defaultFrom(state, config, mode);
+  const from = defaultFrom(state, config, mode, options);
   sqlHelper.addSqlSnippet(' ');
   sqlHelper.addSqlSnippetWithValues(from.getSql(), from.getValues());
 
   if (state.joinStates.length > 0) {
-    const join = defaultJoin(state, config, mode);
+    const join = defaultJoin(state, config, mode, options);
     sqlHelper.addSqlSnippet(' ');
     sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
   }
 
   if (state.whereStates.length > 0) {
-    const where = defaultWhere(state, config, mode);
+    const where = defaultWhere(state, config, mode, options);
     sqlHelper.addSqlSnippet(' ');
     sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
   }
@@ -188,9 +188,18 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
 };
 
 /** A parameter value as a T-SQL literal for the sp_executesql value list. */
+const toHex = (bytes: Uint8Array): string =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+
+const isBinaryValue = (value: unknown): value is Uint8Array => value instanceof Uint8Array;
+
 const mssqlParameterValue = (value: any): string => {
   if (value === null || value === undefined) {
     return 'NULL';
+  }
+
+  if (isBinaryValue(value)) {
+    return '0x' + toHex(value);
   }
 
   switch (typeof value) {
@@ -201,6 +210,8 @@ const mssqlParameterValue = (value: any): string => {
       return value.toString();
     case 'boolean':
       return value ? '1' : '0';
+    case 'bigint':
+      return value.toString();
     case 'object':
       if (value instanceof Date) {
         return "'" + value.toISOString() + "'";
@@ -213,6 +224,10 @@ const mssqlParameterValue = (value: any): string => {
 
 /** The T-SQL declared type for an sp_executesql `@pN` parameter, inferred from the value. */
 const mssqlParameterType = (value: any): string => {
+  if (isBinaryValue(value)) {
+    return 'varbinary(max)';
+  }
+
   switch (typeof value) {
     case 'string':
       return 'nvarchar(max)';
@@ -241,6 +256,8 @@ const mssqlParameterType = (value: any): string => {
       }
     case 'boolean':
       return 'bit';
+    case 'bigint':
+      return 'bigint';
     default:
       return 'nvarchar(max)';
   }
@@ -313,7 +330,11 @@ const mssqlToSql = (state: QueryState, config: Dialect): string => {
 const postgresPrepared = (state: QueryState, config: Dialect): PreparedSql => {
   const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
 
-  const sql = renderPlaceholders(sqlHelper.getSql(), (index) => '$' + (index + 1));
+  // Use the dialect placeholder character as the `$n` prefix so the config field is not dead.
+  const sql = renderPlaceholders(
+    sqlHelper.getSql(),
+    (index) => config.preparedStatementPlaceholder + (index + 1),
+  );
 
   return { sql, params: sqlHelper.getValues() };
 };
@@ -331,8 +352,10 @@ const positionalPrepared = (state: QueryState, config: Dialect): PreparedSql => 
 };
 
 /**
- * Renders one query state as a prepared SQL string. MSSQL returns a self-contained
- * `sp_executesql`; Postgres rewrites to `$n`; the rest keep the dialect's `?` placeholder.
+ * Renders one query state as a prepared SQL string (placeholders, without a separate params
+ * array). For Postgres/MySQL/SQLite this is **not** execution-safe on its own — use
+ * {@link parsePrepared} to get `{ sql, params }`. For MSSQL, `parse` and `parsePrepared`
+ * both return the same self-contained `sp_executesql` batch (values inlined; `params` empty).
  */
 export const parse = (state: QueryState, config: Dialect): string => {
   if (config.databaseType === DatabaseType.Mssql) {
@@ -419,7 +442,7 @@ export const parseMultiRaw = (
   }
 
   if (transactionState === MultiBuilderTransactionState.TransactionOn) {
-    sql += config.transactionDelimiters.end + '; ';
+    sql += config.transactionDelimiters.end + ';';
   }
 
   return sql;

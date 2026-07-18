@@ -1,5 +1,6 @@
 import type { Dialect } from '../configuration/configuration';
 import { BuilderType } from '../enums/builder-type';
+import { DatabaseType } from '../enums/database-type';
 import { JoinOnOperator } from '../enums/join-on-operator';
 import { JoinOperator } from '../enums/join-operator';
 import { JoinType } from '../enums/join-type';
@@ -10,9 +11,15 @@ import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { JoinOnState } from '../state/join-on';
 import type { QueryState } from '../state/query';
+import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 
-export const defaultJoin = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
+export const defaultJoin = (
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): SqlHelper => {
   let sqlHelper = new SqlHelper(mode);
 
   if (state.joinStates.length === 0) {
@@ -46,6 +53,9 @@ export const defaultJoin = (state: QueryState, config: Dialect, mode: ParserMode
         sqlHelper.addSqlSnippet('RIGHT OUTER JOIN ');
         break;
       case JoinType.FullOuter:
+        if (config.databaseType === DatabaseType.Mysql) {
+          throw new ParserError(ParserArea.Join, 'MySQL does not support FULL OUTER JOIN');
+        }
         sqlHelper.addSqlSnippet('FULL OUTER JOIN ');
         break;
       case JoinType.Cross:
@@ -54,6 +64,10 @@ export const defaultJoin = (state: QueryState, config: Dialect, mode: ParserMode
     }
 
     if (joinState.builderType === BuilderType.JoinTable) {
+      if (joinState.owner !== '' && config.databaseType === DatabaseType.Mysql) {
+        throw new ParserError(ParserArea.Join, 'MySQL does not support table owners');
+      }
+
       if (joinState.owner !== '') {
         sqlHelper.addSqlSnippet(quoteIdentifier(joinState.owner, config.identifierDelimiters));
         sqlHelper.addSqlSnippet('.');
@@ -76,7 +90,7 @@ export const defaultJoin = (state: QueryState, config: Dialect, mode: ParserMode
     }
 
     if (joinState.builderType === BuilderType.JoinBuilder) {
-      const subHelper = defaultToSql(joinState.subquery, config, mode);
+      const subHelper = defaultToSql(joinState.subquery, config, mode, options);
 
       sqlHelper.addSqlSnippetWithValues('(' + subHelper.getSql() + ')', subHelper.getValues());
 

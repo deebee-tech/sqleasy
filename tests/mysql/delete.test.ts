@@ -61,4 +61,12 @@ describe('MysqlQuery delete', () => {
     const sql = builder.parseRaw();
     expect(sql).toEqual('DELETE FROM `users` AS `u` WHERE `u`.`id` IN (1, 2, 3);');
   });
+
+  it('deleteFromWithOwner with non-empty owner throws', () => {
+    const query = new MysqlQuery();
+    const builder = query.newBuilder();
+    builder.deleteFromWithOwner('mydb', 'users', 'u');
+
+    expect(() => builder.parseRaw()).toThrow('MySQL does not support table owners');
+  });
 });

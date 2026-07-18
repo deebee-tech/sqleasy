@@ -23,6 +23,8 @@ import { JoinOnBuilder } from './join-on';
 export class QueryBuilder {
   #state: QueryState = createQueryState();
   #config: Dialect;
+  /** Where `and()` / `or()` append — flips when WHERE vs HAVING predicates are added. */
+  #combinatorTarget: 'where' | 'having' = 'where';
 
   constructor(config: Dialect) {
     this.#config = config;
@@ -31,14 +33,21 @@ export class QueryBuilder {
   /** A fresh builder sharing this builder's dialect — the parent of every subquery. */
   #child = (): QueryBuilder => new QueryBuilder(this.#config);
 
-  /** Returns the dialect configuration backing this builder. */
-  public configuration = (): Dialect => {
-    return this.#config;
-  };
+  #pushCombinator = (builderType: typeof BuilderType.And | typeof BuilderType.Or): this => {
+    if (this.#combinatorTarget === 'having') {
+      this.#state.havingStates.push({
+        builderType,
+        tableNameOrAlias: undefined,
+        columnName: undefined,
+        whereOperator: WhereOperator.None,
+        raw: undefined,
+        values: [],
+      });
+      return this;
+    }
 
-  public and = (): this => {
     this.#state.whereStates.push({
-      builderType: BuilderType.And,
+      builderType,
       tableNameOrAlias: undefined,
       columnName: undefined,
       whereOperator: WhereOperator.None,
@@ -50,8 +59,18 @@ export class QueryBuilder {
     return this;
   };
 
+  /** Returns the dialect configuration backing this builder. */
+  public configuration = (): Dialect => {
+    return this.#config;
+  };
+
+  public and = (): this => this.#pushCombinator(BuilderType.And);
+
+  public or = (): this => this.#pushCombinator(BuilderType.Or);
+
   public clearAll = (): this => {
     this.#state = createQueryState();
+    this.#combinatorTarget = 'where';
     return this;
   };
 
@@ -92,11 +111,43 @@ export class QueryBuilder {
 
   public clearSelect = (): this => {
     this.#state.selectStates = [];
+    this.#state.distinct = false;
+    return this;
+  };
+
+  public clearDistinct = (): this => {
+    this.#state.distinct = false;
     return this;
   };
 
   public clearWhere = (): this => {
     this.#state.whereStates = [];
+    return this;
+  };
+
+  public clearCte = (): this => {
+    this.#state.cteStates = [];
+    return this;
+  };
+
+  public clearUnion = (): this => {
+    this.#state.unionStates = [];
+    return this;
+  };
+
+  public clearInsert = (): this => {
+    this.#state.insertState = undefined;
+    if (this.#state.queryType === QueryType.Insert) {
+      this.#state.queryType = QueryType.Select;
+    }
+    return this;
+  };
+
+  public clearUpdate = (): this => {
+    this.#state.updateStates = [];
+    if (this.#state.queryType === QueryType.Update) {
+      this.#state.queryType = QueryType.Select;
+    }
     return this;
   };
 
@@ -324,20 +375,6 @@ export class QueryBuilder {
     return this;
   };
 
-  public or = (): this => {
-    this.#state.whereStates.push({
-      builderType: BuilderType.Or,
-      tableNameOrAlias: undefined,
-      columnName: undefined,
-      whereOperator: WhereOperator.None,
-      raw: undefined,
-      subquery: undefined,
-      values: [],
-    });
-
-    return this;
-  };
-
   public orderByColumn = (
     tableNameOrAlias: string,
     columnName: string,
@@ -496,6 +533,7 @@ export class QueryBuilder {
     whereOperator: WhereOperator,
     value: any,
   ): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.Where,
       tableNameOrAlias: tableNameOrAlias,
@@ -515,6 +553,7 @@ export class QueryBuilder {
     value1: any,
     value2: any,
   ): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereBetween,
       tableNameOrAlias: tableNameOrAlias,
@@ -533,6 +572,7 @@ export class QueryBuilder {
     columnName: string,
     builder: (builder: QueryBuilder) => void,
   ): this => {
+    this.#combinatorTarget = 'where';
     const child = this.#child();
     builder(child);
     child.state().isInnerStatement = true;
@@ -551,6 +591,7 @@ export class QueryBuilder {
   };
 
   public whereGroup(builder: (builder: QueryBuilder) => void): this {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereGroupBegin,
       tableNameOrAlias: undefined,
@@ -593,6 +634,7 @@ export class QueryBuilder {
     columnName: string,
     builder: (builder: QueryBuilder) => void,
   ): this => {
+    this.#combinatorTarget = 'where';
     const child = this.#child();
     builder(child);
     child.state().isInnerStatement = true;
@@ -611,6 +653,7 @@ export class QueryBuilder {
   };
 
   public whereInValues = (tableNameOrAlias: string, columnName: string, values: any[]): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereInValues,
       tableNameOrAlias: tableNameOrAlias,
@@ -629,6 +672,7 @@ export class QueryBuilder {
     columnName: string,
     builder: (builder: QueryBuilder) => void,
   ): this => {
+    this.#combinatorTarget = 'where';
     const child = this.#child();
     builder(child);
     child.state().isInnerStatement = true;
@@ -651,6 +695,7 @@ export class QueryBuilder {
     columnName: string,
     builder: (builder: QueryBuilder) => void,
   ): this => {
+    this.#combinatorTarget = 'where';
     const child = this.#child();
     builder(child);
     child.state().isInnerStatement = true;
@@ -669,6 +714,7 @@ export class QueryBuilder {
   };
 
   public whereNotInValues = (tableNameOrAlias: string, columnName: string, values: any[]): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereNotInValues,
       tableNameOrAlias: tableNameOrAlias,
@@ -683,6 +729,7 @@ export class QueryBuilder {
   };
 
   public whereNotNull = (tableNameOrAlias: string, columnName: string): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereNotNull,
       tableNameOrAlias: tableNameOrAlias,
@@ -697,6 +744,7 @@ export class QueryBuilder {
   };
 
   public whereNull = (tableNameOrAlias: string, columnName: string): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereNull,
       tableNameOrAlias: tableNameOrAlias,
@@ -711,6 +759,7 @@ export class QueryBuilder {
   };
 
   public whereRaw = (rawWhere: string): this => {
+    this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereRaw,
       tableNameOrAlias: undefined,
@@ -776,6 +825,7 @@ export class QueryBuilder {
     whereOperator: WhereOperator,
     value: any,
   ): this => {
+    this.#combinatorTarget = 'having';
     this.#state.havingStates.push({
       builderType: BuilderType.Having,
       tableNameOrAlias: tableNameOrAlias,
@@ -789,6 +839,7 @@ export class QueryBuilder {
   };
 
   public havingRaw = (rawHaving: string): this => {
+    this.#combinatorTarget = 'having';
     this.#state.havingStates.push({
       builderType: BuilderType.HavingRaw,
       tableNameOrAlias: undefined,
@@ -1049,6 +1100,9 @@ export class QueryBuilder {
   public clearTop = (): this => {
     if (this.#state.customState) {
       delete this.#state.customState['top'];
+      if (Object.keys(this.#state.customState).length === 0) {
+        this.#state.customState = undefined;
+      }
     }
     return this;
   };

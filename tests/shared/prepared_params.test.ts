@@ -151,7 +151,7 @@ describe('prepared statements bind their parameters correctly', () => {
       expect(params).toEqual([nasty]);
     });
 
-    it('SQL NULL is bound as null, keeping later parameters aligned', () => {
+    it('Equals + null emits IS NULL with no bound param; later params stay aligned', () => {
       const builder = new PostgresQuery().newBuilder();
       builder
         .selectAll()
@@ -162,10 +162,10 @@ describe('prepared statements bind their parameters correctly', () => {
 
       const { sql, params } = builder.parsePrepared();
 
-      // One placeholder per value — dropping the null would shift 'after' onto $1 and corrupt it.
-      expect(sql).toContain('"u"."a" = $1');
-      expect(sql).toContain('"u"."b" = $2');
-      expect(params).toEqual([null, 'after']);
+      // Null is not bound — `= NULL` is never true; IS NULL needs no placeholder.
+      expect(sql).toContain('"u"."a" IS NULL');
+      expect(sql).toContain('"u"."b" = $1');
+      expect(params).toEqual(['after']);
     });
   });
 

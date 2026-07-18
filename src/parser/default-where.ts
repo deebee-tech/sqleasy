@@ -7,9 +7,15 @@ import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 
-export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
+export const defaultWhere = (
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): SqlHelper => {
   const sqlHelper = new SqlHelper(mode);
 
   if (state.whereStates.length === 0) {
@@ -118,6 +124,22 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' ');
 
+      const value = cur.values[0];
+
+      // `col = NULL` is never true under SQL three-valued logic. Emit IS NULL / IS NOT NULL
+      // so callers who pass null get a predicate that can match rows.
+      if (
+        (cur.whereOperator === WhereOperator.Equals ||
+          cur.whereOperator === WhereOperator.NotEquals) &&
+        (value === null || value === undefined)
+      ) {
+        sqlHelper.addSqlSnippet(
+          cur.whereOperator === WhereOperator.Equals ? 'IS NULL' : 'IS NOT NULL',
+        );
+        spaceAfter();
+        continue;
+      }
+
       switch (cur.whereOperator) {
         case WhereOperator.Equals:
           sqlHelper.addSqlSnippet('=');
@@ -143,10 +165,15 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
         case WhereOperator.NotLike:
           sqlHelper.addSqlSnippet('NOT LIKE');
           break;
+        default:
+          throw new ParserError(
+            ParserArea.Where,
+            `Unsupported WHERE operator: ${cur.whereOperator}`,
+          );
       }
 
       sqlHelper.addSqlSnippet(' ');
-      sqlHelper.addDynamicValue(cur.values[0]);
+      sqlHelper.addDynamicValue(value);
       spaceAfter();
       continue;
     }
@@ -166,7 +193,7 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
 
     if (cur.builderType === BuilderType.WhereExistsBuilder) {
       sqlHelper.addSqlSnippet('EXISTS (');
-      const subHelper = defaultToSql(cur.subquery, config, mode);
+      const subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
       sqlHelper.addSqlSnippet(')');
       spaceAfter();
@@ -178,7 +205,7 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
       sqlHelper.addSqlSnippet('.');
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IN (');
-      const subHelper = defaultToSql(cur.subquery, config, mode);
+      const subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
       sqlHelper.addSqlSnippet(')');
       spaceAfter();
@@ -212,7 +239,7 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
 
     if (cur.builderType === BuilderType.WhereNotExistsBuilder) {
       sqlHelper.addSqlSnippet('NOT EXISTS (');
-      const subHelper = defaultToSql(cur.subquery, config, mode);
+      const subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
       sqlHelper.addSqlSnippet(')');
       spaceAfter();
@@ -224,7 +251,7 @@ export const defaultWhere = (state: QueryState, config: Dialect, mode: ParserMod
       sqlHelper.addSqlSnippet('.');
       sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' NOT IN (');
-      const subHelper = defaultToSql(cur.subquery, config, mode);
+      const subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
       sqlHelper.addSqlSnippet(')');
       spaceAfter();

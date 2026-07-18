@@ -1,12 +1,19 @@
 import type { Dialect } from '../configuration/configuration';
 import { BuilderType } from '../enums/builder-type';
+import { DatabaseType } from '../enums/database-type';
 import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
+import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 
-export const defaultCte = (state: QueryState, config: Dialect, mode: ParserMode): SqlHelper => {
+export const defaultCte = (
+  state: QueryState,
+  config: Dialect,
+  mode: ParserMode,
+  options?: ToSqlOptions,
+): SqlHelper => {
   const sqlHelper = new SqlHelper(mode);
 
   if (state.cteStates.length === 0) {
@@ -15,7 +22,8 @@ export const defaultCte = (state: QueryState, config: Dialect, mode: ParserMode)
 
   const hasRecursive = state.cteStates.some((cte) => cte.recursive);
 
-  if (hasRecursive) {
+  // SQL Server recursive CTEs use bare `WITH` — `RECURSIVE` is not a T-SQL keyword.
+  if (hasRecursive && config.databaseType !== DatabaseType.Mssql) {
     sqlHelper.addSqlSnippet('WITH RECURSIVE ');
   } else {
     sqlHelper.addSqlSnippet('WITH ');
@@ -30,7 +38,7 @@ export const defaultCte = (state: QueryState, config: Dialect, mode: ParserMode)
     if (cteState.builderType === BuilderType.CteRaw) {
       sqlHelper.addSqlSnippet(cteState.raw ?? '');
     } else if (cteState.subquery) {
-      const subHelper = defaultToSql(cteState.subquery, config, mode);
+      const subHelper = defaultToSql(cteState.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
     }
 

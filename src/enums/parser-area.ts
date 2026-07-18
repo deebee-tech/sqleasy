@@ -10,10 +10,18 @@ export const ParserArea = {
   Join: 'Join',
   /** WHERE clause. */
   Where: 'Where',
+  /** HAVING clause. */
+  Having: 'Having',
   /** ORDER BY clause. */
   OrderBy: 'OrderBy',
   /** LIMIT, OFFSET, FETCH, TOP, etc. */
   LimitOffset: 'LimitOffset',
+  /** INSERT statement. */
+  Insert: 'Insert',
+  /** UPDATE statement. */
+  Update: 'Update',
+  /** DELETE statement. */
+  Delete: 'Delete',
   /** Cross-clause or unspecified area. */
   General: 'General',
 } as const;

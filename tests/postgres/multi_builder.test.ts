@@ -16,7 +16,7 @@ describe('PostgresQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN; INSERT INTO "public"."users" ("name", "email") VALUES (John, john@example.com);INSERT INTO "public"."orders" ("user_id", "product") VALUES (1, Widget);COMMIT; ',
+      'BEGIN; INSERT INTO "public"."users" ("name", "email") VALUES (John, john@example.com);INSERT INTO "public"."orders" ("user_id", "product") VALUES (1, Widget);COMMIT;',
     );
   });
 
@@ -115,7 +115,7 @@ describe('PostgresQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN; INSERT INTO "public"."users" ("name") VALUES (NewUser);UPDATE "public"."counters" AS "c" SET "total" = 42 WHERE "c"."name" = users;DELETE FROM "public"."temp_data" AS "t" WHERE "t"."expired" = true;COMMIT; ',
+      'BEGIN; INSERT INTO "public"."users" ("name") VALUES (NewUser);UPDATE "public"."counters" AS "c" SET "total" = 42 WHERE "c"."name" = users;DELETE FROM "public"."temp_data" AS "t" WHERE "t"."expired" = true;COMMIT;',
     );
   });
 

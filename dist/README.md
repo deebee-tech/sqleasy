@@ -138,9 +138,13 @@ builder
 builder.clearAll();
 builder.selectAll().fromTable('users', 'u').whereBetween('u', 'age', 18, 65);
 
-// IS NULL / IS NOT NULL
+// IS NULL / IS NOT NULL — prefer these helpers for null checks
+builder.clearAll();
+builder.selectAll().fromTable('users', 'u').whereNull('u', 'deleted_at');
 builder.clearAll();
 builder.selectAll().fromTable('users', 'u').whereNotNull('u', 'email');
+// Equals/NotEquals with a null value also emit IS NULL / IS NOT NULL, but whereNull /
+// whereNotNull make the intent explicit.
 
 // IN (values)
 builder.clearAll();
@@ -408,15 +412,14 @@ prepared call. Placeholder numbering restarts at each statement (the Postgres ba
 `$1` and `$2` twice), so binding a single flat `params` array to it would misalign every value after
 the first statement.
 
-To **run** a batch with bound parameters, open a transaction on your own connection and execute each
-builder's `parsePrepared()` in order — that is the executable unit:
+To **run** a batch, use `preparedStatements()` — each builder as its own `{ sql, params }` in order
+(transaction delimiters are not included; wrap with BEGIN/COMMIT yourself when needed):
 
 ```typescript
 const client = await pool.connect(); // your driver
 try {
   await client.query('BEGIN');
-  for (const b of [b1, b2]) {
-    const { sql, params } = b.parsePrepared();
+  for (const { sql, params } of multi.preparedStatements()) {
     await client.query(sql, params);
   }
   await client.query('COMMIT');
@@ -442,9 +445,15 @@ Every builder offers three renderings:
 
   Hand `{ sql, params }` straight to your driver — for MSSQL that's the batch string with no params.
 
-- **`parse()`** — the SQL string with placeholders, without the values (handy for logging the shape).
+- **`parse()`** — on Postgres / MySQL / SQLite, the SQL string with placeholders and no values
+  (handy for logging the shape). On **MSSQL**, `parse()` and `parsePrepared()` both return the same
+  `sp_executesql` string with values already inlined (`params` is empty) — there is no separate
+  placeholder-only form.
 - **`parseRaw()`** — values inlined into the SQL. **Debug / display only** — it is not escaped and
   not execution-safe. Never run `parseRaw()` output against a database.
+
+> **Warning:** `*Raw*` builder methods (`whereRaw`, `selectRaw`, `fromRaw`, `setRaw`, etc.) are
+> raw SQL sinks with no quoting or binding. Never pass untrusted input into them.
 
 ```typescript
 const builder = new PostgresQuery().newBuilder();

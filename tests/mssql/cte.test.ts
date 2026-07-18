@@ -53,7 +53,7 @@ describe('MssqlQuery cte', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'WITH RECURSIVE [numbers] AS (SELECT 1 AS n FROM (SELECT 1 AS x) AS [dummy] UNION ALL SELECT [n] + 1 AS n FROM [numbers] WHERE [n] < 10) SELECT * FROM [numbers];',
+      'WITH [numbers] AS (SELECT 1 AS n FROM (SELECT 1 AS x) AS [dummy] UNION ALL SELECT [n] + 1 AS n FROM [numbers] WHERE [n] < 10) SELECT * FROM [numbers];',
     );
   });
 

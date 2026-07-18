@@ -37,9 +37,10 @@ export const defaultOrderBy = (state: QueryState, config: Dialect, mode: ParserM
 
       if (orderByState.direction === OrderByDirection.Ascending) {
         sqlHelper.addSqlSnippet(' ASC');
-      } else {
+      } else if (orderByState.direction === OrderByDirection.Descending) {
         sqlHelper.addSqlSnippet(' DESC');
       }
+      // OrderByDirection.None → omit direction (dialect default).
 
       if (i < state.orderByStates.length - 1) {
         sqlHelper.addSqlSnippet(', ');

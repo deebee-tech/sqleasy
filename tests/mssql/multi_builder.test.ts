@@ -14,7 +14,7 @@ describe('MssqlQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN TRANSACTION; SELECT * FROM [dbo].[users] AS [u];SELECT * FROM [dbo].[orders] AS [o];COMMIT TRANSACTION; ',
+      'BEGIN TRANSACTION; SELECT * FROM [dbo].[users] AS [u];SELECT * FROM [dbo].[orders] AS [o];COMMIT TRANSACTION;',
     );
   });
 
@@ -89,7 +89,7 @@ describe('MssqlQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN TRANSACTION; INSERT INTO [dbo].[users] ([name], [email]) VALUES (John, john@example.com);UPDATE [u] SET [active] = true FROM [dbo].[users] AS [u] WHERE [u].[name] = John;COMMIT TRANSACTION; ',
+      'BEGIN TRANSACTION; INSERT INTO [dbo].[users] ([name], [email]) VALUES (John, john@example.com);UPDATE [u] SET [active] = true FROM [dbo].[users] AS [u] WHERE [u].[name] = John;COMMIT TRANSACTION;',
     );
   });
 

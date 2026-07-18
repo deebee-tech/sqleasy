@@ -680,8 +680,10 @@ type ToSqlOptions = {
  */
 declare const defaultToSql: (state: QueryState | undefined, config: Dialect, mode: ParserMode, options?: ToSqlOptions) => SqlHelper;
 /**
- * Renders one query state as a prepared SQL string. MSSQL returns a self-contained
- * `sp_executesql`; Postgres rewrites to `$n`; the rest keep the dialect's `?` placeholder.
+ * Renders one query state as a prepared SQL string (placeholders, without a separate params
+ * array). For Postgres/MySQL/SQLite this is **not** execution-safe on its own — use
+ * {@link parsePrepared} to get `{ sql, params }`. For MSSQL, `parse` and `parsePrepared`
+ * both return the same self-contained `sp_executesql` batch (values inlined; `params` empty).
  */
 declare const parse: (state: QueryState, config: Dialect) => string;
 /**
@@ -746,6 +748,7 @@ declare class QueryBuilder {
   /** Returns the dialect configuration backing this builder. */
   configuration: () => Dialect;
   and: () => this;
+  or: () => this;
   clearAll: () => this;
   clearFrom: () => this;
   clearGroupBy: () => this;
@@ -755,7 +758,12 @@ declare class QueryBuilder {
   clearOffset: () => this;
   clearOrderBy: () => this;
   clearSelect: () => this;
+  clearDistinct: () => this;
   clearWhere: () => this;
+  clearCte: () => this;
+  clearUnion: () => this;
+  clearInsert: () => this;
+  clearUpdate: () => this;
   distinct: () => this;
   fromRaw: (rawFrom: string) => this;
   fromRaws: (rawFroms: string[]) => this;
@@ -791,7 +799,6 @@ declare class QueryBuilder {
   joinWithBuilder: (joinType: JoinType, alias: string, builder: (builder: QueryBuilder) => void, joinOnBuilder: (joinOnBuilder: JoinOnBuilder) => void) => this;
   limit: (limit: number) => this;
   offset: (offset: number) => this;
-  or: () => this;
   orderByColumn: (tableNameOrAlias: string, columnName: string, direction: OrderByDirection) => this;
   orderByColumns: (columns: {
     tableNameOrAlias: string;
@@ -922,10 +929,18 @@ declare const ParserArea: {
   readonly Join: "Join";
   /** WHERE clause. */
   readonly Where: "Where";
+  /** HAVING clause. */
+  readonly Having: "Having";
   /** ORDER BY clause. */
   readonly OrderBy: "OrderBy";
   /** LIMIT, OFFSET, FETCH, TOP, etc. */
   readonly LimitOffset: "LimitOffset";
+  /** INSERT statement. */
+  readonly Insert: "Insert";
+  /** UPDATE statement. */
+  readonly Update: "Update";
+  /** DELETE statement. */
+  readonly Delete: "Delete";
   /** Cross-clause or unspecified area. */
   readonly General: "General";
 };

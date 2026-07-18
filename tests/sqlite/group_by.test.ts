@@ -127,7 +127,7 @@ describe('SqliteQuery group by', () => {
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
-      'SELECT "u"."status", COUNT(*) AS count FROM "users" AS "u" GROUP BY "u"."status" HAVING COUNT(*) > 10 SUM(amount) < 1000;',
+      'SELECT "u"."status", COUNT(*) AS count FROM "users" AS "u" GROUP BY "u"."status" HAVING COUNT(*) > 10 AND SUM(amount) < 1000;',
     );
   });
 
@@ -245,7 +245,7 @@ describe('SqliteQuery group by', () => {
     );
   });
 
-  it('having followed by havingRaw produces trailing space between conditions', () => {
+  it('having followed by havingRaw auto-joins with AND', () => {
     const query = new SqliteQuery();
     const builder = query.newBuilder();
     builder
@@ -254,7 +254,7 @@ describe('SqliteQuery group by', () => {
       .fromTable('users', 'u')
       .groupByColumn('u', 'role')
       .having('u', 'role', WhereOperator.Equals, 'admin')
-      .havingRaw('AND COUNT(*) > 5');
+      .havingRaw('COUNT(*) > 5');
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(
@@ -262,7 +262,7 @@ describe('SqliteQuery group by', () => {
     );
   });
 
-  it('multiple havingRaw conditions produce trailing spaces between them', () => {
+  it('multiple havingRaw conditions auto-join with AND', () => {
     const query = new SqliteQuery();
     const builder = query.newBuilder();
     builder
@@ -271,8 +271,8 @@ describe('SqliteQuery group by', () => {
       .fromTable('users', 'u')
       .groupByColumn('u', 'dept')
       .havingRaw('COUNT(*) > 2')
-      .havingRaw('AND SUM(amount) < 1000')
-      .havingRaw('AND AVG(age) > 18');
+      .havingRaw('SUM(amount) < 1000')
+      .havingRaw('AVG(age) > 18');
 
     const sql = builder.parseRaw();
     expect(sql).toEqual(

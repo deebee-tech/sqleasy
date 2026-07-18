@@ -137,18 +137,18 @@ describe('value-type fidelity carried to the driver', () => {
     { name: 'Postgres', query: () => new PostgresQuery() },
     { name: 'MySQL', query: () => new MysqlQuery() },
     { name: 'SQLite', query: () => new SqliteQuery() },
-  ])('$name binds real JS values (string/number/boolean/null/Date) positionally', ({ query }) => {
-    const { params } = build(query());
+  ])('$name binds real JS values (string/number/boolean/Date) positionally', ({ query }) => {
+    const { sql, params } = build(query());
 
-    expect(params).toHaveLength(5);
+    // Equals + null → IS NULL (no bound param); remaining values stay aligned.
+    expect(sql).toContain('IS NULL');
+    expect(params).toHaveLength(4);
     expect(params[0]).toBe('Ada');
     expect(params[1]).toBe(30);
     expect(params[2]).toBe(true);
-    // null stays IN position — dropping it would shift the Date onto the wrong placeholder.
-    expect(params[3]).toBeNull();
     // A Date is handed through as a Date instance (the driver binds it), never pre-stringified.
-    expect(params[4]).toBeInstanceOf(Date);
-    expect((params[4] as Date).toISOString()).toBe('2024-01-02T03:04:05.000Z');
+    expect(params[3]).toBeInstanceOf(Date);
+    expect((params[3] as Date).toISOString()).toBe('2024-01-02T03:04:05.000Z');
   });
 
   it('MSSQL declares a T-SQL type per value and inlines an escaped literal (params stays [])', () => {
@@ -179,21 +179,22 @@ describe('value-type fidelity carried to the driver', () => {
     expect(sql).toContain("@p6 = N'hi'");
   });
 
-  it('MSSQL inlines NULL as the literal NULL, keeping declared placeholders aligned', () => {
+  it('MSSQL Equals + null emits IS NULL with no sp_executesql parameter', () => {
     const b = new MssqlQuery().newBuilder();
     b.selectAll().fromTable('t', 't').where('t', 'x', WhereOperator.Equals, null);
-    expect(b.parsePrepared().sql).toContain('@p0 = NULL');
+    const { sql, params } = b.parsePrepared();
+    expect(sql).toContain('[t].[x] IS NULL');
+    expect(sql).not.toContain('@p0');
+    expect(params).toEqual([]);
   });
 
-  it('KNOWN CEILING: MSSQL sp_executesql inline cannot round-trip binary — a Buffer is JSON-stringified', () => {
-    // ponytail: pins a real limitation of the inline path, not desired behaviour. A varbinary value
-    // reaches SQL Server as the text of its JSON shape, corrupting it. This is the concrete reason a
-    // true-bound MSSQL mode (real request.input(...) binding) is on the table for the engine build-out;
-    // when/if that lands, THIS assertion changes deliberately.
+  it('MSSQL inlines Buffer as varbinary hex literal', () => {
     const b = new MssqlQuery().newBuilder();
     b.selectAll()
       .fromTable('t', 't')
       .where('t', 'blob', WhereOperator.Equals, Buffer.from([1, 2, 3]));
-    expect(b.parsePrepared().sql).toContain('@p0 = N\'{"type":"Buffer","data":[1,2,3]}\'');
+    const { sql } = b.parsePrepared();
+    expect(sql).toContain('@p0 varbinary(max)');
+    expect(sql).toContain('@p0 = 0x010203');
   });
 });

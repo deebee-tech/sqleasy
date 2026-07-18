@@ -209,10 +209,18 @@ const ParserArea = {
 	Join: "Join",
 	/** WHERE clause. */
 	Where: "Where",
+	/** HAVING clause. */
+	Having: "Having",
 	/** ORDER BY clause. */
 	OrderBy: "OrderBy",
 	/** LIMIT, OFFSET, FETCH, TOP, etc. */
 	LimitOffset: "LimitOffset",
+	/** INSERT statement. */
+	Insert: "Insert",
+	/** UPDATE statement. */
+	Update: "Update",
+	/** DELETE statement. */
+	Delete: "Delete",
 	/** Cross-clause or unspecified area. */
 	General: "General"
 };
@@ -368,10 +376,10 @@ function quoteIdentifier(name, delimiters) {
 }
 //#endregion
 //#region src/parser/default-cte.ts
-const defaultCte = (state, config, mode) => {
+const defaultCte = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.cteStates.length === 0) return sqlHelper;
-	if (state.cteStates.some((cte) => cte.recursive)) sqlHelper.addSqlSnippet("WITH RECURSIVE ");
+	if (state.cteStates.some((cte) => cte.recursive) && config.databaseType !== DatabaseType.Mssql) sqlHelper.addSqlSnippet("WITH RECURSIVE ");
 	else sqlHelper.addSqlSnippet("WITH ");
 	for (let i = 0; i < state.cteStates.length; i++) {
 		const cteState = state.cteStates[i];
@@ -379,7 +387,7 @@ const defaultCte = (state, config, mode) => {
 		sqlHelper.addSqlSnippet(" AS (");
 		if (cteState.builderType === BuilderType.CteRaw) sqlHelper.addSqlSnippet(cteState.raw ?? "");
 		else if (cteState.subquery) {
-			const subHelper = defaultToSql(cteState.subquery, config, mode);
+			const subHelper = defaultToSql(cteState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
 		}
 		sqlHelper.addSqlSnippet(")");
@@ -392,12 +400,13 @@ const defaultCte = (state, config, mode) => {
 //#region src/parser/default-delete.ts
 const defaultDelete = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
-	if (state.fromStates.length === 0) throw new ParserError(ParserArea.General, "DELETE requires a table");
+	if (state.fromStates.length === 0) throw new ParserError(ParserArea.Delete, "DELETE requires a table");
 	const delim = config.identifierDelimiters;
 	const quote = (s) => quoteIdentifier(s, delim);
 	const fromState = state.fromStates[0];
 	const owner = fromState.owner ?? "";
 	const alias = fromState.alias ?? "";
+	if (owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Delete, "MySQL does not support table owners");
 	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
 	if (alias !== "" && config.databaseType === DatabaseType.Mssql) {
 		sqlHelper.addSqlSnippet("DELETE ");
@@ -418,7 +427,7 @@ const defaultDelete = (state, config, mode) => {
 };
 //#endregion
 //#region src/parser/default-from.ts
-const defaultFrom = (state, config, mode) => {
+const defaultFrom = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.fromStates.length === 0) throw new ParserError(ParserArea.From, "No tables to select from");
 	sqlHelper.addSqlSnippet("FROM ");
@@ -443,7 +452,7 @@ const defaultFrom = (state, config, mode) => {
 			return;
 		}
 		if (fromState.builderType === BuilderType.FromBuilder) {
-			const subHelper = defaultToSql(fromState.subquery, config, mode);
+			const subHelper = defaultToSql(fromState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
 			if (fromState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
@@ -478,25 +487,29 @@ const defaultGroupBy = (state, config, mode) => {
 };
 //#endregion
 //#region src/parser/default-having.ts
+const isHavingPredicate = (state) => state.builderType === BuilderType.Having || state.builderType === BuilderType.HavingRaw;
 const defaultHaving = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.havingStates.length === 0) return sqlHelper;
-	if (state.groupByStates.length === 0) throw new ParserError(ParserArea.General, "HAVING requires a GROUP BY clause");
+	if (state.groupByStates.length === 0) throw new ParserError(ParserArea.Having, "HAVING requires a GROUP BY clause");
 	sqlHelper.addSqlSnippet("HAVING ");
 	for (let i = 0; i < state.havingStates.length; i++) {
 		const havingState = state.havingStates[i];
-		if (i === 0 && (havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or)) throw new ParserError(ParserArea.General, "First HAVING operator cannot be AND or OR");
+		const prev = i > 0 ? state.havingStates[i - 1] : void 0;
+		if (i === 0 && (havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "First HAVING operator cannot be AND or OR");
+		if (i === state.havingStates.length - 1 && (havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "AND or OR cannot be used as the last HAVING operator");
+		if ((havingState.builderType === BuilderType.And || havingState.builderType === BuilderType.Or) && prev && (prev.builderType === BuilderType.And || prev.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Having, "AND or OR cannot be used consecutively");
 		if (havingState.builderType === BuilderType.And) {
-			sqlHelper.addSqlSnippet("AND ");
+			sqlHelper.addSqlSnippet(" AND ");
 			continue;
 		}
 		if (havingState.builderType === BuilderType.Or) {
-			sqlHelper.addSqlSnippet("OR ");
+			sqlHelper.addSqlSnippet(" OR ");
 			continue;
 		}
+		if (i > 0 && prev && isHavingPredicate(prev) && isHavingPredicate(havingState)) sqlHelper.addSqlSnippet(" AND ");
 		if (havingState.builderType === BuilderType.HavingRaw) {
 			sqlHelper.addSqlSnippet(havingState.raw ?? "");
-			if (i < state.havingStates.length - 1) sqlHelper.addSqlSnippet(" ");
 			continue;
 		}
 		if (havingState.builderType === BuilderType.Having) {
@@ -504,6 +517,11 @@ const defaultHaving = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(havingState.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
+			const value = havingState.values[0];
+			if ((havingState.whereOperator === WhereOperator.Equals || havingState.whereOperator === WhereOperator.NotEquals) && (value === null || value === void 0)) {
+				sqlHelper.addSqlSnippet(havingState.whereOperator === WhereOperator.Equals ? "IS NULL" : "IS NOT NULL");
+				continue;
+			}
 			switch (havingState.whereOperator) {
 				case WhereOperator.Equals:
 					sqlHelper.addSqlSnippet("=");
@@ -529,10 +547,10 @@ const defaultHaving = (state, config, mode) => {
 				case WhereOperator.NotLike:
 					sqlHelper.addSqlSnippet("NOT LIKE");
 					break;
+				default: throw new ParserError(ParserArea.Having, `Unsupported HAVING operator: ${havingState.whereOperator}`);
 			}
 			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addDynamicValue(havingState.values[0]);
-			if (i < state.havingStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addDynamicValue(value);
 			continue;
 		}
 	}
@@ -542,14 +560,16 @@ const defaultHaving = (state, config, mode) => {
 //#region src/parser/default-insert.ts
 const defaultInsert = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
-	if (!state.insertState) throw new ParserError(ParserArea.General, "No insert state provided");
+	if (!state.insertState) throw new ParserError(ParserArea.Insert, "No insert state provided");
 	const insertState = state.insertState;
 	if (insertState.raw) {
 		sqlHelper.addSqlSnippet(insertState.raw);
 		return sqlHelper;
 	}
+	if (!insertState.tableName) throw new ParserError(ParserArea.Insert, "INSERT requires a table");
 	sqlHelper.addSqlSnippet("INSERT INTO ");
 	if (insertState.owner && insertState.owner !== "") {
+		if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Insert, "MySQL does not support table owners");
 		sqlHelper.addSqlSnippet(quoteIdentifier(insertState.owner, config.identifierDelimiters));
 		sqlHelper.addSqlSnippet(".");
 	}
@@ -562,18 +582,19 @@ const defaultInsert = (state, config, mode) => {
 		}
 		sqlHelper.addSqlSnippet(")");
 	}
-	if (insertState.values.length > 0) {
-		sqlHelper.addSqlSnippet(" VALUES ");
-		for (let r = 0; r < insertState.values.length; r++) {
-			sqlHelper.addSqlSnippet("(");
-			const row = insertState.values[r];
-			for (let c = 0; c < row.length; c++) {
-				sqlHelper.addDynamicValue(row[c]);
-				if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
-			}
-			sqlHelper.addSqlSnippet(")");
-			if (r < insertState.values.length - 1) sqlHelper.addSqlSnippet(", ");
+	if (insertState.values.length === 0) throw new ParserError(ParserArea.Insert, "INSERT requires at least one VALUES row");
+	const columnCount = insertState.columns.length;
+	sqlHelper.addSqlSnippet(" VALUES ");
+	for (let r = 0; r < insertState.values.length; r++) {
+		sqlHelper.addSqlSnippet("(");
+		const row = insertState.values[r];
+		if (columnCount > 0 && row.length !== columnCount) throw new ParserError(ParserArea.Insert, `INSERT column count (${columnCount}) does not match value count (${row.length}) for row ${r + 1}`);
+		for (let c = 0; c < row.length; c++) {
+			sqlHelper.addDynamicValue(row[c]);
+			if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
 		}
+		sqlHelper.addSqlSnippet(")");
+		if (r < insertState.values.length - 1) sqlHelper.addSqlSnippet(", ");
 	}
 	return sqlHelper;
 };
@@ -623,7 +644,7 @@ const JoinOperator = {
 };
 //#endregion
 //#region src/parser/default-join.ts
-const defaultJoin = (state, config, mode) => {
+const defaultJoin = (state, config, mode, options) => {
 	let sqlHelper = new SqlHelper(mode);
 	if (state.joinStates.length === 0) return sqlHelper;
 	for (let i = 0; i < state.joinStates.length; i++) {
@@ -650,6 +671,7 @@ const defaultJoin = (state, config, mode) => {
 				sqlHelper.addSqlSnippet("RIGHT OUTER JOIN ");
 				break;
 			case JoinType.FullOuter:
+				if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Join, "MySQL does not support FULL OUTER JOIN");
 				sqlHelper.addSqlSnippet("FULL OUTER JOIN ");
 				break;
 			case JoinType.Cross:
@@ -657,6 +679,7 @@ const defaultJoin = (state, config, mode) => {
 				break;
 		}
 		if (joinState.builderType === BuilderType.JoinTable) {
+			if (joinState.owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Join, "MySQL does not support table owners");
 			if (joinState.owner !== "") {
 				sqlHelper.addSqlSnippet(quoteIdentifier(joinState.owner, config.identifierDelimiters));
 				sqlHelper.addSqlSnippet(".");
@@ -671,7 +694,7 @@ const defaultJoin = (state, config, mode) => {
 			continue;
 		}
 		if (joinState.builderType === BuilderType.JoinBuilder) {
-			const subHelper = defaultToSql(joinState.subquery, config, mode);
+			const subHelper = defaultToSql(joinState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
 			if (joinState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
@@ -859,7 +882,7 @@ const defaultOrderBy = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(orderByState.columnName, config.identifierDelimiters));
 			if (orderByState.direction === OrderByDirection.Ascending) sqlHelper.addSqlSnippet(" ASC");
-			else sqlHelper.addSqlSnippet(" DESC");
+			else if (orderByState.direction === OrderByDirection.Descending) sqlHelper.addSqlSnippet(" DESC");
 			if (i < state.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
 			return;
 		}
@@ -897,7 +920,7 @@ const defaultSelect = (state, config, mode, options) => {
 			continue;
 		}
 		if (selectState.builderType === BuilderType.SelectBuilder) {
-			const subHelper = defaultToSql(selectState.subquery, config, mode);
+			const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
@@ -943,13 +966,14 @@ const defaultUnion = (state, config, mode, options) => {
 //#region src/parser/default-update.ts
 const defaultUpdate = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
-	if (state.fromStates.length === 0) throw new ParserError(ParserArea.General, "UPDATE requires a table");
-	if (state.updateStates.length === 0) throw new ParserError(ParserArea.General, "UPDATE requires at least one SET column");
+	if (state.fromStates.length === 0) throw new ParserError(ParserArea.Update, "UPDATE requires a table");
+	if (state.updateStates.length === 0) throw new ParserError(ParserArea.Update, "UPDATE requires at least one SET column");
 	const delim = config.identifierDelimiters;
 	const quote = (s) => quoteIdentifier(s, delim);
 	const fromState = state.fromStates[0];
 	const owner = fromState.owner ?? "";
 	const alias = fromState.alias ?? "";
+	if (owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.Update, "MySQL does not support table owners");
 	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
 	const mssqlAliased = alias !== "" && config.databaseType === DatabaseType.Mssql;
 	sqlHelper.addSqlSnippet("UPDATE ");
@@ -982,7 +1006,7 @@ const defaultUpdate = (state, config, mode) => {
 };
 //#endregion
 //#region src/parser/default-where.ts
-const defaultWhere = (state, config, mode) => {
+const defaultWhere = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.whereStates.length === 0) return sqlHelper;
 	sqlHelper.addSqlSnippet("WHERE ");
@@ -1038,6 +1062,12 @@ const defaultWhere = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
+			const value = cur.values[0];
+			if ((cur.whereOperator === WhereOperator.Equals || cur.whereOperator === WhereOperator.NotEquals) && (value === null || value === void 0)) {
+				sqlHelper.addSqlSnippet(cur.whereOperator === WhereOperator.Equals ? "IS NULL" : "IS NOT NULL");
+				spaceAfter();
+				continue;
+			}
 			switch (cur.whereOperator) {
 				case WhereOperator.Equals:
 					sqlHelper.addSqlSnippet("=");
@@ -1063,9 +1093,10 @@ const defaultWhere = (state, config, mode) => {
 				case WhereOperator.NotLike:
 					sqlHelper.addSqlSnippet("NOT LIKE");
 					break;
+				default: throw new ParserError(ParserArea.Where, `Unsupported WHERE operator: ${cur.whereOperator}`);
 			}
 			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addDynamicValue(cur.values[0]);
+			sqlHelper.addDynamicValue(value);
 			spaceAfter();
 			continue;
 		}
@@ -1083,7 +1114,7 @@ const defaultWhere = (state, config, mode) => {
 		}
 		if (cur.builderType === BuilderType.WhereExistsBuilder) {
 			sqlHelper.addSqlSnippet("EXISTS (");
-			const subHelper = defaultToSql(cur.subquery, config, mode);
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
 			sqlHelper.addSqlSnippet(")");
 			spaceAfter();
@@ -1094,7 +1125,7 @@ const defaultWhere = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
-			const subHelper = defaultToSql(cur.subquery, config, mode);
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
 			sqlHelper.addSqlSnippet(")");
 			spaceAfter();
@@ -1116,7 +1147,7 @@ const defaultWhere = (state, config, mode) => {
 		}
 		if (cur.builderType === BuilderType.WhereNotExistsBuilder) {
 			sqlHelper.addSqlSnippet("NOT EXISTS (");
-			const subHelper = defaultToSql(cur.subquery, config, mode);
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
 			sqlHelper.addSqlSnippet(")");
 			spaceAfter();
@@ -1127,7 +1158,7 @@ const defaultWhere = (state, config, mode) => {
 			sqlHelper.addSqlSnippet(".");
 			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
-			const subHelper = defaultToSql(cur.subquery, config, mode);
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
 			sqlHelper.addSqlSnippet(")");
 			spaceAfter();
@@ -1178,7 +1209,7 @@ const defaultToSql = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
 	if (state.cteStates.length > 0) {
-		const cte = defaultCte(state, config, mode);
+		const cte = defaultCte(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
 	}
 	if (state.queryType === QueryType.Insert) {
@@ -1191,7 +1222,7 @@ const defaultToSql = (state, config, mode, options) => {
 		const update = defaultUpdate(state, config, mode);
 		sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
 		if (state.whereStates.length > 0) {
-			const where = defaultWhere(state, config, mode);
+			const where = defaultWhere(state, config, mode, options);
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
 		}
@@ -1202,7 +1233,7 @@ const defaultToSql = (state, config, mode, options) => {
 		const del = defaultDelete(state, config, mode);
 		sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
 		if (state.whereStates.length > 0) {
-			const where = defaultWhere(state, config, mode);
+			const where = defaultWhere(state, config, mode, options);
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
 		}
@@ -1211,16 +1242,16 @@ const defaultToSql = (state, config, mode, options) => {
 	}
 	const sel = defaultSelect(state, config, mode, options);
 	sqlHelper.addSqlSnippetWithValues(sel.getSql(), sel.getValues());
-	const from = defaultFrom(state, config, mode);
+	const from = defaultFrom(state, config, mode, options);
 	sqlHelper.addSqlSnippet(" ");
 	sqlHelper.addSqlSnippetWithValues(from.getSql(), from.getValues());
 	if (state.joinStates.length > 0) {
-		const join = defaultJoin(state, config, mode);
+		const join = defaultJoin(state, config, mode, options);
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
 	}
 	if (state.whereStates.length > 0) {
-		const where = defaultWhere(state, config, mode);
+		const where = defaultWhere(state, config, mode, options);
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(where.getSql(), where.getValues());
 	}
@@ -1271,13 +1302,17 @@ const toSqlOptionsFor = (config) => {
 	} };
 };
 /** A parameter value as a T-SQL literal for the sp_executesql value list. */
+const toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+const isBinaryValue = (value) => value instanceof Uint8Array;
 const mssqlParameterValue = (value) => {
 	if (value === null || value === void 0) return "NULL";
+	if (isBinaryValue(value)) return "0x" + toHex(value);
 	switch (typeof value) {
 		case "number":
 			if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
 			return value.toString();
 		case "boolean": return value ? "1" : "0";
+		case "bigint": return value.toString();
 		case "object":
 			if (value instanceof Date) return "'" + value.toISOString() + "'";
 			return "N'" + JSON.stringify(value).replaceAll("'", "''") + "'";
@@ -1286,6 +1321,7 @@ const mssqlParameterValue = (value) => {
 };
 /** The T-SQL declared type for an sp_executesql `@pN` parameter, inferred from the value. */
 const mssqlParameterType = (value) => {
+	if (isBinaryValue(value)) return "varbinary(max)";
 	switch (typeof value) {
 		case "string": return "nvarchar(max)";
 		case "number":
@@ -1296,6 +1332,7 @@ const mssqlParameterType = (value) => {
 			else return "bigint";
 			else return "float";
 		case "boolean": return "bit";
+		case "bigint": return "bigint";
 		default: return "nvarchar(max)";
 	}
 };
@@ -1342,7 +1379,7 @@ const mssqlToSql = (state, config) => {
 const postgresPrepared = (state, config) => {
 	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared);
 	return {
-		sql: renderPlaceholders(sqlHelper.getSql(), (index) => "$" + (index + 1)),
+		sql: renderPlaceholders(sqlHelper.getSql(), (index) => config.preparedStatementPlaceholder + (index + 1)),
 		params: sqlHelper.getValues()
 	};
 };
@@ -1358,8 +1395,10 @@ const positionalPrepared = (state, config) => {
 	};
 };
 /**
-* Renders one query state as a prepared SQL string. MSSQL returns a self-contained
-* `sp_executesql`; Postgres rewrites to `$n`; the rest keep the dialect's `?` placeholder.
+* Renders one query state as a prepared SQL string (placeholders, without a separate params
+* array). For Postgres/MySQL/SQLite this is **not** execution-safe on its own — use
+* {@link parsePrepared} to get `{ sql, params }`. For MSSQL, `parse` and `parsePrepared`
+* both return the same self-contained `sp_executesql` batch (values inlined; `params` empty).
 */
 const parse = (state, config) => {
 	if (config.databaseType === DatabaseType.Mssql) return mssqlToSql(state, config);
@@ -1410,7 +1449,7 @@ const parseMultiRaw = (states, transactionState, config) => {
 	let sql = "";
 	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.begin + "; ";
 	for (const state of states) sql += parseRaw(state, config);
-	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.end + "; ";
+	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.end + ";";
 	return sql;
 };
 //#endregion
@@ -1570,18 +1609,27 @@ var JoinOnBuilder = class JoinOnBuilder {
 var QueryBuilder = class QueryBuilder {
 	#state = createQueryState();
 	#config;
+	/** Where `and()` / `or()` append — flips when WHERE vs HAVING predicates are added. */
+	#combinatorTarget = "where";
 	constructor(config) {
 		this.#config = config;
 	}
 	/** A fresh builder sharing this builder's dialect — the parent of every subquery. */
 	#child = () => new QueryBuilder(this.#config);
-	/** Returns the dialect configuration backing this builder. */
-	configuration = () => {
-		return this.#config;
-	};
-	and = () => {
+	#pushCombinator = (builderType) => {
+		if (this.#combinatorTarget === "having") {
+			this.#state.havingStates.push({
+				builderType,
+				tableNameOrAlias: void 0,
+				columnName: void 0,
+				whereOperator: WhereOperator.None,
+				raw: void 0,
+				values: []
+			});
+			return this;
+		}
 		this.#state.whereStates.push({
-			builderType: BuilderType.And,
+			builderType,
 			tableNameOrAlias: void 0,
 			columnName: void 0,
 			whereOperator: WhereOperator.None,
@@ -1591,8 +1639,15 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/** Returns the dialect configuration backing this builder. */
+	configuration = () => {
+		return this.#config;
+	};
+	and = () => this.#pushCombinator(BuilderType.And);
+	or = () => this.#pushCombinator(BuilderType.Or);
 	clearAll = () => {
 		this.#state = createQueryState();
+		this.#combinatorTarget = "where";
 		return this;
 	};
 	clearFrom = () => {
@@ -1625,10 +1680,33 @@ var QueryBuilder = class QueryBuilder {
 	};
 	clearSelect = () => {
 		this.#state.selectStates = [];
+		this.#state.distinct = false;
+		return this;
+	};
+	clearDistinct = () => {
+		this.#state.distinct = false;
 		return this;
 	};
 	clearWhere = () => {
 		this.#state.whereStates = [];
+		return this;
+	};
+	clearCte = () => {
+		this.#state.cteStates = [];
+		return this;
+	};
+	clearUnion = () => {
+		this.#state.unionStates = [];
+		return this;
+	};
+	clearInsert = () => {
+		this.#state.insertState = void 0;
+		if (this.#state.queryType === QueryType.Insert) this.#state.queryType = QueryType.Select;
+		return this;
+	};
+	clearUpdate = () => {
+		this.#state.updateStates = [];
+		if (this.#state.queryType === QueryType.Update) this.#state.queryType = QueryType.Select;
 		return this;
 	};
 	distinct = () => {
@@ -1783,18 +1861,6 @@ var QueryBuilder = class QueryBuilder {
 		this.#state.offset = offset;
 		return this;
 	};
-	or = () => {
-		this.#state.whereStates.push({
-			builderType: BuilderType.Or,
-			tableNameOrAlias: void 0,
-			columnName: void 0,
-			whereOperator: WhereOperator.None,
-			raw: void 0,
-			subquery: void 0,
-			values: []
-		});
-		return this;
-	};
 	orderByColumn = (tableNameOrAlias, columnName, direction) => {
 		this.#state.orderByStates.push({
 			builderType: BuilderType.OrderByColumn,
@@ -1902,6 +1968,7 @@ var QueryBuilder = class QueryBuilder {
 		return this.#state;
 	};
 	where = (tableNameOrAlias, columnName, whereOperator, value) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.Where,
 			tableNameOrAlias,
@@ -1914,6 +1981,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereBetween = (tableNameOrAlias, columnName, value1, value2) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereBetween,
 			tableNameOrAlias,
@@ -1926,6 +1994,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereExistsWithBuilder = (tableNameOrAlias, columnName, builder) => {
+		this.#combinatorTarget = "where";
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
@@ -1941,6 +2010,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereGroup(builder) {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereGroupBegin,
 			tableNameOrAlias: void 0,
@@ -1974,6 +2044,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	}
 	whereInWithBuilder = (tableNameOrAlias, columnName, builder) => {
+		this.#combinatorTarget = "where";
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
@@ -1989,6 +2060,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereInValues = (tableNameOrAlias, columnName, values) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereInValues,
 			tableNameOrAlias,
@@ -2001,6 +2073,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereNotExistsWithBuilder = (tableNameOrAlias, columnName, builder) => {
+		this.#combinatorTarget = "where";
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
@@ -2016,6 +2089,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereNotInWithBuilder = (tableNameOrAlias, columnName, builder) => {
+		this.#combinatorTarget = "where";
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
@@ -2031,6 +2105,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereNotInValues = (tableNameOrAlias, columnName, values) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereNotInValues,
 			tableNameOrAlias,
@@ -2043,6 +2118,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereNotNull = (tableNameOrAlias, columnName) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereNotNull,
 			tableNameOrAlias,
@@ -2055,6 +2131,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereNull = (tableNameOrAlias, columnName) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereNull,
 			tableNameOrAlias,
@@ -2067,6 +2144,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	whereRaw = (rawWhere) => {
+		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereRaw,
 			tableNameOrAlias: void 0,
@@ -2115,6 +2193,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	having = (tableNameOrAlias, columnName, whereOperator, value) => {
+		this.#combinatorTarget = "having";
 		this.#state.havingStates.push({
 			builderType: BuilderType.Having,
 			tableNameOrAlias,
@@ -2126,6 +2205,7 @@ var QueryBuilder = class QueryBuilder {
 		return this;
 	};
 	havingRaw = (rawHaving) => {
+		this.#combinatorTarget = "having";
 		this.#state.havingStates.push({
 			builderType: BuilderType.HavingRaw,
 			tableNameOrAlias: void 0,
@@ -2326,7 +2406,10 @@ var QueryBuilder = class QueryBuilder {
 	};
 	/** Removes a previously set `TOP` limit from builder state (MSSQL). */
 	clearTop = () => {
-		if (this.#state.customState) delete this.#state.customState["top"];
+		if (this.#state.customState) {
+			delete this.#state.customState["top"];
+			if (Object.keys(this.#state.customState).length === 0) this.#state.customState = void 0;
+		}
 		return this;
 	};
 	/** Sets the `TOP` row limit for the generated `SELECT` (MSSQL; ignored by other dialects). */

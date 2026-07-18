@@ -1,4 +1,5 @@
 import type { Dialect } from '../configuration/configuration';
+import { DatabaseType } from '../enums/database-type';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
@@ -10,7 +11,7 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
   const sqlHelper = new SqlHelper(mode);
 
   if (!state.insertState) {
-    throw new ParserError(ParserArea.General, 'No insert state provided');
+    throw new ParserError(ParserArea.Insert, 'No insert state provided');
   }
 
   const insertState = state.insertState;
@@ -20,9 +21,16 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
     return sqlHelper;
   }
 
+  if (!insertState.tableName) {
+    throw new ParserError(ParserArea.Insert, 'INSERT requires a table');
+  }
+
   sqlHelper.addSqlSnippet('INSERT INTO ');
 
   if (insertState.owner && insertState.owner !== '') {
+    if (config.databaseType === DatabaseType.Mysql) {
+      throw new ParserError(ParserArea.Insert, 'MySQL does not support table owners');
+    }
     sqlHelper.addSqlSnippet(quoteIdentifier(insertState.owner, config.identifierDelimiters));
     sqlHelper.addSqlSnippet('.');
   }
@@ -41,26 +49,38 @@ export const defaultInsert = (state: QueryState, config: Dialect, mode: ParserMo
     sqlHelper.addSqlSnippet(')');
   }
 
-  if (insertState.values.length > 0) {
-    sqlHelper.addSqlSnippet(' VALUES ');
+  if (insertState.values.length === 0) {
+    throw new ParserError(ParserArea.Insert, 'INSERT requires at least one VALUES row');
+  }
 
-    for (let r = 0; r < insertState.values.length; r++) {
-      sqlHelper.addSqlSnippet('(');
+  const columnCount = insertState.columns.length;
 
-      const row = insertState.values[r]!;
-      for (let c = 0; c < row.length; c++) {
-        sqlHelper.addDynamicValue(row[c]);
+  sqlHelper.addSqlSnippet(' VALUES ');
 
-        if (c < row.length - 1) {
-          sqlHelper.addSqlSnippet(', ');
-        }
-      }
+  for (let r = 0; r < insertState.values.length; r++) {
+    sqlHelper.addSqlSnippet('(');
 
-      sqlHelper.addSqlSnippet(')');
+    const row = insertState.values[r]!;
 
-      if (r < insertState.values.length - 1) {
+    if (columnCount > 0 && row.length !== columnCount) {
+      throw new ParserError(
+        ParserArea.Insert,
+        `INSERT column count (${columnCount}) does not match value count (${row.length}) for row ${r + 1}`,
+      );
+    }
+
+    for (let c = 0; c < row.length; c++) {
+      sqlHelper.addDynamicValue(row[c]);
+
+      if (c < row.length - 1) {
         sqlHelper.addSqlSnippet(', ');
       }
+    }
+
+    sqlHelper.addSqlSnippet(')');
+
+    if (r < insertState.values.length - 1) {
+      sqlHelper.addSqlSnippet(', ');
     }
   }
 

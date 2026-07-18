@@ -14,7 +14,7 @@ describe('MysqlQuery multi builder', () => {
 
     const sql = multiBuilder.parseRaw();
     expect(sql).toEqual(
-      'START TRANSACTION; SELECT * FROM `users` AS `u`;SELECT * FROM `orders` AS `o`;COMMIT; ',
+      'START TRANSACTION; SELECT * FROM `users` AS `u`;SELECT * FROM `orders` AS `o`;COMMIT;',
     );
   });
 
@@ -41,7 +41,7 @@ describe('MysqlQuery multi builder', () => {
     b1.selectAll().fromTable('users', 'u');
 
     const sql = multiBuilder.parseRaw();
-    expect(sql).toEqual('START TRANSACTION; SELECT * FROM `users` AS `u`;COMMIT; ');
+    expect(sql).toEqual('START TRANSACTION; SELECT * FROM `users` AS `u`;COMMIT;');
   });
 
   it('mixed query types in multi builder', () => {
@@ -61,7 +61,7 @@ describe('MysqlQuery multi builder', () => {
       'START TRANSACTION; ' +
         'INSERT INTO `users` (`name`, `email`) VALUES (Alice, alice@test.com);' +
         'SELECT * FROM `users` AS `u`;' +
-        'COMMIT; ',
+        'COMMIT;',
     );
   });
 
@@ -124,7 +124,7 @@ describe('MysqlQuery multi builder', () => {
       'START TRANSACTION; ' +
         'UPDATE `users` AS `u` SET `active` = false WHERE `u`.`id` = 1;' +
         'DELETE FROM `sessions` AS `s` WHERE `s`.`user_id` = 1;' +
-        'COMMIT; ',
+        'COMMIT;',
     );
   });
 

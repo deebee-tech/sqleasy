@@ -87,4 +87,12 @@ describe('MysqlQuery insert', () => {
       'INSERT INTO `users` (`name`, `age`) VALUES (Alice, 25), (Bob, 30), (Charlie, 35);',
     );
   });
+
+  it('insertIntoWithOwner with non-empty owner throws', () => {
+    const query = new MysqlQuery();
+    const builder = query.newBuilder();
+    builder.insertIntoWithOwner('mydb', 'users').insertColumns(['name']).insertValues(['Alice']);
+
+    expect(() => builder.parseRaw()).toThrow('MySQL does not support table owners');
+  });
 });

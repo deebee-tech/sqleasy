@@ -73,7 +73,7 @@ export const defaultSelect = (
     }
 
     if (selectState.builderType === BuilderType.SelectBuilder) {
-      const subHelper = defaultToSql(selectState.subquery, config, mode);
+      const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 
       sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
 

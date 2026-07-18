@@ -189,7 +189,7 @@ describe('Parser coverage edge cases', () => {
       const builder = query.newBuilder();
       builder.selectAll().fromTable('users', 'u').having('u', 'id', WhereOperator.Equals, 1);
 
-      expect(() => builder.parseRaw()).toThrow('HAVING requires a GROUP BY clause');
+      expect(() => builder.parseRaw()).toThrow('Having: HAVING requires a GROUP BY clause');
     });
 
     it('returns empty SQL when no having states exist', () => {

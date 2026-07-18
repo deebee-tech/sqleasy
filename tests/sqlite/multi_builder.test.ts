@@ -16,7 +16,7 @@ describe('SqliteQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN; INSERT INTO "users" ("name", "email") VALUES (John, john@example.com);INSERT INTO "orders" ("user_id", "total") VALUES (1, 99.99);COMMIT; ',
+      'BEGIN; INSERT INTO "users" ("name", "email") VALUES (John, john@example.com);INSERT INTO "orders" ("user_id", "total") VALUES (1, 99.99);COMMIT;',
     );
   });
 
@@ -116,7 +116,7 @@ describe('SqliteQuery multi builder', () => {
     expect(sql.match(/INSERT INTO "users"/g)).toHaveLength(1);
     expect(multi.states()).toHaveLength(2);
     expect(sql).toEqual(
-      'BEGIN; INSERT INTO "users" ("name") VALUES (A);INSERT INTO "orders" ("total") VALUES (9);COMMIT; ',
+      'BEGIN; INSERT INTO "users" ("name") VALUES (A);INSERT INTO "orders" ("total") VALUES (9);COMMIT;',
     );
   });
 
@@ -134,7 +134,7 @@ describe('SqliteQuery multi builder', () => {
 
     const sql = multi.parseRaw();
     expect(sql).toEqual(
-      'BEGIN; SELECT * FROM "users" AS "u";INSERT INTO "audit_log" ("action", "timestamp") VALUES (user_query, 2024-01-01);COMMIT; ',
+      'BEGIN; SELECT * FROM "users" AS "u";INSERT INTO "audit_log" ("action", "timestamp") VALUES (user_query, 2024-01-01);COMMIT;',
     );
   });
 
