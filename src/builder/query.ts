@@ -322,11 +322,7 @@ export class QueryBuilder {
    * Table-valued / set-returning function in the FROM clause (`FROM fn(...) AS alias`).
    * Dialect-specific: Postgres/MSSQL TVFs, SQLite helpers like `json_each`.
    */
-  public fromTableFunction = (
-    functionName: string,
-    alias: string,
-    params: any[] = [],
-  ): this => {
+  public fromTableFunction = (functionName: string, alias: string, params: any[] = []): this => {
     this.#state.fromStates.push({
       builderType: BuilderType.FromFunction,
       owner: this.#config.defaultOwner,

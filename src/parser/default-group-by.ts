@@ -15,12 +15,7 @@ const emitColumnList = (
   columns: GroupByColumnRef[],
 ): void => {
   columns.forEach((column, i) => {
-    emitGroupByColumnRef(
-      sqlHelper,
-      config,
-      column.tableNameOrAlias,
-      column.columnName,
-    );
+    emitGroupByColumnRef(sqlHelper, config, column.tableNameOrAlias, column.columnName);
     if (i < columns.length - 1) {
       sqlHelper.addSqlSnippet(', ');
     }

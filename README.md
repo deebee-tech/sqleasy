@@ -453,9 +453,7 @@ builder
 ### GROUPING SETS / CUBE / ROLLUP
 
 ```typescript
-builder
-  .groupByColumn('o', 'region')
-  .groupByRollup(); // MySQL: WITH ROLLUP; others: GROUP BY ROLLUP (...)
+builder.groupByColumn('o', 'region').groupByRollup(); // MySQL: WITH ROLLUP; others: GROUP BY ROLLUP (...)
 ```
 
 ### FETCH FIRST … WITH TIES

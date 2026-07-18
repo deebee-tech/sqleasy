@@ -21,16 +21,16 @@ describe('Tier 3 — JSON operators', () => {
 
   it('MySQL whereJsonContains', () => {
     const b = new MysqlQuery().newBuilder();
-    b.selectAll()
-      .fromTable('users', 'u')
-      .whereJsonContains('u', 'meta', { role: 'admin' });
+    b.selectAll().fromTable('users', 'u').whereJsonContains('u', 'meta', { role: 'admin' });
     expect(b.parseRaw()).toContain('JSON_CONTAINS(`u`.`meta`,');
   });
 
   it('selectJsonExtract on MSSQL uses JSON_VALUE', () => {
     const b = new MssqlQuery().newBuilder();
-    b.selectJsonExtract('u', 'meta', '$.email', JsonExtractMode.Text, 'email')
-      .fromTable('users', 'u');
+    b.selectJsonExtract('u', 'meta', '$.email', JsonExtractMode.Text, 'email').fromTable(
+      'users',
+      'u',
+    );
     expect(b.parseRaw()).toContain('JSON_VALUE([u].[meta], "$.email") AS [email]');
   });
 });
@@ -98,9 +98,11 @@ describe('Tier 3 — LATERAL / APPLY', () => {
 
   it('SQLite fromLateral throws', () => {
     const b = new SqliteQuery().newBuilder();
-    b.selectAll().fromTable('orders', 'o').fromLateral('x', (sub) => {
-      sub.selectAll().fromTable('line_items', 'li');
-    });
+    b.selectAll()
+      .fromTable('orders', 'o')
+      .fromLateral('x', (sub) => {
+        sub.selectAll().fromTable('line_items', 'li');
+      });
     expect(() => b.parseRaw()).toThrow(/LATERAL/);
   });
 });

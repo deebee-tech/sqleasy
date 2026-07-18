@@ -46,9 +46,7 @@ export const emitFullTextPredicate = (
       sqlHelper.addSqlSnippet(', ');
       sqlHelper.addSqlSnippet(columnRef(config, col.tableNameOrAlias, col.columnName));
       sqlHelper.addSqlSnippet(') @@ ');
-      sqlHelper.addSqlSnippet(
-        mode === FullTextMode.Boolean ? 'to_tsquery(' : 'plainto_tsquery(',
-      );
+      sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? 'to_tsquery(' : 'plainto_tsquery(');
       sqlHelper.addSqlSnippet(JSON.stringify('english'));
       sqlHelper.addSqlSnippet(', ');
       return;

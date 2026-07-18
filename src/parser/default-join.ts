@@ -79,7 +79,10 @@ export const defaultJoin = (
           sqlHelper.addSqlSnippet('CROSS APPLY ');
           break;
         }
-        if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) {
+        if (
+          config.databaseType === DatabaseType.Postgres ||
+          config.databaseType === DatabaseType.Mysql
+        ) {
           sqlHelper.addSqlSnippet('CROSS JOIN LATERAL ');
           break;
         }
@@ -89,7 +92,10 @@ export const defaultJoin = (
           sqlHelper.addSqlSnippet('OUTER APPLY ');
           break;
         }
-        if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) {
+        if (
+          config.databaseType === DatabaseType.Postgres ||
+          config.databaseType === DatabaseType.Mysql
+        ) {
           sqlHelper.addSqlSnippet('LEFT JOIN LATERAL ');
           break;
         }

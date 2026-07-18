@@ -47,7 +47,9 @@ export const defaultFrom = (
 
       sqlHelper.addSqlSnippet(quoteIdentifier(fromState.tableName, config.identifierDelimiters));
 
-      sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, fromState.alias ?? fromState.tableName ?? ''));
+      sqlHelper.addSqlSnippet(
+        mysqlIndexHintForTable(state, config, fromState.alias ?? fromState.tableName ?? ''),
+      );
 
       if (fromState.alias !== '') {
         sqlHelper.addSqlSnippet(' AS ');

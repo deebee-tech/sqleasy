@@ -314,8 +314,10 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         );
         break;
       case 'joinLateral':
-        b.joinLateral(str(op, 'alias'), (sub) => apply(sub, ops(op)), (j) =>
-          applyJoinOn(j, ops(op, 'on')),
+        b.joinLateral(
+          str(op, 'alias'),
+          (sub) => apply(sub, ops(op)),
+          (j) => applyJoinOn(j, ops(op, 'on')),
         );
         break;
 

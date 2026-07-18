@@ -9,10 +9,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 import type { WhereState } from '../state/where';
 import { emitComparisonPredicate } from './comparison-operator';
-import {
-  emitFullTextPredicate,
-  emitFullTextValueSuffix,
-} from './default-full-text';
+import { emitFullTextPredicate, emitFullTextValueSuffix } from './default-full-text';
 import { emitJsonContainsExpression, emitJsonExtractExpression } from './default-json';
 
 export const emitJsonExtractPredicate = (

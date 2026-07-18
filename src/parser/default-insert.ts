@@ -31,10 +31,7 @@ export const defaultInsert = (
     return sqlHelper;
   }
 
-  if (
-    state.upsertState &&
-    config.databaseType === DatabaseType.Mssql
-  ) {
+  if (state.upsertState && config.databaseType === DatabaseType.Mssql) {
     return emitMssqlMergeInsert(state, config, mode, options);
   }
 

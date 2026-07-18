@@ -102,7 +102,10 @@ export const emitMssqlMergeInsert = (
     sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
   } else {
     if (insertState.values.length === 0) {
-      throw new ParserError(ParserArea.Insert, 'MERGE requires VALUES or INSERT SELECT source rows');
+      throw new ParserError(
+        ParserArea.Insert,
+        'MERGE requires VALUES or INSERT SELECT source rows',
+      );
     }
 
     if (insertState.values.length !== 1) {
