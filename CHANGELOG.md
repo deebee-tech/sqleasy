@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/deebee-tech/sqleasy-engine/compare/v1.1.1...v1.1.2) (2026-07-18)
+
+
+### Bug Fixes
+
+* harden the engine for general SQL and close review gaps ([fe6f192](https://github.com/deebee-tech/sqleasy-engine/commit/fe6f19248dda1e8647f1baf369885c35bd1d593e))
+
 ## [1.1.1](https://github.com/deebee-tech/sqleasy-engine/compare/v1.1.0...v1.1.1) (2026-07-16)
 
 
