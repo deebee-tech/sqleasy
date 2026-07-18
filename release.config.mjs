@@ -135,14 +135,7 @@ export default {
     [
       '@semantic-release/git',
       {
-        assets: [
-          'CHANGELOG.md',
-          'package.json',
-          'jsr.json',
-          'goldens/corpus.json',
-          'dist/**/*',
-          'coverage/**/*',
-        ],
+        assets: ['CHANGELOG.md', 'package.json', 'jsr.json', 'goldens/corpus.json', 'dist/**/*'],
       },
     ],
     // Registries BEFORE the GitHub release: on 2.0.0 the GitHub plugin crashed uploading release

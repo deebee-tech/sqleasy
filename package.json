@@ -28,6 +28,7 @@
     "url": "https://github.com/deebee-tech/sqleasy"
   },
   "type": "module",
+  "sideEffects": false,
   "main": "dist/index.cjs",
   "exports": {
     ".": {
@@ -46,7 +47,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/' && cpy './LICENSE' './dist/'",
+    "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/' && cpy './LICENSE' './dist/' && node --input-type=module -e \"import { readFileSync, writeFileSync } from 'node:fs'; const src = JSON.parse(readFileSync('dist/package.json', 'utf8')); const keys = ['name','version','description','keywords','homepage','license','author','repository','type','main','exports','types','publishConfig','sideEffects']; const out = {}; for (const k of keys) { if (k === 'sideEffects') out[k] = false; else if (k in src) out[k] = src[k]; } writeFileSync('dist/package.json', JSON.stringify(out, null, 2) + '\\n');\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "goldens": "GOLDENS_WRITE=1 vitest run tests/conformance",

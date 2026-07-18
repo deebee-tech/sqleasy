@@ -1,0 +1,28 @@
+# Accidental `npm publish` from repo root must not ship the workspace.
+# The real release path uses `pkgRoot: 'dist'` in release.config.mjs.
+src/
+tests/
+coverage/
+tmp/
+goldens/
+assets/
+.github/
+.vscode/
+node_modules/
+
+*.config.*
+*.config.js
+*.config.mjs
+*.config.ts
+tsconfig.json
+cspell.json
+jsr.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.npmrc
+.gitignore
+.prettierignore
+eslint.config.mjs
+vitest.config.mjs
+release.config.mjs
+tsdown.config.ts
