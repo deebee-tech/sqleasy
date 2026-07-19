@@ -1,0 +1,17 @@
+{
+  "_comment": "Known op x dialect gaps as of the 2026-07-19 parity audit. This is a RATCHET: entries may be REMOVED as gaps are closed, never added without a deliberate decision. A new gap not listed here fails CI. Regenerate with: node scripts/check-dialect-parity.mjs --write-baseline",
+  "generatedFrom": "ts/query/goldens/corpus.json",
+  "corpusVersion": "10.1.0",
+  "gaps": [
+    "groupByGroupingSets:mysql",
+    "hintMssqlOption:mysql",
+    "hintMssqlOption:postgres",
+    "hintMssqlOption:sqlite",
+    "hintRaw:mssql",
+    "hintRaw:mysql",
+    "hintRaw:sqlite",
+    "hintUseIndex:mssql",
+    "hintUseIndex:postgres",
+    "hintUseIndex:sqlite"
+  ]
+}
