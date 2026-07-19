@@ -2,3 +2,20 @@ node_modules
 coverage/
 tmp/
 .DS_Store
+
+# Turbo's per-package task logs and local cache.
+.turbo/
+
+# Dart toolchain output. The Dart port used to carry its own .gitignore for this; that file was a
+# repo-level concern and was pruned when the port moved in, so it is covered here instead.
+.dart_tool/
+build/
+.packages
+pubspec.lock
+
+# Claude Code worktrees live here.
+.claude/
+
+# Database files dropped by the SQLite tests.
+*.db
+*.sqlite
