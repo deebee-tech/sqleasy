@@ -1,0 +1,160 @@
+{
+  "name": "@deebeetech/sqleasy-engine",
+  "version": "1.2.0",
+  "description": "A thin, opt-in executor for @deebeetech/sqleasy: runs its prepared SQL and transactions on Postgres, MySQL, SQL Server, and SQLite — loading only the driver you import.",
+  "keywords": [
+    "sql",
+    "sql-executor",
+    "query-runner",
+    "postgres",
+    "mysql",
+    "mssql",
+    "sqlite",
+    "libsql",
+    "transactions",
+    "sqleasy",
+    "typescript",
+    "database"
+  ],
+  "homepage": "https://github.com/deebee-tech/sqleasy-engine",
+  "license": "MIT",
+  "private": false,
+  "author": {
+    "name": "Sandy Weatherby",
+    "email": "unicornbeachdiaries@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deebee-tech/sqleasy-engine"
+  },
+  "type": "module",
+  "main": "dist/index.cjs",
+  "types": "dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./sqlite": {
+      "import": {
+        "types": "./dist/sqlite/index.d.mts",
+        "default": "./dist/sqlite/index.mjs"
+      },
+      "require": {
+        "types": "./dist/sqlite/index.d.cts",
+        "default": "./dist/sqlite/index.cjs"
+      }
+    },
+    "./postgres": {
+      "import": {
+        "types": "./dist/postgres/index.d.mts",
+        "default": "./dist/postgres/index.mjs"
+      },
+      "require": {
+        "types": "./dist/postgres/index.d.cts",
+        "default": "./dist/postgres/index.cjs"
+      }
+    },
+    "./mysql": {
+      "import": {
+        "types": "./dist/mysql/index.d.mts",
+        "default": "./dist/mysql/index.mjs"
+      },
+      "require": {
+        "types": "./dist/mysql/index.d.cts",
+        "default": "./dist/mysql/index.cjs"
+      }
+    },
+    "./mssql": {
+      "import": {
+        "types": "./dist/mssql/index.d.mts",
+        "default": "./dist/mssql/index.mjs"
+      },
+      "require": {
+        "types": "./dist/mssql/index.d.cts",
+        "default": "./dist/mssql/index.cjs"
+      }
+    },
+    "./introspection": {
+      "import": {
+        "types": "./dist/introspection/index.d.mts",
+        "default": "./dist/introspection/index.mjs"
+      },
+      "require": {
+        "types": "./dist/introspection/index.d.cts",
+        "default": "./dist/introspection/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "packageManager": "pnpm@11.13.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@libsql/client": ">=0.14.0",
+    "mssql": ">=10.0.0",
+    "mysql2": ">=3.0.0",
+    "pg": ">=8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@libsql/client": {
+      "optional": true
+    },
+    "mssql": {
+      "optional": true
+    },
+    "pg": {
+      "optional": true
+    },
+    "mysql2": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@libsql/client": "^0.17.4",
+    "@sebbo2002/semantic-release-jsr": "^4.0.2",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.9",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.1",
+    "@types/mssql": "^12.3.0",
+    "@types/node": "^26.1.1",
+    "@types/pg": "^8.20.0",
+    "conventional-changelog-conventionalcommits": "^10.2.1",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "mssql": "^12.7.0",
+    "mysql2": "^3.22.6",
+    "pg": "^8.22.0",
+    "prettier": "^3.9.5",
+    "semantic-release": "^25.0.7",
+    "semantic-release-replace-plugin": "^1.2.7",
+    "tsdown": "^0.22.7",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^4.1.10"
+  }
+}
