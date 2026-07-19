@@ -5,3 +5,4 @@ export * from './helpers';
 export * from './parser';
 export * from './dialects';
 export * from './state';
+export * from './expression';
