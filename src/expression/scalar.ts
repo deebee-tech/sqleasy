@@ -1,5 +1,19 @@
 import { DatabaseType } from '../enums/database-type';
 
+/** The shape of the {@link Fn} scalar-expression helpers. */
+export type ScalarExpressions = {
+  /** NULL-skipping string concatenation. See {@link Fn.concat}. */
+  concat(operands: string[], databaseType: DatabaseType): string;
+  /** Character (not byte) length. See {@link Fn.charLength}. */
+  charLength(operand: string, databaseType: DatabaseType): string;
+  /** Round to `places` decimals. See {@link Fn.round}. */
+  round(operand: string, places: string | number, databaseType: DatabaseType): string;
+  /** The current-timestamp expression. See {@link Fn.now}. */
+  now(databaseType: DatabaseType): string;
+  /** Fractional (never integer) division. See {@link Fn.divide}. */
+  divide(numerator: string, denominator: string, databaseType: DatabaseType): string;
+};
+
 /**
  * Pure, per-dialect emit helpers for scalar expressions — the dialect-correctness knowledge for a
  * handful of common functions, factored out so an expression compiler (DeeBee's formula compiler is
@@ -10,7 +24,7 @@ import { DatabaseType } from '../enums/database-type';
  * `{Column}` resolution: those stay with the caller. This is deliberately NOT an expression AST —
  * just the normalization helpers.
  */
-export const Fn = {
+export const Fn: ScalarExpressions = {
   /**
    * NULL-skipping string concatenation (spreadsheet-style: one NULL operand must not null the whole
    * result). MSSQL `CONCAT` already skips NULLs; the others coalesce each operand to `''` — on
