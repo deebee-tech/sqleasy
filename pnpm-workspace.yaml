@@ -20,6 +20,7 @@ packages:
 # Do not "helpfully" bump it — that is a standing decision, not an oversight.
 catalog:
   '@eslint/js': ^10.0.1
+  '@libsql/client': ^0.17.4
   '@sebbo2002/semantic-release-jsr': ^4.0.2
   '@semantic-release/changelog': ^6.0.3
   '@semantic-release/commit-analyzer': ^13.0.1
@@ -27,13 +28,18 @@ catalog:
   '@semantic-release/github': ^12.0.9
   '@semantic-release/npm': ^13.1.5
   '@semantic-release/release-notes-generator': ^14.1.1
+  '@types/mssql': ^12.3.0
   '@types/node': ^26.1.1
+  '@types/pg': ^8.20.0
   '@vitest/coverage-v8': ^4.1.10
   conventional-changelog-conventionalcommits: ^10.2.1
   cpy-cli: ^7.0.0
   cspell: ^10.0.1
   eslint: ^10.7.0
   eslint-config-prettier: ^10.1.8
+  mssql: ^12.7.0
+  mysql2: ^3.22.6
+  pg: ^8.22.0
   prettier: ^3.9.5
   semantic-release: ^25.0.7
   semantic-release-replace-plugin: ^1.2.7

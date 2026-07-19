@@ -1,14 +1,7 @@
 {
+  "_comment": "Extends base.json, NOT node.json. The engine deliberately does not declare `types: [node]` — it must stay runtime-agnostic so it can be consumed outside Node. Do not 'fix' this to match ts/query.",
+  "extends": "@sqleasy/tsconfig/base.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "lib": ["ESNext"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "declaration": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true
+    "outDir": "./dist"
   }
 }

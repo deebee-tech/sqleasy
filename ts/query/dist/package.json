@@ -24,23 +24,24 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/deebee-tech/sqleasy"
+    "url": "https://github.com/deebee-tech/sqleasy",
+    "directory": "ts/query"
   },
   "type": "module",
-  "main": "index.cjs",
+  "main": "dist/index.cjs",
   "exports": {
     ".": {
       "import": {
-        "types": "./index.d.mts",
-        "default": "./index.mjs"
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
       },
       "require": {
-        "types": "./index.d.cts",
-        "default": "./index.cjs"
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
     }
   },
-  "types": "index.d.mts",
+  "types": "dist/index.d.mts",
   "publishConfig": {
     "access": "public"
   },

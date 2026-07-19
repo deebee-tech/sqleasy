@@ -1,17 +1,3 @@
-// @ts-check
-
-import eslint from '@eslint/js';
-import prettier from 'eslint-config-prettier';
-import tseslint from 'typescript-eslint';
-
-export default tseslint.config(
-  { ignores: ['dist/', 'coverage/'] },
-  eslint.configs.recommended,
-  tseslint.configs.recommended,
-  prettier,
-  {
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
-);
+// Re-exports the monorepo's shared flat config so the two published TypeScript packages cannot
+// drift apart on lint policy. Rules live in configs/eslint-config/base.js.
+export { default } from '@sqleasy/eslint-config/base';

@@ -1,0 +1,18 @@
+$ tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/' && cpy './LICENSE' './dist/' && node --input-type=module -e "import { readFileSync, writeFileSync } from 'node:fs'; const src = JSON.parse(readFileSync('dist/package.json', 'utf8')); const keys = ['name','version','description','keywords','homepage','license','author','repository','type','main','exports','types','publishConfig','sideEffects']; const out = {}; for (const k of keys) { if (k === 'sideEffects') out[k] = false; else if (k in src) out[k] = src[k]; } writeFileSync('dist/package.json', JSON.stringify(out, null, 2) + '\n');"
+ℹ tsdown v0.22.7 powered by rolldown v1.1.5
+ℹ config file: /Users/sandy/Github/sqleasy/.claude/worktrees/monorepo-migration/ts/query/tsdown.config.ts 
+ℹ entry: ./src/index.ts
+ℹ tsconfig: tsconfig.json
+ℹ Build start
+ℹ Cleaning 10 files
+ℹ [CJS] dist/index.cjs      220.75 kB │ gzip: 40.80 kB
+ℹ [CJS] dist/index.cjs.map  427.25 kB │ gzip: 73.77 kB
+ℹ [CJS] 2 files, total: 648.00 kB
+ℹ [CJS] dist/index.d.cts  88.91 kB │ gzip: 20.92 kB
+ℹ [CJS] 1 files, total: 88.91 kB
+✔ Build complete in 994ms
+ℹ [ESM] dist/index.mjs      219.13 kB │ gzip: 40.53 kB
+ℹ [ESM] dist/index.mjs.map  427.25 kB │ gzip: 73.77 kB
+ℹ [ESM] dist/index.d.mts     88.91 kB │ gzip: 20.92 kB
+ℹ [ESM] 3 files, total: 735.29 kB
+✔ Build complete in 1004ms
