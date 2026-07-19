@@ -1,0 +1,77 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  // Kept deliberately SMALL. The corpus is NOT a globalDependency — that would rerun every unrelated
+  // JS build on a SQL-only change. Corpus invalidation is scoped two ways instead: the
+  // @deebeetech/sqleasy-contract dependency edge (drives `--affected`) and the per-task
+  // $TURBO_ROOT$ input below (drives the cache key). See the `test` task.
+  "globalDependencies": ["pnpm-lock.yaml"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "bin/**", "*.nupkg"]
+    },
+
+    // Re-mints the emission corpus from the TypeScript reference implementation. Never part of a
+    // normal CI run — the COMMITTED corpus is authoritative and is what every port tests against.
+    "goldens": {
+      "cache": false
+    },
+
+    // Unit tests + EMISSION/BINDING conformance. No database.
+    //
+    // The corpus is listed as an explicit input so that changing it invalidates EVERY language's
+    // conformance cache with zero edits to Dart/Python/Go/C# source. That is the whole mechanism by
+    // which "a contract change reruns everyone, a TS-only change reruns only TS" is automatic.
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_ROOT$/contract/corpora/emission/corpus.json",
+        "$TURBO_ROOT$/contract/corpora/binding/corpus.json",
+        "src/**",
+        "lib/**",
+        "test/**",
+        "tests/**",
+        "**/*.dart",
+        "**/*.py",
+        "**/*.cs",
+        "**/*.go"
+      ],
+      "outputs": []
+    },
+
+    // NORMALIZATION + INTROSPECTION conformance, against the shared docker harness.
+    //
+    // The env vars MUST be declared. Turbo filters env strictly, so an undeclared var never reaches
+    // the task — and a DB-gated suite that self-skips would report GREEN having tested nothing.
+    // Declaring them also makes a harness-on run a DISTINCT cache entry from a harness-off run.
+    "conformance:integration": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "inputs": [
+        "$TURBO_ROOT$/contract/corpora/normalization/**",
+        "$TURBO_ROOT$/contract/corpora/introspection/**",
+        "$TURBO_ROOT$/harness/seed/**",
+        "src/**",
+        "lib/**",
+        "**/*.dart",
+        "**/*.py",
+        "**/*.cs",
+        "**/*.go"
+      ],
+      "env": ["HARNESS_DIALECTS", "DATABASE_URL", "MYSQL_URL", "MSSQL_CONNECTION_STRING"],
+      "outputs": []
+    },
+
+    // Dart-only: the corpus must be base64-embedded into a .dart source file because dart2js has no
+    // dart:io to read it at test time. Not redundant with the local-file read the VM run uses.
+    "embed": {
+      "inputs": ["$TURBO_ROOT$/contract/corpora/emission/corpus.json", "tool/embed_goldens.dart"],
+      "outputs": ["test/conformance/corpus_data.dart"]
+    },
+
+    "lint": { "dependsOn": ["^build"] },
+    "typecheck": { "dependsOn": ["^build"] },
+    "format:check": {}
+  }
+}

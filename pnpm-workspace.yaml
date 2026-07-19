@@ -1,2 +1,54 @@
+# Polyglot workspace. Only the JS/TS trees are real pnpm packages; the Dart/Python/C#/Go trees each
+# carry a thin PRIVATE package.json "turbo shim" whose scripts shell out to that language's own
+# toolchain (dart test / pytest / dotnet test / go test). The shim pulls no node deps — it exists
+# solely so turbo can schedule and cache the tree as a task-graph node.
+packages:
+  - configs/*
+  - ts/*
+  # Added as each phase lands, so `pnpm install` stays green at every commit:
+  #   - contract      (phase 3)
+  #   - dart/*        (phase 4)
+  #   - python/*      (phase 6)
+  #   - csharp/*      (phase 6)
+  #   - go            (phase 6)
+
+# Single source of truth for every third-party version. Packages reference `catalog:` and never a
+# literal range; scripts/check-deps.mjs enforces that. Versions below are carried over VERBATIM from
+# the pre-migration sqleasy package.json so `pnpm install` resolves exactly as it did before.
+#
+# NOTE: typescript is deliberately held at ^5.9.3 across this family even though newer majors exist.
+# Do not "helpfully" bump it — that is a standing decision, not an oversight.
+catalog:
+  '@eslint/js': ^10.0.1
+  '@sebbo2002/semantic-release-jsr': ^4.0.2
+  '@semantic-release/changelog': ^6.0.3
+  '@semantic-release/commit-analyzer': ^13.0.1
+  '@semantic-release/git': ^10.0.1
+  '@semantic-release/github': ^12.0.9
+  '@semantic-release/npm': ^13.1.5
+  '@semantic-release/release-notes-generator': ^14.1.1
+  '@types/node': ^26.1.1
+  '@vitest/coverage-v8': ^4.1.10
+  conventional-changelog-conventionalcommits: ^10.2.1
+  cpy-cli: ^7.0.0
+  cspell: ^10.0.1
+  eslint: ^10.7.0
+  eslint-config-prettier: ^10.1.8
+  prettier: ^3.9.5
+  semantic-release: ^25.0.7
+  semantic-release-replace-plugin: ^1.2.7
+  tsdown: ^0.22.7
+  turbo: 2.10.5
+  typescript: ^5.9.3
+  typescript-eslint: ^8.64.0
+  vitest: ^4.1.10
+
 allowBuilds:
   esbuild: true
+
+# Our OWN scope, as a pattern rather than a pin per release. We are the supply chain for these and
+# routinely consume one within the hour of publishing it, so the cooldown protects nothing here and
+# only generates churn. Everything else stays in the cooldown — a fresh third-party package still
+# fails, which is the point. (Carried over from the deebee convention.)
+minimumReleaseAgeExclude:
+  - '@deebeetech/*'

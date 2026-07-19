@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "_comment": "base + node types. The query builder declares `types: [node]`; the engine deliberately does NOT (it must stay runtime-agnostic). That asymmetry is intentional — query extends this, engine extends base.json.",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  }
+}

@@ -4,75 +4,182 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@eslint/js':
+      specifier: ^10.0.1
+      version: 10.0.1
+    '@sebbo2002/semantic-release-jsr':
+      specifier: ^4.0.2
+      version: 4.0.2
+    '@semantic-release/changelog':
+      specifier: ^6.0.3
+      version: 6.0.3
+    '@semantic-release/commit-analyzer':
+      specifier: ^13.0.1
+      version: 13.0.1
+    '@semantic-release/git':
+      specifier: ^10.0.1
+      version: 10.0.1
+    '@semantic-release/github':
+      specifier: ^12.0.9
+      version: 12.0.9
+    '@semantic-release/npm':
+      specifier: ^13.1.5
+      version: 13.1.5
+    '@semantic-release/release-notes-generator':
+      specifier: ^14.1.1
+      version: 14.1.1
+    '@types/node':
+      specifier: ^26.1.1
+      version: 26.1.1
+    '@vitest/coverage-v8':
+      specifier: ^4.1.10
+      version: 4.1.10
+    conventional-changelog-conventionalcommits:
+      specifier: ^10.2.1
+      version: 10.2.1
+    cpy-cli:
+      specifier: ^7.0.0
+      version: 7.0.0
+    cspell:
+      specifier: ^10.0.1
+      version: 10.0.1
+    eslint:
+      specifier: ^10.7.0
+      version: 10.7.0
+    eslint-config-prettier:
+      specifier: ^10.1.8
+      version: 10.1.8
+    prettier:
+      specifier: ^3.9.5
+      version: 3.9.5
+    semantic-release:
+      specifier: ^25.0.7
+      version: 25.0.7
+    semantic-release-replace-plugin:
+      specifier: ^1.2.7
+      version: 1.2.7
+    tsdown:
+      specifier: ^0.22.7
+      version: 0.22.7
+    turbo:
+      specifier: 2.10.5
+      version: 2.10.5
+    typescript:
+      specifier: ^5.9.3
+      version: 5.9.3
+    typescript-eslint:
+      specifier: ^8.64.0
+      version: 8.64.0
+    vitest:
+      specifier: ^4.1.10
+      version: 4.1.10
+
 importers:
 
   .:
     devDependencies:
-      '@eslint/js':
-        specifier: ^10.0.1
-        version: 10.0.1(eslint@10.7.0)
-      '@sebbo2002/semantic-release-jsr':
-        specifier: ^4.0.2
-        version: 4.0.2
-      '@semantic-release/changelog':
-        specifier: ^6.0.3
-        version: 6.0.3(semantic-release@25.0.7(typescript@5.9.3))
-      '@semantic-release/commit-analyzer':
-        specifier: ^13.0.1
-        version: 13.0.1(semantic-release@25.0.7(typescript@5.9.3))
-      '@semantic-release/git':
-        specifier: ^10.0.1
-        version: 10.0.1(semantic-release@25.0.7(typescript@5.9.3))
-      '@semantic-release/github':
-        specifier: ^12.0.9
-        version: 12.0.9(semantic-release@25.0.7(typescript@5.9.3))
-      '@semantic-release/npm':
-        specifier: ^13.1.5
-        version: 13.1.5(semantic-release@25.0.7(typescript@5.9.3))
-      '@semantic-release/release-notes-generator':
-        specifier: ^14.1.1
-        version: 14.1.1(semantic-release@25.0.7(typescript@5.9.3))
-      '@types/node':
-        specifier: ^26.1.1
-        version: 26.1.1
-      '@vitest/coverage-v8':
-        specifier: ^4.1.10
-        version: 4.1.10(vitest@4.1.10)
-      conventional-changelog-conventionalcommits:
-        specifier: ^10.2.1
-        version: 10.2.1
-      cpy-cli:
-        specifier: ^7.0.0
-        version: 7.0.0
       cspell:
-        specifier: ^10.0.1
+        specifier: 'catalog:'
         version: 10.0.1
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.5
+      turbo:
+        specifier: 'catalog:'
+        version: 2.10.5
+
+  configs/eslint-config:
+    dependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 10.0.1(eslint@10.7.0)
       eslint:
-        specifier: ^10.7.0
+        specifier: '>=10'
         version: 10.7.0
       eslint-config-prettier:
-        specifier: ^10.1.8
+        specifier: 'catalog:'
+        version: 10.1.8(eslint@10.7.0)
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.64.0(eslint@10.7.0)(typescript@5.9.3)
+
+  configs/tsconfig: {}
+
+  ts/query:
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 10.0.1(eslint@10.7.0)
+      '@sebbo2002/semantic-release-jsr':
+        specifier: 'catalog:'
+        version: 4.0.2
+      '@semantic-release/changelog':
+        specifier: 'catalog:'
+        version: 6.0.3(semantic-release@25.0.7(typescript@5.9.3))
+      '@semantic-release/commit-analyzer':
+        specifier: 'catalog:'
+        version: 13.0.1(semantic-release@25.0.7(typescript@5.9.3))
+      '@semantic-release/git':
+        specifier: 'catalog:'
+        version: 10.0.1(semantic-release@25.0.7(typescript@5.9.3))
+      '@semantic-release/github':
+        specifier: 'catalog:'
+        version: 12.0.9(semantic-release@25.0.7(typescript@5.9.3))
+      '@semantic-release/npm':
+        specifier: 'catalog:'
+        version: 13.1.5(semantic-release@25.0.7(typescript@5.9.3))
+      '@semantic-release/release-notes-generator':
+        specifier: 'catalog:'
+        version: 14.1.1(semantic-release@25.0.7(typescript@5.9.3))
+      '@sqleasy/eslint-config':
+        specifier: workspace:*
+        version: link:../../configs/eslint-config
+      '@sqleasy/tsconfig':
+        specifier: workspace:*
+        version: link:../../configs/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.1.1
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.1.10(vitest@4.1.10)
+      conventional-changelog-conventionalcommits:
+        specifier: 'catalog:'
+        version: 10.2.1
+      cpy-cli:
+        specifier: 'catalog:'
+        version: 7.0.0
+      cspell:
+        specifier: 'catalog:'
+        version: 10.0.1
+      eslint:
+        specifier: 'catalog:'
+        version: 10.7.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
         version: 10.1.8(eslint@10.7.0)
       prettier:
-        specifier: ^3.9.5
+        specifier: 'catalog:'
         version: 3.9.5
       semantic-release:
-        specifier: ^25.0.7
+        specifier: 'catalog:'
         version: 25.0.7(typescript@5.9.3)
       semantic-release-replace-plugin:
-        specifier: ^1.2.7
+        specifier: 'catalog:'
         version: 1.2.7(semantic-release@25.0.7(typescript@5.9.3))
       tsdown:
-        specifier: ^0.22.7
+        specifier: 'catalog:'
         version: 0.22.7(typescript@5.9.3)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       typescript-eslint:
-        specifier: ^8.64.0
+        specifier: 'catalog:'
         version: 8.64.0(eslint@10.7.0)(typescript@5.9.3)
       vitest:
-        specifier: ^4.1.10
+        specifier: 'catalog:'
         version: 4.1.10(@types/node@26.1.1)(@vitest/coverage-v8@4.1.10)(vite@8.1.4(@types/node@26.1.1)(yaml@2.9.0))
 
 packages:
@@ -688,6 +795,36 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@turbo/darwin-64@2.10.5':
+    resolution: {integrity: sha512-ENvPwy3x5yS7MwNYHeWjqOBXkwIMp39Pd+/zXC6PoiNzF8EIvvLZOZZ+ny6L9x4WgS5vxUii2LM5gM+zjPdnWw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@turbo/darwin-arm64@2.10.5':
+    resolution: {integrity: sha512-rqROo9zsF/P9RqsdtbLD1nFJicjSrYyvQ9kNJC38AbxA3pAs6VAlATvtvOFx7bqOv6vicf20SP9kF33avJjy2w==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@turbo/linux-64@2.10.5':
+    resolution: {integrity: sha512-RoSSiNFUxi27zLJuM9F6GyWWjHgLch9t6nwD6K0FkXRirZkTLlzIj6IhFnK8H9++nefLtdFqylE4vGjZAv6AAA==}
+    cpu: [x64]
+    os: [linux]
+
+  '@turbo/linux-arm64@2.10.5':
+    resolution: {integrity: sha512-4ZComcpzmHGmVynQqvvi+iZOSq/tBvY1SltXB8g4NZRsrA01W8E+yRL8RNM+PLoyWsrCnJa8xa+DkWkv+xg4iQ==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@turbo/windows-64@2.10.5':
+    resolution: {integrity: sha512-eL2Iyj4DbMINq1Sr1w0iAi6nAiZOF16KSlRGwCJpVh+IWZeY33MAsLHVOBMj1xoFtncVJXclCVpTPL2nBoYkFg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@turbo/windows-arm64@2.10.5':
+    resolution: {integrity: sha512-sog+wP+8YSJrdWZ/rUJg8xghVTrwoG+BrSlDQpnK5fzSgJHn1INRWXbVWRH0d3vX8dBI01E3yxXRre9Dn+OXQA==}
+    cpu: [arm64]
+    os: [win32]
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -2614,6 +2751,10 @@ packages:
     resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
     engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
 
+  turbo@2.10.5:
+    resolution: {integrity: sha512-07Y/C7OUp23l4P92PJoYtFNbHjLhftrZH5Ce7dbczS4kX2Re+wtbXvZLoxn/pUtzgsQaRCBaRuZPJp4zmAn0WQ==}
+    hasBin: true
+
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -3490,6 +3631,24 @@ snapshots:
   '@sindresorhus/merge-streams@4.0.0': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@turbo/darwin-64@2.10.5':
+    optional: true
+
+  '@turbo/darwin-arm64@2.10.5':
+    optional: true
+
+  '@turbo/linux-64@2.10.5':
+    optional: true
+
+  '@turbo/linux-arm64@2.10.5':
+    optional: true
+
+  '@turbo/windows-64@2.10.5':
+    optional: true
+
+  '@turbo/windows-arm64@2.10.5':
+    optional: true
 
   '@tybys/wasm-util@0.10.3':
     dependencies:
@@ -5281,6 +5440,15 @@ snapshots:
     optional: true
 
   tunnel@0.0.6: {}
+
+  turbo@2.10.5:
+    optionalDependencies:
+      '@turbo/darwin-64': 2.10.5
+      '@turbo/darwin-arm64': 2.10.5
+      '@turbo/linux-64': 2.10.5
+      '@turbo/linux-arm64': 2.10.5
+      '@turbo/windows-64': 2.10.5
+      '@turbo/windows-arm64': 2.10.5
 
   type-check@0.4.0:
     dependencies:

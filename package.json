@@ -1,24 +1,9 @@
 {
-  "name": "@deebeetech/sqleasy",
-  "version": "10.1.0",
-  "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
-  "keywords": [
-    "sql",
-    "sql-builder",
-    "query-builder",
-    "sql-query-builder",
-    "postgres",
-    "postgresql",
-    "mysql",
-    "mssql",
-    "sqlite",
-    "prepared-statements",
-    "typescript",
-    "database"
-  ],
-  "homepage": "https://github.com/deebee-tech/sqleasy",
+  "name": "sqleasy-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Polyglot, contract-first monorepo for SQLEasy — the query builder and execution engine across TypeScript, Dart, Python, C#, and Go, held to one another by a shared golden contract.",
   "license": "MIT",
-  "private": false,
   "author": {
     "name": "Sandy Weatherby",
     "email": "unicornbeachdiaries@gmail.com"
@@ -28,57 +13,28 @@
     "url": "https://github.com/deebee-tech/sqleasy"
   },
   "type": "module",
-  "sideEffects": false,
-  "main": "dist/index.cjs",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
-  },
-  "types": "dist/index.d.mts",
-  "publishConfig": {
-    "access": "public"
+  "packageManager": "pnpm@11.13.0",
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
-    "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/' && cpy './LICENSE' './dist/' && node --input-type=module -e \"import { readFileSync, writeFileSync } from 'node:fs'; const src = JSON.parse(readFileSync('dist/package.json', 'utf8')); const keys = ['name','version','description','keywords','homepage','license','author','repository','type','main','exports','types','publishConfig','sideEffects']; const out = {}; for (const k of keys) { if (k === 'sideEffects') out[k] = false; else if (k in src) out[k] = src[k]; } writeFileSync('dist/package.json', JSON.stringify(out, null, 2) + '\\n');\"",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "check": "turbo run typecheck && pnpm check:deps",
+    "check:deps": "node scripts/check-deps.mjs",
+    "check:parity": "node scripts/check-dialect-parity.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "goldens": "GOLDENS_WRITE=1 vitest run tests/conformance",
-    "lint": "eslint .",
     "spell": "cspell --no-progress \"**\"",
-    "test": "vitest --coverage",
-    "typecheck": "tsc --noEmit"
+    "goldens": "turbo run goldens",
+    "harness:up": "docker compose -f docker-compose.harness.yml up -d --wait",
+    "harness:down": "docker compose -f docker-compose.harness.yml down -v"
   },
-  "packageManager": "pnpm@11.13.0",
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@sebbo2002/semantic-release-jsr": "^4.0.2",
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^12.0.9",
-    "@semantic-release/npm": "^13.1.5",
-    "@semantic-release/release-notes-generator": "^14.1.1",
-    "@types/node": "^26.1.1",
-    "@vitest/coverage-v8": "^4.1.10",
-    "conventional-changelog-conventionalcommits": "^10.2.1",
-    "cpy-cli": "^7.0.0",
-    "cspell": "^10.0.1",
-    "eslint": "^10.7.0",
-    "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.5",
-    "semantic-release": "^25.0.7",
-    "semantic-release-replace-plugin": "^1.2.7",
-    "tsdown": "^0.22.7",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.64.0",
-    "vitest": "^4.1.10"
+    "cspell": "catalog:",
+    "prettier": "catalog:",
+    "turbo": "catalog:"
   }
 }

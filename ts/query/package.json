@@ -1,0 +1,86 @@
+{
+  "name": "@deebeetech/sqleasy",
+  "version": "10.1.0",
+  "description": "Lightweight SQL builder and parser for MSSQL, MySQL, Postgres, and SQLite.",
+  "keywords": [
+    "sql",
+    "sql-builder",
+    "query-builder",
+    "sql-query-builder",
+    "postgres",
+    "postgresql",
+    "mysql",
+    "mssql",
+    "sqlite",
+    "prepared-statements",
+    "typescript",
+    "database"
+  ],
+  "homepage": "https://github.com/deebee-tech/sqleasy",
+  "license": "MIT",
+  "private": false,
+  "author": {
+    "name": "Sandy Weatherby",
+    "email": "unicornbeachdiaries@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deebee-tech/sqleasy",
+    "directory": "ts/query"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "types": "dist/index.d.mts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy './CHANGELOG.md' './dist/' && cpy './LICENSE' './dist/' && node --input-type=module -e \"import { readFileSync, writeFileSync } from 'node:fs'; const src = JSON.parse(readFileSync('dist/package.json', 'utf8')); const keys = ['name','version','description','keywords','homepage','license','author','repository','type','main','exports','types','publishConfig','sideEffects']; const out = {}; for (const k of keys) { if (k === 'sideEffects') out[k] = false; else if (k in src) out[k] = src[k]; } writeFileSync('dist/package.json', JSON.stringify(out, null, 2) + '\\n');\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "goldens": "GOLDENS_WRITE=1 vitest run tests/conformance",
+    "lint": "eslint .",
+    "spell": "cspell --no-progress \"**\"",
+    "test": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@sebbo2002/semantic-release-jsr": "catalog:",
+    "@semantic-release/changelog": "catalog:",
+    "@semantic-release/commit-analyzer": "catalog:",
+    "@semantic-release/git": "catalog:",
+    "@semantic-release/github": "catalog:",
+    "@semantic-release/npm": "catalog:",
+    "@semantic-release/release-notes-generator": "catalog:",
+    "@sqleasy/eslint-config": "workspace:*",
+    "@sqleasy/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "conventional-changelog-conventionalcommits": "catalog:",
+    "cpy-cli": "catalog:",
+    "cspell": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "prettier": "catalog:",
+    "semantic-release": "catalog:",
+    "semantic-release-replace-plugin": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:"
+  }
+}

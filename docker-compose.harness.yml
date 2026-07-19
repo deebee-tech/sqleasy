@@ -1,0 +1,63 @@
+# THE shared conformance harness — one definition, used identically by local dev (`pnpm harness:up`)
+# and by every language's integration job in CI.
+#
+# This file is the reason the monorepo exists. The emission corpus is pure and travels for free, but
+# the normalization + introspection corpora need REAL databases, and five language ports each
+# standing up their own containers is how dialect coverage silently drifts apart. Pinned image tags
+# are part of the contract: a normalization golden is only meaningful against a known server version.
+#
+# SQLite has no container — each language opens a file/in-memory DB seeded from harness/seed/sqlite.sql.
+name: sqleasy-harness
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: sqleasy
+      POSTGRES_PASSWORD: sqleasy_ci
+      POSTGRES_DB: sqleasy_ci
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./harness/seed/postgres.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sqleasy -d sqleasy_ci']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: sqleasy_ci
+      MYSQL_DATABASE: sqleasy_ci
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./harness/seed/mysql.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-psqleasy_ci']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    # amd64-only image; runs under emulation on Apple Silicon and is SLOW to boot — hence the
+    # generous start_period. Do not lower it without checking on an M-series machine.
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: 'SqlEasy_ci_1!'
+    ports:
+      - '1433:1433'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "SqlEasy_ci_1!" -Q "SELECT 1" -b',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
