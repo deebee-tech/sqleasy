@@ -5580,6 +5580,77 @@ const createWhereState = () => ({
 	fullTextColumns: void 0
 });
 //#endregion
-export { BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
+//#region src/expression/scalar.ts
+/**
+* Pure, per-dialect emit helpers for scalar expressions — the dialect-correctness knowledge for a
+* handful of common functions, factored out so an expression compiler (DeeBee's formula compiler is
+* one consumer) can build normalized SQL without re-deriving each dialect's quirks.
+*
+* Every helper takes ALREADY-BUILT operand SQL — quoted/qualified by the caller — plus the target
+* {@link DatabaseType}, and returns a SQL fragment. No identifier quoting, no parameter binding, no
+* `{Column}` resolution: those stay with the caller. This is deliberately NOT an expression AST —
+* just the normalization helpers.
+*/
+const Fn = {
+	/**
+	* NULL-skipping string concatenation (spreadsheet-style: one NULL operand must not null the whole
+	* result). MSSQL `CONCAT` already skips NULLs; the others coalesce each operand to `''` — on
+	* Postgres casting to text first, since its `||`/`COALESCE` reject a non-text operand (this also
+	* makes `integer || integer` work). Pass two or more operands.
+	*/
+	concat(operands, databaseType) {
+		if (databaseType === DatabaseType.Mssql) return `CONCAT(${operands.join(", ")})`;
+		const parts = operands.map((operand) => databaseType === DatabaseType.Postgres ? `COALESCE(CAST(${operand} AS text), '')` : `COALESCE(${operand}, '')`);
+		return databaseType === DatabaseType.Mysql ? `CONCAT(${parts.join(", ")})` : `(${parts.join(" || ")})`;
+	},
+	/**
+	* Character length (NOT byte length). MySQL `LENGTH()` counts BYTES (5 for `café`), so use
+	* `CHAR_LENGTH()`; MSSQL uses `LEN()`; Postgres/SQLite `LENGTH()` already counts characters on text.
+	*/
+	charLength(operand, databaseType) {
+		if (databaseType === DatabaseType.Mssql) return `LEN(${operand})`;
+		if (databaseType === DatabaseType.Mysql) return `CHAR_LENGTH(${operand})`;
+		return `LENGTH(${operand})`;
+	},
+	/**
+	* Round to `places` decimal places. Postgres has no `round(double precision, integer)` overload —
+	* only `round(numeric, integer)` — so a float column errors; cast to numeric there. The other
+	* dialects round a float directly. `places` is emitted verbatim (pass a literal like `2` or `'0'`,
+	* or built SQL).
+	*/
+	round(operand, places, databaseType) {
+		return databaseType === DatabaseType.Postgres ? `ROUND(CAST(${operand} AS numeric), ${places})` : `ROUND(${operand}, ${places})`;
+	},
+	/**
+	* The current timestamp: `GETDATE()` on MSSQL, `NOW()` on MySQL, `datetime('now')` on SQLite, and
+	* `CURRENT_TIMESTAMP` on Postgres (also the standard fallback for an unset/unknown dialect).
+	*/
+	now(databaseType) {
+		switch (databaseType) {
+			case DatabaseType.Mssql: return "GETDATE()";
+			case DatabaseType.Mysql: return "NOW()";
+			case DatabaseType.Sqlite: return `datetime('now')`;
+			default: return "CURRENT_TIMESTAMP";
+		}
+	},
+	/**
+	* Fractional division — `numerator / denominator` that NEVER truncates to integer division.
+	* Postgres, MSSQL, and SQLite all do INTEGER division when both operands are integers (`5 / 2` → 2);
+	* MySQL already yields a decimal. This casts the numerator to the dialect's fractional type so the
+	* result is always fractional: Postgres `numeric`, MSSQL `decimal`, SQLite `REAL`; MySQL is left as
+	* a plain `/`. Division-by-zero behavior is the dialect's own (Postgres/MSSQL error, MySQL/SQLite
+	* yield NULL) — this normalizes the integer-vs-decimal split only.
+	*/
+	divide(numerator, denominator, databaseType) {
+		switch (databaseType) {
+			case DatabaseType.Postgres: return `(CAST(${numerator} AS numeric) / ${denominator})`;
+			case DatabaseType.Mssql: return `(CAST(${numerator} AS decimal(38, 10)) / ${denominator})`;
+			case DatabaseType.Sqlite: return `(CAST(${numerator} AS REAL) / ${denominator})`;
+			default: return `(${numerator} / ${denominator})`;
+		}
+	}
+};
+//#endregion
+export { BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
 
 //# sourceMappingURL=index.mjs.map

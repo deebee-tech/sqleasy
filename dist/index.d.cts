@@ -1861,5 +1861,31 @@ declare class SqliteQuery {
   newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
 }
 //#endregion
-export { BuilderType, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
+//#region src/expression/scalar.d.ts
+/** The shape of the {@link Fn} scalar-expression helpers. */
+type ScalarExpressions = {
+  /** NULL-skipping string concatenation. See {@link Fn.concat}. */
+  concat(operands: string[], databaseType: DatabaseType): string;
+  /** Character (not byte) length. See {@link Fn.charLength}. */
+  charLength(operand: string, databaseType: DatabaseType): string;
+  /** Round to `places` decimals. See {@link Fn.round}. */
+  round(operand: string, places: string | number, databaseType: DatabaseType): string;
+  /** The current-timestamp expression. See {@link Fn.now}. */
+  now(databaseType: DatabaseType): string;
+  /** Fractional (never integer) division. See {@link Fn.divide}. */
+  divide(numerator: string, denominator: string, databaseType: DatabaseType): string;
+};
+/**
+ * Pure, per-dialect emit helpers for scalar expressions — the dialect-correctness knowledge for a
+ * handful of common functions, factored out so an expression compiler (DeeBee's formula compiler is
+ * one consumer) can build normalized SQL without re-deriving each dialect's quirks.
+ *
+ * Every helper takes ALREADY-BUILT operand SQL — quoted/qualified by the caller — plus the target
+ * {@link DatabaseType}, and returns a SQL fragment. No identifier quoting, no parameter binding, no
+ * `{Column}` resolution: those stay with the caller. This is deliberately NOT an expression AST —
+ * just the normalization helpers.
+ */
+declare const Fn: ScalarExpressions;
+//#endregion
+export { BuilderType, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
 //# sourceMappingURL=index.d.cts.map

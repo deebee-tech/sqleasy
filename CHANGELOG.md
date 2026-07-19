@@ -1,3 +1,15 @@
+# [10.1.0](https://github.com/deebee-tech/sqleasy/compare/v10.0.0...v10.1.0) (2026-07-19)
+
+
+### Bug Fixes
+
+* give Fn an explicit type so JSR slow-types check passes ([109c39d](https://github.com/deebee-tech/sqleasy/commit/109c39db5e71db2239085e5b70419a286039b03f))
+
+
+### Features
+
+* add the Fn scalar-expression helper surface ([9d120db](https://github.com/deebee-tech/sqleasy/commit/9d120dbf6504d91b52e6a466f3aec36342b49faf))
+
 # [10.0.0](https://github.com/deebee-tech/sqleasy/compare/v9.0.0...v10.0.0) (2026-07-19)
 
 

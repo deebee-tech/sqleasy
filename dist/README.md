@@ -903,6 +903,37 @@ something only the caller knows. So SQLEasy emits what you asked for, and leaves
 > `SELECT` collected a `TOP (1000)` while the identical query on Postgres returned everything. If you
 > set `maxRowsReturned`, replace it with an explicit `.limit()` at your call sites.
 
+## Scalar expression helpers (`Fn`)
+
+`Fn` is a small set of **pure, per-dialect emit helpers** for scalar expressions — the
+dialect-correctness knowledge for a few common functions, so an expression compiler can build
+normalized SQL without re-deriving each dialect's quirks. Each takes **already-built operand SQL**
+(you quote/qualify the columns) plus a `DatabaseType`, and returns a SQL fragment. It is deliberately
+not an expression AST — just the normalization helpers.
+
+```typescript
+import { DatabaseType, Fn } from '@deebeetech/sqleasy';
+
+Fn.concat(['"first"', '"last"'], DatabaseType.Postgres);
+// (COALESCE(CAST("first" AS text), '') || COALESCE(CAST("last" AS text), ''))  ← NULL-skipping
+
+Fn.charLength('"name"', DatabaseType.Mysql); // CHAR_LENGTH("name")  ← characters, not bytes
+Fn.round('"amount"', 2, DatabaseType.Postgres); // ROUND(CAST("amount" AS numeric), 2)
+Fn.now(DatabaseType.Sqlite); // datetime('now')
+
+// Fractional division — NEVER integer division. Postgres/MSSQL/SQLite truncate `5 / 2` to 2 when
+// both operands are integers; this casts the numerator to the dialect's fractional type.
+Fn.divide('"total"', '"count"', DatabaseType.Postgres); // (CAST("total" AS numeric) / "count")
+```
+
+| Helper                       | What it normalizes                                                            |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| `concat(operands, dt)`       | NULL-skipping `\|\|` / `CONCAT`; Postgres casts each operand to text          |
+| `charLength(operand, dt)`    | character length (`LEN` / `CHAR_LENGTH` / `LENGTH`), never MySQL's byte count |
+| `round(operand, places, dt)` | `ROUND`, casting to `numeric` on Postgres (no float overload there)           |
+| `now(dt)`                    | the current-timestamp expression per dialect                                  |
+| `divide(num, den, dt)`       | fractional division (never integer division) via a numerator cast             |
+
 ## Migrating from 1.x
 
 2.0 is a clean break — mechanical to adopt:
