@@ -3,103 +3,103 @@ $ vitest run --coverage
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/sandy/Github/sqleasy/.claude/worktrees/monorepo-migration/ts/query[39m
       [2mCoverage enabled with [22m[33mv8[39m
 
- [32m✓[39m tests/shared/sql_helper.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/release-notes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 199[2mms[22m[39m
- [32m✓[39m tests/postgres/limit_offset.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/postgres/where.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/sqlite/where.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/shared/tier3.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/sqlite/join.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/shared/prepared_params.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/shared/mutation_join.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/shared/value_guards.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/release-notes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 198[2mms[22m[39m
+ [32m✓[39m tests/shared/call.test.ts [2m([22m[2m43 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/sqlite/where.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/shared/value_guards.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/tier3.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 10[2mms[22m[39m
  [32m✓[39m tests/shared/builder.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/shared/call.test.ts [2m([22m[2m43 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/mysql/multi_builder.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/mssql/multi_builder.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/shared/engine_param_contract.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/shared/parser_coverage.test.ts [2m([22m[2m43 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/conformance/conformance.test.ts [2m([22m[2m1196 tests[22m[2m)[22m[32m 117[2mms[22m[39m
- [32m✓[39m tests/postgres/cte.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/multi_builder.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/shared/parser_coverage.test.ts [2m([22m[2m43 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/shared/is_distinct_from.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/shared/mutation_join.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/shared/cte_columns.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/mssql/multi_builder.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/shared/prepared_params.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 6[2mms[22m[39m
  [32m✓[39m tests/mssql/select.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/mysql/where.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mysql/join.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/sqlite/multi_builder.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/postgres/join.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/shared/having_parity.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/sqlite/union.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/is_distinct_from.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/shared/engine_param_contract.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/conformance/conformance.test.ts [2m([22m[2m1196 tests[22m[2m)[22m[32m 104[2mms[22m[39m
+ [32m✓[39m tests/shared/sql_helper.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/sqlite/multi_builder.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mssql/where.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 5[2mms[22m[39m
  [32m✓[39m tests/shared/returning.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mssql/insert.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/postgres/join.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/having_parity.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/shared/join_on_group.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/shared/nulls_order.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/sqlite/join.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mysql/join.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/postgres/where.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mssql/cte.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/exists_clean_api.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
  [32m✓[39m tests/mssql/join.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mssql/where.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/mysql/where.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/contains.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/sqlite/sqleasy.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/postgres/select.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 4[2mms[22m[39m
  [32m✓[39m tests/sqlite/group_by.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mysql/order_by.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/shared/row_lock.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/sqlite/update.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/postgres/from.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/regex.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/shared/no_automatic_cap.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/limit_offset.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/ilike.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/sqlite/limit_offset.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/raw_fragment_placeholders.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/postgres/group_by.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/shared/window.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/having_operators.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 5[2mms[22m[39m
  [32m✓[39m tests/mysql/group_by.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/shared/upsert.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/postgres/multi_builder.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mysql/update.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/from.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/union.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/sqleasy.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/shared/having_operators.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/group_by.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mssql/sqleasy.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/shared/regex.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/row_lock.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/mysql/limit_offset.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/shared/ilike.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/upsert.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mssql/delete.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/sqlite/limit_offset.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/raw_fragment_placeholders.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/mysql/sqleasy.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/postgres/limit_offset.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/order_by.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mssql/limit_offset.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/multi_builder.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/postgres/cte.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/shared/no_automatic_cap.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/from.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 4[2mms[22m[39m
  [32m✓[39m tests/shared/insert_select.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mysql/from.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
  [32m✓[39m tests/sqlite/delete.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/sqlite/cte.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/sqlite/select.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/mysql/cte.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mysql/limit_offset.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/sqlite/from.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/postgres/select.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 5[2mms[22m[39m
  [32m✓[39m tests/mssql/top.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
  [32m✓[39m tests/mssql/group_by.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/contains.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mysql/sqleasy.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/postgres/union.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/parser_error.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/postgres/order_by.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mysql/delete.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mysql/union.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/postgres/delete.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/update.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/shared/join_on_richer.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/order_by.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/mysql/select.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/cte.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/postgres/update.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
  [32m✓[39m tests/shared/distinct_on.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/join_on_group.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/sqlite/order_by.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/shared/nulls_order.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/shared/identifier.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
- [32m✓[39m tests/packaging.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/shared/window.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/select.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/mysql/insert.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/postgres/delete.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mssql/from.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/update.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/sqlite/cte.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/delete.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/sqlite/from.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/cte.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/sqlite/union.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/union.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/insert.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/shared/parser_error.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 3[2mms[22m[39m
  [32m✓[39m tests/shared/configuration.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/sqlite/sqleasy.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mysql/insert.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/sqlite/update.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/postgres/update.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/from.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mssql/union.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/sqlite/order_by.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/shared/join_on_richer.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mssql/order_by.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/order_by.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/sqlite/select.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 3[2mms[22m[39m
  [32m✓[39m tests/sqlite/insert.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/shared/scalar.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/shared/exists_clean_api.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mssql/sqleasy.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/postgres/sqleasy.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/mssql/delete.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/mssql/insert.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/shared/cte_columns.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/postgres/insert.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/mysql/union.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/mssql/update.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/shared/scalar.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/packaging.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/shared/identifier.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m92 passed[39m[22m[90m (92)[39m
 [2m      Tests [22m [1m[32m2230 passed[39m[22m[90m (2230)[39m
-[2m   Start at [22m 17:38:37
-[2m   Duration [22m 2.25s[2m (transform 5.81s, setup 0ms, import 14.19s, tests 756ms, environment 4ms)[22m
+[2m   Start at [22m 17:46:05
+[2m   Duration [22m 2.53s[2m (transform 9.29s, setup 0ms, import 20.18s, tests 728ms, environment 4ms)[22m
 
 [34m % [39m[2mCoverage report from [22m[33mv8[39m
 -------------------|---------|----------|---------|---------|-------------------

@@ -1,0 +1,28 @@
+{
+  "name": "@deebeetech/sqleasy-contract",
+  "version": "1.0.0",
+  "description": "The cross-language SQLEasy contract: the golden corpora every language port is held to, plus the schema that describes them. Independently versioned — its version tracks the CONTRACT, not any one implementation.",
+  "keywords": ["sqleasy", "conformance", "golden", "contract", "sql"],
+  "homepage": "https://github.com/deebee-tech/sqleasy",
+  "license": "MIT",
+  "private": false,
+  "author": {
+    "name": "Sandy Weatherby",
+    "email": "unicornbeachdiaries@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deebee-tech/sqleasy",
+    "directory": "contract"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./contract.json": "./contract.json",
+    "./corpora/emission": "./corpora/emission/corpus.json"
+  },
+  "scripts": {
+    "validate": "node tools/validate.mjs",
+    "validate:write": "node tools/validate.mjs --write"
+  }
+}

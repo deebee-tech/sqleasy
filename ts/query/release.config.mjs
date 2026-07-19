@@ -94,32 +94,14 @@ export default {
         ],
       },
     ],
-    // Stamp the release version into the golden corpus. The corpus is the cross-language contract:
-    // `sqleasy-dart` pins a version and fetches it from this repo's TAG
-    // (raw.githubusercontent.com/deebee-tech/sqleasy/v<version>/goldens/corpus.json), so it must be
-    // committed and tagged, and its `version` must match the release. Deliberately NOT a GitHub
-    // release asset — that upload is the one that crashed on 2.0.0 (see the note below).
-    [
-      'semantic-release-replace-plugin',
-      {
-        replacements: [
-          {
-            files: ['goldens/corpus.json'],
-            from: '"version": ".*"',
-            to: '"version": "${nextRelease.version}"',
-            results: [
-              {
-                file: 'goldens/corpus.json',
-                hasChanged: true,
-                numMatches: 1,
-                numReplacements: 1,
-              },
-            ],
-            countMatches: true,
-          },
-        ],
-      },
-    ],
+    // NOTE: the arm that stamped this package's version into goldens/corpus.json is GONE, and must
+    // not come back.
+    //
+    // It welded the cross-language contract to the TypeScript release, so a TS release that changed
+    // no SQL whatsoever still bumped the corpus version and forced every language port to chase it.
+    // The corpus now lives in `contract/` as @deebeetech/sqleasy-contract, carries its OWN version,
+    // and is released on its own cadence under the `corpus-v*` tag. contract/tools/validate.mjs
+    // enforces the version-vs-content invariant mechanically.
     [
       '@semantic-release/npm',
       {
@@ -135,7 +117,9 @@ export default {
     [
       '@semantic-release/git',
       {
-        assets: ['CHANGELOG.md', 'package.json', 'jsr.json', 'goldens/corpus.json', 'dist/**/*'],
+        // goldens/corpus.json is deliberately absent: the corpus is no longer this package's to
+        // release. It ships from contract/ on its own version line.
+        assets: ['CHANGELOG.md', 'package.json', 'jsr.json', 'dist/**/*'],
       },
     ],
     // Registries BEFORE the GitHub release: on 2.0.0 the GitHub plugin crashed uploading release

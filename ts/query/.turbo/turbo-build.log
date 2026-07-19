@@ -10,9 +10,9 @@ $ tsdown && cpy './package.json' './dist/' && cpy './README.md' './dist/' && cpy
 ℹ [CJS] 2 files, total: 648.00 kB
 ℹ [CJS] dist/index.d.cts  88.91 kB │ gzip: 20.92 kB
 ℹ [CJS] 1 files, total: 88.91 kB
-✔ Build complete in 994ms
+✔ Build complete in 743ms
 ℹ [ESM] dist/index.mjs      219.13 kB │ gzip: 40.53 kB
 ℹ [ESM] dist/index.mjs.map  427.25 kB │ gzip: 73.77 kB
 ℹ [ESM] dist/index.d.mts     88.91 kB │ gzip: 20.92 kB
 ℹ [ESM] 3 files, total: 735.29 kB
-✔ Build complete in 1004ms
+✔ Build complete in 765ms

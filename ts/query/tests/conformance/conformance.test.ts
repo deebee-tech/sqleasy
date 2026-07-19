@@ -1,7 +1,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { runCase } from './driver';
-import { DIALECTS, type Case, type Corpus, type Dialect } from './types';
+import {
+  DIALECTS,
+  EMISSION_CORPUS_PATH,
+  type Case,
+  type Corpus,
+  type Dialect,
+} from '@deebeetech/sqleasy-contract';
 
 /**
  * Replays the frozen golden corpus through the TypeScript implementation.
@@ -21,8 +27,7 @@ import { DIALECTS, type Case, type Corpus, type Dialect } from './types';
  * to the SQL this library emits, which the Dart port then has to follow.
  */
 
-const CORPUS_PATH = new URL('../../goldens/corpus.json', import.meta.url).pathname;
-const PACKAGE_PATH = new URL('../../package.json', import.meta.url).pathname;
+const CORPUS_PATH = EMISSION_CORPUS_PATH;
 
 const corpus = JSON.parse(readFileSync(CORPUS_PATH, 'utf8')) as Corpus;
 const dialectsFor = (testCase: Case): Dialect[] => testCase.dialects ?? [...DIALECTS];
@@ -32,8 +37,14 @@ const rewriting = process.env['GOLDENS_WRITE'] === '1';
 
 if (rewriting) {
   describe('golden corpus (regenerating)', () => {
-    it('writes goldens/corpus.json from the current implementation', () => {
-      const version = JSON.parse(readFileSync(PACKAGE_PATH, 'utf8')).version as string;
+    it('writes the emission corpus from the current implementation', () => {
+      // PRESERVE the contract version — do not stamp this package's version into it.
+      //
+      // This used to read ts/query's package.json, which welded the contract to the TypeScript
+      // release: a TS release that changed no SQL still forced every port to chase a new version.
+      // Bumping the contract is now a deliberate, separate act, and contract/tools/validate.mjs
+      // fails the build if the cases change without one.
+      const version = corpus.version;
 
       const regenerated: Corpus = {
         version,

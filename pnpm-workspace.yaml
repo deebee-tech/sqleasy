@@ -4,9 +4,9 @@
 # solely so turbo can schedule and cache the tree as a task-graph node.
 packages:
   - configs/*
+  - contract
   - ts/*
   # Added as each phase lands, so `pnpm install` stays green at every commit:
-  #   - contract      (phase 3)
   #   - dart/*        (phase 4)
   #   - python/*      (phase 6)
   #   - csharp/*      (phase 6)

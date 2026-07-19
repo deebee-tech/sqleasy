@@ -58,6 +58,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@deebeetech/sqleasy-contract": "workspace:*",
     "@eslint/js": "catalog:",
     "@sebbo2002/semantic-release-jsr": "catalog:",
     "@semantic-release/changelog": "catalog:",

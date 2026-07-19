@@ -125,6 +125,8 @@ importers:
 
   configs/tsconfig: {}
 
+  contract: {}
+
   ts/engine:
     devDependencies:
       '@eslint/js':
@@ -211,6 +213,9 @@ importers:
 
   ts/query:
     devDependencies:
+      '@deebeetech/sqleasy-contract':
+        specifier: workspace:*
+        version: link:../../contract
       '@eslint/js':
         specifier: 'catalog:'
         version: 10.0.1(eslint@10.7.0)

@@ -19,7 +19,14 @@ import {
   type MultiBuilder,
   type WindowBuilder,
 } from '../../src';
-import type { Case, Dialect, Expectation, InputValue, Op, OutputValue } from './types';
+import type {
+  Case,
+  Dialect,
+  Expectation,
+  InputValue,
+  Op,
+  OutputValue,
+} from '@deebeetech/sqleasy-contract';
 
 /**
  * Replays a corpus op-list through the TypeScript API.
