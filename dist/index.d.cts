@@ -193,6 +193,19 @@ declare const WhereOperator: {
   /** Negated pattern match (NOT LIKE). */
   readonly NotLike: "NotLike";
   /**
+   * Literal substring match — `LIKE %value% ESCAPE …` with the LIKE metacharacters (`%`, `_`, and
+   * MSSQL's `[`) in the bound value ESCAPED, so a search for `50%` matches the literal string, not
+   * "anything starting 50". The value is the raw text to find; the wildcards are added here. Unlike
+   * {@link Like}, the caller does NOT supply wildcards.
+   */
+  readonly Contains: "Contains";
+  /** Negated literal substring match (`NOT LIKE %value%`, escaped) — see {@link Contains}. */
+  readonly NotContains: "NotContains";
+  /** Literal prefix match (`LIKE value% ESCAPE …`, escaped) — see {@link Contains}. */
+  readonly StartsWith: "StartsWith";
+  /** Literal suffix match (`LIKE %value ESCAPE …`, escaped) — see {@link Contains}. */
+  readonly EndsWith: "EndsWith";
+  /**
    * Case-insensitive pattern match. Native `ILIKE` on Postgres; on MySQL, SQLite, and MSSQL
    * (none of which have `ILIKE`) it is rewritten to `LOWER(col) LIKE LOWER(?)`.
    */
@@ -200,16 +213,31 @@ declare const WhereOperator: {
   /** Negated case-insensitive pattern match — see {@link WhereOperator.Ilike}. */
   readonly NotIlike: "NotIlike";
   /**
+   * Regular-expression match. Native `~` on Postgres and `REGEXP` on MySQL (where case sensitivity is
+   * collation-driven — the default utf8mb4 collation is case-insensitive). SQLite (`REGEXP` needs an
+   * app-registered function) and MSSQL (no regex engine before SQL Server 2025) have no built-in
+   * operator and THROW. The bound value is the pattern.
+   */
+  readonly Regex: "Regex";
+  /** Negated regular-expression match — see {@link Regex}. */
+  readonly NotRegex: "NotRegex";
+  /** Case-insensitive regular-expression match. Native `~*` on Postgres; on MySQL it is the same as
+   * {@link Regex} (case sensitivity is collation-driven, not operator-driven). SQLite/MSSQL throw. */
+  readonly Iregex: "Iregex";
+  /** Negated case-insensitive regular-expression match — see {@link Iregex}. */
+  readonly NotIregex: "NotIregex";
+  /**
    * Null-safe inequality: true unless both sides are equal, treating two `NULL`s as equal
    * (unlike `<>`, which is `NULL` — never true — whenever either side is `NULL`). Native `IS
-   * DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL has no
-   * equivalent and throws.
+   * DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL (no native
+   * operator) rewrites to `(col <> value OR col IS NULL)`, or `col IS NOT NULL` for a NULL value.
    */
   readonly IsDistinctFrom: "IsDistinctFrom";
   /**
    * Null-safe equality: true when both sides are equal OR both are `NULL` (unlike `=`, which is
    * `NULL` whenever either side is `NULL`). Native `IS NOT DISTINCT FROM` on Postgres/SQLite;
-   * MySQL rewrites to its native `<=>` operator; MSSQL has no equivalent and throws.
+   * MySQL rewrites to its native `<=>` operator; MSSQL (no native operator) rewrites to `col =
+   * value`, or `col IS NULL` for a NULL value — sound because the compared value is always a bound literal.
    */
   readonly IsNotDistinctFrom: "IsNotDistinctFrom";
 };

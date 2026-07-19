@@ -1,3 +1,17 @@
+# [10.0.0](https://github.com/deebee-tech/sqleasy/compare/v9.0.0...v10.0.0) (2026-07-19)
+
+
+* feat!: add regex + literal-substring operators; emit MSSQL IS [NOT] DISTINCT FROM ([4a9fe70](https://github.com/deebee-tech/sqleasy/commit/4a9fe7034cf5f106d531ef0b13cf3897a98bfbda))
+
+
+### BREAKING CHANGES
+
+* MSSQL `WhereOperator.IsDistinctFrom` / `IsNotDistinctFrom` no
+longer throw a ParserError — they now emit null-safe SQL. Consumers that relied
+on the throw (e.g. asserting it in tests) must update.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
 # [9.0.0](https://github.com/deebee-tech/sqleasy/compare/v8.0.0...v9.0.0) (2026-07-19)
 
 
