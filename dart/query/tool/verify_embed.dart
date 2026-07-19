@@ -1,17 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// Fails if the embedded corpus does not match `goldens/corpus.json`.
+/// Fails if the embedded corpus does not match the workspace contract.
 ///
 ///     dart run tool/verify_embed.dart
 ///
-/// CI uses this so a forgotten `embed_goldens` cannot ship a stale dart2js payload.
+/// CI uses this so a forgotten `embed_goldens` cannot ship a stale dart2js payload — i.e. so the
+/// web run and the VM run cannot silently be testing two different contracts.
+const corpusPath = '../../contract/corpora/emission/corpus.json';
+
 void main() {
-  final vendored = File('goldens/corpus.json');
+  final contract = File(corpusPath);
   final embed = File('test/conformance/corpus_data.dart');
 
-  if (!vendored.existsSync()) {
-    stderr.writeln('goldens/corpus.json is missing.');
+  if (!contract.existsSync()) {
+    stderr.writeln('Contract corpus not found at $corpusPath.');
     exit(1);
   }
   if (!embed.existsSync()) {
@@ -19,7 +22,7 @@ void main() {
     exit(1);
   }
 
-  final expected = vendored.readAsBytesSync();
+  final expected = contract.readAsBytesSync();
   final source = embed.readAsStringSync();
   final match = RegExp(r"const _corpusBase64 =\s*((?:'[^']*'\s*)+);");
   final m = match.firstMatch(source);
@@ -33,14 +36,14 @@ void main() {
 
   if (!_bytesEqual(expected, decoded)) {
     stderr.writeln(
-      'Embedded corpus_data.dart does NOT match goldens/corpus.json.\n'
+      'Embedded corpus_data.dart does NOT match $corpusPath.\n'
       'Run: dart run tool/embed_goldens.dart',
     );
     exit(1);
   }
 
-  stdout.writeln('Embed matches goldens/corpus.json '
-      '(${expected.length} bytes, SHA-256 ${_sha256Hex(expected)}).');
+  stdout.writeln('Embed matches the contract corpus '
+      '(${expected.length} bytes, fingerprint ${_fingerprint(expected)}).');
 }
 
 bool _bytesEqual(List<int> a, List<int> b) {
@@ -51,9 +54,9 @@ bool _bytesEqual(List<int> a, List<int> b) {
   return true;
 }
 
-String _sha256Hex(List<int> bytes) {
-  // Avoid adding a crypto dependency — fingerprint via a short stable digest for logs.
-  // Full equality is checked above; this is only for the success message.
+String _fingerprint(List<int> bytes) {
+  // Avoid adding a crypto dependency — a short stable digest for the log line only.
+  // Full byte equality is checked above; this is not a security boundary.
   var h = 0;
   for (final b in bytes) {
     h = 0x1fffffff & (h + b);

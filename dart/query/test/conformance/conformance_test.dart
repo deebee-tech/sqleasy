@@ -13,7 +13,7 @@ import 'driver.dart';
 ///     dart test test/conformance -p chrome
 ///
 /// The two platforms disagree about numbers, so a green run on only one is not enough. See
-/// `goldens/README.md`.
+/// the contract package (`contract/README.md`).
 void main() {
   final corpus = Corpus.parse(corpusJson);
 

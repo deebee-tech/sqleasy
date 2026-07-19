@@ -1,0 +1,14 @@
+{
+  "name": "@sqleasy/dart-query",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Turbo shim for the Dart query port (pub.dev: sqleasy). Pulls NO node dependencies — it exists only so turbo can schedule and cache the Dart toolchain as a task-graph node. The real package is defined by pubspec.yaml.",
+  "scripts": {
+    "embed": "dart pub get && dart run tool/embed_goldens.dart",
+    "lint": "dart pub get && dart analyze --fatal-infos",
+    "format:check": "dart format --output=none --set-exit-if-changed .",
+    "test": "dart pub get && dart run tool/verify_embed.dart && dart test && dart test -p chrome",
+    "test:vm": "dart test",
+    "test:web": "dart test -p chrome"
+  }
+}

@@ -27,7 +27,7 @@ $ tsdown
 ℹ [CJS] dist/postgres/index.d.cts       1.57 kB │ gzip: 0.78 kB
 ℹ [CJS] dist/sqlite/index.d.cts         0.77 kB │ gzip: 0.46 kB
 ℹ [CJS] 6 files, total: 16.07 kB
-✔ Build complete in 536ms
+✔ Build complete in 648ms
 ℹ [ESM] dist/introspection/index.mjs        16.59 kB │ gzip: 3.91 kB
 ℹ [ESM] dist/mssql/index.mjs                 7.93 kB │ gzip: 3.25 kB
 ℹ [ESM] dist/mysql/index.mjs                 4.78 kB │ gzip: 2.14 kB
@@ -48,4 +48,4 @@ $ tsdown
 ℹ [ESM] dist/postgres/index.d.mts            1.57 kB │ gzip: 0.78 kB
 ℹ [ESM] dist/sqlite/index.d.mts              0.77 kB │ gzip: 0.46 kB
 ℹ [ESM] 19 files, total: 129.72 kB
-✔ Build complete in 540ms
+✔ Build complete in 661ms

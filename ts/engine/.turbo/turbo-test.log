@@ -2,21 +2,22 @@ $ vitest run
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/sandy/Github/sqleasy/.claude/worktrees/monorepo-migration/ts/engine[39m
 
- [32m✓[39m test/packaging.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m test/packaging.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m test/postgres.factory.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m test/mssql.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 7[2mms[22m[39m
  [32m✓[39m test/explain-body.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 2[2mms[22m[39m
  [32m✓[39m test/postgres.test.ts [2m([22m[2m15 tests[22m[2m | [22m[33m3 skipped[39m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m test/mssql.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m test/mysql.test.ts [2m([22m[2m23 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m test/postgres.factory.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 2[2mms[22m[39m
- [32m✓[39m test/sqlite.timeout.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 50[2mms[22m[39m
- [32m✓[39m test/introspection.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m6 skipped[39m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m test/mysql.test.ts [2m([22m[2m23 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m test/sqlite.timeout.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m test/introspection.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m6 skipped[39m[2m)[22m[32m 11[2mms[22m[39m
  [2m[90m↓[39m[22m test/mssql.integration.test.ts [2m([22m[2m2 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m
- [32m✓[39m test/release-notes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 225[2mms[22m[39m
- [32m✓[39m test/sqlite.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 5478[2mms[22m[39m
-     [33m[2m✓[22m[39m waits out a brief SQLITE_BUSY on a file database [33m 5468[2mms[22m[39m
+ [32m✓[39m test/release-notes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 451[2mms[22m[39m
+     [33m[2m✓[22m[39m renders a body for a minor, not just the version header [33m 414[2mms[22m[39m
+ [32m✓[39m test/sqlite.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 5464[2mms[22m[39m
+     [33m[2m✓[22m[39m waits out a brief SQLITE_BUSY on a file database [33m 5449[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m10 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (11)[39m
 [2m      Tests [22m [1m[32m91 passed[39m[22m[2m | [22m[33m13 skipped[39m[90m (104)[39m
-[2m   Start at [22m 17:46:06
-[2m   Duration [22m 5.82s[2m (transform 669ms, setup 0ms, import 1.27s, tests 5.78s, environment 1ms)[22m
+[2m   Start at [22m 17:50:02
+[2m   Duration [22m 5.86s[2m (transform 687ms, setup 0ms, import 1.59s, tests 6.00s, environment 1ms)[22m
 

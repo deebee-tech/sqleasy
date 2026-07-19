@@ -127,6 +127,8 @@ importers:
 
   contract: {}
 
+  dart/query: {}
+
   ts/engine:
     devDependencies:
       '@eslint/js':

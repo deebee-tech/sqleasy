@@ -2,7 +2,7 @@
 ///
 /// The corpus is generated from the TypeScript implementation and frozen. Both languages replay the
 /// same cases through their own driver and must produce identical `(sql, params)` for every dialect.
-/// See `goldens/README.md`.
+/// See the contract package (`contract/README.md`).
 ///
 /// The JSON is embedded rather than read from disk because these tests must run under **dart2js**
 /// as well as the VM, and `dart:io` does not exist on the web. `test/conformance/corpus_data.dart`

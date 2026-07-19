@@ -12,7 +12,7 @@ import 'corpus_data.dart';
 /// layer, so they can be verified now, with no parser and no builder in the way.
 ///
 /// This is the cheapest possible place to catch the number/date divergence, and it runs under
-/// dart2js as well as the VM. See `goldens/README.md`.
+/// dart2js as well as the VM. See the contract package (`contract/README.md`).
 void main() {
   final corpus = Corpus.parse(corpusJson);
 
