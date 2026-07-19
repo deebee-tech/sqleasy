@@ -185,6 +185,18 @@ builder..selectAll()..fromTable('users', alias: 'u')..where('u', 'name', WhereOp
 // Postgres: WHERE "u"."name" ILIKE $1
 // MySQL/SQLite/MSSQL: WHERE LOWER(...) LIKE LOWER(?) — no native ILIKE on those dialects.
 
+// Literal substring match: contains / notContains / startsWith / endsWith. The bound value is the
+// raw text to find — the wildcards are added for you and any %/_ (and MSSQL's [) are ESCAPED, so a
+// search for "50%" matches literally. Emits `col LIKE ? ESCAPE …` on all four dialects.
+builder.clearAll();
+builder..selectAll()..fromTable('products', alias: 'p')..where('p', 'name', WhereOperator.contains, '50%');
+
+// Regular-expression match: regex / notRegex / iregex / notIregex. Postgres uses ~ / !~ (and the
+// case-insensitive ~* / !~*); MySQL uses REGEXP / NOT REGEXP (case sensitivity is collation-driven,
+// so iregex emits the same operator). SQLite and MSSQL have no built-in regex operator and THROW.
+builder.clearAll();
+builder..selectAll()..fromTable('users', alias: 'u')..where('u', 'email', WhereOperator.regex, r'^a.*@example\.com$');
+
 // EXISTS / NOT EXISTS
 builder.clearAll();
 builder

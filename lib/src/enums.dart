@@ -25,6 +25,21 @@ enum WhereOperator {
   like('Like'),
   notLike('NotLike'),
 
+  /// Literal substring match — `LIKE %value% ESCAPE …` with the LIKE metacharacters (`%`, `_`,
+  /// and MSSQL's `[`) in the bound value ESCAPED, so a search for `50%` matches the literal
+  /// string. The value is the raw text to find; the wildcards are added by the parser. Unlike
+  /// [like], the caller does NOT supply wildcards.
+  contains('Contains'),
+
+  /// Negated literal substring match (`NOT LIKE %value%`, escaped) — see [contains].
+  notContains('NotContains'),
+
+  /// Literal prefix match (`LIKE value% ESCAPE …`, escaped) — see [contains].
+  startsWith('StartsWith'),
+
+  /// Literal suffix match (`LIKE %value ESCAPE …`, escaped) — see [contains].
+  endsWith('EndsWith'),
+
   /// Case-insensitive pattern match. Native `ILIKE` on Postgres; on MySQL, SQLite, and MSSQL
   /// (none of which have `ILIKE`) it is rewritten to `LOWER(col) LIKE LOWER(?)`.
   ilike('Ilike'),
@@ -32,12 +47,29 @@ enum WhereOperator {
   /// Negated case-insensitive pattern match — see [ilike].
   notIlike('NotIlike'),
 
+  /// Regular-expression match. Native `~` on Postgres and `REGEXP` on MySQL (where case
+  /// sensitivity is collation-driven). SQLite (`REGEXP` needs an app-registered function) and
+  /// MSSQL (no regex engine before SQL Server 2025) have no built-in operator and THROW.
+  regex('Regex'),
+
+  /// Negated regular-expression match — see [regex].
+  notRegex('NotRegex'),
+
+  /// Case-insensitive regular-expression match. Native `~*` on Postgres; on MySQL the same as
+  /// [regex] (case sensitivity is collation-driven, not operator-driven). SQLite/MSSQL throw.
+  iregex('Iregex'),
+
+  /// Negated case-insensitive regular-expression match — see [iregex].
+  notIregex('NotIregex'),
+
   /// Null-safe inequality — native `IS DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to
-  /// `NOT (a <=> b)`; MSSQL throws.
+  /// `NOT (a <=> b)`; MSSQL (no native operator) rewrites to `(col <> value OR col IS NULL)`,
+  /// or `col IS NOT NULL` for a NULL value.
   isDistinctFrom('IsDistinctFrom'),
 
   /// Null-safe equality — native `IS NOT DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to
-  /// `<=>`; MSSQL throws.
+  /// `<=>`; MSSQL (no native operator) rewrites to `col = value`, or `col IS NULL` for a NULL
+  /// value — sound because the compared value is always a bound literal.
   isNotDistinctFrom('IsNotDistinctFrom');
 
   const WhereOperator(this.wire);

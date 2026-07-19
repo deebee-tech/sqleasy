@@ -58,10 +58,31 @@ void emitComparisonPredicate(
       return;
     }
 
-    throw ParserError(
-      area,
-      'MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL',
-    );
+    // MSSQL has no native null-safe operator, but `where(col, op, value)` compares a column to a
+    // BOUND value whose null-ness is known here — which collapses the null-safe semantics to plain
+    // SQL every MSSQL version supports.
+    if (value == null) {
+      // `col IS DISTINCT FROM NULL` ⇔ `col IS NOT NULL`; `... IS NOT DISTINCT FROM NULL` ⇔ `col IS NULL`.
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(isNotDistinct ? ' IS NULL' : ' IS NOT NULL');
+      return;
+    }
+    // A bound literal is never NULL, so: `col IS NOT DISTINCT FROM <lit>` ⇔ `col = <lit>`, and
+    // `col IS DISTINCT FROM <lit>` ⇔ `(col <> <lit> OR col IS NULL)` (the OR restores null-safety).
+    if (isNotDistinct) {
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(' = ');
+      sqlHelper.addDynamicValue(value);
+      return;
+    }
+    sqlHelper.addSqlSnippet('(');
+    sqlHelper.addSqlSnippet(columnSql);
+    sqlHelper.addSqlSnippet(' <> ');
+    sqlHelper.addDynamicValue(value);
+    sqlHelper.addSqlSnippet(' OR ');
+    sqlHelper.addSqlSnippet(columnSql);
+    sqlHelper.addSqlSnippet(' IS NULL)');
+    return;
   }
 
   if (whereOperator == WhereOperator.ilike ||
@@ -82,6 +103,78 @@ void emitComparisonPredicate(
     sqlHelper.addSqlSnippet(negate ? ') NOT LIKE LOWER(' : ') LIKE LOWER(');
     sqlHelper.addDynamicValue(value);
     sqlHelper.addSqlSnippet(')');
+    return;
+  }
+
+  if (whereOperator == WhereOperator.regex ||
+      whereOperator == WhereOperator.notRegex ||
+      whereOperator == WhereOperator.iregex ||
+      whereOperator == WhereOperator.notIregex) {
+    final negate = whereOperator == WhereOperator.notRegex ||
+        whereOperator == WhereOperator.notIregex;
+    final insensitive = whereOperator == WhereOperator.iregex ||
+        whereOperator == WhereOperator.notIregex;
+
+    // Postgres: ~ / !~ (case-sensitive), ~* / !~* (case-insensitive).
+    if (config.databaseType == DatabaseType.postgres) {
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(insensitive
+          ? (negate ? ' !~* ' : ' ~* ')
+          : (negate ? ' !~ ' : ' ~ '));
+      sqlHelper.addDynamicValue(value);
+      return;
+    }
+
+    // MySQL: REGEXP / NOT REGEXP. Case sensitivity is COLLATION-driven (the default utf8mb4_*_ci is
+    // case-insensitive), not operator-driven, so iregex emits the same as regex here.
+    if (config.databaseType == DatabaseType.mysql) {
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(negate ? ' NOT REGEXP ' : ' REGEXP ');
+      sqlHelper.addDynamicValue(value);
+      return;
+    }
+
+    // SQLite's REGEXP is only a hook for an app-registered function (stock SQLite has none), and
+    // MSSQL has no regex engine before SQL Server 2025 — refuse rather than emit SQL that can't run.
+    throw ParserError(
+      area,
+      '${config.databaseType == DatabaseType.sqlite ? 'SQLite' : 'MSSQL'} has no built-in regular-expression operator',
+    );
+  }
+
+  if (whereOperator == WhereOperator.contains ||
+      whereOperator == WhereOperator.notContains ||
+      whereOperator == WhereOperator.startsWith ||
+      whereOperator == WhereOperator.endsWith) {
+    // Escape the LIKE metacharacters in the (literal) value so a `%`/`_` in the search text matches
+    // literally, not as a wildcard. Backslash is the escape char; MSSQL LIKE additionally treats `[`
+    // as a metacharacter, so it is escaped there too.
+    var escaped = value
+        .toString()
+        .replaceAll('\\', '\\\\')
+        .replaceAll('%', '\\%')
+        .replaceAll('_', '\\_');
+    if (config.databaseType == DatabaseType.mssql) {
+      escaped = escaped.replaceAll('[', '\\[');
+    }
+
+    final pattern = whereOperator == WhereOperator.startsWith
+        ? '$escaped%'
+        : whereOperator == WhereOperator.endsWith
+            ? '%$escaped'
+            : '%$escaped%';
+
+    // MySQL's string-literal parser turns `\\` into `\`, so the ESCAPE-char literal itself must be
+    // doubled there; pg/sqlite/mssql use standard string literals, where `'\'` is a single backslash.
+    final escapeLiteral =
+        config.databaseType == DatabaseType.mysql ? "'\\\\'" : "'\\'";
+
+    sqlHelper.addSqlSnippet(columnSql);
+    sqlHelper.addSqlSnippet(
+        whereOperator == WhereOperator.notContains ? ' NOT LIKE ' : ' LIKE ');
+    sqlHelper.addDynamicValue(pattern);
+    sqlHelper.addSqlSnippet(' ESCAPE ');
+    sqlHelper.addSqlSnippet(escapeLiteral);
     return;
   }
 

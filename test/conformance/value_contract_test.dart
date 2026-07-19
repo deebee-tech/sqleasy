@@ -146,6 +146,13 @@ List<Map<String, Object?>>? _flatScalarValues(GoldenCase c) {
     if (op['op'] == 'procParamInOut') {
       return null;
     }
+    // Contains/NotContains/StartsWith/EndsWith bind a parser-TRANSFORMED value (the input is
+    // escaped and wrapped with `%`), not the raw input — so it can't be reconstructed from the
+    // input alone. The full conformance suite verifies the emitted SQL once the parser lands.
+    const substringOps = {'Contains', 'NotContains', 'StartsWith', 'EndsWith'};
+    if (substringOps.contains(op['operator'])) {
+      return null;
+    }
     for (final key in const ['value', 'from', 'to']) {
       final v = op[key];
       if (v is Map<String, Object?>) out.add(v);
