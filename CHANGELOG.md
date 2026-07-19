@@ -1,3 +1,23 @@
+# [9.0.0](https://github.com/deebee-tech/sqleasy/compare/v8.0.0...v9.0.0) (2026-07-19)
+
+
+* feat!: expand SQLEasy through Tier 3, stored procs, and foundation fixes ([058c2c4](https://github.com/deebee-tech/sqleasy/commit/058c2c46b3d49e58a20e2b682a9053a630700242))
+
+
+### Bug Fixes
+
+* **ci:** format Tier 3 sources and teach cspell SQL dialect terms ([77a0c8e](https://github.com/deebee-tech/sqleasy/commit/77a0c8e1d8ca1533b5f7186ac5ae046ed22e40a9))
+* **ci:** remove unused imports that failed eslint ([24c5094](https://github.com/deebee-tech/sqleasy/commit/24c50948df891af11739be8febce991685e84a79))
+
+
+### BREAKING CHANGES
+
+* emitted SQL and error paths change across WHERE/JOIN ON
+combinators, empty whereGroup, limit validation, mutation targets, and the
+new Tier 1–3 / call surfaces. Consumers must adopt corpus 13.0.0.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
 # [13.0.0](https://github.com/deebee-tech/sqleasy/compare/v12.0.0...v13.0.0) (2026-07-18)
 
 

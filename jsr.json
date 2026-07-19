@@ -1,6 +1,6 @@
 {
   "name": "@deebeetech/sqleasy",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "license": "MIT",
   "exports": "./src/index.ts",
   "publish": { "include": ["./src/**/*", "./README.md", "./CHANGELOG.md", "./LICENSE"] }

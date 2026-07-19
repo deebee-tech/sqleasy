@@ -1083,8 +1083,8 @@ type UpsertAction = (typeof UpsertAction)[keyof typeof UpsertAction];
 /**
  * Holds state for an INSERT's conflict clause (PG/SQLite `ON CONFLICT`, MySQL
  * `ON DUPLICATE KEY UPDATE` / `INSERT IGNORE`). Populated by the builder; exposed via
- * {@link QueryState.upsertState}. Not supported on MSSQL (`MERGE` is a Tier 3 feature) — the
- * parser throws if this is set on that dialect.
+ * {@link QueryState.upsertState}. MSSQL upsert is emitted as `MERGE` by {@link defaultInsert};
+ * PG/SQLite/MySQL use their native conflict clauses.
  */
 type UpsertState = {
   /** Which conflict-resolution action to emit. */
