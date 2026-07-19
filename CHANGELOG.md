@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/deebee-tech/sqleasy-engine/compare/v1.1.2...v1.2.0) (2026-07-19)
+
+
+### Features
+
+* uniform statementTimeoutMs across all drivers; guard the pg idle-client error ([2489033](https://github.com/deebee-tech/sqleasy-engine/commit/2489033758c6ae7089e132b3054996d5bd19465b))
+
 ## [1.1.2](https://github.com/deebee-tech/sqleasy-engine/compare/v1.1.1...v1.1.2) (2026-07-18)
 
 
