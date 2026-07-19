@@ -1,29 +1,39 @@
 name: Publish JSR
 
-# Manual escape hatch. semantic-release normally publishes JSR as part of Release; this exists for
-# when a release run publishes npm but dies before reaching JSR (as 2.0.0 did), leaving the two
-# registries out of sync. Publishes whatever version is currently in jsr.json.
+# Manual escape hatch, now PER PACKAGE.
+#
+# semantic-release normally publishes JSR as part of Release; this exists for when a release run
+# publishes npm but dies before reaching JSR (as 2.0.0 did), leaving the two registries on different
+# versions. It publishes whatever version is currently in that package's jsr.json.
+#
+# It used to run at the repo root because the root WAS the package. It is now a workspace shell with
+# no jsr.json, so the target must be chosen explicitly.
 on:
   workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish to JSR
+        required: true
+        type: choice
+        options:
+          - ts/query
+          - ts/engine
 
 jobs:
   publish:
-    name: Publish to JSR
+    name: Publish ${{ inputs.package }} to JSR
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write # JSR authenticates via OIDC — no token or secret required
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
           cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Publish to JSR
+        working-directory: ${{ inputs.package }}
         run: pnpm dlx jsr publish

@@ -1,14 +1,35 @@
 name: Release
 
+# Manual only, and now PER PACKAGE.
+#
+# Before the monorepo this ran `semantic-release` at the repo root, because the root WAS the package.
+# The root is now a private workspace shell, so running it there would release nothing (at best) or
+# the wrong thing (at worst). You must choose which package to release.
+#
+# Each package keeps its own release.config.mjs, including the hard-won ordering rules:
+#   - @sebbo2002/semantic-release-jsr is listed BEFORE @semantic-release/github
+#   - the github plugin carries NO `assets` array
+# On 2.0.0 the GitHub asset upload crashed and, because JSR was listed after it, JSR never published,
+# stranding npm and JSR on different versions. npm and JSR are the product; the GitHub release is
+# cosmetic, and a cosmetic step must never be able to strand a registry.
 on:
   workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to release
+        required: true
+        type: choice
+        options:
+          - ts/query
+          - ts/engine
+          - contract
 
 permissions:
   contents: read
 
 jobs:
   release:
-    name: Release
+    name: Release ${{ inputs.package }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -16,24 +37,24 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
           cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Run tests
-        run: pnpm run test
-      - name: Build
-        run: pnpm run build
+      - run: pnpm install --frozen-lockfile
+
+      # Verify the WHOLE graph before releasing any single package. In a contract-first monorepo a
+      # change to one package can invalidate another's conformance, so a green package in isolation
+      # is not evidence the family still agrees.
+      - run: pnpm turbo run typecheck lint test build
+      - run: pnpm run check:deps && pnpm run check:parity && pnpm run check:contract
+
       - name: Release
+        working-directory: ${{ inputs.package }}
         env:
           GH_TOKEN: ${{ github.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

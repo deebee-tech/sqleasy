@@ -7,8 +7,9 @@ on:
     branches: [main, beta, alpha, next]
 
 jobs:
-  ci:
-    name: CI
+  # ── Gate 1: repo-wide quality + the guardrails that keep the monorepo honest ──
+  quality:
+    name: Quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -18,15 +19,89 @@ jobs:
           node-version: 'lts/*'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm run typecheck
-      - run: pnpm run lint
-      # `format` is `prettier --write`, which rewrites files and always exits 0 — it could never
-      # fail the build. `--check` actually gates it.
+
+      - run: pnpm turbo run typecheck lint
+      # `format` is `prettier --write`, which rewrites files and always exits 0 — it could never fail
+      # the build. `--check` is what actually gates.
       - run: pnpm run format:check
       - run: pnpm run spell
-      # Runs the hand-written suite AND the golden-corpus conformance tests in tests/conformance.
-      # The corpus is the cross-language contract `sqleasy-dart` must reproduce byte-for-byte, so a
-      # failure here means the SQL this library emits has changed — regenerate with `pnpm goldens`
-      # only after confirming that is intended, and review the resulting diff line by line.
-      - run: pnpm run test
-      - run: pnpm run build
+
+      # Every dependency must be `catalog:` or `workspace:` — no literal ranges anywhere.
+      - run: pnpm run check:deps
+      # A feature must not land for some dialects and silently skip others. Ratchet: fails only on a
+      # NEW op x dialect gap. See docs/audits/dialect-parity-2026-07-19.md.
+      - run: pnpm run check:parity
+      # The contract is versioned independently of every implementation: content change => version bump.
+      - run: pnpm run check:contract
+
+  # ── Gate 2: unit + EMISSION conformance, per language, NO database ──
+  emission:
+    name: Emission conformance (${{ matrix.lang }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [ts, dart]
+        # python / csharp / go join here as they land (phase 6)
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - uses: dart-lang/setup-dart@v1
+        if: matrix.lang == 'dart'
+        with:
+          sdk: stable
+      - run: pnpm install --frozen-lockfile
+
+      - name: TypeScript
+        if: matrix.lang == 'ts'
+        run: pnpm turbo run test --filter='./ts/*' --filter='./contract'
+
+      # The Dart shim's `test` script runs verify_embed, then the VM suite, then dart2js.
+      #
+      # `dart test -p chrome` is NOT redundant with `dart test` and is NOT optional. On dart2js every
+      # number is a JavaScript double, so `5.0 is int` is TRUE (false on the VM) and `(5.0).toString()`
+      # is "5" (it is "5.0" on the VM); `is int` compiles to roughly `Math.floor(x) === x`, which makes
+      # `double.infinity is int` true on the web. A port that gets this wrong emits DIFFERENT SQL on
+      # Flutter web than on Flutter mobile, silently, and a single-platform run cannot see it. This has
+      # already caught two real bugs in lib/src/values/sql_value.dart. Do not remove it.
+      - name: Dart (VM + dart2js)
+        if: matrix.lang == 'dart'
+        run: pnpm turbo run test --filter='@sqleasy/dart-query'
+
+  # ── Gate 3: NORMALIZATION + INTROSPECTION conformance against the shared harness ──
+  #
+  # One docker-compose definition, consumed identically by every language — that single shared
+  # fixture environment is a large part of why these packages live in one repository.
+  integration:
+    name: Integration (real databases)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Start the shared harness
+        run: docker compose -f docker-compose.harness.yml up -d --wait
+
+      # NOTE: these env vars must be set explicitly. The engine's integration blocks are gated on
+      # them and SELF-SKIP when absent — which reports green having tested nothing. That is exactly
+      # how a dialect silently loses coverage, so treat a passing run with these unset as a failure.
+      - name: Engine integration
+        run: pnpm turbo run test --filter='@deebeetech/sqleasy-engine'
+        env:
+          HARNESS_DIALECTS: '1'
+          DATABASE_URL: postgres://sqleasy:sqleasy_ci@localhost:5432/sqleasy_ci
+          MYSQL_URL: mysql://root:sqleasy_ci@localhost:3306/sqleasy_ci
+          MSSQL_CONNECTION_STRING: Server=localhost,1433;Database=master;User Id=sa;Password=SqlEasy_ci_1!;TrustServerCertificate=true;Encrypt=false
+
+      - name: Harness logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.harness.yml logs --tail=100
