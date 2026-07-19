@@ -233,6 +233,25 @@ builder
   .fromTable('users', 'u')
   .where('u', 'email', WhereOperator.Ilike, '%@example.com');
 
+// Contains / NotContains / StartsWith / EndsWith — literal substring match. The bound value is the
+// raw text to find (NOT a LIKE pattern): the wildcards are added here and any %/_ (and MSSQL's [)
+// in the value are ESCAPED, so a search for "50%" matches literally. Emits `col LIKE ? ESCAPE …`
+// on all four dialects.
+builder.clearAll();
+builder.selectAll().fromTable('products', 'p').where('p', 'name', WhereOperator.Contains, '50%'); // matches the literal "50%"
+
+// Regex / NotRegex / Iregex / NotIregex — regular-expression match. Postgres uses ~ / !~ (and the
+// case-insensitive ~* / !~*); MySQL uses REGEXP / NOT REGEXP (case sensitivity is collation-driven,
+// so Iregex emits the same operator). SQLite (no built-in REGEXP function) and MSSQL (no engine
+// before SQL Server 2025) have no operator and THROW a ParserError.
+builder.clearAll();
+builder
+  .selectAll()
+  .fromTable('users', 'u')
+  .where('u', 'email', WhereOperator.Regex, '^[a-z]+@example\\.com$');
+// Postgres: ... WHERE "u"."email" ~ '^[a-z]+@example\.com$';
+// MySQL:    ... WHERE `u`.`email` REGEXP '^[a-z]+@example\.com$';
+
 // EXISTS / NOT EXISTS — whereExists/whereNotExists take only the sub-query builder (no
 // unused table/column). whereExistsWithBuilder/whereNotExistsWithBuilder remain for parity
 // with the wire/corpus format and behave identically.
@@ -245,8 +264,9 @@ builder
   });
 
 // IS DISTINCT FROM / IS NOT DISTINCT FROM — null-safe (in)equality. Native on Postgres/SQLite;
-// MySQL rewrites via its native <=> operator (NOT (a <=> b) / a <=> b); MSSQL has no equivalent
-// (pre-2022 T-SQL) and throws a ParserError.
+// MySQL rewrites via its native <=> operator (NOT (a <=> b) / a <=> b); MSSQL (no native operator)
+// rewrites to plain null-safe SQL — sound because the compared value is always a bound literal
+// whose null-ness is known at build time.
 builder.clearAll();
 builder
   .selectAll()
@@ -254,6 +274,7 @@ builder
   .where('o', 'status', WhereOperator.IsDistinctFrom, 'shipped');
 // Postgres/SQLite: ... WHERE "o"."status" IS DISTINCT FROM shipped;
 // MySQL:           ... WHERE NOT (`o`.`status` <=> shipped);
+// MSSQL:           ... WHERE ([o].[status] <> shipped OR [o].[status] IS NULL);
 ```
 
 ### JOIN

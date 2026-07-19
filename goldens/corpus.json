@@ -21723,7 +21723,7 @@
     },
     {
       "name": "where is distinct from",
-      "note": "Milestone 4: null-safe inequality. Native `IS DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL has no equivalent and throws.",
+      "note": "Milestone 4: null-safe inequality. Native `IS DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL (no native operator) rewrites to plain null-safe SQL.",
       "ops": [
         {
           "op": "selectAll"
@@ -21746,7 +21746,11 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "Where: MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL"
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE ([o].[status] <> @p0 OR [o].[status] IS NULL);', N'@p0 nvarchar(max)', @p0 = N'shipped';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE ([o].[status] <> shipped OR [o].[status] IS NULL);"
         },
         "mysql": {
           "prepared": {
@@ -21788,7 +21792,7 @@
     },
     {
       "name": "where is not distinct from",
-      "note": "Milestone 4: null-safe equality. Native `IS NOT DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to its native `<=>`; MSSQL has no equivalent and throws.",
+      "note": "Milestone 4: null-safe equality. Native `IS NOT DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to its native `<=>`; MSSQL (no native operator) rewrites to plain null-safe SQL.",
       "ops": [
         {
           "op": "selectAll"
@@ -21811,7 +21815,11 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "Where: MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL"
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0;', N'@p0 nvarchar(max)', @p0 = N'shipped';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = shipped;"
         },
         "mysql": {
           "prepared": {
@@ -21884,7 +21892,11 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "Having: MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL"
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING ([o].[customer_id] <> @p0 OR [o].[customer_id] IS NULL);', N'@p0 tinyint', @p0 = 0;",
+            "params": []
+          },
+          "raw": "SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING ([o].[customer_id] <> 0 OR [o].[customer_id] IS NULL);"
         },
         "mysql": {
           "prepared": {
@@ -21948,7 +21960,11 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "Where: MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL"
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[shipped_at] IS NULL;', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[shipped_at] IS NULL;"
         },
         "mysql": {
           "prepared": {
@@ -23320,6 +23336,519 @@
             "params": []
           },
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" /*+ SeqScan(u) */;"
+        }
+      }
+    },
+    {
+      "name": "where regex",
+      "note": "Regex: native ~ on Postgres, REGEXP on MySQL; SQLite/MSSQL have no engine and throw.",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "Regex",
+          "value": {
+            "t": "string",
+            "v": "^A.*Z$"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL has no built-in regular-expression operator"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ?;",
+            "params": [
+              {
+                "t": "string",
+                "v": "^A.*Z$"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ^A.*Z$;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" ~ $1;",
+            "params": [
+              {
+                "t": "string",
+                "v": "^A.*Z$"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" ~ ^A.*Z$;"
+        },
+        "sqlite": {
+          "throws": "Where: SQLite has no built-in regular-expression operator"
+        }
+      }
+    },
+    {
+      "name": "where not regex",
+      "note": "NotRegex: negated regex; pg !~, mysql NOT REGEXP; SQLite/MSSQL throw.",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "NotRegex",
+          "value": {
+            "t": "string",
+            "v": "^A.*Z$"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL has no built-in regular-expression operator"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` NOT REGEXP ?;",
+            "params": [
+              {
+                "t": "string",
+                "v": "^A.*Z$"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` NOT REGEXP ^A.*Z$;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" !~ $1;",
+            "params": [
+              {
+                "t": "string",
+                "v": "^A.*Z$"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" !~ ^A.*Z$;"
+        },
+        "sqlite": {
+          "throws": "Where: SQLite has no built-in regular-expression operator"
+        }
+      }
+    },
+    {
+      "name": "where iregex",
+      "note": "Iregex: case-insensitive regex; pg ~*, mysql REGEXP (collation-driven); SQLite/MSSQL throw.",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "Iregex",
+          "value": {
+            "t": "string",
+            "v": "^a.*z$"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL has no built-in regular-expression operator"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ?;",
+            "params": [
+              {
+                "t": "string",
+                "v": "^a.*z$"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ^a.*z$;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" ~* $1;",
+            "params": [
+              {
+                "t": "string",
+                "v": "^a.*z$"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" ~* ^a.*z$;"
+        },
+        "sqlite": {
+          "throws": "Where: SQLite has no built-in regular-expression operator"
+        }
+      }
+    },
+    {
+      "name": "where contains",
+      "note": "Contains: literal substring, LIKE %v% ESCAPE with %/_ (and MSSQL [) escaped in the value.",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "Contains",
+          "value": {
+            "t": "string",
+            "v": "50%_x"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%50\\%\\_x%';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE %50\\%\\_x% ESCAPE '\\';"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE ? ESCAPE '\\\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE %50\\%\\_x% ESCAPE '\\\\';"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE $1 ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %50\\%\\_x% ESCAPE '\\';"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE ? ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %50\\%\\_x% ESCAPE '\\';"
+        }
+      }
+    },
+    {
+      "name": "where not contains",
+      "note": "NotContains: negated literal substring (NOT LIKE, escaped).",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "NotContains",
+          "value": {
+            "t": "string",
+            "v": "50%_x"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] NOT LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%50\\%\\_x%';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] NOT LIKE %50\\%\\_x% ESCAPE '\\';"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` NOT LIKE ? ESCAPE '\\\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` NOT LIKE %50\\%\\_x% ESCAPE '\\\\';"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" NOT LIKE $1 ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" NOT LIKE %50\\%\\_x% ESCAPE '\\';"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" NOT LIKE ? ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" NOT LIKE %50\\%\\_x% ESCAPE '\\';"
+        }
+      }
+    },
+    {
+      "name": "where starts with",
+      "note": "StartsWith: literal prefix (LIKE v% ESCAPE, escaped).",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "StartsWith",
+          "value": {
+            "t": "string",
+            "v": "50%_x"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'50\\%\\_x%';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE 50\\%\\_x% ESCAPE '\\';"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE ? ESCAPE '\\\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE 50\\%\\_x% ESCAPE '\\\\';"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE $1 ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE 50\\%\\_x% ESCAPE '\\';"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE ? ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "50\\%\\_x%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE 50\\%\\_x% ESCAPE '\\';"
+        }
+      }
+    },
+    {
+      "name": "where ends with",
+      "note": "EndsWith: literal suffix (LIKE %v ESCAPE, escaped).",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "EndsWith",
+          "value": {
+            "t": "string",
+            "v": "50%_x"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%50\\%\\_x';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE %50\\%\\_x ESCAPE '\\';"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE ? ESCAPE '\\\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE %50\\%\\_x ESCAPE '\\\\';"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE $1 ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %50\\%\\_x ESCAPE '\\';"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE ? ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%50\\%\\_x"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %50\\%\\_x ESCAPE '\\';"
+        }
+      }
+    },
+    {
+      "name": "where contains mssql bracket",
+      "note": "Contains with a [ — escaped only on MSSQL (a LIKE metacharacter there).",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": "u"
+        },
+        {
+          "op": "where",
+          "table": "u",
+          "column": "email",
+          "operator": "Contains",
+          "value": {
+            "t": "string",
+            "v": "a[b]c"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%a\\[b]c%';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE %a\\[b]c% ESCAPE '\\';"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE ? ESCAPE '\\\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%a[b]c%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` LIKE %a[b]c% ESCAPE '\\\\';"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE $1 ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%a[b]c%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %a[b]c% ESCAPE '\\';"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE ? ESCAPE '\\';",
+            "params": [
+              {
+                "t": "string",
+                "v": "%a[b]c%"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %a[b]c% ESCAPE '\\';"
         }
       }
     }

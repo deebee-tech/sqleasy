@@ -68,12 +68,33 @@ export const emitComparisonPredicate = (
       return;
     }
 
-    // MSSQL has no null-safe comparison operator at all (pre-2022 T-SQL) — refuse rather than
-    // silently emitting `=`/`<>`, which would diverge from the requested NULL-safe semantics.
-    throw new ParserError(
-      area,
-      'MSSQL does not support IS DISTINCT FROM / IS NOT DISTINCT FROM — write the equivalent CASE expression as raw SQL',
-    );
+    // MSSQL has no native null-safe operator, but `where(col, op, value)` compares a column to a
+    // BOUND value whose null-ness is known here — which collapses the null-safe semantics to plain
+    // SQL every MSSQL version supports (no EXCEPT subquery, no 2022+ feature).
+    const valueIsNull = value === null || value === undefined;
+    if (valueIsNull) {
+      // `col IS DISTINCT FROM NULL` ⇔ `col IS NOT NULL`; `col IS NOT DISTINCT FROM NULL` ⇔ `col IS NULL`.
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(isNotDistinct ? ' IS NULL' : ' IS NOT NULL');
+      return;
+    }
+    // A bound literal is never NULL, so: `col IS NOT DISTINCT FROM <lit>` ⇔ `col = <lit>`, and
+    // `col IS DISTINCT FROM <lit>` ⇔ `(col <> <lit> OR col IS NULL)` (the OR restores null-safety —
+    // a plain `<>` is UNKNOWN, never true, when col is NULL).
+    if (isNotDistinct) {
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(' = ');
+      sqlHelper.addDynamicValue(value);
+      return;
+    }
+    sqlHelper.addSqlSnippet('(');
+    sqlHelper.addSqlSnippet(columnSql);
+    sqlHelper.addSqlSnippet(' <> ');
+    sqlHelper.addDynamicValue(value);
+    sqlHelper.addSqlSnippet(' OR ');
+    sqlHelper.addSqlSnippet(columnSql);
+    sqlHelper.addSqlSnippet(' IS NULL)');
+    return;
   }
 
   if (whereOperator === WhereOperator.Ilike || whereOperator === WhereOperator.NotIlike) {
@@ -93,6 +114,76 @@ export const emitComparisonPredicate = (
     sqlHelper.addSqlSnippet(negate ? ') NOT LIKE LOWER(' : ') LIKE LOWER(');
     sqlHelper.addDynamicValue(value);
     sqlHelper.addSqlSnippet(')');
+    return;
+  }
+
+  if (
+    whereOperator === WhereOperator.Regex ||
+    whereOperator === WhereOperator.NotRegex ||
+    whereOperator === WhereOperator.Iregex ||
+    whereOperator === WhereOperator.NotIregex
+  ) {
+    const negate =
+      whereOperator === WhereOperator.NotRegex || whereOperator === WhereOperator.NotIregex;
+    const insensitive =
+      whereOperator === WhereOperator.Iregex || whereOperator === WhereOperator.NotIregex;
+
+    // Postgres: ~ / !~ (case-sensitive), ~* / !~* (case-insensitive).
+    if (config.databaseType === DatabaseType.Postgres) {
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(insensitive ? (negate ? ' !~* ' : ' ~* ') : negate ? ' !~ ' : ' ~ ');
+      sqlHelper.addDynamicValue(value);
+      return;
+    }
+
+    // MySQL: REGEXP / NOT REGEXP. Case sensitivity is COLLATION-driven (the default utf8mb4_*_ci is
+    // case-insensitive), not operator-driven, so Iregex emits the same as Regex here.
+    if (config.databaseType === DatabaseType.Mysql) {
+      sqlHelper.addSqlSnippet(columnSql);
+      sqlHelper.addSqlSnippet(negate ? ' NOT REGEXP ' : ' REGEXP ');
+      sqlHelper.addDynamicValue(value);
+      return;
+    }
+
+    // SQLite's REGEXP is only a hook for an app-registered function (stock SQLite has none), and
+    // MSSQL has no regex engine before SQL Server 2025 — refuse rather than emit SQL that can't run.
+    throw new ParserError(
+      area,
+      `${config.databaseType === DatabaseType.Sqlite ? 'SQLite' : 'MSSQL'} has no built-in regular-expression operator`,
+    );
+  }
+
+  if (
+    whereOperator === WhereOperator.Contains ||
+    whereOperator === WhereOperator.NotContains ||
+    whereOperator === WhereOperator.StartsWith ||
+    whereOperator === WhereOperator.EndsWith
+  ) {
+    // Escape the LIKE metacharacters in the (literal) value so a `%`/`_` in the search text matches
+    // literally, not as a wildcard. Backslash is the escape char; MSSQL LIKE additionally treats `[`
+    // as a metacharacter, so it is escaped there too.
+    let escaped = String(value)
+      .replaceAll('\\', '\\\\')
+      .replaceAll('%', '\\%')
+      .replaceAll('_', '\\_');
+    if (config.databaseType === DatabaseType.Mssql) escaped = escaped.replaceAll('[', '\\[');
+
+    const pattern =
+      whereOperator === WhereOperator.StartsWith
+        ? `${escaped}%`
+        : whereOperator === WhereOperator.EndsWith
+          ? `%${escaped}`
+          : `%${escaped}%`;
+
+    // MySQL's string-literal parser turns `\\` into `\`, so the ESCAPE-char literal itself must be
+    // doubled there; pg/sqlite/mssql use standard string literals, where `'\'` is a single backslash.
+    const escapeLiteral = config.databaseType === DatabaseType.Mysql ? "'\\\\'" : "'\\'";
+
+    sqlHelper.addSqlSnippet(columnSql);
+    sqlHelper.addSqlSnippet(whereOperator === WhereOperator.NotContains ? ' NOT LIKE ' : ' LIKE ');
+    sqlHelper.addDynamicValue(pattern);
+    sqlHelper.addSqlSnippet(' ESCAPE ');
+    sqlHelper.addSqlSnippet(escapeLiteral);
     return;
   }
 
