@@ -1,0 +1,57 @@
+{
+  "_comment": "HAND-AUTHORED adjudications, merged over the extracted hypothesis by scripts/build-capability-manifest.mjs. This file is the source of truth and is never generated; capabilities.json IS generated and must never be hand-edited. Each entry records what a human decided about one (op|enum, dialect) cell: `kind` native|absent, `name` the engine's OWN term for it, and `refusal` the exact message when absent. Filling all four dialects with the SAME name is what makes a capability shared — sharedness is DERIVED from the names agreeing, never authored. Leave `name` empty when the kind is settled but the surface term is still a design decision; the cell then stays unadjudicated on purpose.",
+  "ops": {
+    "top": {
+      "_why": "T-SQL has TOP and, since 2012, OFFSET/FETCH. They are two different constructs, not two spellings of one — SQL Server gained OFFSET/FETCH later for standards compliance and kept TOP. So MSSQL genuinely has both, and the other three have only the LIMIT concept, which is reached by limit(). Through 10.x .top(n) was SILENTLY DISCARDED on the other three: the row cap the caller wrote vanished with no error and no clause. Fixed 2026-07-20.",
+      "mssql": {
+        "kind": "native",
+        "name": "top",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no TOP clause — use limit() instead",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Postgres has no TOP clause — use limit() instead",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no TOP clause — use limit() instead",
+        "adjudicated": true
+      }
+    },
+    "limitWithTies": {
+      "_why": "WITH TIES is real in MSSQL and Postgres and absent from MySQL and SQLite. The two that have it spell it differently — T-SQL `TOP (n) WITH TIES`, Postgres `FETCH FIRST n ROWS WITH TIES` — but both engines use the phrase WITH TIES, so the shared term is real rather than coined. Through 10.x MSSQL emitted `OFFSET 0 ROWS FETCH NEXT n ROWS WITH TIES`, which no T-SQL production allows: <offset_fetch> ends in a mandatory ONLY and TOP admits no offset. Fixed 2026-07-20 to render through TOP. NAME LEFT EMPTY DELIBERATELY: `limitWithTies` is SQLEasy's coinage, not either engine's term. The honest term is `withTies`, but renaming is an API decision that belongs with the typed per-engine surface, not with this behavioural fix.",
+      "mssql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL does not support WITH TIES",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support WITH TIES",
+        "adjudicated": true
+      }
+    }
+  },
+  "enums": {}
+}

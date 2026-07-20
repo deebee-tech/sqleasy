@@ -7652,25 +7652,13 @@
       ],
       "expect": {
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u`;",
-            "params": []
-          },
-          "raw": "SELECT * FROM `users` AS `u`;"
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
         },
         "postgres": {
-          "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\";",
-            "params": []
-          },
-          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\";"
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\";",
-            "params": []
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\";"
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
         }
       }
     },
@@ -13757,25 +13745,13 @@
           "raw": "SELECT * FROM (SELECT TOP (5) * FROM [dbo].[users] AS [u]) AS [sub];"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM (SELECT * FROM `users` AS `u`) AS `sub`;",
-            "params": []
-          },
-          "raw": "SELECT * FROM (SELECT * FROM `users` AS `u`) AS `sub`;"
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
         },
         "postgres": {
-          "prepared": {
-            "sql": "SELECT * FROM (SELECT * FROM \"public\".\"users\" AS \"u\") AS \"sub\";",
-            "params": []
-          },
-          "raw": "SELECT * FROM (SELECT * FROM \"public\".\"users\" AS \"u\") AS \"sub\";"
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM (SELECT * FROM \"users\" AS \"u\") AS \"sub\";",
-            "params": []
-          },
-          "raw": "SELECT * FROM (SELECT * FROM \"users\" AS \"u\") AS \"sub\";"
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
         }
       }
     },
@@ -13828,40 +13804,13 @@
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true UNION ALL SELECT TOP (5) * FROM [dbo].[archive] AS [a];"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? UNION ALL SELECT * FROM `archive` AS `a`;",
-            "params": [
-              {
-                "t": "bool",
-                "v": true
-              }
-            ]
-          },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true UNION ALL SELECT * FROM `archive` AS `a`;"
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
         },
         "postgres": {
-          "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 UNION ALL SELECT * FROM \"public\".\"archive\" AS \"a\";",
-            "params": [
-              {
-                "t": "bool",
-                "v": true
-              }
-            ]
-          },
-          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = true UNION ALL SELECT * FROM \"public\".\"archive\" AS \"a\";"
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? UNION ALL SELECT * FROM \"archive\" AS \"a\";",
-            "params": [
-              {
-                "t": "bool",
-                "v": true
-              }
-            ]
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = true UNION ALL SELECT * FROM \"archive\" AS \"a\";"
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
         }
       }
     },
@@ -13913,25 +13862,13 @@
           "raw": "SELECT TOP (10) * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] ORDER BY [u].[id] ASC;"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id` ORDER BY `u`.`id` ASC;",
-            "params": []
-          },
-          "raw": "SELECT * FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id` ORDER BY `u`.`id` ASC;"
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
         },
         "postgres": {
-          "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" INNER JOIN \"public\".\"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" ORDER BY \"u\".\"id\" ASC;",
-            "params": []
-          },
-          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" INNER JOIN \"public\".\"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" ORDER BY \"u\".\"id\" ASC;"
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" INNER JOIN \"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" ORDER BY \"u\".\"id\" ASC;",
-            "params": []
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" INNER JOIN \"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" ORDER BY \"u\".\"id\" ASC;"
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
         }
       }
     },
@@ -13961,25 +13898,13 @@
           "throws": "LimitOffset: MSSQL should not use both TOP and LIMIT/OFFSET in the same query"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` LIMIT 10;",
-            "params": []
-          },
-          "raw": "SELECT * FROM `users` AS `u` LIMIT 10;"
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
         },
         "postgres": {
-          "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" LIMIT 10;",
-            "params": []
-          },
-          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" LIMIT 10;"
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" LIMIT 10;",
-            "params": []
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" LIMIT 10;"
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
         }
       }
     },
@@ -23123,10 +23048,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS WITH TIES;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT TOP (5) WITH TIES [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC;', N'';",
             "params": []
           },
-          "raw": "SELECT [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS WITH TIES;"
+          "raw": "SELECT TOP (5) WITH TIES [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC;"
         },
         "mysql": {
           "throws": "LimitOffset: MySQL does not support WITH TIES"
@@ -23174,10 +23099,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS WITH TIES;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT TOP (5) WITH TIES [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC;', N'';",
             "params": []
           },
-          "raw": "SELECT [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS WITH TIES;"
+          "raw": "SELECT TOP (5) WITH TIES [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC;"
         }
       }
     },

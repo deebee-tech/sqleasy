@@ -19,17 +19,17 @@
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 356,
-      "absent": 18,
-      "unadjudicated": 114
+      "native": 359,
+      "absent": 23,
+      "unadjudicated": 106
     },
     "enumCells": {
       "native": 154,
       "absent": 10,
       "unadjudicated": 156
     },
-    "adjudicated": 0,
-    "namesAssigned": 0
+    "adjudicated": 6,
+    "namesAssigned": 1
   },
   "ops": {
     "and": {
@@ -1251,8 +1251,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 191,
-            "casesThrowing": 37,
+            "casesEmitting": 186,
+            "casesThrowing": 42,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1262,8 +1262,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 197,
-            "casesThrowing": 33,
+            "casesEmitting": 192,
+            "casesThrowing": 38,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1273,8 +1273,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 176,
-            "casesThrowing": 53,
+            "casesEmitting": 171,
+            "casesThrowing": 58,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -1443,8 +1443,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 0,
+            "casesEmitting": 4,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1454,8 +1454,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 0,
+            "casesEmitting": 4,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1465,8 +1465,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 0,
+            "casesEmitting": 4,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -2931,8 +2931,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 22,
-            "casesThrowing": 5,
+            "casesEmitting": 21,
+            "casesThrowing": 6,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2942,8 +2942,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 25,
-            "casesThrowing": 4,
+            "casesEmitting": 24,
+            "casesThrowing": 5,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2953,8 +2953,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 21,
-            "casesThrowing": 6,
+            "casesEmitting": 20,
+            "casesThrowing": 7,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -3075,8 +3075,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 7,
-            "casesThrowing": 4,
+            "casesEmitting": 6,
+            "casesThrowing": 5,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3086,8 +3086,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 8,
-            "casesThrowing": 3,
+            "casesEmitting": 7,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3097,8 +3097,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 7,
-            "casesThrowing": 4,
+            "casesEmitting": 6,
+            "casesThrowing": 5,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -3108,46 +3108,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F1: MySQL emitted FETCH FIRST … WITH TIES, which MySQL has no form of"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL does not support WITH TIES",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — audit-F1: MySQL emitted FETCH FIRST … WITH TIES, which MySQL has no form of"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F1: MySQL emitted FETCH FIRST … WITH TIES, which MySQL has no form of"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support WITH TIES",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 2,
-            "note": "forced unadjudicated — audit-F1: MySQL emitted FETCH FIRST … WITH TIES, which MySQL has no form of"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -3219,8 +3219,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 20,
-            "casesThrowing": 5,
+            "casesEmitting": 19,
+            "casesThrowing": 6,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3230,8 +3230,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 22,
-            "casesThrowing": 4,
+            "casesEmitting": 21,
+            "casesThrowing": 5,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3241,8 +3241,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 20,
-            "casesThrowing": 5,
+            "casesEmitting": 19,
+            "casesThrowing": 6,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -3795,8 +3795,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 18,
-            "casesThrowing": 2,
+            "casesEmitting": 17,
+            "casesThrowing": 3,
             "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
           }
         },
@@ -3806,8 +3806,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 21,
-            "casesThrowing": 0,
+            "casesEmitting": 20,
+            "casesThrowing": 1,
             "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
           }
         },
@@ -3817,8 +3817,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 18,
-            "casesThrowing": 3,
+            "casesEmitting": 17,
+            "casesThrowing": 4,
             "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
           }
         }
@@ -4371,8 +4371,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 146,
-            "casesThrowing": 29,
+            "casesEmitting": 141,
+            "casesThrowing": 34,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4382,8 +4382,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 152,
-            "casesThrowing": 25,
+            "casesEmitting": 147,
+            "casesThrowing": 30,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4393,8 +4393,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 136,
-            "casesThrowing": 41,
+            "casesEmitting": 131,
+            "casesThrowing": 46,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -4835,47 +4835,47 @@
     "top": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "top",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 2,
-            "note": "forced unadjudicated — audit-S1: silent no-op on mysql/postgres/sqlite — to-sql.ts returns {} and the cap vanishes"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL has no TOP clause — use limit() instead",
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S1: silent no-op on mysql/postgres/sqlite — to-sql.ts returns {} and the cap vanishes"
+            "casesEmitting": 0,
+            "casesThrowing": 5,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "Postgres has no TOP clause — use limit() instead",
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S1: silent no-op on mysql/postgres/sqlite — to-sql.ts returns {} and the cap vanishes"
+            "casesEmitting": 0,
+            "casesThrowing": 5,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no TOP clause — use limit() instead",
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S1: silent no-op on mysql/postgres/sqlite — to-sql.ts returns {} and the cap vanishes"
+            "casesEmitting": 0,
+            "casesThrowing": 5,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -4947,8 +4947,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 6,
-            "casesThrowing": 0,
+            "casesEmitting": 5,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4958,8 +4958,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 6,
-            "casesThrowing": 0,
+            "casesEmitting": 5,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4969,8 +4969,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 6,
-            "casesThrowing": 0,
+            "casesEmitting": 5,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -5091,8 +5091,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 113,
-            "casesThrowing": 14,
+            "casesEmitting": 112,
+            "casesThrowing": 15,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -5102,8 +5102,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 116,
-            "casesThrowing": 11,
+            "casesEmitting": 115,
+            "casesThrowing": 12,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -5113,8 +5113,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 104,
-            "casesThrowing": 21,
+            "casesEmitting": 103,
+            "casesThrowing": 22,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -6395,8 +6395,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 102,
-            "casesThrowing": 20,
+            "casesEmitting": 100,
+            "casesThrowing": 22,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6406,8 +6406,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 107,
-            "casesThrowing": 16,
+            "casesEmitting": 105,
+            "casesThrowing": 18,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6417,8 +6417,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 98,
-            "casesThrowing": 24,
+            "casesEmitting": 96,
+            "casesThrowing": 26,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -6996,8 +6996,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 22,
-            "casesThrowing": 6,
+            "casesEmitting": 21,
+            "casesThrowing": 7,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7007,8 +7007,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 25,
-            "casesThrowing": 3,
+            "casesEmitting": 24,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7018,8 +7018,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 22,
-            "casesThrowing": 6,
+            "casesEmitting": 21,
+            "casesThrowing": 7,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -7529,8 +7529,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 13,
-            "casesThrowing": 1,
+            "casesEmitting": 12,
+            "casesThrowing": 2,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7540,8 +7540,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 15,
-            "casesThrowing": 0,
+            "casesEmitting": 14,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7551,8 +7551,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 13,
-            "casesThrowing": 1,
+            "casesEmitting": 12,
+            "casesThrowing": 2,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -7907,8 +7907,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 102,
-            "casesThrowing": 20,
+            "casesEmitting": 100,
+            "casesThrowing": 22,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7918,8 +7918,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 107,
-            "casesThrowing": 16,
+            "casesEmitting": 105,
+            "casesThrowing": 18,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7929,8 +7929,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 98,
-            "casesThrowing": 24,
+            "casesEmitting": 96,
+            "casesThrowing": 26,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }

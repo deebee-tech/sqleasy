@@ -19,6 +19,30 @@ const unboundedLimit: Partial<Record<DatabaseType, string>> = {
   [DatabaseType.Sqlite]: '-1',
 };
 
+/** How each dialect is named in a refusal, so every message reads `<Dialect> has no ...`. */
+export const dialectDisplayName = (databaseType: DatabaseType): string =>
+  ({
+    [DatabaseType.Mssql]: 'MSSQL',
+    [DatabaseType.Mysql]: 'MySQL',
+    [DatabaseType.Postgres]: 'Postgres',
+    [DatabaseType.Sqlite]: 'SQLite',
+    [DatabaseType.Unknown]: 'This dialect',
+  })[databaseType];
+
+/**
+ * True when the caller called `.top(n)` at all.
+ *
+ * Presence, not positivity: `.top(0)` still counts as "the caller asked for a TOP", which is what
+ * both the MSSQL TOP/LIMIT conflict guard and the non-MSSQL refusal need — silently ignoring
+ * `.top(0)` would be the same class of bug this release is removing. `.clearTop()` deletes the key,
+ * so it reads false again afterwards.
+ */
+export const hasExplicitTop = (state: QueryState): boolean =>
+  state.customState !== null &&
+  state.customState !== undefined &&
+  state.customState['top'] !== null &&
+  state.customState['top'] !== undefined;
+
 export const defaultLimitOffset = (
   state: QueryState,
   config: Dialect,
@@ -99,18 +123,35 @@ export const defaultLimitOffset = (
       );
     }
 
-    if (state.limit > 0 || state.offset > 0) {
-      sqlHelper.addSqlSnippet('OFFSET ');
-      sqlHelper.addSqlSnippet(state.offset.toString());
-      sqlHelper.addSqlSnippet(' ROWS');
-    }
+    // `WITH TIES` exists ONLY on `TOP` in T-SQL. `<offset_fetch>` terminates in a mandatory `ONLY`
+    // and `TOP` admits no offset, so no production joins the two — the old
+    // `FETCH NEXT n ROWS WITH TIES` was never runnable. MSSQL keeps the capability, but through its
+    // real spelling: `SELECT TOP (n) WITH TIES`, emitted by the SELECT hook in `to-sql.ts`.
+    if (state.limitWithTies) {
+      if (state.limit <= 0) {
+        throw new ParserError(ParserArea.LimitOffset, 'limitWithTies requires a positive limit');
+      }
 
-    if (state.limit > 0) {
-      sqlHelper.addSqlSnippet(' ');
+      if (state.offset > 0) {
+        throw new ParserError(
+          ParserArea.LimitOffset,
+          'MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset',
+        );
+      }
+    } else {
+      if (state.limit > 0 || state.offset > 0) {
+        sqlHelper.addSqlSnippet('OFFSET ');
+        sqlHelper.addSqlSnippet(state.offset.toString());
+        sqlHelper.addSqlSnippet(' ROWS');
+      }
 
-      sqlHelper.addSqlSnippet('FETCH NEXT ');
-      sqlHelper.addSqlSnippet(state.limit.toString());
-      sqlHelper.addSqlSnippet(state.limitWithTies ? ' ROWS WITH TIES' : ' ROWS ONLY');
+      if (state.limit > 0) {
+        sqlHelper.addSqlSnippet(' ');
+
+        sqlHelper.addSqlSnippet('FETCH NEXT ');
+        sqlHelper.addSqlSnippet(state.limit.toString());
+        sqlHelper.addSqlSnippet(' ROWS ONLY');
+      }
     }
   }
 

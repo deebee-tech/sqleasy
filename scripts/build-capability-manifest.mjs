@@ -29,7 +29,7 @@
 // violations accumulated under a regime that already had a corpus, a parity ratchet, and code review.
 // Do not build the drawer they would hide in.
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
@@ -37,6 +37,7 @@ const DIALECTS = ['mssql', 'mysql', 'postgres', 'sqlite'];
 const CORPUS = join(ROOT, 'contract', 'corpora', 'emission', 'corpus.json');
 const ENUM_DIR = join(ROOT, 'ts', 'query', 'src', 'enums');
 const OUT = join(ROOT, 'contract', 'capabilities', 'capabilities.json');
+const DECISIONS_PATH = join(ROOT, 'contract', 'capabilities', 'decisions.json');
 
 // Enums a CALLER can pass. The rest (BuilderType, ParserArea, DatabaseType, QueryType, ParserMode,
 // MultiBuilderTransactionState, JoinOnOperator) are internal plumbing and never reach the surface,
@@ -234,27 +235,39 @@ function hypothesize({ emitted, threw }) {
   return 'unadjudicated';
 }
 
-function buildCells(counts, forcedReason) {
+// Hand-authored adjudications. This file is the SOURCE OF TRUTH and is never generated; the
+// manifest is generated and must never be hand-edited. Without this split the first regeneration
+// would silently destroy every decision made.
+const DECISIONS = existsSync(DECISIONS_PATH)
+  ? JSON.parse(readFileSync(DECISIONS_PATH, 'utf8'))
+  : { ops: {}, enums: {} };
+
+function buildCells(counts, forcedReason, decision) {
   const cells = {};
   for (const dialect of DIALECTS) {
     const observed = counts[dialect];
     const forced = Boolean(forcedReason);
+    const decided = decision?.[dialect];
     cells[dialect] = {
-      // The engine's OWN term for this capability. Seeded empty on purpose; it is what a caller sees
-      // when they hit the dot, and it is the field nothing can infer. Filling all four with the same
-      // string is what makes a capability shared — sharedness is derived, never authored.
-      name: '',
-      kind: forced ? 'unadjudicated' : hypothesize(observed),
-      adjudicated: false,
-      refusal: null,
+      // The engine's OWN term for this capability. Seeded empty; it is what a caller sees when they
+      // hit the dot, and it is the field nothing can infer. Filling all four with the same string is
+      // what makes a capability shared — sharedness is derived, never authored.
+      name: decided?.name ?? '',
+      // A human decision always wins over extraction, including over the forced list: the forced
+      // list exists to stop extraction claiming support nobody verified, not to outrank a person.
+      kind: decided?.kind ?? (forced ? 'unadjudicated' : hypothesize(observed)),
+      adjudicated: decided?.adjudicated ?? false,
+      refusal: decided?.refusal ?? null,
       evidence: {
         casesEmitting: observed.emitted,
         casesThrowing: observed.threw,
-        note: forced
-          ? `forced unadjudicated — ${forcedReason}`
-          : observed.emitted === 0 && observed.threw === 0
-            ? 'no corpus coverage on this dialect'
-            : 'extraction hypothesis from generated goldens; not an independent check',
+        note: decided
+          ? 'adjudicated in contract/capabilities/decisions.json'
+          : forced
+            ? `forced unadjudicated — ${forcedReason}`
+            : observed.emitted === 0 && observed.threw === 0
+              ? 'no corpus coverage on this dialect'
+              : 'extraction hypothesis from generated goldens; not an independent check',
       },
     };
   }
@@ -263,7 +276,7 @@ function buildCells(counts, forcedReason) {
 
 const ops = {};
 for (const op of [...opCells.keys()].sort()) {
-  ops[op] = { cells: buildCells(opCells.get(op), FORCED[op]) };
+  ops[op] = { cells: buildCells(opCells.get(op), FORCED[op], DECISIONS.ops?.[op]) };
 }
 
 const enums = {};
@@ -273,7 +286,7 @@ for (const ref of [...enumCells.keys()].sort()) {
     enum: enumName,
     member,
     usedByOps: [...(enumUsedBy.get(ref) ?? [])].sort(),
-    cells: buildCells(enumCells.get(ref), FORCED_ENUM[ref]),
+    cells: buildCells(enumCells.get(ref), FORCED_ENUM[ref], DECISIONS.enums?.[ref]),
   };
 }
 
@@ -293,10 +306,18 @@ for (const [enumName, members] of Object.entries(ENUMS)) {
       cells: buildCells(
         Object.fromEntries(DIALECTS.map((d) => [d, emptyCell()])),
         FORCED_ENUM[ref] ?? 'no corpus coverage — an unexercised member is an unproven claim',
+        DECISIONS.enums?.[ref],
       ),
     };
   }
 }
+
+/** Counts cells across BOTH axes — ops and enum members — matching a predicate. */
+const countWhere = (predicate) =>
+  [...Object.values(ops), ...Object.values(enums)].reduce(
+    (total, entry) => total + DIALECTS.filter((d) => predicate(entry.cells[d])).length,
+    0,
+  );
 
 const countKinds = (collection) => {
   const tally = { native: 0, absent: 0, unadjudicated: 0 };
@@ -331,8 +352,8 @@ const manifest = {
     enumMembersWithNoCoverage: uncovered.length,
     opCells: countKinds(ops),
     enumCells: countKinds(enums),
-    adjudicated: 0,
-    namesAssigned: 0,
+    adjudicated: countWhere((c) => c.adjudicated),
+    namesAssigned: countWhere((c) => c.name !== ''),
   },
   ops,
   enums,
@@ -346,6 +367,7 @@ console.log(
   `capability manifest: ${manifest.summary.ops} ops + ${manifest.summary.enumMembers} enum members x ${DIALECTS.length} dialects\n` +
     `  op cells   : ${oc.native} native / ${oc.absent} absent / ${oc.unadjudicated} unadjudicated\n` +
     `  enum cells : ${ec.native} native / ${ec.absent} absent / ${ec.unadjudicated} unadjudicated\n` +
-    `  adjudicated: 0 (every cell awaits a human)\n` +
+    `  adjudicated: ${manifest.summary.adjudicated} of ${(manifest.summary.ops + manifest.summary.enumMembers) * DIALECTS.length}` +
+    ` (${manifest.summary.namesAssigned} carry an engine-native name)\n` +
     `  written    : ${OUT.replace(ROOT + '/', '')}`,
 );

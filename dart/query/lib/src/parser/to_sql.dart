@@ -98,6 +98,17 @@ SqlHelper defaultToSql(
     throw ParserError(ParserArea.general, 'No state provided');
   }
 
+  // `TOP` is a T-SQL keyword and nothing else. It used to be silently discarded on the other three
+  // dialects, so the row cap the caller explicitly wrote vanished without a word. A row cap IS
+  // reachable everywhere, but it is spelled `.limit(n)`. Guarded here rather than in the SELECT
+  // hook so it also fires for CTE bodies, derived tables, and the prepared paths.
+  if (config.databaseType != DatabaseType.mssql && hasExplicitTop(state)) {
+    throw ParserError(
+      ParserArea.limitOffset,
+      '${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead',
+    );
+  }
+
   if (state.cteStates.isNotEmpty) {
     final cte = defaultCte(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
@@ -246,16 +257,15 @@ SqlHelper defaultToSql(
 
   if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
     final limitOffset = defaultLimitOffset(state, config, mode);
-    sqlHelper.addSqlSnippet(' ');
-    sqlHelper.addSqlSnippetWithValues(
-        limitOffset.getSql(), limitOffset.getValues());
-  }
 
-  if (state.limitWithTies &&
-      config.databaseType == DatabaseType.mssql &&
-      state.limit <= 0) {
-    throw ParserError(
-        ParserArea.limitOffset, 'limitWithTies requires a positive limit');
+    // MSSQL's WITH TIES renders as a `TOP (n) WITH TIES` prefix on the SELECT list, so the trailing
+    // clause is legitimately empty here — still call the parser for its guards, but do not emit the
+    // separating space, or the statement ends `... ;` with a stray gap.
+    final clause = limitOffset.getSql();
+    if (clause != '') {
+      sqlHelper.addSqlSnippet(' ');
+      sqlHelper.addSqlSnippetWithValues(clause, limitOffset.getValues());
+    }
   }
 
   // Trailing `FOR UPDATE`/`FOR SHARE` (PG/MySQL). MSSQL's equivalent is a `WITH (...)` hint
@@ -287,11 +297,17 @@ ToSqlOptions toSqlOptionsFor(Dialect config) {
 
   return ToSqlOptions(
     beforeSelectColumns: (state, cfg, sqlHelper) {
+      // Two distinct T-SQL constructs share this slot. `.top(n)` is the caller asking for TOP
+      // directly; `.limitWithTies(n)` also renders here, because WITH TIES is only expressible on
+      // TOP. They cannot both apply — `defaultLimitOffset` refuses TOP combined with limit/offset.
       final top = state.customState?['top'];
       if (top is num && top > 0) {
-        sqlHelper.addSqlSnippet('TOP ');
-        sqlHelper.addSqlSnippet('(${formatNumber(top)})');
-        sqlHelper.addSqlSnippet(' ');
+        sqlHelper.addSqlSnippet('TOP (${formatNumber(top)}) ');
+        return;
+      }
+
+      if (state.limitWithTies && state.limit > 0) {
+        sqlHelper.addSqlSnippet('TOP (${state.limit}) WITH TIES ');
       }
     },
   );

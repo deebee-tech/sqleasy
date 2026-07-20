@@ -2281,6 +2281,23 @@ const unboundedLimit = {
 	[DatabaseType.Mysql]: "18446744073709551615",
 	[DatabaseType.Sqlite]: "-1"
 };
+/** How each dialect is named in a refusal, so every message reads `<Dialect> has no ...`. */
+const dialectDisplayName = (databaseType) => ({
+	[DatabaseType.Mssql]: "MSSQL",
+	[DatabaseType.Mysql]: "MySQL",
+	[DatabaseType.Postgres]: "Postgres",
+	[DatabaseType.Sqlite]: "SQLite",
+	[DatabaseType.Unknown]: "This dialect"
+})[databaseType];
+/**
+* True when the caller called `.top(n)` at all.
+*
+* Presence, not positivity: `.top(0)` still counts as "the caller asked for a TOP", which is what
+* both the MSSQL TOP/LIMIT conflict guard and the non-MSSQL refusal need — silently ignoring
+* `.top(0)` would be the same class of bug this release is removing. `.clearTop()` deletes the key,
+* so it reads false again afterwards.
+*/
+const hasExplicitTop = (state) => state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0;
 const defaultLimitOffset = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.limit === 0 && state.offset === 0) return sqlHelper;
@@ -2317,16 +2334,21 @@ const defaultLimitOffset = (state, config, mode) => {
 	}
 	if (config.databaseType === DatabaseType.Mssql) {
 		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && (state.limit > 0 || state.offset > 0)) throw new ParserError(ParserArea.LimitOffset, "MSSQL should not use both TOP and LIMIT/OFFSET in the same query");
-		if (state.limit > 0 || state.offset > 0) {
-			sqlHelper.addSqlSnippet("OFFSET ");
-			sqlHelper.addSqlSnippet(state.offset.toString());
-			sqlHelper.addSqlSnippet(" ROWS");
-		}
-		if (state.limit > 0) {
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet("FETCH NEXT ");
-			sqlHelper.addSqlSnippet(state.limit.toString());
-			sqlHelper.addSqlSnippet(state.limitWithTies ? " ROWS WITH TIES" : " ROWS ONLY");
+		if (state.limitWithTies) {
+			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
+			if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset");
+		} else {
+			if (state.limit > 0 || state.offset > 0) {
+				sqlHelper.addSqlSnippet("OFFSET ");
+				sqlHelper.addSqlSnippet(state.offset.toString());
+				sqlHelper.addSqlSnippet(" ROWS");
+			}
+			if (state.limit > 0) {
+				sqlHelper.addSqlSnippet(" ");
+				sqlHelper.addSqlSnippet("FETCH NEXT ");
+				sqlHelper.addSqlSnippet(state.limit.toString());
+				sqlHelper.addSqlSnippet(" ROWS ONLY");
+			}
 		}
 	}
 	if (state.orderByStates.length === 0) {
@@ -2871,6 +2893,7 @@ const emitMutationWhere = (sqlHelper, state, config, mode, options) => {
 const defaultToSql = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
+	if (config.databaseType !== DatabaseType.Mssql && hasExplicitTop(state)) throw new ParserError(ParserArea.LimitOffset, `${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead`);
 	if (state.cteStates.length > 0) {
 		const cte = defaultCte(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
@@ -2947,10 +2970,12 @@ const defaultToSql = (state, config, mode, options) => {
 	}
 	if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
 		const limitOffset = defaultLimitOffset(state, config, mode);
-		sqlHelper.addSqlSnippet(" ");
-		sqlHelper.addSqlSnippetWithValues(limitOffset.getSql(), limitOffset.getValues());
+		const clause = limitOffset.getSql();
+		if (clause !== "") {
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippetWithValues(clause, limitOffset.getValues());
+		}
 	}
-	if (state.limitWithTies && config.databaseType === DatabaseType.Mssql && state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
 	if (state.rowLock) emitTrailingRowLockClause(sqlHelper, config, state.rowLock);
 	validateHints(state, config, ParserArea.General);
 	emitTrailingHints(sqlHelper, state, config);
@@ -2968,11 +2993,12 @@ const defaultToSql = (state, config, mode, options) => {
 const toSqlOptionsFor = (config) => {
 	if (config.databaseType !== DatabaseType.Mssql) return {};
 	return { beforeSelectColumns: (state, _cfg, sqlHelper) => {
-		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && state.customState["top"] > 0) {
-			sqlHelper.addSqlSnippet("TOP ");
-			sqlHelper.addSqlSnippet(`(${state.customState["top"]})`);
-			sqlHelper.addSqlSnippet(" ");
+		const explicitTop = hasExplicitTop(state) ? Number(state.customState["top"]) : 0;
+		if (explicitTop > 0) {
+			sqlHelper.addSqlSnippet(`TOP (${explicitTop}) `);
+			return;
 		}
+		if (state.limitWithTies && state.limit > 0) sqlHelper.addSqlSnippet(`TOP (${state.limit}) WITH TIES `);
 	} };
 };
 /** A parameter value as a T-SQL literal for the sp_executesql value list. */

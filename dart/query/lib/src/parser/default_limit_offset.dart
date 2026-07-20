@@ -16,6 +16,22 @@ const _unboundedLimit = <DatabaseType, String>{
   DatabaseType.sqlite: '-1',
 };
 
+/// How each dialect is named in a refusal, so every message reads `<Dialect> has no ...`.
+String dialectDisplayName(DatabaseType databaseType) => const {
+      DatabaseType.mssql: 'MSSQL',
+      DatabaseType.mysql: 'MySQL',
+      DatabaseType.postgres: 'Postgres',
+      DatabaseType.sqlite: 'SQLite',
+      DatabaseType.unknown: 'This dialect',
+    }[databaseType]!;
+
+/// True when the caller called `.top(n)` at all.
+///
+/// Presence, not positivity: `.top(0)` still counts as "the caller asked for a TOP", which is what
+/// both the MSSQL TOP/LIMIT conflict guard and the non-MSSQL refusal need. `.clearTop()` deletes
+/// the key, so it reads false again afterwards.
+bool hasExplicitTop(QueryState state) => state.customState?['top'] != null;
+
 SqlHelper defaultLimitOffset(
     QueryState state, Dialect config, ParserMode mode) {
   final sqlHelper = SqlHelper(mode);
@@ -89,19 +105,36 @@ SqlHelper defaultLimitOffset(
       );
     }
 
-    if (state.limit > 0 || state.offset > 0) {
-      sqlHelper.addSqlSnippet('OFFSET ');
-      sqlHelper.addSqlSnippet(state.offset.toString());
-      sqlHelper.addSqlSnippet(' ROWS');
-    }
+    // `WITH TIES` exists ONLY on `TOP` in T-SQL. `<offset_fetch>` terminates in a mandatory `ONLY`
+    // and `TOP` admits no offset, so no production joins the two — the old
+    // `FETCH NEXT n ROWS WITH TIES` was never runnable. MSSQL keeps the capability, but through its
+    // real spelling: `SELECT TOP (n) WITH TIES`, emitted by the SELECT hook in `to_sql.dart`.
+    if (state.limitWithTies) {
+      if (state.limit <= 0) {
+        throw ParserError(
+            ParserArea.limitOffset, 'limitWithTies requires a positive limit');
+      }
 
-    if (state.limit > 0) {
-      sqlHelper.addSqlSnippet(' ');
+      if (state.offset > 0) {
+        throw ParserError(
+          ParserArea.limitOffset,
+          'MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset',
+        );
+      }
+    } else {
+      if (state.limit > 0 || state.offset > 0) {
+        sqlHelper.addSqlSnippet('OFFSET ');
+        sqlHelper.addSqlSnippet(state.offset.toString());
+        sqlHelper.addSqlSnippet(' ROWS');
+      }
 
-      sqlHelper.addSqlSnippet('FETCH NEXT ');
-      sqlHelper.addSqlSnippet(state.limit.toString());
-      sqlHelper.addSqlSnippet(
-          state.limitWithTies ? ' ROWS WITH TIES' : ' ROWS ONLY');
+      if (state.limit > 0) {
+        sqlHelper.addSqlSnippet(' ');
+
+        sqlHelper.addSqlSnippet('FETCH NEXT ');
+        sqlHelper.addSqlSnippet(state.limit.toString());
+        sqlHelper.addSqlSnippet(' ROWS ONLY');
+      }
     }
   }
 

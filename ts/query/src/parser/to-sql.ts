@@ -16,7 +16,7 @@ import { defaultHaving } from './default-having';
 import { emitTrailingHints, validateHints } from './default-hint';
 import { defaultInsert } from './default-insert';
 import { defaultJoin } from './default-join';
-import { defaultLimitOffset } from './default-limit-offset';
+import { defaultLimitOffset, dialectDisplayName, hasExplicitTop } from './default-limit-offset';
 import { buildPostgresMutationJoinPredicate } from './default-mutation-join';
 import { defaultOrderBy } from './default-order-by';
 import { emitTrailingReturningClause } from './default-returning';
@@ -100,6 +100,22 @@ export const defaultToSql = (
 
   if (state === null || state === undefined) {
     throw new ParserError(ParserArea.General, 'No state provided');
+  }
+
+  // `TOP` is a T-SQL keyword and nothing else. Through 10.x `toSqlOptionsFor` returned `{}` for the
+  // other three dialects, so `.top(5)` on Postgres/MySQL/SQLite emitted nothing at all and the row
+  // cap the caller explicitly wrote vanished without a word — the very failure the docstring on
+  // `toSqlOptionsFor` spends a paragraph refusing to commit in the other direction.
+  //
+  // A row cap IS reachable on all four dialects, but it is spelled `.limit(n)`. `.top(n)` is MSSQL's
+  // own second construct, not a portable concept, and offering it where it cannot be honoured is
+  // what this release removes. Guarded here rather than in the SELECT hook so it also fires for CTE
+  // bodies, derived tables, and the prepared paths that pass no options at all.
+  if (config.databaseType !== DatabaseType.Mssql && hasExplicitTop(state)) {
+    throw new ParserError(
+      ParserArea.LimitOffset,
+      `${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead`,
+    );
   }
 
   if (state.cteStates.length > 0) {
@@ -244,12 +260,14 @@ export const defaultToSql = (
   if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
     const limitOffset = defaultLimitOffset(state, config, mode);
 
-    sqlHelper.addSqlSnippet(' ');
-    sqlHelper.addSqlSnippetWithValues(limitOffset.getSql(), limitOffset.getValues());
-  }
-
-  if (state.limitWithTies && config.databaseType === DatabaseType.Mssql && state.limit <= 0) {
-    throw new ParserError(ParserArea.LimitOffset, 'limitWithTies requires a positive limit');
+    // MSSQL's WITH TIES renders as a `TOP (n) WITH TIES` prefix on the SELECT list, so the trailing
+    // clause is legitimately empty here — still call the parser for its guards, but do not emit the
+    // separating space, or the statement ends `... ;` with a stray gap.
+    const clause = limitOffset.getSql();
+    if (clause !== '') {
+      sqlHelper.addSqlSnippet(' ');
+      sqlHelper.addSqlSnippetWithValues(clause, limitOffset.getValues());
+    }
   }
 
   // Trailing `FOR UPDATE`/`FOR SHARE` (PG/MySQL). MSSQL's equivalent is a `WITH (...)` hint
@@ -283,16 +301,18 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
 
   return {
     beforeSelectColumns: (state: QueryState, _cfg: Dialect, sqlHelper: SqlHelper) => {
-      if (
-        state.customState !== null &&
-        state.customState !== undefined &&
-        state.customState['top'] !== null &&
-        state.customState['top'] !== undefined &&
-        state.customState['top'] > 0
-      ) {
-        sqlHelper.addSqlSnippet('TOP ');
-        sqlHelper.addSqlSnippet(`(${state.customState['top']})`);
-        sqlHelper.addSqlSnippet(' ');
+      // Two distinct T-SQL constructs share this slot. `.top(n)` is the caller asking for TOP
+      // directly; `.limitWithTies(n)` also renders here, because WITH TIES is only expressible on
+      // TOP. They cannot both apply — `defaultLimitOffset` refuses TOP combined with limit/offset.
+      const explicitTop = hasExplicitTop(state) ? Number(state.customState!['top']) : 0;
+
+      if (explicitTop > 0) {
+        sqlHelper.addSqlSnippet(`TOP (${explicitTop}) `);
+        return;
+      }
+
+      if (state.limitWithTies && state.limit > 0) {
+        sqlHelper.addSqlSnippet(`TOP (${state.limit}) WITH TIES `);
       }
     },
   };

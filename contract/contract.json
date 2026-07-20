@@ -1,8 +1,8 @@
 {
   "_comment": "The contract version is INDEPENDENT of every language package version. Hashes cover corpora/ and schema/; the emission corpus is hashed by its `cases` array alone, excluding `version`, so a rename can never masquerade as a content change. Regenerate with: pnpm --filter @deebeetech/sqleasy-contract validate:write",
-  "contractVersion": "0.2.0",
+  "contractVersion": "0.3.0",
   "hashes": {
-    "corpora/emission/corpus.json": "c7dd2813dbd6903880a79a6eb4a43893f8e579c4237a036a7d8c3ed765170ed1",
+    "corpora/emission/corpus.json": "cd053e7f954765f475f85155b6cbdac39e4d8472a6b1e9813f0cb7c6d37ba6ea",
     "schema/corpus.ts": "bd8ba0926dd8272e6e3b9b98e11936fb83c4e8a8f345b8d92941060147b22334"
   }
 }
