@@ -33,24 +33,148 @@ export type BuilderView<Keys extends keyof QueryBuilder, Self> = {
 };
 
 /**
- * Methods that only MSSQL can run, so they are absent from the other three views.
+ * ── THE ADJUDICATION ──
  *
- * `top`/`clearTop` — `TOP` is a T-SQL keyword; the row cap elsewhere is `limit()`. `merge` — MERGE
- * is native T-SQL only. `hintMssqlOption` — a T-SQL `OPTION (...)` query hint. All adjudicated in
- * `contract/capabilities/decisions.json`.
+ * Below, each dialect names the methods it CANNOT run — the compile-time mirror of a runtime
+ * refusal that ALWAYS fires on that dialect, no matter the arguments. Every entry is grounded in a
+ * hard `throw` in the parser: if a method merely *sometimes* refuses (only in a certain combination,
+ * or only for a non-empty argument), it stays on the view and the runtime handles the bad case. To
+ * assert an absence we had not verified would be the same dishonesty this surface removes, pointed
+ * the other way — so a method appears here only when its refusal has no escape path.
+ *
+ * A `clear*` sits beside its setter: `clearTop` is listed wherever `top` is, because a clear for a
+ * capability the view does not expose has nothing to clear. `distinct`/`clearDistinct` (plain
+ * DISTINCT, universal) are deliberately NOT here — only `distinctOn`/`clearDistinctOn` are.
+ *
+ * Conditional refusals intentionally left OFF these lists (they stay shared, runtime-guarded):
+ *   • `joinTable(JoinType.FullOuter)` — MySQL rejects only that one join type, not `joinTable`.
+ *   • `fromTableWithOwner`/`joinTableWithOwner`/… — MySQL refuses a NON-empty owner; an empty owner
+ *     is accepted, so the method is usable.
+ *   • `onConflictDoUpdate` on MySQL — valid (ON DUPLICATE KEY UPDATE); only a conflict TARGET is
+ *     refused. Absent on MSSQL, which has no upsert at all.
+ *   • `procParamNamed` on MSSQL — valid for procedures; only a named arg to a FUNCTION is refused.
+ *   • `limitWithTies` + `offset` on MSSQL — the combination is refused, not `limitWithTies` itself.
+ *   • joins in UPDATE/DELETE on SQLite — `joinTable` is fine on a SELECT; only the mutation combo
+ *     throws.
  */
-type MssqlOnly = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption';
 
 /**
- * Methods that only Postgres can run. `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres
- * only; the other three already refuse it at runtime.
+ * MSSQL cannot run these.
+ *
+ * `forShare*` — no shared row lock; HOLDLOCK is a SERIALIZABLE isolation hint, not `FOR SHARE`
+ * (default-row-lock). `fromLateral`/`joinLateral` — T-SQL spells LATERAL as APPLY, so the LATERAL
+ * forms are refused in favour of `joinCrossApply`/`joinOuterApply` (default-from, default-join).
+ * `whereJsonContains`/`havingJsonContains` — no JSON containment operator (default-where).
+ * `onConflict*`/`clearUpsert` — no upsert; T-SQL expresses it with the separate MERGE statement
+ * (default-insert). `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
+ * `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres-only (default-select).
  */
-type PostgresOnly = 'distinctOn' | 'clearDistinctOn';
+type AbsentOnMssql =
+  | 'forShare'
+  | 'forShareNowait'
+  | 'forShareSkipLocked'
+  | 'fromLateral'
+  | 'joinLateral'
+  | 'whereJsonContains'
+  | 'havingJsonContains'
+  | 'onConflictDoNothing'
+  | 'onConflictDoUpdate'
+  | 'onConflictDoUpdateRaw'
+  | 'clearUpsert'
+  | 'hintUseIndex'
+  | 'hintForceIndex'
+  | 'distinctOn'
+  | 'clearDistinctOn';
 
-// The rollout tightens these as the capability manifest is adjudicated. Only cells that are ACTUALLY
-// adjudicated appear above — an un-adjudicated method stays on every view (shared by default) rather
-// than being asserted absent on a guess. Asserting an absence we have not verified would be the same
-// dishonesty this surface exists to remove, pointed the other way.
+/**
+ * MySQL cannot run these.
+ *
+ * `top`/`clearTop` — `TOP` is a T-SQL keyword; the row cap is `limit()`. `merge` — MERGE is native
+ * T-SQL only. `hintMssqlOption` — a T-SQL `OPTION (...)` hint. `distinctOn`/`clearDistinctOn` —
+ * Postgres-only. `limitWithTies`/`clearLimitWithTies` — no WITH TIES (default-limit-offset).
+ * `groupByCube`/`groupByGroupingSets` — MySQL has ROLLUP but neither CUBE nor GROUPING SETS
+ * (default-group-by). `fromTableFunction`/`fromTableFunctionWithOwner` — no table-valued functions
+ * in FROM (default-from). `procParamNamed` — no named parameters in CALL (default-call).
+ * `returning`/`returningRaw`/`clearReturning` — no RETURNING clause (default-returning).
+ */
+type AbsentOnMysql =
+  | 'top'
+  | 'clearTop'
+  | 'merge'
+  | 'hintMssqlOption'
+  | 'distinctOn'
+  | 'clearDistinctOn'
+  | 'limitWithTies'
+  | 'clearLimitWithTies'
+  | 'groupByCube'
+  | 'groupByGroupingSets'
+  | 'fromTableFunction'
+  | 'fromTableFunctionWithOwner'
+  | 'procParamNamed'
+  | 'returning'
+  | 'returningRaw'
+  | 'clearReturning';
+
+/**
+ * Postgres cannot run these.
+ *
+ * `top`/`clearTop` — T-SQL keyword; use `limit()`. `merge` — native T-SQL only. `hintMssqlOption` —
+ * T-SQL `OPTION (...)`. `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
+ * Everything else Postgres does; it is the widest surface, and `distinctOn` is its own.
+ */
+type AbsentOnPostgres =
+  'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex';
+
+/**
+ * SQLite cannot run these — the narrowest surface.
+ *
+ * `call*`/`clearCall`/`procParam*` — no stored procedures or functions (default-call). `forUpdate*`/
+ * `forShare*`/`clearRowLock` — no row locking (default-row-lock). `fromLateral`/`joinLateral`/
+ * `joinCrossApply`/`joinOuterApply` — no LATERAL or APPLY (default-from, default-join).
+ * `groupByRollup`/`groupByCube`/`groupByGroupingSets` — none of the grouping extensions
+ * (default-group-by). `whereJsonContains`/`havingJsonContains` — no JSON containment (default-where).
+ * `hintUseIndex`/`hintForceIndex` — MySQL-only; `hintMssqlOption` — MSSQL-only (default-hint).
+ * `limitWithTies`/`clearLimitWithTies` — no WITH TIES. `merge`, `top`/`clearTop` — T-SQL only.
+ * `distinctOn`/`clearDistinctOn` — Postgres-only.
+ */
+type AbsentOnSqlite =
+  | 'callProcedure'
+  | 'callProcedureWithOwner'
+  | 'callFunction'
+  | 'callFunctionWithOwner'
+  | 'clearCall'
+  | 'procParam'
+  | 'procParams'
+  | 'procParamNamed'
+  | 'procParamInOut'
+  | 'procParamOut'
+  | 'procParamRaw'
+  | 'forUpdate'
+  | 'forUpdateNowait'
+  | 'forUpdateSkipLocked'
+  | 'forShare'
+  | 'forShareNowait'
+  | 'forShareSkipLocked'
+  | 'clearRowLock'
+  | 'fromLateral'
+  | 'joinLateral'
+  | 'joinCrossApply'
+  | 'joinOuterApply'
+  | 'groupByRollup'
+  | 'groupByCube'
+  | 'groupByGroupingSets'
+  | 'whereJsonContains'
+  | 'havingJsonContains'
+  | 'hintUseIndex'
+  | 'hintForceIndex'
+  | 'hintMssqlOption'
+  | 'limitWithTies'
+  | 'clearLimitWithTies'
+  | 'merge'
+  | 'top'
+  | 'clearTop'
+  | 'distinctOn'
+  | 'clearDistinctOn';
 
 // Each view is an `interface extends`, not a `type` alias, because a view passes ITSELF as `Self`
 // (so builder-returning methods report the view type and chaining stays narrow) — and a `type` alias
@@ -58,36 +182,37 @@ type PostgresOnly = 'distinctOn' | 'clearDistinctOn';
 // whole shape comes from `BuilderView`. The empty-object-type lint is disabled per view for exactly
 // that reason.
 
-/** The MSSQL builder view: every common method plus MSSQL's own, minus what only Postgres can do. */
+/** The MSSQL builder view — every method except {@link AbsentOnMssql}. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MssqlQueryBuilder extends BuilderView<
-  Exclude<keyof QueryBuilder, PostgresOnly>,
+  Exclude<keyof QueryBuilder, AbsentOnMssql>,
   MssqlQueryBuilder
 > {}
 
-/** The Postgres builder view. */
+/** The Postgres builder view — every method except {@link AbsentOnPostgres}. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PostgresQueryBuilder extends BuilderView<
-  Exclude<keyof QueryBuilder, MssqlOnly>,
+  Exclude<keyof QueryBuilder, AbsentOnPostgres>,
   PostgresQueryBuilder
 > {}
 
-/** The MySQL builder view. */
+/** The MySQL builder view — every method except {@link AbsentOnMysql}. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MysqlQueryBuilder extends BuilderView<
-  Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>,
+  Exclude<keyof QueryBuilder, AbsentOnMysql>,
   MysqlQueryBuilder
 > {}
 
-/** The SQLite builder view. */
+/** The SQLite builder view — every method except {@link AbsentOnSqlite}. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface SqliteQueryBuilder extends BuilderView<
-  Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>,
+  Exclude<keyof QueryBuilder, AbsentOnSqlite>,
   SqliteQueryBuilder
 > {}
 
 /**
- * The surface every dialect shares — the intersection of the four views (nothing dialect-exclusive).
+ * The surface every dialect shares — a method appears here only when NO dialect lacks it, so it is
+ * `keyof QueryBuilder` minus the union of all four absence sets.
  *
  * All four dialect views are assignable to this, so a helper that works on *any* dialect's builder
  * and only touches common methods should accept `CommonQueryBuilder` (or be generic over it) rather
@@ -95,7 +220,7 @@ export interface SqliteQueryBuilder extends BuilderView<
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface CommonQueryBuilder extends BuilderView<
-  Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>,
+  Exclude<keyof QueryBuilder, AbsentOnMssql | AbsentOnMysql | AbsentOnPostgres | AbsentOnSqlite>,
   CommonQueryBuilder
 > {}
 

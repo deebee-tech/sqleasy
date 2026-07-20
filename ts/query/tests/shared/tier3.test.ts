@@ -71,7 +71,9 @@ describe('Tier 3 — full-text search', () => {
 // ON CONFLICT never is. MERGE is genuine native T-SQL and should return as an explicit surface.
 describe('Tier 3 — MSSQL has no upsert', () => {
   it('refuses onConflictDoUpdate rather than synthesizing a MERGE', () => {
-    const b = new MssqlQuery().newBuilder();
+    // Runtime-floor test: onConflict* is absent from the MSSQL view (typed-views.test.ts proves the
+    // compile-time absence), so reach it through the wide builder to prove the runtime still refuses.
+    const b = new MssqlQuery().newBuilder() as unknown as QueryBuilder;
     b.insertInto('users')
       .insertColumns(['email', 'name'])
       .insertValues(['a@b.c', 'Ada'])
@@ -103,7 +105,7 @@ describe('Tier 3 — LATERAL / APPLY', () => {
   });
 
   it('SQLite fromLateral throws', () => {
-    const b = new SqliteQuery().newBuilder();
+    const b = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .fromLateral('x', (sub) => {
@@ -157,7 +159,7 @@ describe('Tier 3 — WITH TIES', () => {
   });
 
   it('SQLite limitWithTies throws', () => {
-    const b = new SqliteQuery().newBuilder();
+    const b = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .orderByColumn('o', 'total', OrderByDirection.Descending)
@@ -168,7 +170,7 @@ describe('Tier 3 — WITH TIES', () => {
   // MySQL has no WITH TIES in any form. It previously emitted `FETCH FIRST … WITH TIES`, which
   // MySQL cannot parse.
   it('MySQL limitWithTies throws', () => {
-    const b = new MysqlQuery().newBuilder();
+    const b = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .orderByColumn('o', 'total', OrderByDirection.Descending)
@@ -181,7 +183,7 @@ describe('Tier 3 — WITH TIES', () => {
 // Each of these previously emitted SQL the engine cannot run.
 describe('Tier 3 — grouping extensions refuse unsupported dialects', () => {
   it('SQLite groupByRollup throws', () => {
-    const b = new SqliteQuery().newBuilder();
+    const b = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .groupByRollup([{ tableNameOrAlias: 'o', columnName: 'region' }]);
@@ -189,7 +191,7 @@ describe('Tier 3 — grouping extensions refuse unsupported dialects', () => {
   });
 
   it('SQLite groupByCube throws', () => {
-    const b = new SqliteQuery().newBuilder();
+    const b = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .groupByCube([{ tableNameOrAlias: 'o', columnName: 'region' }]);
@@ -197,7 +199,7 @@ describe('Tier 3 — grouping extensions refuse unsupported dialects', () => {
   });
 
   it('SQLite groupByGroupingSets throws', () => {
-    const b = new SqliteQuery().newBuilder();
+    const b = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .groupByGroupingSets([[{ tableNameOrAlias: 'o', columnName: 'region' }]]);
@@ -215,7 +217,7 @@ describe('Tier 3 — grouping extensions refuse unsupported dialects', () => {
 
 describe('Tier 3 — table functions refuse MySQL', () => {
   it('MySQL fromTableFunction throws', () => {
-    const b = new MysqlQuery().newBuilder();
+    const b = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
     b.selectAll().fromTableFunction('generate_series', 'g', [1, 10]);
     expect(() => b.parseRaw()).toThrow(/MySQL does not support table functions in FROM/);
   });

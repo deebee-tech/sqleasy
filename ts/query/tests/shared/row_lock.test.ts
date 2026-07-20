@@ -8,6 +8,7 @@ import {
   PostgresQuery,
   SqliteQuery,
 } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
   describe('forUpdate / forShare', () => {
@@ -52,7 +53,7 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
     });
 
     it('SQLite has no row locking and throws', () => {
-      const builder = new SqliteQuery().newBuilder();
+      const builder = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
       builder.selectAll().fromTable('users', 'u').forUpdate();
 
       expect(() => builder.parsePrepared()).toThrow(
@@ -74,14 +75,14 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
     // emitting it silently escalated the caller's isolation level. T-SQL's hint taxonomy has no
     // shared-mode counterpart to UPDLOCK at all.
     it('MSSQL refuses forShare rather than escalating to SERIALIZABLE', () => {
-      const builder = new MssqlQuery().newBuilder();
+      const builder = new MssqlQuery().newBuilder() as unknown as QueryBuilder;
       builder.selectAll().fromTable('users', 'u').forShare();
 
       expect(() => builder.parseRaw()).toThrow(/MSSQL has no shared row lock/);
     });
 
     it('MSSQL refuses forShareSkipLocked for the same reason', () => {
-      const builder = new MssqlQuery().newBuilder();
+      const builder = new MssqlQuery().newBuilder() as unknown as QueryBuilder;
       builder.selectAll().fromTable('users', 'u').forShareSkipLocked();
 
       expect(() => builder.parseRaw()).toThrow(/HOLDLOCK is a SERIALIZABLE isolation hint/);

@@ -8,6 +8,7 @@ import {
   QueryType,
   SqliteQuery,
 } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 describe('Stored procedures & functions (CALL / EXEC)', () => {
   describe('callProcedure', () => {
@@ -56,7 +57,7 @@ describe('Stored procedures & functions (CALL / EXEC)', () => {
     });
 
     it('SQLite has no stored procedures/functions and throws', () => {
-      const builder = new SqliteQuery().newBuilder();
+      const builder = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
       builder.callProcedure('archive_user').procParam(42);
 
       expect(() => builder.parsePrepared()).toThrow(
@@ -158,7 +159,7 @@ describe('Stored procedures & functions (CALL / EXEC)', () => {
     });
 
     it('SQLite throws for functions too', () => {
-      const builder = new SqliteQuery().newBuilder();
+      const builder = new SqliteQuery().newBuilder() as unknown as QueryBuilder;
       builder.callFunction('add_two').procParam(1).procParam(2);
 
       expect(() => builder.parsePrepared()).toThrow(
@@ -206,7 +207,7 @@ describe('Stored procedures & functions (CALL / EXEC)', () => {
     });
 
     it('MySQL refuses named parameters entirely', () => {
-      const builder = new MysqlQuery().newBuilder();
+      const builder = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
       builder.callProcedure('set_status').procParamNamed('user_id', 1);
 
       expect(() => builder.parsePrepared()).toThrow(

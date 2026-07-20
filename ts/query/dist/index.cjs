@@ -3047,6 +3047,7 @@ const defaultToSql = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
 	if (config.databaseType !== DatabaseType.Mssql && hasExplicitTop(state)) throw new ParserError(ParserArea.LimitOffset, `${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead`);
+	validateHints(state, config, ParserArea.General);
 	if (state.cteStates.length > 0) {
 		const cte = defaultCte(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
@@ -3135,7 +3136,6 @@ const defaultToSql = (state, config, mode, options) => {
 		}
 	}
 	if (state.rowLock) emitTrailingRowLockClause(sqlHelper, config, state.rowLock);
-	validateHints(state, config, ParserArea.General);
 	emitTrailingHints(sqlHelper, state, config);
 	if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 	return sqlHelper;

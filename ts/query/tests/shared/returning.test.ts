@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery, WhereOperator } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 describe('RETURNING / OUTPUT', () => {
   describe('INSERT', () => {
@@ -34,7 +35,7 @@ describe('RETURNING / OUTPUT', () => {
     });
 
     it('MySQL has no RETURNING and throws', () => {
-      const builder = new MysqlQuery().newBuilder();
+      const builder = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
       builder.insertInto('users').insertColumns(['name']).insertValues(['Ada']).returning(['id']);
 
       expect(() => builder.parsePrepared()).toThrow('Insert: MySQL does not support RETURNING');

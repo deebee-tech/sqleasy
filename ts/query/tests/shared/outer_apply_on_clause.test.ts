@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
-import type { CommonQueryBuilder } from '../../src';
+import type { CommonQueryBuilder, QueryBuilder } from '../../src';
 
 // MSSQL's `OUTER APPLY` carries its own join semantics and takes no ON clause. Postgres and MySQL
 // express the same thing as `LEFT JOIN LATERAL` — but a LEFT JOIN *requires* ON or USING, and an
@@ -10,8 +10,11 @@ import type { CommonQueryBuilder } from '../../src';
 // The corpus pinned the broken form green, because it was only ever checked against our own
 // emitter. `CROSS JOIN LATERAL` was never affected: a CROSS JOIN takes no ON.
 describe('joinOuterApply emits a complete join', () => {
+  // joinOuterApply is on three of the four views but not SQLite's (which refuses it), so it is not a
+  // CommonQueryBuilder method. The helper runs all four dialects — including the SQLite refusal — so
+  // it reaches the method through the wide builder; each dialect's own view still guards its callers.
   const build = (make: () => CommonQueryBuilder) => {
-    const b = make();
+    const b = make() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .joinOuterApply('x', (inner) => {
@@ -51,7 +54,7 @@ describe('joinOuterApply emits a complete join', () => {
 // error, the same class of bug in the opposite direction.
 describe('joinCrossApply takes no ON clause', () => {
   const build = (make: () => CommonQueryBuilder) => {
-    const b = make();
+    const b = make() as unknown as QueryBuilder;
     b.selectAll()
       .fromTable('orders', 'o')
       .joinCrossApply('x', (inner) => {

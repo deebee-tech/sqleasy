@@ -50,6 +50,50 @@ describe('per-engine typed views', () => {
     expect(true).toBe(true); // the real assertions are the @ts-expect-error lines above
   });
 
+  // One representative newly-adjudicated absence per dialect — the full set lives in
+  // typed-views.ts, each grounded in a hard runtime refusal. These pin the compile-time ceiling so a
+  // method can never be quietly re-added to a view it does not belong on.
+  it('the wider per-dialect adjudications hold at compile time', () => {
+    const mssql = null as unknown as MssqlQueryBuilder;
+    const postgres = null as unknown as PostgresQueryBuilder;
+    const mysql = null as unknown as MysqlQueryBuilder;
+    const sqlite = null as unknown as SqliteQueryBuilder;
+
+    // MSSQL: no shared row lock, no upsert.
+    // @ts-expect-error forShare is absent on MSSQL (no shared row lock)
+    void (() => mssql.forShare());
+    // @ts-expect-error onConflictDoUpdate is absent on MSSQL (no upsert; MERGE is separate)
+    void (() => mssql.onConflictDoUpdate([], []));
+    // …but MSSQL keeps forUpdate (UPDLOCK) and its own index-free hints:
+    void (() => mssql.forUpdate());
+
+    // MySQL: no RETURNING, no WITH TIES, no table functions.
+    // @ts-expect-error returning is absent on MySQL
+    void (() => mysql.returning(['id']));
+    // @ts-expect-error limitWithTies is absent on MySQL
+    void (() => mysql.limitWithTies(5));
+    // …but MySQL keeps its own index hints:
+    void (() => mysql.hintUseIndex('u', 'idx'));
+
+    // Postgres: no MySQL index hints.
+    // @ts-expect-error hintUseIndex is absent on Postgres (MySQL-only)
+    void (() => postgres.hintUseIndex('u', 'idx'));
+    // …but Postgres keeps its wide surface, e.g. RETURNING and row locks:
+    void (() => postgres.returning(['id']));
+
+    // SQLite: the narrowest — no procs, no row locks, no LATERAL/APPLY, no grouping extensions.
+    // @ts-expect-error callProcedure is absent on SQLite
+    void (() => sqlite.callProcedure('p'));
+    // @ts-expect-error forUpdate is absent on SQLite (no row locking at all)
+    void (() => sqlite.forUpdate());
+    // @ts-expect-error groupByRollup is absent on SQLite
+    void (() => sqlite.groupByRollup());
+    // …but SQLite keeps the shared core:
+    void (() => sqlite.selectAll().fromTable('users', 'u').limit(5));
+
+    expect(true).toBe(true);
+  });
+
   // The user-facing proof: a facade hands back the NARROW view, so the ceiling holds through the
   // real entry point, not just when a view type is written by hand.
   it('the dialect facades hand back the narrow view (compile-time)', () => {

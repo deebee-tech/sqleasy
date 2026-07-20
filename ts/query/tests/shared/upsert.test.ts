@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 describe('Upsert (INSERT conflict clause)', () => {
   describe('onConflictDoNothing', () => {
@@ -67,7 +68,7 @@ describe('Upsert (INSERT conflict clause)', () => {
     // T-SQL has no upsert primitive. This asserted a synthesized MERGE — a different statement,
     // un-hinted and therefore race-prone at READ COMMITTED, which the caller never wrote.
     it('MSSQL refuses onConflictDoNothing rather than synthesizing a MERGE', () => {
-      const builder = new MssqlQuery().newBuilder();
+      const builder = new MssqlQuery().newBuilder() as unknown as QueryBuilder;
       builder
         .insertInto('users')
         .insertColumns(['email'])
@@ -135,7 +136,7 @@ describe('Upsert (INSERT conflict clause)', () => {
     });
 
     it('MSSQL refuses onConflictDoUpdate rather than synthesizing a MERGE', () => {
-      const builder = new MssqlQuery().newBuilder();
+      const builder = new MssqlQuery().newBuilder() as unknown as QueryBuilder;
       builder
         .insertInto('users')
         .insertColumns(['email', 'name'])
