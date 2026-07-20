@@ -26,12 +26,12 @@
       "unadjudicated": 53
     },
     "enumCells": {
-      "native": 173,
-      "absent": 31,
-      "unadjudicated": 116
+      "native": 268,
+      "absent": 52,
+      "unadjudicated": 0
     },
-    "adjudicated": 487,
-    "namesAssigned": 411
+    "adjudicated": 775,
+    "namesAssigned": 668
   },
   "ops": {
     "and": {
@@ -6236,47 +6236,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "SELECT * FROM func()",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
           "kind": "absent",
-          "adjudicated": false,
-          "refusal": null,
+          "adjudicated": true,
+          "refusal": "MySQL does not support table-valued functions",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "SELECT * FROM func()",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
-          "adjudicated": false,
-          "refusal": null,
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6289,47 +6289,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": false,
+          "name": "EXEC (no return wrapper)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": false,
+          "name": "CALL (no return wrapper)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": false,
+          "name": "CALL (no return wrapper)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
-          "adjudicated": false,
-          "refusal": null,
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6342,47 +6342,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "CURRENT ROW",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "CURRENT ROW",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "CURRENT ROW",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "CURRENT ROW",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6395,47 +6395,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "N FOLLOWING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "N FOLLOWING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "N FOLLOWING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "N FOLLOWING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6448,47 +6448,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "N PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "N PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "N PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "N PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6501,47 +6501,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "UNBOUNDED PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "UNBOUNDED PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "UNBOUNDED PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "UNBOUNDED PRECEDING",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6554,47 +6554,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "ROWS",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "ROWS",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "ROWS",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "ROWS",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6607,47 +6607,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "CONTAINS",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MySQL-specific concept spanning four unrelated subsystems"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "MATCH … AGAINST … IN BOOLEAN MODE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MySQL-specific concept spanning four unrelated subsystems"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "to_tsquery",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MySQL-specific concept spanning four unrelated subsystems"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "MATCH",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MySQL-specific concept spanning four unrelated subsystems"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6660,47 +6660,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "FREETEXT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "MATCH … AGAINST … IN NATURAL LANGUAGE MODE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "plainto_tsquery",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "MATCH",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6717,47 +6717,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 107,
             "casesThrowing": 20,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 99,
             "casesThrowing": 24,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 105,
             "casesThrowing": 19,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 95,
             "casesThrowing": 28,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6773,47 +6773,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 28,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 27,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 27,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 27,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6829,47 +6829,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6884,47 +6884,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6939,47 +6939,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -6994,47 +6994,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7048,47 +7048,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7103,47 +7103,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7157,47 +7157,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7210,47 +7210,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "CROSS JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "CROSS JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "CROSS JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "CROSS JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7263,47 +7263,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "FULL OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
           "kind": "absent",
-          "adjudicated": false,
-          "refusal": null,
+          "adjudicated": true,
+          "refusal": "MySQL does not support FULL OUTER JOIN",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "FULL OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "FULL OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7318,47 +7318,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "INNER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 26,
             "casesThrowing": 3,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "INNER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 21,
             "casesThrowing": 7,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "INNER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 24,
             "casesThrowing": 4,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "INNER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 21,
             "casesThrowing": 7,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7371,47 +7371,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "LEFT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "LEFT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "LEFT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "LEFT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7424,47 +7424,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "LEFT OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": false,
+          "name": "LEFT OUTER JOIN",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "LEFT OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "LEFT OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7478,47 +7478,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7531,47 +7531,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "RIGHT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": false,
+          "name": "RIGHT JOIN",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "RIGHT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "RIGHT JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7584,47 +7584,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "RIGHT OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": false,
+          "name": "RIGHT OUTER JOIN",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "RIGHT OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "RIGHT OUTER JOIN",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7638,47 +7638,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "JSON_VALUE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "JSON_UNQUOTE(JSON_EXTRACT(...))",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "->>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "json_extract",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7713,7 +7713,7 @@
           }
         },
         "postgres": {
-          "name": "nullsFirst",
+          "name": "NULLS FIRST",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -7724,7 +7724,7 @@
           }
         },
         "sqlite": {
-          "name": "nullsFirst",
+          "name": "NULLS FIRST",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -7766,7 +7766,7 @@
           }
         },
         "postgres": {
-          "name": "nullsLast",
+          "name": "NULLS LAST",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -7777,7 +7777,7 @@
           }
         },
         "sqlite": {
-          "name": "nullsLast",
+          "name": "NULLS LAST",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -7798,47 +7798,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7851,47 +7851,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "ASC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 13,
             "casesThrowing": 2,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "ASC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 10,
             "casesThrowing": 4,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "ASC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 14,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "ASC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 12,
             "casesThrowing": 2,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7904,47 +7904,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "DESC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "DESC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 2,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "DESC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "DESC",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
             "casesThrowing": 2,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7958,47 +7958,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8012,47 +8012,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8066,47 +8066,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8119,47 +8119,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity, same class as Ilike"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity, same class as Ilike"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity, same class as Ilike"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity, same class as Ilike"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8172,47 +8172,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8229,47 +8229,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 107,
             "casesThrowing": 20,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 99,
             "casesThrowing": 24,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 105,
             "casesThrowing": 19,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 95,
             "casesThrowing": 28,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8285,47 +8285,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 28,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 27,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 27,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": ">",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 27,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8341,47 +8341,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": ">=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 8,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8417,7 +8417,7 @@
           }
         },
         "postgres": {
-          "name": "ilike",
+          "name": "ILIKE",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -8459,9 +8459,9 @@
           }
         },
         "mysql": {
-          "name": "",
+          "name": "REGEXP_LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
@@ -8470,9 +8470,9 @@
           }
         },
         "postgres": {
-          "name": "",
+          "name": "~*",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
@@ -8502,47 +8502,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(col <> value OR col IS NULL)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL/MySQL synthesize it; native only on postgres, sqlite 3.39+, mssql 2022+"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "NOT (col <=> value)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL/MySQL synthesize it; native only on postgres, sqlite 3.39+, mssql 2022+"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "IS DISTINCT FROM",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL/MySQL synthesize it; native only on postgres, sqlite 3.39+, mssql 2022+"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "IS DISTINCT FROM",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL/MySQL synthesize it; native only on postgres, sqlite 3.39+, mssql 2022+"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8555,47 +8555,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "col = value",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "<=>",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "IS NOT DISTINCT FROM",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "IS NOT DISTINCT FROM",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8610,47 +8610,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "<",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8665,47 +8665,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "<=",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8720,47 +8720,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8774,47 +8774,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "(none)",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8827,47 +8827,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "NOT LIKE ... ESCAPE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "NOT LIKE ... ESCAPE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "NOT LIKE ... ESCAPE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "NOT LIKE ... ESCAPE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8882,47 +8882,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "<>",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8957,7 +8957,7 @@
           }
         },
         "postgres": {
-          "name": "ilike",
+          "name": "NOT ILIKE",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -8989,47 +8989,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
+          "name": "NOT LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "extraction hypothesis from generated goldens; not an independent check"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9053,9 +9053,9 @@
           }
         },
         "mysql": {
-          "name": "",
+          "name": "NOT REGEXP_LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
@@ -9064,9 +9064,9 @@
           }
         },
         "postgres": {
-          "name": "",
+          "name": "!~",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
@@ -9106,9 +9106,9 @@
           }
         },
         "mysql": {
-          "name": "",
+          "name": "REGEXP_LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
@@ -9117,9 +9117,9 @@
           }
         },
         "postgres": {
-          "name": "",
+          "name": "~",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
@@ -9148,47 +9148,47 @@
       ],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LIKE ... ESCAPE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent case sensitivity"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9199,47 +9199,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "EXEC",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "CALL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "CALL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9250,47 +9250,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SELECT func() / SELECT * FROM func()",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SELECT func()",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SELECT func() / SELECT * FROM func()",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9301,47 +9301,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "positional value (or @name = value)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "positional value",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "positional value (or name := value)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9352,47 +9352,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "DECLARE @name; ... @name = @name OUTPUT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "@name (session variable)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "NULL placeholder (name := NULL)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9403,47 +9403,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "DECLARE @name = value; ... @name = @name OUTPUT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SET @name = value; ... @name",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "bound value (name := value)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9454,47 +9454,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SELECT func()",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SELECT func()",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SELECT func()",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support stored procedures or functions (CALL/EXEC)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9505,47 +9505,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "UNBOUNDED FOLLOWING",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "UNBOUNDED FOLLOWING",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "UNBOUNDED FOLLOWING",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "UNBOUNDED FOLLOWING",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9556,7 +9556,7 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "range",
+          "name": "RANGE",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -9567,7 +9567,7 @@
           }
         },
         "mysql": {
-          "name": "range",
+          "name": "RANGE",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -9578,7 +9578,7 @@
           }
         },
         "postgres": {
-          "name": "range",
+          "name": "RANGE",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -9589,7 +9589,7 @@
           }
         },
         "sqlite": {
-          "name": "range",
+          "name": "RANGE",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -9629,7 +9629,7 @@
           }
         },
         "postgres": {
-          "name": "phrase",
+          "name": "phraseto_tsquery",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
@@ -9659,46 +9659,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F3/G2: emitted before the alias; three dialects support hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "USE INDEX",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F3/G2: emitted before the alias; three dialects support hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F3/G2: emitted before the alias; three dialects support hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F3/G2: emitted before the alias; three dialects support hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9710,46 +9710,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-G2: MySQL-only today; MSSQL and SQLite have real index hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "FORCE INDEX",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-G2: MySQL-only today; MSSQL and SQLite have real index hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-G2: MySQL-only today; MSSQL and SQLite have real index hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-G2: MySQL-only today; MSSQL and SQLite have real index hints"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9760,47 +9760,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "OPTION (...)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9811,47 +9811,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(raw passthrough)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(raw passthrough)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(raw passthrough)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(raw passthrough)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9863,46 +9863,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL LATERAL joins use CROSS APPLY/OUTER APPLY — use joinCrossApply/joinOuterApply",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: adjudicate alongside the APPLY pair"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "JOIN LATERAL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: adjudicate alongside the APPLY pair"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "JOIN LATERAL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: adjudicate alongside the APPLY pair"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support LATERAL joins",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: adjudicate alongside the APPLY pair"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9913,47 +9913,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "CROSS APPLY",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: T-SQL vocabulary translated to LATERAL elsewhere"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "CROSS JOIN LATERAL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: T-SQL vocabulary translated to LATERAL elsewhere"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "CROSS JOIN LATERAL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: T-SQL vocabulary translated to LATERAL elsewhere"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support CROSS APPLY/LATERAL joins",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: T-SQL vocabulary translated to LATERAL elsewhere"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -9964,47 +9964,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "OUTER APPLY",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: translated to LEFT JOIN LATERAL with no ON — invalid"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LEFT JOIN LATERAL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: translated to LEFT JOIN LATERAL with no ON — invalid"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "LEFT JOIN LATERAL",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: translated to LEFT JOIN LATERAL with no ON — invalid"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support OUTER APPLY/LATERAL joins",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: translated to LEFT JOIN LATERAL with no ON — invalid"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10015,47 +10015,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "JSON_QUERY",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: no coverage on any dialect; unproven"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "JSON_EXTRACT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: no coverage on any dialect; unproven"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "->",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: no coverage on any dialect; unproven"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: no coverage on any dialect; unproven"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10066,47 +10066,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "WITH (UPDLOCK, ROWLOCK)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "FOR UPDATE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "FOR UPDATE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10118,46 +10118,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL has no shared-row-lock hint; HOLDLOCK escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "FOR SHARE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL has no shared-row-lock hint; HOLDLOCK escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "FOR SHARE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL has no shared-row-lock hint; HOLDLOCK escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL has no shared-row-lock hint; HOLDLOCK escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10168,47 +10168,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(none)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(none)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(none)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "(none)",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10219,47 +10219,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "NOWAIT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "NOWAIT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "NOWAIT",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10270,47 +10270,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "READPAST",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL READPAST is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SKIP LOCKED",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL READPAST is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "SKIP LOCKED",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL READPAST is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL READPAST is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10322,46 +10322,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "INSERT IGNORE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ON CONFLICT DO NOTHING",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ON CONFLICT DO NOTHING",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10373,46 +10373,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ON DUPLICATE KEY UPDATE",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ON CONFLICT DO UPDATE SET",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ON CONFLICT DO UPDATE SET",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — no corpus coverage — an unexercised member is an unproven claim"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10434,9 +10434,9 @@
           }
         },
         "mysql": {
-          "name": "",
+          "name": "NOT REGEXP_LIKE",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
@@ -10445,9 +10445,9 @@
           }
         },
         "postgres": {
-          "name": "",
+          "name": "!~*",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
