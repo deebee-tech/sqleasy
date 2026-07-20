@@ -59,6 +59,21 @@ void hintsAreMysqlOnly() {
       'u', 'idx'); // expect-error: hintUseIndex on PostgresQueryBuilder
 }
 
+// Engine-native renames: each dialect shows only its own spelling. The generic name is hidden where
+// the engine-native alias is shown, and the alias is absent on dialects it does not belong to.
+void engineNativeRenames() {
+  MssqlQuery()
+      .newBuilder()
+      .forUpdate(); // expect-error: forUpdate renamed to updlock on MSSQL
+  MysqlQuery()
+      .newBuilder()
+      .onConflictDoNothing(); // expect-error: onConflictDoNothing renamed to insertIgnore on MySQL
+  PostgresQuery().newBuilder().updlock(); // expect-error: updlock is MSSQL-only
+  PostgresQuery()
+      .newBuilder()
+      .insertIgnore(); // expect-error: insertIgnore is MySQL-only
+}
+
 // SQLite is the narrowest — no stored procedures, no row locking.
 void sqliteLacks() {
   SqliteQuery()

@@ -1987,6 +1987,23 @@ export class QueryBuilder {
     return this;
   };
 
+  // ── Engine-native upsert spellings (MySQL) ──────────────────────────────────────────────────
+  // MySQL's upsert is not `ON CONFLICT`; it is `INSERT IGNORE` and `... ON DUPLICATE KEY UPDATE`,
+  // and neither takes a conflict target (MySQL fires on ANY unique key). The MySQL builder view
+  // exposes these names INSTEAD of `onConflict*`; they forward to the same runtime, so the emitted
+  // SQL — and the goldens — are unchanged. Omitting the `conflictColumns` parameter is the honest
+  // surface: MySQL cannot honour one, so it is not offered.
+
+  /** MySQL `INSERT IGNORE` — skip rows that would violate a unique key. */
+  public insertIgnore = (): this => this.onConflictDoNothing();
+
+  /** MySQL `... ON DUPLICATE KEY UPDATE col = val, …`. */
+  public onDuplicateKeyUpdate = (updates: { columnName: string; value: any }[]): this =>
+    this.onConflictDoUpdate([], updates);
+
+  /** Raw-SQL form of {@link onDuplicateKeyUpdate}'s SET list. */
+  public onDuplicateKeyUpdateRaw = (raw: string): this => this.onConflictDoUpdateRaw([], raw);
+
   /** Exclusive row lock on the SELECT's result rows (`FOR UPDATE`; MSSQL `WITH (UPDLOCK, ROWLOCK)`). */
   public forUpdate = (): this => {
     this.#state.rowLock = { mode: RowLockMode.ForUpdate, wait: RowLockWait.Default };
@@ -2004,6 +2021,20 @@ export class QueryBuilder {
     this.#state.rowLock = { mode: RowLockMode.ForUpdate, wait: RowLockWait.SkipLocked };
     return this;
   };
+
+  // ── Engine-native lock spellings (MSSQL) ────────────────────────────────────────────────────
+  // A T-SQL DBA reaches for the UPDLOCK table hint, not `FOR UPDATE`. The MSSQL builder view exposes
+  // these names INSTEAD of `forUpdate*`; they forward to the same runtime (the `WITH (UPDLOCK,
+  // ROWLOCK[, NOWAIT|READPAST])` hint), so the emitted SQL and the goldens are unchanged.
+
+  /** MSSQL `WITH (UPDLOCK, ROWLOCK)` — the T-SQL spelling of {@link forUpdate}. */
+  public updlock = (): this => this.forUpdate();
+
+  /** {@link updlock}, failing immediately on an already-locked row (`, NOWAIT`). */
+  public updlockNowait = (): this => this.forUpdateNowait();
+
+  /** {@link updlock}, skipping already-locked rows (`, READPAST`). */
+  public updlockSkipLocked = (): this => this.forUpdateSkipLocked();
 
   /** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
   public forShare = (): this => {

@@ -5300,6 +5300,12 @@ var QueryBuilder = class QueryBuilder {
 		this.#state.upsertState = void 0;
 		return this;
 	};
+	/** MySQL `INSERT IGNORE` — skip rows that would violate a unique key. */
+	insertIgnore = () => this.onConflictDoNothing();
+	/** MySQL `... ON DUPLICATE KEY UPDATE col = val, …`. */
+	onDuplicateKeyUpdate = (updates) => this.onConflictDoUpdate([], updates);
+	/** Raw-SQL form of {@link onDuplicateKeyUpdate}'s SET list. */
+	onDuplicateKeyUpdateRaw = (raw) => this.onConflictDoUpdateRaw([], raw);
 	/** Exclusive row lock on the SELECT's result rows (`FOR UPDATE`; MSSQL `WITH (UPDLOCK, ROWLOCK)`). */
 	forUpdate = () => {
 		this.#state.rowLock = {
@@ -5324,6 +5330,12 @@ var QueryBuilder = class QueryBuilder {
 		};
 		return this;
 	};
+	/** MSSQL `WITH (UPDLOCK, ROWLOCK)` — the T-SQL spelling of {@link forUpdate}. */
+	updlock = () => this.forUpdate();
+	/** {@link updlock}, failing immediately on an already-locked row (`, NOWAIT`). */
+	updlockNowait = () => this.forUpdateNowait();
+	/** {@link updlock}, skipping already-locked rows (`, READPAST`). */
+	updlockSkipLocked = () => this.forUpdateSkipLocked();
 	/** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
 	forShare = () => {
 		this.#state.rowLock = {

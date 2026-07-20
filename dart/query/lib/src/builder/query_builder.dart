@@ -1351,6 +1351,23 @@ class QueryBuilder
     return this;
   }
 
+  // ---- engine-native upsert spellings (MySQL) ---------------------------------------------
+  // MySQL's upsert is `INSERT IGNORE` / `... ON DUPLICATE KEY UPDATE`, and neither takes a conflict
+  // target (it fires on ANY unique key). The MySQL view exposes these names instead of `onConflict*`;
+  // they forward to the same runtime, so the emitted SQL and the goldens are unchanged. No
+  // `conflictColumns` parameter, because MySQL cannot honour one.
+
+  /// MySQL `INSERT IGNORE`.
+  QueryBuilder insertIgnore() => onConflictDoNothing();
+
+  /// MySQL `... ON DUPLICATE KEY UPDATE col = val, …`.
+  QueryBuilder onDuplicateKeyUpdate(List<SetRef> updates) =>
+      onConflictDoUpdate(const [], updates);
+
+  /// Raw-SQL form of [onDuplicateKeyUpdate]'s SET list.
+  QueryBuilder onDuplicateKeyUpdateRaw(String raw) =>
+      onConflictDoUpdateRaw(const [], raw);
+
   // ---- row locks --------------------------------------------------------------------------
 
   /// Exclusive row lock on the SELECT's result rows (`FOR UPDATE`; MSSQL `WITH (UPDLOCK,
@@ -1375,6 +1392,20 @@ class QueryBuilder
       ..wait = RowLockWait.skipLocked;
     return this;
   }
+
+  // ---- engine-native lock spellings (MSSQL) -----------------------------------------------
+  // A T-SQL DBA reaches for the UPDLOCK table hint, not `FOR UPDATE`. The MSSQL view exposes these
+  // names instead of `forUpdate*`; they forward to the same runtime (`WITH (UPDLOCK, ROWLOCK[,
+  // NOWAIT|READPAST])`), so the emitted SQL and the goldens are unchanged.
+
+  /// MSSQL `WITH (UPDLOCK, ROWLOCK)` — the T-SQL spelling of [forUpdate].
+  QueryBuilder updlock() => forUpdate();
+
+  /// [updlock], failing immediately on an already-locked row (`, NOWAIT`).
+  QueryBuilder updlockNowait() => forUpdateNowait();
+
+  /// [updlock], skipping already-locked rows (`, READPAST`).
+  QueryBuilder updlockSkipLocked() => forUpdateSkipLocked();
 
   /// Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK,
   /// ROWLOCK)`).

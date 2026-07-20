@@ -38,13 +38,13 @@ describe('Upsert (INSERT conflict clause)', () => {
       );
     });
 
-    it('MySQL rewrites to an INSERT IGNORE prefix', () => {
+    it('MySQL insertIgnore() rewrites to an INSERT IGNORE prefix', () => {
       const builder = new MysqlQuery().newBuilder();
       builder
         .insertInto('users')
         .insertColumns(['email'])
         .insertValues(['ada@example.com'])
-        .onConflictDoNothing();
+        .insertIgnore();
 
       expect(builder.parseRaw()).toEqual(
         'INSERT IGNORE INTO `users` (`email`) VALUES (ada@example.com);',
@@ -54,8 +54,10 @@ describe('Upsert (INSERT conflict clause)', () => {
     // This case previously passed `['email']` and asserted the same output, i.e. it pinned the
     // conflict target being silently discarded. MySQL has no conflict target at all: INSERT IGNORE
     // fires on ANY unique key, so naming a column asked for something the engine cannot express.
+    // The MySQL view's insertIgnore() takes no conflict target at all (compile-time honesty). The
+    // runtime floor still refuses the generic onConflictDoNothing(cols), reached via the wide builder.
     it('MySQL refuses a named conflict target rather than ignoring it', () => {
-      const builder = new MysqlQuery().newBuilder();
+      const builder = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
       builder
         .insertInto('users')
         .insertColumns(['email'])
@@ -94,13 +96,13 @@ describe('Upsert (INSERT conflict clause)', () => {
       );
     });
 
-    it('MySQL emits ON DUPLICATE KEY UPDATE, ignoring conflictColumns', () => {
+    it('MySQL onDuplicateKeyUpdate() emits ON DUPLICATE KEY UPDATE', () => {
       const builder = new MysqlQuery().newBuilder();
       builder
         .insertInto('users')
         .insertColumns(['email', 'name'])
         .insertValues(['ada@example.com', 'Ada'])
-        .onConflictDoUpdate([], [{ columnName: 'name', value: 'Ada Lovelace' }]);
+        .onDuplicateKeyUpdate([{ columnName: 'name', value: 'Ada Lovelace' }]);
 
       expect(builder.parseRaw()).toEqual(
         'INSERT INTO `users` (`email`, `name`) VALUES (ada@example.com, Ada) ' +

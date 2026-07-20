@@ -64,8 +64,16 @@ describe('per-engine typed views', () => {
     void (() => mssql.forShare());
     // @ts-expect-error onConflictDoUpdate is absent on MSSQL (no upsert; MERGE is separate)
     void (() => mssql.onConflictDoUpdate([], []));
-    // …but MSSQL keeps forUpdate (UPDLOCK) and its own index-free hints:
+    // Engine-native rename: MSSQL spells the lock family updlock*, so forUpdate* are hidden here…
+    // @ts-expect-error forUpdate is renamed to updlock on MSSQL
     void (() => mssql.forUpdate());
+    // …and updlock* is what MSSQL exposes instead:
+    void (() => mssql.updlock());
+    void (() => mssql.updlockNowait());
+    void (() => mssql.updlockSkipLocked());
+    // updlock is MSSQL-only:
+    // @ts-expect-error updlock is MSSQL-only
+    void (() => postgres.updlock());
 
     // MySQL: no RETURNING, no WITH TIES, no table functions.
     // @ts-expect-error returning is absent on MySQL
@@ -74,12 +82,25 @@ describe('per-engine typed views', () => {
     void (() => mysql.limitWithTies(5));
     // …but MySQL keeps its own index hints:
     void (() => mysql.hintUseIndex('u', 'idx'));
+    // Engine-native rename: MySQL spells upsert insertIgnore/onDuplicateKeyUpdate, so onConflict* are
+    // hidden here…
+    // @ts-expect-error onConflictDoNothing is renamed to insertIgnore on MySQL
+    void (() => mysql.onConflictDoNothing());
+    // …and the MySQL spellings (no conflict-target parameter) are what it exposes:
+    void (() => mysql.insertIgnore());
+    void (() => mysql.onDuplicateKeyUpdate([{ columnName: 'n', value: 1 }]));
+    void (() => mysql.onDuplicateKeyUpdateRaw('n = n + 1'));
+    // and those are MySQL-only:
+    // @ts-expect-error insertIgnore is MySQL-only
+    void (() => postgres.insertIgnore());
 
     // Postgres: no MySQL index hints.
     // @ts-expect-error hintUseIndex is absent on Postgres (MySQL-only)
     void (() => postgres.hintUseIndex('u', 'idx'));
-    // …but Postgres keeps its wide surface, e.g. RETURNING and row locks:
+    // …but Postgres keeps its wide surface, e.g. RETURNING, row locks, and the portable onConflict*:
     void (() => postgres.returning(['id']));
+    void (() => postgres.forUpdate());
+    void (() => postgres.onConflictDoNothing());
 
     // SQLite: the narrowest — no procs, no row locks, no LATERAL/APPLY, no grouping extensions.
     // @ts-expect-error callProcedure is absent on SQLite

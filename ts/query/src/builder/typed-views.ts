@@ -101,7 +101,15 @@ type AbsentOnMssql =
   | 'hintUseIndex'
   | 'hintForceIndex'
   | 'distinctOn'
-  | 'clearDistinctOn';
+  | 'clearDistinctOn'
+  // Engine-native renames: MSSQL spells the exclusive lock family `updlock*`, so `forUpdate*` are
+  // hidden here; the MySQL upsert spellings live only on the MySQL view.
+  | 'forUpdate'
+  | 'forUpdateNowait'
+  | 'forUpdateSkipLocked'
+  | 'insertIgnore'
+  | 'onDuplicateKeyUpdate'
+  | 'onDuplicateKeyUpdateRaw';
 
 /**
  * MySQL cannot run these.
@@ -130,7 +138,16 @@ type AbsentOnMysql =
   | 'procParamNamed'
   | 'returning'
   | 'returningRaw'
-  | 'clearReturning';
+  | 'clearReturning'
+  // Engine-native renames: MySQL spells upsert `insertIgnore` / `onDuplicateKeyUpdate*`, so
+  // `onConflict*` are hidden here; the MSSQL `updlock*` family lives only on the MSSQL view. MySQL
+  // keeps `forUpdate*`.
+  | 'onConflictDoNothing'
+  | 'onConflictDoUpdate'
+  | 'onConflictDoUpdateRaw'
+  | 'updlock'
+  | 'updlockNowait'
+  | 'updlockSkipLocked';
 
 /**
  * Postgres cannot run these.
@@ -140,7 +157,19 @@ type AbsentOnMysql =
  * Everything else Postgres does; it is the widest surface, and `distinctOn` is its own.
  */
 type AbsentOnPostgres =
-  'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex';
+  | 'top'
+  | 'clearTop'
+  | 'merge'
+  | 'hintMssqlOption'
+  | 'hintUseIndex'
+  | 'hintForceIndex'
+  // Engine-native renames belonging to other dialects: Postgres keeps `forUpdate*` and `onConflict*`.
+  | 'updlock'
+  | 'updlockNowait'
+  | 'updlockSkipLocked'
+  | 'insertIgnore'
+  | 'onDuplicateKeyUpdate'
+  | 'onDuplicateKeyUpdateRaw';
 
 /**
  * SQLite cannot run these — the narrowest surface.
@@ -191,7 +220,15 @@ type AbsentOnSqlite =
   | 'top'
   | 'clearTop'
   | 'distinctOn'
-  | 'clearDistinctOn';
+  | 'clearDistinctOn'
+  // Engine-native renames belonging to other dialects: SQLite keeps `onConflict*` and already lacks
+  // row locking, so it never had `forUpdate*`.
+  | 'updlock'
+  | 'updlockNowait'
+  | 'updlockSkipLocked'
+  | 'insertIgnore'
+  | 'onDuplicateKeyUpdate'
+  | 'onDuplicateKeyUpdateRaw';
 
 // Each view is an `interface extends`, not a `type` alias, because a view passes ITSELF as `Self`
 // (so builder-returning methods report the view type and chaining stays narrow) — and a `type` alias

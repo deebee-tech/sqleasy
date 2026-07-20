@@ -186,7 +186,7 @@
       },
       "mysql": {
         "kind": "native",
-        "name": "onDuplicateKeyUpdate",
+        "name": "onDuplicateKeyUpdateRaw",
         "adjudicated": true
       },
       "mssql": {

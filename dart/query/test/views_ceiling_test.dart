@@ -25,6 +25,12 @@ void main() {
     ('hintUseIndex', 'PostgresQueryBuilder'),
     ('callProcedure', 'SqliteQueryBuilder'),
     ('forUpdate', 'SqliteQueryBuilder'),
+    // Engine-native renames: the generic is hidden where the alias is shown, and the alias is
+    // absent off its home dialect.
+    ('forUpdate', 'MssqlQueryBuilder'),
+    ('onConflictDoNothing', 'MysqlQueryBuilder'),
+    ('updlock', 'PostgresQueryBuilder'),
+    ('insertIgnore', 'PostgresQueryBuilder'),
   ];
 
   late String analyzerOutput;

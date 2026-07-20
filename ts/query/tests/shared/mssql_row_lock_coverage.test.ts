@@ -21,7 +21,7 @@ describe('MSSQL row locks reach every table reference', () => {
       .joinTable(JoinType.Inner, 'customers', 'c', (j) =>
         j.on('c', 'id', JoinOperator.Equals, 'o', 'customer_id'),
       )
-      .forUpdate();
+      .updlock();
     return b;
   };
 
@@ -45,7 +45,7 @@ describe('MSSQL row locks reach every table reference', () => {
       .joinTable(JoinType.Inner, 'customers', 'c', (j) =>
         j.on('c', 'id', JoinOperator.Equals, 'o', 'customer_id'),
       )
-      .forUpdateSkipLocked();
+      .updlockSkipLocked();
     const sql = b.parseRaw();
     expect(sql.match(/READPAST/g)).toHaveLength(2);
   });
@@ -60,19 +60,19 @@ describe('MSSQL refuses a row lock it cannot place', () => {
       .fromWithBuilder('sub', (inner) => {
         inner.selectAll().fromTable('orders', 'o');
       })
-      .forUpdate();
+      .updlock();
     expect(() => b.parseRaw()).toThrow(/MSSQL cannot lock a derived table/);
   });
 
   it('refuses on a raw FROM fragment', () => {
     const b = new MssqlQuery().newBuilder();
-    b.selectAll().fromRaw('[dbo].[orders] AS [o]').forUpdate();
+    b.selectAll().fromRaw('[dbo].[orders] AS [o]').updlock();
     expect(() => b.parseRaw()).toThrow(/MSSQL cannot lock a raw FROM fragment/);
   });
 
   it('refuses on a table-valued function', () => {
     const b = new MssqlQuery().newBuilder();
-    b.selectAll().fromTableFunction('generate_series', 'g', [1, 10]).forUpdate();
+    b.selectAll().fromTableFunction('generate_series', 'g', [1, 10]).updlock();
     expect(() => b.parseRaw()).toThrow(/MSSQL cannot lock a table-valued function/);
   });
 
@@ -88,13 +88,13 @@ describe('MSSQL refuses a row lock it cannot place', () => {
         },
         (j) => j.on('c', 'id', JoinOperator.Equals, 'o', 'customer_id'),
       )
-      .forUpdate();
+      .updlock();
     expect(() => b.parseRaw()).toThrow(/MSSQL cannot lock a joined derived table/);
   });
 
   it('still allows a plain table with no join', () => {
     const b = new MssqlQuery().newBuilder();
-    b.selectAll().fromTable('orders', 'o').forUpdate();
+    b.selectAll().fromTable('orders', 'o').updlock();
     expect(b.parseRaw()).toContain('WITH (UPDLOCK, ROWLOCK)');
   });
 });

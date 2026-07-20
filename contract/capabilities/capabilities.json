@@ -3550,7 +3550,7 @@
           }
         },
         "mysql": {
-          "name": "onDuplicateKeyUpdate",
+          "name": "onDuplicateKeyUpdateRaw",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,

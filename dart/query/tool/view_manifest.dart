@@ -51,6 +51,19 @@ const Map<String, DialectViewPolicy> viewManifest = {
       'hintForceIndex',
       'distinctOn',
       'clearDistinctOn',
+      // Engine-native renames: MSSQL spells the lock family `updlock*`, so `forUpdate*` are hidden;
+      // the MySQL upsert spellings live only on the MySQL view.
+      'forUpdate',
+      'forUpdateNowait',
+      'forUpdateSkipLocked',
+      'insertIgnore',
+      'onDuplicateKeyUpdate',
+      'onDuplicateKeyUpdateRaw',
+    },
+    aliases: {
+      'updlock': 'forUpdate',
+      'updlockNowait': 'forUpdateNowait',
+      'updlockSkipLocked': 'forUpdateSkipLocked',
     },
   ),
 
@@ -74,6 +87,20 @@ const Map<String, DialectViewPolicy> viewManifest = {
       'returning',
       'returningRaw',
       'clearReturning',
+      // Engine-native renames: MySQL spells upsert `insertIgnore` / `onDuplicateKeyUpdate*`, so
+      // `onConflict*` are hidden; the MSSQL `updlock*` family lives only on the MSSQL view. MySQL
+      // keeps `forUpdate*`.
+      'onConflictDoNothing',
+      'onConflictDoUpdate',
+      'onConflictDoUpdateRaw',
+      'updlock',
+      'updlockNowait',
+      'updlockSkipLocked',
+    },
+    aliases: {
+      'insertIgnore': 'onConflictDoNothing',
+      'onDuplicateKeyUpdate': 'onConflictDoUpdate',
+      'onDuplicateKeyUpdateRaw': 'onConflictDoUpdateRaw',
     },
   ),
 
@@ -86,6 +113,14 @@ const Map<String, DialectViewPolicy> viewManifest = {
       'hintMssqlOption',
       'hintUseIndex',
       'hintForceIndex',
+      // Engine-native renames belonging to other dialects: Postgres keeps `forUpdate*` and
+      // `onConflict*`.
+      'updlock',
+      'updlockNowait',
+      'updlockSkipLocked',
+      'insertIgnore',
+      'onDuplicateKeyUpdate',
+      'onDuplicateKeyUpdateRaw',
     },
   ),
 
@@ -131,6 +166,14 @@ const Map<String, DialectViewPolicy> viewManifest = {
       'clearTop',
       'distinctOn',
       'clearDistinctOn',
+      // Engine-native renames belonging to other dialects: SQLite keeps `onConflict*` and already
+      // lacks row locking, so it never had `forUpdate*`.
+      'updlock',
+      'updlockNowait',
+      'updlockSkipLocked',
+      'insertIgnore',
+      'onDuplicateKeyUpdate',
+      'onDuplicateKeyUpdateRaw',
     },
   ),
 };

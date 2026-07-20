@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 // MySQL has no conflict TARGET. `ON DUPLICATE KEY UPDATE` and `INSERT IGNORE` both fire on ANY
 // unique or primary key, and neither production accepts a column list.
@@ -9,32 +10,40 @@ import { MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
 // same statement — it matches a DIFFERENT set of rows, and updates rows the caller never intended
 // to touch if any other unique index collides. No error, no warning.
 describe('MySQL refuses a conflict target it cannot express', () => {
-  const rows = (b: ReturnType<MysqlQuery['newBuilder']>) =>
+  const rows = (b: QueryBuilder) =>
     b.insertInto('users').insertColumns(['email', 'name']).insertValues(['a@b.c', 'Ada']);
 
+  // The MySQL view's own spellings — insertIgnore()/onDuplicateKeyUpdate() — take NO conflict target,
+  // so one cannot even be written (compile-time honesty). These two reach the generic onConflict*
+  // through the wide builder to prove the RUNTIME floor still refuses a named target.
   it('refuses onConflictDoUpdate with conflict columns', () => {
-    const b = new MysqlQuery().newBuilder();
+    const b = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
     rows(b).onConflictDoUpdate(['email'], [{ columnName: 'name', value: 'Ada' }]);
     expect(() => b.parseRaw()).toThrow(/MySQL has no conflict target/);
   });
 
   it('refuses onConflictDoNothing with conflict columns', () => {
-    const b = new MysqlQuery().newBuilder();
+    const b = new MysqlQuery().newBuilder() as unknown as QueryBuilder;
     rows(b).onConflictDoNothing(['email']);
     expect(() => b.parseRaw()).toThrow(/MySQL has no conflict target/);
   });
 
-  // Without a target the statement is honest: MySQL really does mean "on any unique key", and the
-  // caller has not been told otherwise.
-  it('accepts onConflictDoUpdate with no conflict columns', () => {
+  // The engine-native spellings are honest by construction — no target to discard.
+  it('onDuplicateKeyUpdate() emits ON DUPLICATE KEY UPDATE', () => {
     const b = new MysqlQuery().newBuilder();
-    rows(b).onConflictDoUpdate([], [{ columnName: 'name', value: 'Ada' }]);
+    b.insertInto('users')
+      .insertColumns(['email', 'name'])
+      .insertValues(['a@b.c', 'Ada'])
+      .onDuplicateKeyUpdate([{ columnName: 'name', value: 'Ada' }]);
     expect(b.parseRaw()).toContain('ON DUPLICATE KEY UPDATE');
   });
 
-  it('accepts onConflictDoNothing with no conflict columns', () => {
+  it('insertIgnore() emits INSERT IGNORE', () => {
     const b = new MysqlQuery().newBuilder();
-    rows(b).onConflictDoNothing([]);
+    b.insertInto('users')
+      .insertColumns(['email', 'name'])
+      .insertValues(['a@b.c', 'Ada'])
+      .insertIgnore();
     expect(b.parseRaw()).toContain('INSERT IGNORE');
   });
 });

@@ -63,7 +63,7 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
 
     it('MSSQL emits a WITH (UPDLOCK, ROWLOCK) table hint instead of a trailing clause', () => {
       const builder = new MssqlQuery().newBuilder();
-      builder.selectAll().fromTable('users', 'u').forUpdate();
+      builder.selectAll().fromTable('users', 'u').updlock();
 
       expect(builder.parseRaw()).toEqual(
         'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK);',
@@ -88,10 +88,10 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
       expect(() => builder.parseRaw()).toThrow(/HOLDLOCK is a SERIALIZABLE isolation hint/);
     });
 
-    // forUpdate is unaffected: UPDLOCK, ROWLOCK is Microsoft's own documented idiom for it.
-    it('MSSQL forUpdate still emits WITH (UPDLOCK, ROWLOCK)', () => {
+    // updlock() is MSSQL's spelling: UPDLOCK, ROWLOCK is Microsoft's own documented idiom for it.
+    it('MSSQL updlock() emits WITH (UPDLOCK, ROWLOCK)', () => {
       const builder = new MssqlQuery().newBuilder();
-      builder.selectAll().fromTable('users', 'u').forUpdate();
+      builder.selectAll().fromTable('users', 'u').updlock();
 
       expect(builder.parseRaw()).toContain('WITH (UPDLOCK, ROWLOCK)');
     });
@@ -108,7 +108,7 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
         .joinTable(JoinType.Inner, 'orders', 'o', (j) => {
           j.on('u', 'id', JoinOperator.Equals, 'o', 'user_id');
         })
-        .forUpdate();
+        .updlock();
 
       expect(builder.parseRaw()).toEqual(
         'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK) ' +

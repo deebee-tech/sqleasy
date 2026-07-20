@@ -284,9 +284,6 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
   MssqlQueryBuilder returning(List<String> columns);
   MssqlQueryBuilder returningRaw(String raw);
   MssqlQueryBuilder clearReturning();
-  MssqlQueryBuilder forUpdate();
-  MssqlQueryBuilder forUpdateNowait();
-  MssqlQueryBuilder forUpdateSkipLocked();
   MssqlQueryBuilder clearRowLock();
   MssqlQueryBuilder hintMssqlOption(String optionText);
   MssqlQueryBuilder hintRaw(String rawHint);
@@ -313,6 +310,9 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     String? sqlType,
   ]);
   MssqlQueryBuilder clearCall();
+  MssqlQueryBuilder updlock();
+  MssqlQueryBuilder updlockNowait();
+  MssqlQueryBuilder updlockSkipLocked();
 }
 
 /// The MysqlQueryBuilder view over the single QueryBuilder runtime class.
@@ -581,17 +581,6 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     List<String> columns = const [],
   ]);
   MysqlQueryBuilder cteRaw(String name, String raw);
-  MysqlQueryBuilder onConflictDoNothing([
-    List<String> conflictColumns = const [],
-  ]);
-  MysqlQueryBuilder onConflictDoUpdate(
-    List<String> conflictColumns,
-    List<SetRef> updates,
-  );
-  MysqlQueryBuilder onConflictDoUpdateRaw(
-    List<String> conflictColumns,
-    String raw,
-  );
   MysqlQueryBuilder clearUpsert();
   MysqlQueryBuilder forUpdate();
   MysqlQueryBuilder forUpdateNowait();
@@ -625,6 +614,9 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     String? sqlType,
   ]);
   MysqlQueryBuilder clearCall();
+  MysqlQueryBuilder insertIgnore();
+  MysqlQueryBuilder onDuplicateKeyUpdate(List<SetRef> updates);
+  MysqlQueryBuilder onDuplicateKeyUpdateRaw(String raw);
 }
 
 /// The PostgresQueryBuilder view over the single QueryBuilder runtime class.

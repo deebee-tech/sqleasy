@@ -1480,7 +1480,7 @@ type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBu
  * (default-insert). `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres-only (default-select).
  */
-type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn';
+type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw';
 /**
  * MySQL cannot run these.
  *
@@ -1492,7 +1492,7 @@ type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fro
  * in FROM (default-from). `procParamNamed` — no named parameters in CALL (default-call).
  * `returning`/`returningRaw`/`clearReturning` — no RETURNING clause (default-returning).
  */
-type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinctOn' | 'clearDistinctOn' | 'limitWithTies' | 'clearLimitWithTies' | 'groupByCube' | 'groupByGroupingSets' | 'fromTableFunction' | 'fromTableFunctionWithOwner' | 'procParamNamed' | 'returning' | 'returningRaw' | 'clearReturning';
+type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinctOn' | 'clearDistinctOn' | 'limitWithTies' | 'clearLimitWithTies' | 'groupByCube' | 'groupByGroupingSets' | 'fromTableFunction' | 'fromTableFunctionWithOwner' | 'procParamNamed' | 'returning' | 'returningRaw' | 'clearReturning' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'updlock' | 'updlockNowait' | 'updlockSkipLocked';
 /**
  * Postgres cannot run these.
  *
@@ -1500,7 +1500,7 @@ type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinc
  * T-SQL `OPTION (...)`. `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * Everything else Postgres does; it is the widest surface, and `distinctOn` is its own.
  */
-type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex';
+type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex' | 'updlock' | 'updlockNowait' | 'updlockSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw';
 /**
  * SQLite cannot run these — the narrowest surface.
  *
@@ -1513,7 +1513,7 @@ type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hint
  * `limitWithTies`/`clearLimitWithTies` — no WITH TIES. `merge`, `top`/`clearTop` — T-SQL only.
  * `distinctOn`/`clearDistinctOn` — Postgres-only.
  */
-type AbsentOnSqlite = 'callProcedure' | 'callProcedureWithOwner' | 'callFunction' | 'callFunctionWithOwner' | 'clearCall' | 'procParam' | 'procParams' | 'procParamNamed' | 'procParamInOut' | 'procParamOut' | 'procParamRaw' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'clearRowLock' | 'fromLateral' | 'joinLateral' | 'joinCrossApply' | 'joinOuterApply' | 'groupByRollup' | 'groupByCube' | 'groupByGroupingSets' | 'whereJsonContains' | 'havingJsonContains' | 'hintUseIndex' | 'hintForceIndex' | 'hintMssqlOption' | 'limitWithTies' | 'clearLimitWithTies' | 'merge' | 'top' | 'clearTop' | 'distinctOn' | 'clearDistinctOn';
+type AbsentOnSqlite = 'callProcedure' | 'callProcedureWithOwner' | 'callFunction' | 'callFunctionWithOwner' | 'clearCall' | 'procParam' | 'procParams' | 'procParamNamed' | 'procParamInOut' | 'procParamOut' | 'procParamRaw' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'clearRowLock' | 'fromLateral' | 'joinLateral' | 'joinCrossApply' | 'joinOuterApply' | 'groupByRollup' | 'groupByCube' | 'groupByGroupingSets' | 'whereJsonContains' | 'havingJsonContains' | 'hintUseIndex' | 'hintForceIndex' | 'hintMssqlOption' | 'limitWithTies' | 'clearLimitWithTies' | 'merge' | 'top' | 'clearTop' | 'distinctOn' | 'clearDistinctOn' | 'updlock' | 'updlockNowait' | 'updlockSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw';
 /** The MSSQL builder view — every method except {@link AbsentOnMssql}. */
 interface MssqlQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, AbsentOnMssql>, MssqlQueryBuilder> {}
 /** The Postgres builder view — every method except {@link AbsentOnPostgres}. */
@@ -1932,12 +1932,27 @@ declare class QueryBuilder {
   /** Raw-SQL form of {@link onConflictDoUpdate}'s SET list for expressions columns can't express. */
   onConflictDoUpdateRaw: (conflictColumns: string[], raw: string) => this;
   clearUpsert: () => this;
+  /** MySQL `INSERT IGNORE` — skip rows that would violate a unique key. */
+  insertIgnore: () => this;
+  /** MySQL `... ON DUPLICATE KEY UPDATE col = val, …`. */
+  onDuplicateKeyUpdate: (updates: {
+    columnName: string;
+    value: any;
+  }[]) => this;
+  /** Raw-SQL form of {@link onDuplicateKeyUpdate}'s SET list. */
+  onDuplicateKeyUpdateRaw: (raw: string) => this;
   /** Exclusive row lock on the SELECT's result rows (`FOR UPDATE`; MSSQL `WITH (UPDLOCK, ROWLOCK)`). */
   forUpdate: () => this;
   /** {@link forUpdate}, failing immediately instead of waiting on an already-locked row. */
   forUpdateNowait: () => this;
   /** {@link forUpdate}, silently skipping already-locked rows instead of waiting. */
   forUpdateSkipLocked: () => this;
+  /** MSSQL `WITH (UPDLOCK, ROWLOCK)` — the T-SQL spelling of {@link forUpdate}. */
+  updlock: () => this;
+  /** {@link updlock}, failing immediately on an already-locked row (`, NOWAIT`). */
+  updlockNowait: () => this;
+  /** {@link updlock}, skipping already-locked rows (`, READPAST`). */
+  updlockSkipLocked: () => this;
   /** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
   forShare: () => this;
   /** {@link forShare}, failing immediately instead of waiting on an already-locked row. */
