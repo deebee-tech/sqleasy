@@ -1,6 +1,14 @@
 /** A column as reported by a database's catalog. */
 export type SchemaColumn = {
   name: string;
+  /**
+   * The type as DECLARED in the catalog, verbatim.
+   *
+   * May be an empty string, and that is meaningful rather than missing: SQLite is dynamically typed
+   * and `CREATE TABLE t(a)` gives `a` no declared type at all. An empty string means the schema
+   * genuinely does not name one — do not substitute a default, which would report a declaration
+   * nobody wrote.
+   */
   dataType: string;
   nullable: boolean;
   isPrimaryKey: boolean;

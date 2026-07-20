@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { DbExecutor } from '../src/index';
+import { introspectSchema } from '../src/introspection';
 import { createSqliteExecutor } from '../src/sqlite';
 
 /**
@@ -131,4 +132,24 @@ describe('sqlite busy retry (local file)', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   }, 20_000);
+});
+
+// SQLite is dynamically typed: `CREATE TABLE t(a)` is legal and `a` has NO declared type.
+// Introspection used to report 'TEXT' for those, inventing a declaration the schema does not
+// contain — and not even the right guess, since a typeless column takes BLOB affinity, not TEXT.
+describe('sqlite introspection reports a typeless column honestly', () => {
+  it('returns an empty dataType rather than inventing TEXT', async () => {
+    const executor = createSqliteExecutor({ url: ':memory:' });
+    await executor.run({ sql: 'CREATE TABLE typeless (a, b TEXT)', params: [] });
+
+    const schema = await introspectSchema(executor, 'sqlite');
+    const table = schema.tables.find((t) => t.name === 'typeless');
+    const untyped = table?.columns.find((c) => c.name === 'a');
+    const typed = table?.columns.find((c) => c.name === 'b');
+
+    expect(untyped?.dataType).toBe('');
+    expect(typed?.dataType).toBe('TEXT');
+
+    await executor.close();
+  });
 });

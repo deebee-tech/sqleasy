@@ -34,7 +34,15 @@ export async function introspectSqlite(executor: DbExecutor): Promise<SchemaData
         schema: 'main',
         table: t.name,
         name: c.name,
-        dataType: c.type || 'TEXT',
+        // SQLite is dynamically typed, and `CREATE TABLE t(a)` is legal — a column may genuinely
+        // have NO declared type, which pragma_table_info reports as an empty string. This used to
+        // substitute 'TEXT', inventing a declaration the schema does not contain; a caller reading
+        // the catalog to generate code or compare environments would see a type nobody wrote.
+        //
+        // The empty string is passed through as-is, which is what the catalog actually says. Note
+        // that a typeless column takes BLOB affinity in SQLite, not TEXT, so the old default was
+        // not even the right guess.
+        dataType: c.type ?? '',
         // Honour pragma notnull only — SQLite historically allows NULL in non-INTEGER PRIMARY KEY
         // columns, so forcing PK columns non-nullable misreports the catalog.
         nullable: c.notnull === 0,
