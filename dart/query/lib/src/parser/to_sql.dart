@@ -111,6 +111,12 @@ SqlHelper defaultToSql(
     );
   }
 
+  // Index hints (hintUseIndex/hintForceIndex) are a MySQL-only construct, and the capability check
+  // must run for EVERY statement kind. It used to live only on the SELECT tail, so a hint set on a
+  // non-MySQL INSERT/UPDATE/DELETE was SILENTLY DROPPED instead of refused — the exact silent-no-op
+  // this library does not do. Validating here, before the queryType dispatch, closes that.
+  validateHints(state, config, ParserArea.general);
+
   if (state.cteStates.isNotEmpty) {
     final cte = defaultCte(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
@@ -283,7 +289,6 @@ SqlHelper defaultToSql(
     emitTrailingRowLockClause(sqlHelper, config, state.rowLock!);
   }
 
-  validateHints(state, config, ParserArea.general);
   emitTrailingHints(sqlHelper, state, config);
 
   if (!state.isInnerStatement) {

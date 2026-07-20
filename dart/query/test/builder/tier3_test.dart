@@ -204,4 +204,49 @@ void main() {
       expect(b.parseRaw(), contains('OPTION (RECOMPILE)'));
     });
   });
+
+  // A MySQL index hint (`USE INDEX`/`FORCE INDEX`) is a MySQL-only construct. On a SELECT the
+  // refusal has always fired, because the check rode the SELECT tail. But INSERT/UPDATE/DELETE
+  // return before that tail, so a hint set on a non-MySQL mutation was SILENTLY DROPPED. The check
+  // now runs before the queryType dispatch, so every statement kind refuses alike.
+  group('Tier 3 — index hints are refused on non-MySQL mutations, not dropped', () {
+    final nonMysql = <String, QueryBuilder Function()>{
+      'Postgres': () => PostgresQuery().newBuilder(),
+      'MSSQL': () => MssqlQuery().newBuilder(),
+      'SQLite': () => SqliteQuery().newBuilder(),
+    };
+
+    nonMysql.forEach((name, make) {
+      test('$name refuses hintUseIndex on an UPDATE instead of dropping it', () {
+        final b = make()
+          ..updateTable('users', alias: 'u')
+          ..set('name', 'Ada')
+          ..where('u', 'id', WhereOperator.equals, 1)
+          ..hintUseIndex('u', 'users_email_idx');
+        expect(
+          () => b.parseRaw(),
+          throwsA(
+            predicate(
+              (e) => e.toString().contains('only supported on MySQL'),
+            ),
+          ),
+        );
+      });
+
+      test('$name refuses hintForceIndex on a DELETE instead of dropping it', () {
+        final b = make()
+          ..deleteFrom('users', alias: 'u')
+          ..where('u', 'id', WhereOperator.equals, 1)
+          ..hintForceIndex('u', 'users_email_idx');
+        expect(
+          () => b.parseRaw(),
+          throwsA(
+            predicate(
+              (e) => e.toString().contains('only supported on MySQL'),
+            ),
+          ),
+        );
+      });
+    });
+  });
 }

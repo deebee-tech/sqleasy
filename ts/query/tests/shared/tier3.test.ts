@@ -11,6 +11,7 @@ import {
   SqliteQuery,
   WhereOperator,
 } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 describe('Tier 3 — JSON operators', () => {
   it('Postgres whereJsonExtract text mode', () => {
@@ -262,4 +263,39 @@ describe('Tier 3 — hints', () => {
       .hintMssqlOption('RECOMPILE');
     expect(b.parseRaw()).toContain('OPTION (RECOMPILE)');
   });
+});
+
+// A MySQL index hint (`USE INDEX`/`FORCE INDEX`) is a MySQL-only construct. On a SELECT the refusal
+// has always fired, because the check rode the SELECT tail. But INSERT/UPDATE/DELETE return before
+// that tail, so a hint set on a non-MySQL mutation was SILENTLY DROPPED — the statement went out
+// clean and the caller's explicit hint vanished with no word, the exact silent-no-op this library
+// refuses. The check now runs before the queryType dispatch, so every statement kind refuses alike.
+//
+// These reach the method through the wide QueryBuilder: the per-engine view no longer exposes it on
+// non-MySQL (compile-time absence lives in typed-views.test.ts). This pins the RUNTIME floor.
+describe('Tier 3 — index hints are refused on non-MySQL mutations, not dropped', () => {
+  const nonMysql = [
+    ['Postgres', () => new PostgresQuery().newBuilder()],
+    ['MSSQL', () => new MssqlQuery().newBuilder()],
+    ['SQLite', () => new SqliteQuery().newBuilder()],
+  ] as const;
+
+  for (const [name, make] of nonMysql) {
+    it(`${name} refuses hintUseIndex on an UPDATE instead of dropping it`, () => {
+      const b = make() as unknown as QueryBuilder;
+      b.updateTable('users', 'u')
+        .set('name', 'Ada')
+        .where('u', 'id', WhereOperator.Equals, 1)
+        .hintUseIndex('u', 'users_email_idx');
+      expect(() => b.parseRaw()).toThrow(/index hints .* only supported on MySQL/);
+    });
+
+    it(`${name} refuses hintForceIndex on a DELETE instead of dropping it`, () => {
+      const b = make() as unknown as QueryBuilder;
+      b.deleteFrom('users', 'u')
+        .where('u', 'id', WhereOperator.Equals, 1)
+        .hintForceIndex('u', 'users_email_idx');
+      expect(() => b.parseRaw()).toThrow(/index hints .* only supported on MySQL/);
+    });
+  }
 });
