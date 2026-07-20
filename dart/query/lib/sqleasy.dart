@@ -18,6 +18,13 @@ export 'src/builder/multi_builder.dart' show MultiBuilder;
 export 'src/builder/query_builder.dart'
     show
         QueryBuilder,
+        // The per-engine typed views (generated part of the query_builder library). A dialect facade
+        // hands back its own view, so a method the engine cannot run is absent at compile time.
+        SqlBuilderView,
+        MssqlQueryBuilder,
+        MysqlQueryBuilder,
+        PostgresQueryBuilder,
+        SqliteQueryBuilder,
         ColumnRef,
         TableRef,
         JoinRef,

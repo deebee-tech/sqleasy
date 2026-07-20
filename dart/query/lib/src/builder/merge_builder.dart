@@ -84,7 +84,14 @@ class MergeBuilder {
   }
 
   /// `USING (<subquery>) AS alias`.
-  MergeBuilder usingSelect(String alias, void Function(QueryBuilder) build) {
+  // MERGE is MSSQL-only, so its USING (SELECT ...) subquery runs on MSSQL — the callback builder is
+  // the MSSQL view, not the wide QueryBuilder, so the honest-surface ceiling holds inside it too (a
+  // non-MSSQL method does not autocomplete here). The runtime `_child()` is a QueryBuilder, which
+  // implements MssqlQueryBuilder, so it is passed by an implicit upcast.
+  MergeBuilder usingSelect(
+    String alias,
+    void Function(MssqlQueryBuilder) build,
+  ) {
     final child = _child();
     build(child);
     child.state.isInnerStatement = true;

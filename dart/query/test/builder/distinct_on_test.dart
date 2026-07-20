@@ -16,7 +16,7 @@ void main() {
     });
 
     test('throws on MySQL', () {
-      final builder = MysqlQuery().newBuilder()
+      final builder = MysqlQuery().newBuilder() as QueryBuilder
         ..distinctOn([(table: 'o', column: 'customer_id')])
         ..selectAll()
         ..fromTable('orders', alias: 'o');

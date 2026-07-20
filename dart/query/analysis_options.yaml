@@ -1,6 +1,11 @@
 include: package:lints/recommended.yaml
 
 analyzer:
+  # A COMPILE-ERROR fixture: every wrong-dialect call in it is expected to fail analysis, proving the
+  # per-engine view ceiling. It must not fail the package gate — `test/views_ceiling_test.dart` targets
+  # it explicitly instead. (`dart analyze <file>` still checks an excluded file when named directly.)
+  exclude:
+    - test/ceiling/**
   language:
     strict-casts: true
     strict-inference: true

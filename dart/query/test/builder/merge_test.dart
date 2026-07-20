@@ -6,7 +6,7 @@ void main() {
   // expressing MERGE as T-SQL defines it — not the removed silent INSERT-becomes-MERGE. The emitted
   // SQL must match the TypeScript port byte-for-byte (both are pinned by the golden corpus).
   group('MSSQL MERGE', () {
-    QueryBuilder mssql() => MssqlQuery().newBuilder();
+    MssqlQueryBuilder mssql() => MssqlQuery().newBuilder();
 
     test('emits a full three-arm MERGE with HOLDLOCK', () {
       final b = mssql()
@@ -149,10 +149,12 @@ void main() {
   });
 
   group('MERGE refused off MSSQL', () {
-    for (final entry in {
-      'Postgres': () => PostgresQuery().newBuilder(),
-      'MySQL': () => MysqlQuery().newBuilder(),
-      'SQLite': () => SqliteQuery().newBuilder(),
+    // Runtime-floor test: merge is absent from these views (proven at compile time), so reach it
+    // through the wide QueryBuilder to prove the parser still refuses it.
+    for (final entry in <String, QueryBuilder Function()>{
+      'Postgres': () => PostgresQuery().newBuilder() as QueryBuilder,
+      'MySQL': () => MysqlQuery().newBuilder() as QueryBuilder,
+      'SQLite': () => SqliteQuery().newBuilder() as QueryBuilder,
     }.entries) {
       test('${entry.key} refuses MERGE', () {
         final b = entry.value()

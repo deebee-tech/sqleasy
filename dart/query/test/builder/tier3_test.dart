@@ -78,7 +78,7 @@ void main() {
   // statement, un-hinted and therefore race-prone at READ COMMITTED, that the caller never wrote.
   group('Tier 3 — MSSQL has no upsert', () {
     test('refuses onConflictDoUpdate rather than synthesizing a MERGE', () {
-      final b = MssqlQuery().newBuilder()
+      final b = MssqlQuery().newBuilder() as QueryBuilder
         ..insertInto('users')
         ..insertColumns(['email', 'name'])
         ..insertValues(['a@b.c', 'Ada'])
@@ -117,7 +117,7 @@ void main() {
     });
 
     test('SQLite fromLateral throws', () {
-      final b = SqliteQuery().newBuilder()
+      final b = SqliteQuery().newBuilder() as QueryBuilder
         ..selectAll()
         ..fromTable('orders', alias: 'o')
         ..fromLateral('x', (sub) {
@@ -176,7 +176,7 @@ void main() {
     });
 
     test('SQLite limitWithTies throws', () {
-      final b = SqliteQuery().newBuilder()
+      final b = SqliteQuery().newBuilder() as QueryBuilder
         ..selectAll()
         ..fromTable('orders', alias: 'o')
         ..orderByColumn('o', 'total', OrderByDirection.descending)
@@ -209,15 +209,19 @@ void main() {
   // refusal has always fired, because the check rode the SELECT tail. But INSERT/UPDATE/DELETE
   // return before that tail, so a hint set on a non-MySQL mutation was SILENTLY DROPPED. The check
   // now runs before the queryType dispatch, so every statement kind refuses alike.
-  group('Tier 3 — index hints are refused on non-MySQL mutations, not dropped', () {
+  group('Tier 3 — index hints are refused on non-MySQL mutations, not dropped',
+      () {
+    // Runtime-floor tests: reach the index-hint methods through the wide QueryBuilder (they are not
+    // MySQL, so their views do not expose them) to prove the parser refuses rather than drops them.
     final nonMysql = <String, QueryBuilder Function()>{
-      'Postgres': () => PostgresQuery().newBuilder(),
-      'MSSQL': () => MssqlQuery().newBuilder(),
-      'SQLite': () => SqliteQuery().newBuilder(),
+      'Postgres': () => PostgresQuery().newBuilder() as QueryBuilder,
+      'MSSQL': () => MssqlQuery().newBuilder() as QueryBuilder,
+      'SQLite': () => SqliteQuery().newBuilder() as QueryBuilder,
     };
 
     nonMysql.forEach((name, make) {
-      test('$name refuses hintUseIndex on an UPDATE instead of dropping it', () {
+      test('$name refuses hintUseIndex on an UPDATE instead of dropping it',
+          () {
         final b = make()
           ..updateTable('users', alias: 'u')
           ..set('name', 'Ada')
@@ -233,7 +237,8 @@ void main() {
         );
       });
 
-      test('$name refuses hintForceIndex on a DELETE instead of dropping it', () {
+      test('$name refuses hintForceIndex on a DELETE instead of dropping it',
+          () {
         final b = make()
           ..deleteFrom('users', alias: 'u')
           ..where('u', 'id', WhereOperator.equals, 1)

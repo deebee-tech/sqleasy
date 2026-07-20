@@ -51,7 +51,7 @@ void main() {
     });
 
     test('SQLite has no stored procedures/functions and throws', () {
-      final builder = SqliteQuery().newBuilder();
+      final builder = SqliteQuery().newBuilder() as QueryBuilder;
       builder.callProcedure('archive_user').procParam(42);
 
       expect(
@@ -183,7 +183,7 @@ void main() {
     });
 
     test('SQLite throws for functions too', () {
-      final builder = SqliteQuery().newBuilder();
+      final builder = SqliteQuery().newBuilder() as QueryBuilder;
       builder.callFunction('add_two').procParam(1).procParam(2);
 
       expect(
@@ -247,7 +247,7 @@ void main() {
     });
 
     test('MySQL refuses named parameters entirely', () {
-      final builder = MysqlQuery().newBuilder();
+      final builder = MysqlQuery().newBuilder() as QueryBuilder;
       builder.callProcedure('set_status').procParamNamed('user_id', 1);
 
       expect(

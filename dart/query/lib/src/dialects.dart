@@ -15,7 +15,7 @@ class MssqlQuery {
 
   Dialect get configuration => _configuration;
 
-  QueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
+  MssqlQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? mssqlConfiguration(rc) : _configuration);
 
   MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
@@ -31,7 +31,7 @@ class MysqlQuery {
 
   Dialect get configuration => _configuration;
 
-  QueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
+  MysqlQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? mysqlConfiguration(rc) : _configuration);
 
   MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
@@ -47,7 +47,7 @@ class PostgresQuery {
 
   Dialect get configuration => _configuration;
 
-  QueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
+  PostgresQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? postgresConfiguration(rc) : _configuration);
 
   MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
@@ -63,7 +63,7 @@ class SqliteQuery {
 
   Dialect get configuration => _configuration;
 
-  QueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
+  SqliteQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? sqliteConfiguration(rc) : _configuration);
 
   MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>

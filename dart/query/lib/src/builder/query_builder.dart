@@ -1,3 +1,8 @@
+// QueryBuilder implements the four generated per-engine views by structural conformance, so
+// every method structurally satisfies an interface member — annotating all ~150 with `@override`
+// would be noise, and the lint misfires here regardless:
+// QueryBuilder extends nothing, so `annotate_overrides` never has a real superclass override to catch.
+// ignore_for_file: annotate_overrides
 import '../configuration.dart';
 import '../enums.dart';
 import '../errors/parser_error.dart';
@@ -7,6 +12,8 @@ import '../state.dart';
 import 'join_on_builder.dart';
 import 'merge_builder.dart';
 import 'window_builder.dart';
+
+part 'query_views.dart';
 
 /// A column reference for [QueryBuilder.selectColumns].
 typedef ColumnRef = ({String table, String column, String? alias});
@@ -54,7 +61,12 @@ typedef SetRef = ({String column, Object? value});
 ///
 /// This is the Dart port of the TypeScript `QueryBuilder`, reshaped to Dart conventions: "no alias"
 /// and "no owner" are optional named parameters that default to absent, not empty-string sentinels.
-class QueryBuilder {
+class QueryBuilder
+    implements
+        MssqlQueryBuilder,
+        MysqlQueryBuilder,
+        PostgresQueryBuilder,
+        SqliteQueryBuilder {
   QueryBuilder(this._config);
 
   QueryState _state = QueryState();

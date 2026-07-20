@@ -26,11 +26,14 @@ Object? _query(String dialect) {
   }
 }
 
+// The conformance driver mints `{throws}` goldens, so it must reach EVERY method regardless of
+// dialect — it works against the wide QueryBuilder, downcasting from the narrow view each facade now
+// returns (a real downcast: the runtime object is a QueryBuilder that implements the view).
 QueryBuilder _newBuilder(Object? query) => switch (query) {
-      MssqlQuery() => query.newBuilder(),
-      MysqlQuery() => query.newBuilder(),
-      PostgresQuery() => query.newBuilder(),
-      SqliteQuery() => query.newBuilder(),
+      MssqlQuery() => query.newBuilder() as QueryBuilder,
+      MysqlQuery() => query.newBuilder() as QueryBuilder,
+      PostgresQuery() => query.newBuilder() as QueryBuilder,
+      SqliteQuery() => query.newBuilder() as QueryBuilder,
       _ => throw StateError('not a query'),
     };
 
@@ -181,7 +184,10 @@ void _applyMerge(MergeBuilder m, List<Map<String, Object?>> mergeOps) {
         m.usingTable(
             _str(op, 'table'), _str(op, 'alias'), _optStr(op, 'owner'));
       case 'usingSelect':
-        m.usingSelect(_str(op, 'alias'), (q) => applyOps(q, _ops(op)));
+        // usingSelect now hands back the narrow MSSQL view; applyOps drives the wide builder, so
+        // downcast (the runtime object is a QueryBuilder implementing the view).
+        m.usingSelect(
+            _str(op, 'alias'), (q) => applyOps(q as QueryBuilder, _ops(op)));
       case 'usingRaw':
         m.usingRaw(_str(op, 'sql'), _str(op, 'alias'));
       case 'on':
