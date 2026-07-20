@@ -29,12 +29,33 @@ The contract version now moves only when the contract moves:
 `corpora/` or `schema/` changes without a version bump, it fails. That is the mechanical replacement
 for the old weld — the thing that makes "independently versioned" true rather than aspirational.
 
-## Version 1.0.0 changed no behaviour
+## Why this is on 0.x
 
-The first independent version is **defined to be case-identical** to the corpus as it stood at
+**Deliberately pre-1.0 while the capability surface is being settled.** SQLEasy is being reworked so
+that each engine exposes only what it genuinely supports, in that engine's own vocabulary — no
+approximations, no method that cannot run on the dialect you are holding. That work rewrites emitted
+SQL repeatedly, and under the table above every one of those rewrites is a _major_. Staying on 0.x
+means the churn costs a minor instead, so the version number reflects the contract's stability rather
+than counting how many times the design was refined.
+
+Under 0.x, read the table one line down: a breaking change bumps the **minor**, additions bump the
+**patch**. `1.0.0` is the commitment that the surface has settled — cut it when the per-engine
+surface is final, not before.
+
+This package has never been published, so 0.x costs nothing to adopt. Its siblings do not have that
+luxury: `@deebeetech/sqleasy` is public at 10.1.0 and `@deebeetech/sqleasy-engine` at 1.2.0, and npm
+forbids reusing or rewinding a published version. Their churn is absorbed by the `next` prerelease
+channel instead — see the release configs.
+
+## The 0.1.0 baseline changed no behaviour
+
+The first independent version was **defined to be case-identical** to the corpus as it stood at
 TypeScript v10.1.0. Only the `version` field's _meaning_ changed — from "the TS package version" to
-"the contract version". The `cases` array is byte-identical, verified by hash at the time of
+"the contract version". The `cases` array was byte-identical, verified by hash at the time of
 extraction and recorded in `contract.json`. Re-baselining changed the pin's _name_, never its content.
+
+`0.2.0` is the first version that moves content: it refuses five constructs whose goldens pinned SQL
+the target engine cannot parse, and corrects MySQL index-hint placement. Six cases moved.
 
 ## The four corpora
 
