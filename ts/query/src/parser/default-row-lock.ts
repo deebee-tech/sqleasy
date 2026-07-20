@@ -74,13 +74,37 @@ export const refuseUnplaceableMssqlRowLock = (
 };
 
 export const mssqlRowLockHint = (rowLock: RowLockState): string => {
-  const strength =
-    rowLock.mode === RowLockMode.ForUpdate ? 'UPDLOCK, ROWLOCK' : 'HOLDLOCK, ROWLOCK';
+  // `forUpdate` maps cleanly: `UPDLOCK, ROWLOCK` is Microsoft's own documented idiom for taking an
+  // update lock at row granularity, and ROWLOCK answers the usual page-lock objection.
+  //
+  // `forShare` does NOT. T-SQL has no shared-mode counterpart to UPDLOCK — its hint taxonomy splits
+  // into lock hints (UPDLOCK/XLOCK/ROWLOCK/…) and isolation hints (HOLDLOCK/REPEATABLEREAD/…), and
+  // there is simply no "shared row lock held to commit" in the first group. HOLDLOCK is a synonym
+  // for SERIALIZABLE: it takes KEY-RANGE locks that prevent phantom inserts, which FOR SHARE does
+  // not do. Emitting it silently escalated the caller's isolation level.
+  //
+  // REPEATABLEREAD is closer, and was considered. It is still a read-isolation instruction that
+  // happens to leave shared locks behind rather than a lock REQUEST, and it changes how every other
+  // row the statement scans is read. Under "no approximations" that is a synthesis, so forShare is
+  // refused on MSSQL. It should return under T-SQL's own vocabulary alongside the per-engine typed
+  // builders, where a caller asking for HOLDLOCK or REPEATABLEREAD gets exactly what they named.
+  if (rowLock.mode === RowLockMode.ForShare) {
+    throw new ParserError(
+      ParserArea.General,
+      'MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; ' +
+        'use forUpdate() or take the isolation level explicitly',
+    );
+  }
+
+  const strength = 'UPDLOCK, ROWLOCK';
 
   if (rowLock.wait === RowLockWait.Nowait) {
     return ` WITH (${strength}, NOWAIT)`;
   }
 
+  // READPAST is Microsoft's documented queue-table idiom in combination with UPDLOCK and ROWLOCK,
+  // which is exactly the shape emitted here — it skips row-level locks held by other transactions,
+  // the same job SKIP LOCKED does.
   if (rowLock.wait === RowLockWait.SkipLocked) {
     return ` WITH (${strength}, READPAST)`;
   }

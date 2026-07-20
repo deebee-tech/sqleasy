@@ -125,7 +125,7 @@
       }
     },
     "onConflictDoUpdate": {
-      "_why": "Postgres (9.5+) and SQLite (3.24+) have a real conflict TARGET: ON CONFLICT (cols) DO UPDATE. MySQL does not \u2014 ON DUPLICATE KEY UPDATE fires on ANY unique or primary key and its grammar accepts no column list. Through 10.x naming columns on MySQL was silently discarded, so 'conflict on email' became 'conflict on any unique key', which matches a DIFFERENT set of rows and can update rows the caller never intended. Fixed 2026-07-20: MySQL refuses a named target and still accepts the untargeted form, which is honest about what the engine means. MSSQL is NOT adjudicated here \u2014 it has no upsert primitive at all and is currently synthesized as MERGE without HOLDLOCK; that is queued for re-homing under an explicit merge surface.",
+      "_why": "Postgres (9.5+) and SQLite (3.24+) have a real conflict TARGET: ON CONFLICT (cols) DO UPDATE. MySQL does not \u2014 ON DUPLICATE KEY UPDATE fires on ANY unique or primary key and its grammar accepts no column list. Through 10.x naming columns on MySQL was silently discarded, so 'conflict on email' became 'conflict on any unique key', which matches a DIFFERENT set of rows and can update rows the caller never intended. Fixed 2026-07-20: MySQL refuses a named target and still accepts the untargeted form, which is honest about what the engine means. MSSQL is NOT adjudicated here \u2014 it has no upsert primitive at all and is currently synthesized as MERGE without HOLDLOCK; that is queued for re-homing under an explicit merge surface.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE \u2014 a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary \u2014 that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
       "postgres": {
         "kind": "native",
         "name": "onConflict",
@@ -142,13 +142,14 @@
         "adjudicated": true
       },
       "mssql": {
-        "kind": "unadjudicated",
+        "kind": "absent",
         "name": "",
-        "adjudicated": false
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "adjudicated": true
       }
     },
     "onConflictDoNothing": {
-      "_why": "Same conflict-target story as onConflictDoUpdate. Postgres/SQLite spell it DO NOTHING with an optional target; MySQL spells it INSERT IGNORE, which is a genuinely different construct \u2014 it suppresses OTHER errors too, not just duplicate keys \u2014 and accepts no target. Both engines' terms are real, and they are DIFFERENT terms, so this does not derive shared. MSSQL unadjudicated pending the merge re-home.",
+      "_why": "Same conflict-target story as onConflictDoUpdate. Postgres/SQLite spell it DO NOTHING with an optional target; MySQL spells it INSERT IGNORE, which is a genuinely different construct \u2014 it suppresses OTHER errors too, not just duplicate keys \u2014 and accepts no target. Both engines' terms are real, and they are DIFFERENT terms, so this does not derive shared. MSSQL unadjudicated pending the merge re-home.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE \u2014 a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary \u2014 that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
       "postgres": {
         "kind": "native",
         "name": "onConflict",
@@ -165,9 +166,59 @@
         "adjudicated": true
       },
       "mssql": {
-        "kind": "unadjudicated",
+        "kind": "absent",
         "name": "",
-        "adjudicated": false
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "adjudicated": true
+      }
+    },
+    "onConflictDoUpdateRaw": {
+      "_why": "Raw-SET variant of onConflictDoUpdate; same conflict-target and MSSQL story.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE \u2014 a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary \u2014 that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
+      "postgres": {
+        "kind": "native",
+        "name": "onConflict",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "onConflict",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "onDuplicateKeyUpdate",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "adjudicated": true
+      }
+    },
+    "forShare": {
+      "_why": "Postgres and MySQL 8.0+ have a statement-level FOR SHARE. MSSQL does NOT, and the WITH (HOLDLOCK, ROWLOCK) it used to emit was not a near-equivalent: HOLDLOCK is a SYNONYM FOR SERIALIZABLE and takes key-range locks that prevent phantom inserts, which FOR SHARE does not do. Emitting it silently escalated the caller's isolation level. T-SQL's hint taxonomy splits into lock hints (UPDLOCK/XLOCK/ROWLOCK) and isolation hints (HOLDLOCK/REPEATABLEREAD/SERIALIZABLE), and there is no shared-mode counterpart to UPDLOCK in the first group.\n\nREPEATABLEREAD was considered and rejected: it is still a read-isolation instruction that happens to leave shared locks behind rather than a lock REQUEST, and it changes how every other row the statement scans is read. Under 'no approximations' that is a synthesis.\n\nRefused on MSSQL 2026-07-20. It should return under T-SQL's own vocabulary with the per-engine typed builders, where a caller naming HOLDLOCK or REPEATABLEREAD gets exactly what they asked for. forUpdate is unaffected \u2014 UPDLOCK, ROWLOCK is Microsoft's own documented idiom for it. SQLite has no row-level locking at any version.",
+      "postgres": {
+        "kind": "native",
+        "name": "forShare",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "forShare",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no shared row lock \u2014 HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
+        "adjudicated": true
       }
     }
   },

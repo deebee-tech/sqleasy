@@ -57,14 +57,27 @@ void refuseUnplaceableMssqlRowLock(
 }
 
 String mssqlRowLockHint(RowLockState rowLock) {
-  final strength = rowLock.mode == RowLockMode.forUpdate
-      ? 'UPDLOCK, ROWLOCK'
-      : 'HOLDLOCK, ROWLOCK';
+  // `forUpdate` maps cleanly: `UPDLOCK, ROWLOCK` is Microsoft's own documented idiom.
+  //
+  // `forShare` does NOT. T-SQL's hints split into lock hints (UPDLOCK/XLOCK/ROWLOCK) and isolation
+  // hints (HOLDLOCK/REPEATABLEREAD), and there is no "shared row lock held to commit" in the first
+  // group. HOLDLOCK is a synonym for SERIALIZABLE — it takes key-range locks preventing phantom
+  // inserts, which FOR SHARE does not — so emitting it silently escalated the isolation level.
+  if (rowLock.mode == RowLockMode.forShare) {
+    throw ParserError(
+      ParserArea.general,
+      'MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; '
+      'use forUpdate() or take the isolation level explicitly',
+    );
+  }
+
+  const strength = 'UPDLOCK, ROWLOCK';
 
   if (rowLock.wait == RowLockWait.nowait) {
     return ' WITH ($strength, NOWAIT)';
   }
 
+  // READPAST is Microsoft's documented queue-table idiom alongside UPDLOCK and ROWLOCK.
   if (rowLock.wait == RowLockWait.skipLocked) {
     return ' WITH ($strength, READPAST)';
   }

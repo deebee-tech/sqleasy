@@ -69,31 +69,30 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
       );
     });
 
-    it('MSSQL forShare emits a WITH (HOLDLOCK, ROWLOCK) hint', () => {
+    // These previously asserted `WITH (HOLDLOCK, ROWLOCK)`. HOLDLOCK is a SYNONYM FOR SERIALIZABLE
+    // — it takes key-range locks that prevent phantom inserts, which FOR SHARE does not do — so
+    // emitting it silently escalated the caller's isolation level. T-SQL's hint taxonomy has no
+    // shared-mode counterpart to UPDLOCK at all.
+    it('MSSQL refuses forShare rather than escalating to SERIALIZABLE', () => {
       const builder = new MssqlQuery().newBuilder();
       builder.selectAll().fromTable('users', 'u').forShare();
 
-      expect(builder.parseRaw()).toEqual(
-        'SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK);',
-      );
+      expect(() => builder.parseRaw()).toThrow(/MSSQL has no shared row lock/);
     });
 
-    it('MSSQL forUpdateNowait adds NOWAIT to the table hint', () => {
-      const builder = new MssqlQuery().newBuilder();
-      builder.selectAll().fromTable('users', 'u').forUpdateNowait();
-
-      expect(builder.parseRaw()).toEqual(
-        'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, NOWAIT);',
-      );
-    });
-
-    it('MSSQL forShareSkipLocked adds READPAST to the table hint', () => {
+    it('MSSQL refuses forShareSkipLocked for the same reason', () => {
       const builder = new MssqlQuery().newBuilder();
       builder.selectAll().fromTable('users', 'u').forShareSkipLocked();
 
-      expect(builder.parseRaw()).toEqual(
-        'SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK, READPAST);',
-      );
+      expect(() => builder.parseRaw()).toThrow(/HOLDLOCK is a SERIALIZABLE isolation hint/);
+    });
+
+    // forUpdate is unaffected: UPDLOCK, ROWLOCK is Microsoft's own documented idiom for it.
+    it('MSSQL forUpdate still emits WITH (UPDLOCK, ROWLOCK)', () => {
+      const builder = new MssqlQuery().newBuilder();
+      builder.selectAll().fromTable('users', 'u').forUpdate();
+
+      expect(builder.parseRaw()).toContain('WITH (UPDLOCK, ROWLOCK)');
     });
 
     // This test previously asserted that ONLY the FROM table carried a hint — its name even said

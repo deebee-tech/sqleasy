@@ -6,7 +6,6 @@ import '../sql_helper.dart';
 import '../state.dart';
 import 'default_returning.dart';
 import 'default_upsert.dart';
-import 'default_merge.dart';
 import 'to_sql.dart';
 
 SqlHelper defaultInsert(
@@ -27,8 +26,17 @@ SqlHelper defaultInsert(
     return sqlHelper;
   }
 
+  // T-SQL has NO upsert primitive. `onConflict*()` used to be answered by abandoning the INSERT
+  // grammar and synthesizing a MERGE — a different statement, with different atomicity, trigger and
+  // error semantics, that the caller never wrote. It was unsafe as written too: an un-hinted MERGE
+  // used as an upsert is race-prone at READ COMMITTED. MERGE is genuine native T-SQL and should
+  // return as an explicit surface with the per-engine typed builders.
   if (state.upsertState != null && config.databaseType == DatabaseType.mssql) {
-    return emitMssqlMergeInsert(state, config, mode, options);
+    throw ParserError(
+      ParserArea.insert,
+      'MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement '
+      'with different concurrency semantics; write it explicitly',
+    );
   }
 
   if ((insertState.tableName ?? '').isEmpty) {

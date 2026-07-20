@@ -17466,11 +17466,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] AS [target] USING (VALUES (@p0, @p1)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]);', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'ada@example.com', @p1 = N'Ada';",
-            "params": []
-          },
-          "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com, Ada)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]);"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
@@ -17538,7 +17534,7 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "Insert: MERGE requires at least one conflict column"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "prepared": {
@@ -17624,11 +17620,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] AS [target] USING (VALUES (@p0, @p1)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]) WHEN MATCHED THEN UPDATE SET [name] = [source].[name];', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'ada@example.com', @p1 = N'Ada Lovelace';",
-            "params": []
-          },
-          "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com, Ada Lovelace)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]) WHEN MATCHED THEN UPDATE SET [name] = [source].[name];"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
@@ -17712,11 +17704,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] AS [target] USING (VALUES (@p0, @p1)) AS [source] ([email], [hits]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [hits]) VALUES ([source].[email], [source].[hits]) WHEN MATCHED THEN UPDATE SET hits = users.hits + 1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'ada@example.com', @p1 = 1;",
-            "params": []
-          },
-          "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com, 1)) AS [source] ([email], [hits]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [hits]) VALUES ([source].[email], [source].[hits]) WHEN MATCHED THEN UPDATE SET hits = users.hits + 1;"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
@@ -17798,7 +17786,7 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "Insert: MERGE requires at least one conflict column"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "prepared": {
@@ -17866,11 +17854,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] AS [target] USING (VALUES (@p0)) AS [source] ([email]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email]) VALUES ([source].[email]);', N'@p0 nvarchar(max)', @p0 = N'ada@example.com';",
-            "params": []
-          },
-          "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com)) AS [source] ([email]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email]) VALUES ([source].[email]);"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
@@ -18145,11 +18129,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK) WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK) WHERE [u].[id] = 1;"
+          "throws": "General: MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly"
         },
         "mysql": {
           "prepared": {
@@ -18207,11 +18187,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK, NOWAIT) WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK, NOWAIT) WHERE [u].[id] = 1;"
+          "throws": "General: MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly"
         },
         "mysql": {
           "prepared": {
@@ -18269,11 +18245,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK, READPAST) WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WITH (HOLDLOCK, ROWLOCK, READPAST) WHERE [u].[id] = 1;"
+          "throws": "General: MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly"
         },
         "mysql": {
           "prepared": {
@@ -22188,11 +22160,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] AS [target] USING (VALUES (@p0, @p1)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]) WHEN MATCHED THEN UPDATE SET [name] = [source].[name];', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'a@b.c', @p1 = N'Ada';",
-            "params": []
-          },
-          "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (a@b.c, Ada)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]) WHEN MATCHED THEN UPDATE SET [name] = [source].[name];"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
@@ -22275,11 +22243,7 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] AS [target] USING (VALUES (@p0, @p1)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]);', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'a@b.c', @p1 = N'Ada';",
-            "params": []
-          },
-          "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (a@b.c, Ada)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]);"
+          "throws": "Insert: MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly"
         },
         "mysql": {
           "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"

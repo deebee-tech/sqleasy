@@ -64,16 +64,19 @@ describe('Tier 3 — full-text search', () => {
   });
 });
 
-describe('Tier 3 — MSSQL MERGE upsert', () => {
-  it('emits MERGE for onConflictDoUpdate', () => {
+// T-SQL has no upsert primitive. This block previously asserted that onConflictDoUpdate emits a
+// MERGE — a different statement with different atomicity, trigger and error semantics, which the
+// caller never wrote. It was also un-hinted, so it was race-prone at READ COMMITTED in a way
+// ON CONFLICT never is. MERGE is genuine native T-SQL and should return as an explicit surface.
+describe('Tier 3 — MSSQL has no upsert', () => {
+  it('refuses onConflictDoUpdate rather than synthesizing a MERGE', () => {
     const b = new MssqlQuery().newBuilder();
     b.insertInto('users')
       .insertColumns(['email', 'name'])
       .insertValues(['a@b.c', 'Ada'])
-      .onConflictDoUpdate(['email'], [{ columnName: 'name', value: 'Grace' }]);
-    const sql = b.parseRaw();
-    expect(sql).toContain('MERGE INTO');
-    expect(sql).toContain('WHEN MATCHED THEN UPDATE SET');
+      .onConflictDoUpdate(['email'], [{ columnName: 'name', value: 'Ada' }]);
+
+    expect(() => b.parseRaw()).toThrow(/MSSQL has no upsert/);
   });
 });
 

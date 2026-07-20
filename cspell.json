@@ -83,6 +83,7 @@
     "relnamespace",
     "reltuples",
     "renarrow",
+    "REPEATABLEREAD",
     "replayer",
     "ROLLUP",
     "schedulable",

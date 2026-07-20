@@ -19,17 +19,17 @@
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 374,
-      "absent": 26,
-      "unadjudicated": 88
+      "native": 379,
+      "absent": 31,
+      "unadjudicated": 78
     },
     "enumCells": {
       "native": 173,
       "absent": 31,
       "unadjudicated": 116
     },
-    "adjudicated": 49,
-    "namesAssigned": 20
+    "adjudicated": 59,
+    "namesAssigned": 25
   },
   "ops": {
     "and": {
@@ -708,46 +708,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2 + sweep: MSSQL HOLDLOCK silently escalates to SERIALIZABLE"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forShare",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2 + sweep: MSSQL HOLDLOCK silently escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forShare",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2 + sweep: MSSQL HOLDLOCK silently escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — audit-S2 + sweep: MSSQL HOLDLOCK silently escalates to SERIALIZABLE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -760,8 +760,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
+            "casesEmitting": 0,
+            "casesThrowing": 1,
             "note": "forced unadjudicated — audit-S2: MSSQL wait-mode mapping is not equivalent"
           }
         },
@@ -808,8 +808,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
+            "casesEmitting": 0,
+            "casesThrowing": 1,
             "note": "forced unadjudicated — audit-S2: MSSQL READPAST is not equivalent to SKIP LOCKED"
           }
         },
@@ -1240,8 +1240,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 186,
-            "casesThrowing": 49,
+            "casesEmitting": 183,
+            "casesThrowing": 52,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2440,8 +2440,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 19,
-            "casesThrowing": 5,
+            "casesEmitting": 13,
+            "casesThrowing": 11,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2488,8 +2488,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 18,
-            "casesThrowing": 4,
+            "casesEmitting": 12,
+            "casesThrowing": 10,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2680,8 +2680,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 19,
-            "casesThrowing": 5,
+            "casesEmitting": 13,
+            "casesThrowing": 11,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3300,12 +3300,12 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 2,
+            "casesEmitting": 0,
+            "casesThrowing": 5,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -3348,12 +3348,12 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
           "evidence": {
-            "casesEmitting": 2,
-            "casesThrowing": 1,
+            "casesEmitting": 0,
+            "casesThrowing": 3,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -3396,46 +3396,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same MSSQL MERGE substitution"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onDuplicateKeyUpdate",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: same MSSQL MERGE substitution"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onConflict",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same MSSQL MERGE substitution"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onConflict",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same MSSQL MERGE substitution"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -4264,8 +4264,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 3,
+            "casesEmitting": 4,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4360,8 +4360,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 140,
-            "casesThrowing": 40,
+            "casesEmitting": 137,
+            "casesThrowing": 43,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -5080,8 +5080,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 113,
-            "casesThrowing": 18,
+            "casesEmitting": 110,
+            "casesThrowing": 21,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6384,8 +6384,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 109,
-            "casesThrowing": 17,
+            "casesEmitting": 106,
+            "casesThrowing": 20,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7896,8 +7896,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 109,
-            "casesThrowing": 17,
+            "casesEmitting": 106,
+            "casesThrowing": 20,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },

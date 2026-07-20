@@ -8,7 +8,6 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 import { emitMssqlOutputClause } from './default-returning';
 import { emitUpsertClause, isMysqlInsertIgnore } from './default-upsert';
-import { emitMssqlMergeInsert } from './default-merge';
 import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 
@@ -31,8 +30,24 @@ export const defaultInsert = (
     return sqlHelper;
   }
 
+  // T-SQL has NO upsert primitive. `onConflict*()` used to be answered here by abandoning the
+  // INSERT grammar entirely and synthesizing a MERGE — a different statement, with different
+  // atomicity, trigger and error semantics, that the caller never wrote and could not see.
+  //
+  // It was also unsafe as written. An un-hinted MERGE used as an upsert is race-prone at READ
+  // COMMITTED and can raise a duplicate-key violation under concurrency, which is exactly what
+  // ON CONFLICT and ON DUPLICATE KEY UPDATE never do. This repo already knows that — forShare
+  // emits WITH (HOLDLOCK) — so its absence here was an oversight rather than a decision.
+  //
+  // MERGE is genuine, native T-SQL and should come back as an explicit surface the caller opts
+  // into knowingly, named in T-SQL's own vocabulary. That belongs with the per-engine typed
+  // builders; until then, refusing is the honest answer, because MSSQL has no upsert.
   if (state.upsertState && config.databaseType === DatabaseType.Mssql) {
-    return emitMssqlMergeInsert(state, config, mode, options);
+    throw new ParserError(
+      ParserArea.Insert,
+      'MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement ' +
+        'with different concurrency semantics; write it explicitly',
+    );
   }
 
   if (!insertState.tableName) {

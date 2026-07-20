@@ -64,17 +64,17 @@ describe('Upsert (INSERT conflict clause)', () => {
       expect(() => builder.parseRaw()).toThrow(/MySQL has no conflict target/);
     });
 
-    it('MSSQL emits MERGE for onConflictDoNothing', () => {
+    // T-SQL has no upsert primitive. This asserted a synthesized MERGE — a different statement,
+    // un-hinted and therefore race-prone at READ COMMITTED, which the caller never wrote.
+    it('MSSQL refuses onConflictDoNothing rather than synthesizing a MERGE', () => {
       const builder = new MssqlQuery().newBuilder();
       builder
         .insertInto('users')
         .insertColumns(['email'])
         .insertValues(['ada@example.com'])
-        .onConflictDoNothing(['email']);
+        .onConflictDoNothing();
 
-      expect(builder.parseRaw()).toContain('MERGE INTO');
-      expect(builder.parseRaw()).toContain('WHEN NOT MATCHED BY TARGET THEN INSERT');
-      expect(builder.parseRaw()).not.toContain('WHEN MATCHED');
+      expect(() => builder.parseRaw()).toThrow(/MSSQL has no upsert/);
     });
   });
 
@@ -134,16 +134,15 @@ describe('Upsert (INSERT conflict clause)', () => {
       );
     });
 
-    it('MSSQL emits MERGE for onConflictDoUpdate', () => {
+    it('MSSQL refuses onConflictDoUpdate rather than synthesizing a MERGE', () => {
       const builder = new MssqlQuery().newBuilder();
       builder
         .insertInto('users')
         .insertColumns(['email', 'name'])
         .insertValues(['ada@example.com', 'Ada'])
-        .onConflictDoUpdate(['email'], [{ columnName: 'name', value: 'Ada' }]);
+        .onConflictDoUpdate([], [{ columnName: 'name', value: 'Ada' }]);
 
-      expect(builder.parseRaw()).toContain('MERGE INTO');
-      expect(builder.parseRaw()).toContain('WHEN MATCHED THEN UPDATE SET');
+      expect(() => builder.parseRaw()).toThrow(/MERGE, which is a different statement/);
     });
   });
 

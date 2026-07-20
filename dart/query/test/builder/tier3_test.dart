@@ -74,19 +74,20 @@ void main() {
     });
   });
 
-  group('Tier 3 — MSSQL MERGE upsert', () {
-    test('emits MERGE for onConflictDoUpdate', () {
+  // T-SQL has no upsert primitive. This previously asserted a synthesized MERGE — a different
+  // statement, un-hinted and therefore race-prone at READ COMMITTED, that the caller never wrote.
+  group('Tier 3 — MSSQL has no upsert', () {
+    test('refuses onConflictDoUpdate rather than synthesizing a MERGE', () {
       final b = MssqlQuery().newBuilder()
         ..insertInto('users')
         ..insertColumns(['email', 'name'])
         ..insertValues(['a@b.c', 'Ada'])
-        ..onConflictDoUpdate(
-          ['email'],
-          [(column: 'name', value: 'Grace')],
-        );
-      final sql = b.parseRaw();
-      expect(sql, contains('MERGE INTO'));
-      expect(sql, contains('WHEN MATCHED THEN UPDATE SET'));
+        ..onConflictDoUpdate([], [(column: 'name', value: 'Ada')]);
+
+      expect(
+        () => b.parseRaw(),
+        throwsA(predicate((e) => e.toString().contains('MSSQL has no upsert'))),
+      );
     });
   });
 
