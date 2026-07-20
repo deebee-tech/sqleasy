@@ -50,14 +50,16 @@ SqlHelper defaultFrom(
       sqlHelper.addSqlSnippet(
           quoteIdentifier(fromState.tableName, config.identifierDelimiters));
 
-      sqlHelper.addSqlSnippet(mysqlIndexHintForTable(
-          state, config, fromState.alias ?? fromState.tableName ?? ''));
-
       if ((fromState.alias ?? '').isNotEmpty) {
         sqlHelper.addSqlSnippet(' AS ');
         sqlHelper.addSqlSnippet(
             quoteIdentifier(fromState.alias, config.identifierDelimiters));
       }
+
+      // MySQL's table reference is `tbl_name [[AS] alias] [index_hint_list]` — the hint follows
+      // the alias. Emitting it first is a syntax error (1064).
+      sqlHelper.addSqlSnippet(mysqlIndexHintForTable(
+          state, config, fromState.alias ?? fromState.tableName ?? ''));
 
       // MSSQL has no `FOR UPDATE`/`FOR SHARE` — the row lock is a `WITH (...)` hint on each
       // base table instead. See `default_row_lock.dart`.
@@ -125,11 +127,15 @@ SqlHelper defaultFrom(
     }
 
     if (fromState.builderType == BuilderType.fromFunction) {
+      // MySQL has no FROM-clause table functions at all. `fromFunctionRaw()` remains the escape
+      // hatch for hand-written JSON_TABLE and friends.
+      if (config.databaseType == DatabaseType.mysql) {
+        throw ParserError(ParserArea.from,
+            'MySQL does not support table functions in FROM — use fromFunctionRaw');
+      }
+
+      // No MySQL owner guard here — the capability throw above already excluded MySQL.
       if ((fromState.owner ?? '').isNotEmpty) {
-        if (config.databaseType == DatabaseType.mysql) {
-          throw ParserError(
-              ParserArea.from, 'MySQL does not support table owners');
-        }
         sqlHelper.addSqlSnippet(
             quoteIdentifier(fromState.owner, config.identifierDelimiters));
         sqlHelper.addSqlSnippet('.');

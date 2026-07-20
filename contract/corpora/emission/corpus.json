@@ -22816,20 +22816,7 @@
           "raw": "SELECT * FROM [dbo].[generate_series](1, 3) AS [g];"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `generate_series`(?, ?) AS `g`;",
-            "params": [
-              {
-                "t": "num",
-                "v": 1
-              },
-              {
-                "t": "num",
-                "v": 3
-              }
-            ]
-          },
-          "raw": "SELECT * FROM `generate_series`(1, 3) AS `g`;"
+          "throws": "From: MySQL does not support table functions in FROM — use fromFunctionRaw"
         },
         "postgres": {
           "prepared": {
@@ -22948,11 +22935,7 @@
           "raw": "SELECT \"o\".\"region\" FROM \"public\".\"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"region\");"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT \"o\".\"region\" FROM \"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"region\");",
-            "params": []
-          },
-          "raw": "SELECT \"o\".\"region\" FROM \"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"region\");"
+          "throws": "General: SQLite has no ROLLUP — use groupByRaw"
         }
       }
     },
@@ -23040,11 +23023,7 @@
           "raw": "SELECT \"o\".\"region\" FROM \"public\".\"orders\" AS \"o\" GROUP BY CUBE (\"o\".\"region\", \"o\".\"product\");"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT \"o\".\"region\" FROM \"orders\" AS \"o\" GROUP BY CUBE (\"o\".\"region\", \"o\".\"product\");",
-            "params": []
-          },
-          "raw": "SELECT \"o\".\"region\" FROM \"orders\" AS \"o\" GROUP BY CUBE (\"o\".\"region\", \"o\".\"product\");"
+          "throws": "General: SQLite has no CUBE — use groupByRaw"
         }
       }
     },
@@ -23112,11 +23091,7 @@
           "raw": "SELECT [o].[region] FROM [dbo].[orders] AS [o] GROUP BY GROUPING SETS (([o].[region], [o].[product]), ([o].[region]), ());"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT \"o\".\"region\" FROM \"orders\" AS \"o\" GROUP BY GROUPING SETS ((\"o\".\"region\", \"o\".\"product\"), (\"o\".\"region\"), ());",
-            "params": []
-          },
-          "raw": "SELECT \"o\".\"region\" FROM \"orders\" AS \"o\" GROUP BY GROUPING SETS ((\"o\".\"region\", \"o\".\"product\"), (\"o\".\"region\"), ());"
+          "throws": "General: SQLite has no GROUPING SETS — use groupByRaw"
         }
       }
     },
@@ -23154,11 +23129,7 @@
           "raw": "SELECT [o].[id] FROM [dbo].[orders] AS [o] ORDER BY [o].[total] DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS WITH TIES;"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT `o`.`id` FROM `orders` AS `o` ORDER BY `o`.`total` DESC FETCH FIRST 5 ROWS WITH TIES;",
-            "params": []
-          },
-          "raw": "SELECT `o`.`id` FROM `orders` AS `o` ORDER BY `o`.`total` DESC FETCH FIRST 5 ROWS WITH TIES;"
+          "throws": "LimitOffset: MySQL does not support WITH TIES"
         },
         "postgres": {
           "prepared": {
@@ -23264,10 +23235,10 @@
       "expect": {
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` USE INDEX (`users_email_idx`) AS `u`;",
+            "sql": "SELECT * FROM `users` AS `u` USE INDEX (`users_email_idx`);",
             "params": []
           },
-          "raw": "SELECT * FROM `users` USE INDEX (`users_email_idx`) AS `u`;"
+          "raw": "SELECT * FROM `users` AS `u` USE INDEX (`users_email_idx`);"
         }
       }
     },

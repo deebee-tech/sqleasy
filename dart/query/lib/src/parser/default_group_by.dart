@@ -96,6 +96,12 @@ SqlHelper defaultGroupBy(QueryState state, Dialect config, ParserMode mode) {
       throw ParserError(
           ParserArea.general, 'ROLLUP requires at least one grouping column');
     }
+
+    if (config.databaseType == DatabaseType.sqlite) {
+      throw ParserError(
+          ParserArea.general, 'SQLite has no ROLLUP — use groupByRaw');
+    }
+
     if (config.databaseType == DatabaseType.mysql) {
       _emitColumnList(sqlHelper, config, columns);
       sqlHelper.addSqlSnippet(' WITH ROLLUP');
@@ -119,6 +125,11 @@ SqlHelper defaultGroupBy(QueryState state, Dialect config, ParserMode mode) {
           ParserArea.general, 'CUBE requires at least one grouping column');
     }
 
+    if (config.databaseType == DatabaseType.sqlite) {
+      throw ParserError(
+          ParserArea.general, 'SQLite has no CUBE — use groupByRaw');
+    }
+
     if (config.databaseType == DatabaseType.mysql) {
       throw ParserError(
         ParserArea.general,
@@ -136,6 +147,11 @@ SqlHelper defaultGroupBy(QueryState state, Dialect config, ParserMode mode) {
   if (sets.isEmpty) {
     throw ParserError(
         ParserArea.general, 'GROUPING SETS requires at least one column set');
+  }
+
+  if (config.databaseType == DatabaseType.sqlite) {
+    throw ParserError(
+        ParserArea.general, 'SQLite has no GROUPING SETS — use groupByRaw');
   }
 
   if (config.databaseType == DatabaseType.mysql) {

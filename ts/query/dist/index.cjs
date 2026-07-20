@@ -984,11 +984,11 @@ const defaultJoin = (state, config, mode, options) => {
 				sqlHelper.addSqlSnippet(".");
 			}
 			sqlHelper.addSqlSnippet(quoteIdentifier(joinState.tableName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ""));
 			if (joinState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
 			}
+			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ""));
 			sqlHelper = defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
 			if (i < state.joinStates.length - 1) sqlHelper.addSqlSnippet(" ");
 			continue;
@@ -1399,11 +1399,11 @@ const defaultFrom = (state, config, mode, options) => {
 				sqlHelper.addSqlSnippet(".");
 			}
 			sqlHelper.addSqlSnippet(quoteIdentifier(fromState.tableName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, fromState.alias ?? fromState.tableName ?? ""));
 			if (fromState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.alias, config.identifierDelimiters));
 			}
+			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, fromState.alias ?? fromState.tableName ?? ""));
 			if (state.rowLock && config.databaseType === DatabaseType.Mssql) sqlHelper.addSqlSnippet(mssqlRowLockHint(state.rowLock));
 			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
 			return;
@@ -1433,8 +1433,8 @@ const defaultFrom = (state, config, mode, options) => {
 			return;
 		}
 		if (fromState.builderType === BuilderType.FromFunction) {
+			if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table functions in FROM — use fromFunctionRaw");
 			if (fromState.owner && fromState.owner !== "") {
-				if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
 				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
 				sqlHelper.addSqlSnippet(".");
 			}
@@ -1821,6 +1821,7 @@ const defaultGroupBy = (state, config, mode) => {
 	if (modifier.builderType === BuilderType.GroupByRollup) {
 		const columns = modifier.groupingSets && modifier.groupingSets.length === 1 ? modifier.groupingSets[0] : plainColumns;
 		if (columns.length === 0) throw new ParserError(ParserArea.General, "ROLLUP requires at least one grouping column");
+		if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite has no ROLLUP — use groupByRaw");
 		if (config.databaseType === DatabaseType.Mysql) {
 			emitColumnList(sqlHelper, config, columns);
 			sqlHelper.addSqlSnippet(" WITH ROLLUP");
@@ -1834,6 +1835,7 @@ const defaultGroupBy = (state, config, mode) => {
 	if (modifier.builderType === BuilderType.GroupByCube) {
 		const columns = modifier.groupingSets && modifier.groupingSets.length === 1 ? modifier.groupingSets[0] : plainColumns;
 		if (columns.length === 0) throw new ParserError(ParserArea.General, "CUBE requires at least one grouping column");
+		if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite has no CUBE — use groupByRaw");
 		if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.General, "MySQL has no CUBE — use groupByRollup/groupByGroupingSets or groupByRaw");
 		sqlHelper.addSqlSnippet("CUBE (");
 		emitColumnList(sqlHelper, config, columns);
@@ -1842,6 +1844,7 @@ const defaultGroupBy = (state, config, mode) => {
 	}
 	const sets = modifier.groupingSets ?? [];
 	if (sets.length === 0) throw new ParserError(ParserArea.General, "GROUPING SETS requires at least one column set");
+	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite has no GROUPING SETS — use groupByRaw");
 	if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.General, "MySQL has no GROUPING SETS — use groupByRollup or groupByRaw");
 	sqlHelper.addSqlSnippet("GROUPING SETS (");
 	sets.forEach((set, setIndex) => {
@@ -2284,6 +2287,7 @@ const defaultLimitOffset = (state, config, mode) => {
 	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
 		if (state.limitWithTies) {
 			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.LimitOffset, "SQLite does not support WITH TIES");
+			if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.LimitOffset, "MySQL does not support WITH TIES");
 			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
 			if (state.offset > 0) {
 				sqlHelper.addSqlSnippet("OFFSET ");

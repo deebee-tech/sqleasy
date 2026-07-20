@@ -40,6 +40,10 @@ export const defaultLimitOffset = (
         throw new ParserError(ParserArea.LimitOffset, 'SQLite does not support WITH TIES');
       }
 
+      if (config.databaseType === DatabaseType.Mysql) {
+        throw new ParserError(ParserArea.LimitOffset, 'MySQL does not support WITH TIES');
+      }
+
       if (state.limit <= 0) {
         throw new ParserError(ParserArea.LimitOffset, 'limitWithTies requires a positive limit');
       }

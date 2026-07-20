@@ -114,14 +114,16 @@ export const defaultJoin = (
 
       sqlHelper.addSqlSnippet(quoteIdentifier(joinState.tableName, config.identifierDelimiters));
 
-      sqlHelper.addSqlSnippet(
-        mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ''),
-      );
-
       if (joinState.alias !== '') {
         sqlHelper.addSqlSnippet(' AS ');
         sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
       }
+
+      // MySQL's table reference is `tbl_name [[AS] alias] [index_hint_list]`, and the hint precedes
+      // the ON clause — so this must stay above `defaultJoinOns` below.
+      sqlHelper.addSqlSnippet(
+        mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ''),
+      );
 
       sqlHelper = defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
 

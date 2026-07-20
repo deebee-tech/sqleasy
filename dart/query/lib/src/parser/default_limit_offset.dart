@@ -33,6 +33,11 @@ SqlHelper defaultLimitOffset(
             ParserArea.limitOffset, 'SQLite does not support WITH TIES');
       }
 
+      if (config.databaseType == DatabaseType.mysql) {
+        throw ParserError(
+            ParserArea.limitOffset, 'MySQL does not support WITH TIES');
+      }
+
       if (state.limit <= 0) {
         throw ParserError(
             ParserArea.limitOffset, 'limitWithTies requires a positive limit');

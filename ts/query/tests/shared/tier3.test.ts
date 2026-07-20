@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   FullTextMode,
+  JoinOperator,
+  JoinType,
   JsonExtractMode,
   MssqlQuery,
   MysqlQuery,
@@ -158,13 +160,94 @@ describe('Tier 3 — WITH TIES', () => {
       .limitWithTies(5);
     expect(() => b.parseRaw()).toThrow(/WITH TIES/);
   });
+
+  // MySQL has no WITH TIES in any form. It previously emitted `FETCH FIRST … WITH TIES`, which
+  // MySQL cannot parse.
+  it('MySQL limitWithTies throws', () => {
+    const b = new MysqlQuery().newBuilder();
+    b.selectAll()
+      .fromTable('orders', 'o')
+      .orderByColumn('o', 'total', OrderByDirection.Descending)
+      .limitWithTies(5);
+    expect(() => b.parseRaw()).toThrow(/MySQL does not support WITH TIES/);
+  });
+});
+
+// SQLite has none of ROLLUP, CUBE or GROUPING SETS; MySQL has only ROLLUP (as `WITH ROLLUP`).
+// Each of these previously emitted SQL the engine cannot run.
+describe('Tier 3 — grouping extensions refuse unsupported dialects', () => {
+  it('SQLite groupByRollup throws', () => {
+    const b = new SqliteQuery().newBuilder();
+    b.selectAll()
+      .fromTable('orders', 'o')
+      .groupByRollup([{ tableNameOrAlias: 'o', columnName: 'region' }]);
+    expect(() => b.parseRaw()).toThrow(/SQLite has no ROLLUP/);
+  });
+
+  it('SQLite groupByCube throws', () => {
+    const b = new SqliteQuery().newBuilder();
+    b.selectAll()
+      .fromTable('orders', 'o')
+      .groupByCube([{ tableNameOrAlias: 'o', columnName: 'region' }]);
+    expect(() => b.parseRaw()).toThrow(/SQLite has no CUBE/);
+  });
+
+  it('SQLite groupByGroupingSets throws', () => {
+    const b = new SqliteQuery().newBuilder();
+    b.selectAll()
+      .fromTable('orders', 'o')
+      .groupByGroupingSets([[{ tableNameOrAlias: 'o', columnName: 'region' }]]);
+    expect(() => b.parseRaw()).toThrow(/SQLite has no GROUPING SETS/);
+  });
+
+  it('Postgres groupByCube still emits', () => {
+    const b = new PostgresQuery().newBuilder();
+    b.selectAll()
+      .fromTable('orders', 'o')
+      .groupByCube([{ tableNameOrAlias: 'o', columnName: 'region' }]);
+    expect(b.parseRaw()).toContain('CUBE ("o"."region")');
+  });
+});
+
+describe('Tier 3 — table functions refuse MySQL', () => {
+  it('MySQL fromTableFunction throws', () => {
+    const b = new MysqlQuery().newBuilder();
+    b.selectAll().fromTableFunction('generate_series', 'g', [1, 10]);
+    expect(() => b.parseRaw()).toThrow(/MySQL does not support table functions in FROM/);
+  });
+
+  it('Postgres fromTableFunction still emits', () => {
+    const b = new PostgresQuery().newBuilder();
+    b.selectAll().fromTableFunction('generate_series', 'g', [1, 10]);
+    expect(b.parseRaw()).toContain('generate_series');
+  });
 });
 
 describe('Tier 3 — hints', () => {
-  it('MySQL hintUseIndex', () => {
+  // MySQL's grammar is `tbl_name [[AS] alias] [index_hint_list]`. Asserting only that the hint
+  // appears would pass even with the hint before the alias, which MySQL rejects (1064) — so pin
+  // the full ordering.
+  it('MySQL hintUseIndex emits the hint after the alias', () => {
     const b = new MysqlQuery().newBuilder();
     b.selectAll().fromTable('users', 'u').hintUseIndex('u', 'users_email_idx');
-    expect(b.parseRaw()).toContain('USE INDEX (`users_email_idx`)');
+    expect(b.parseRaw()).toContain('FROM `users` AS `u` USE INDEX (`users_email_idx`)');
+  });
+
+  it('MySQL hintForceIndex emits the hint after the alias', () => {
+    const b = new MysqlQuery().newBuilder();
+    b.selectAll().fromTable('users', 'u').hintForceIndex('u', 'users_email_idx');
+    expect(b.parseRaw()).toContain('FROM `users` AS `u` FORCE INDEX (`users_email_idx`)');
+  });
+
+  it('MySQL index hint on a JOIN sits between the alias and ON', () => {
+    const b = new MysqlQuery().newBuilder();
+    b.selectAll()
+      .fromTable('users', 'u')
+      .joinTable(JoinType.Inner, 'orders', 'o', (j) =>
+        j.on('o', 'user_id', JoinOperator.Equals, 'u', 'id'),
+      )
+      .hintUseIndex('o', 'orders_user_idx');
+    expect(b.parseRaw()).toContain('JOIN `orders` AS `o` USE INDEX (`orders_user_idx`) ON');
   });
 
   it('MSSQL hintMssqlOption', () => {
