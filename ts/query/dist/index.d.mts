@@ -1854,6 +1854,66 @@ declare class QueryBuilder {
   clearCall: () => this;
 }
 //#endregion
+//#region src/builder/typed-views.d.ts
+/**
+ * Per-engine typed views over the single {@link QueryBuilder} runtime class.
+ *
+ * SQLEasy is an honest capability surface: hitting the dot should show only what the engine you are
+ * on can actually do. The runtime enforces that by throwing (the floor, and all Go can do); these
+ * views add the compile-time ceiling for TypeScript — a method a dialect cannot run is not on that
+ * dialect's builder type, so it does not autocomplete and does not compile.
+ *
+ * There is ONE runtime class. A dialect facade (`MssqlQuery.newBuilder()`, …) constructs a
+ * `QueryBuilder` and returns it typed as the narrow view; the object is unchanged, only its static
+ * type is narrowed. Structural typing makes this sound — `QueryBuilder` really does have every
+ * method each view exposes — and the {@link _assertQueryBuilderSatisfiesViews} guard fails the build
+ * if that ever stops being true.
+ *
+ * ── HOW THE VIEW IS DERIVED (mechanism, proven before it was written) ──
+ * {@link BuilderView} maps over a curated set of method keys and, for every method that returns the
+ * builder (`this`, which resolves to `QueryBuilder` when indexed), REBINDS the return to the viewing
+ * type `Self` — so `mssql.selectAll().where(…).top(…)` stays typed as the MSSQL view through the
+ * whole chain. Terminal methods that return something else (`parsePrepared`, `state`, …) keep their
+ * real return. Everything NOT in the key set is simply absent.
+ *
+ * Two other approaches were measured and rejected: a `this`-returning `Omit<QueryBuilder, K>` does
+ * NOT drop the omitted method (polymorphic `this` reintroduces it), and a method typed to `never` on
+ * the wrong dialect still autocompletes and only fails on call — which defeats the "hit the dot"
+ * test. Only structural absence via this mapped-type derivation passes.
+ */
+type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBuilder[K] extends ((...args: infer A) => QueryBuilder) ? (...args: A) => Self : QueryBuilder[K]; };
+/**
+ * Methods that only MSSQL can run, so they are absent from the other three views.
+ *
+ * `top`/`clearTop` — `TOP` is a T-SQL keyword; the row cap elsewhere is `limit()`. `merge` — MERGE
+ * is native T-SQL only. `hintMssqlOption` — a T-SQL `OPTION (...)` query hint. All adjudicated in
+ * `contract/capabilities/decisions.json`.
+ */
+type MssqlOnly = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption';
+/**
+ * Methods that only Postgres can run. `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres
+ * only; the other three already refuse it at runtime.
+ */
+type PostgresOnly = 'distinctOn' | 'clearDistinctOn';
+/** The MSSQL builder view: every common method plus MSSQL's own, minus what only Postgres can do. */
+interface MssqlQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, PostgresOnly>, MssqlQueryBuilder> {}
+/** The Postgres builder view. */
+interface PostgresQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, MssqlOnly>, PostgresQueryBuilder> {}
+/** The MySQL builder view. */
+interface MysqlQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>, MysqlQueryBuilder> {}
+/** The SQLite builder view. */
+interface SqliteQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>, SqliteQueryBuilder> {}
+/**
+ * Anti-drift guard, checked at compile time only (never called).
+ *
+ * A view is a hand-curated subset of `QueryBuilder`'s surface. If a method a view names is renamed
+ * or removed on `QueryBuilder`, or its signature drifts, these assignments stop type-checking and
+ * the build fails — so a view can never quietly promise a method the runtime no longer has. The
+ * runtime `QueryBuilder` must be assignable to every view, because it genuinely has all their
+ * methods; the narrowing is only in the static type a facade hands back.
+ */
+declare const _assertQueryBuilderSatisfiesViews: (builder: QueryBuilder) => void;
+//#endregion
 //#region src/builder/multi-builder.d.ts
 /**
  * Composes multiple {@link QueryBuilder} statements into a single SQL string, optionally wrapped
@@ -2064,5 +2124,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { BuilderType, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.mts.map

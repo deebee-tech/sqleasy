@@ -5538,6 +5538,18 @@ var QueryBuilder = class QueryBuilder {
 	};
 };
 //#endregion
+//#region src/builder/typed-views.ts
+/**
+* Anti-drift guard, checked at compile time only (never called).
+*
+* A view is a hand-curated subset of `QueryBuilder`'s surface. If a method a view names is renamed
+* or removed on `QueryBuilder`, or its signature drifts, these assignments stop type-checking and
+* the build fails — so a view can never quietly promise a method the runtime no longer has. The
+* runtime `QueryBuilder` must be assignable to every view, because it genuinely has all their
+* methods; the narrowing is only in the static type a facade hands back.
+*/
+const _assertQueryBuilderSatisfiesViews = (builder) => {};
+//#endregion
 //#region src/builder/multi-builder.ts
 /**
 * Composes multiple {@link QueryBuilder} statements into a single SQL string, optionally wrapped
@@ -6037,6 +6049,6 @@ const Fn = {
 	}
 };
 //#endregion
-export { BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 
 //# sourceMappingURL=index.mjs.map

@@ -5539,6 +5539,18 @@ var QueryBuilder = class QueryBuilder {
 	};
 };
 //#endregion
+//#region src/builder/typed-views.ts
+/**
+* Anti-drift guard, checked at compile time only (never called).
+*
+* A view is a hand-curated subset of `QueryBuilder`'s surface. If a method a view names is renamed
+* or removed on `QueryBuilder`, or its signature drifts, these assignments stop type-checking and
+* the build fails — so a view can never quietly promise a method the runtime no longer has. The
+* runtime `QueryBuilder` must be assignable to every view, because it genuinely has all their
+* methods; the narrowing is only in the static type a facade hands back.
+*/
+const _assertQueryBuilderSatisfiesViews = (builder) => {};
+//#endregion
 //#region src/builder/multi-builder.ts
 /**
 * Composes multiple {@link QueryBuilder} statements into a single SQL string, optionally wrapped
@@ -6072,6 +6084,7 @@ exports.SqliteQuery = SqliteQuery;
 exports.UpsertAction = UpsertAction;
 exports.WhereOperator = WhereOperator;
 exports.WindowBuilder = WindowBuilder;
+exports._assertQueryBuilderSatisfiesViews = _assertQueryBuilderSatisfiesViews;
 exports.createCallState = createCallState;
 exports.createCteState = createCteState;
 exports.createFromState = createFromState;
