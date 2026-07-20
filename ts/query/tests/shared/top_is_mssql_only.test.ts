@@ -56,7 +56,10 @@ describe('top() is MSSQL-only', () => {
     });
 
     it(`${name} refuses top() inside a derived-table body`, () => {
-      const b = make();
+      // Runtime-floor test: reach top() through the wide builder — casting the OUTER builder to wide
+      // also widens its callback param, since the view now narrows `inner` to the same dialect (which
+      // correctly hides top() there too; that compile-time absence is proven in typed-views.test.ts).
+      const b = make() as unknown as QueryBuilder;
       b.selectAll().fromWithBuilder('sub', (inner) => {
         inner.selectAll().fromTable('users', 'u').top(5);
       });

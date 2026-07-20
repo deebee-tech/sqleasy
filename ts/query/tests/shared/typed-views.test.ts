@@ -111,6 +111,34 @@ describe('per-engine typed views', () => {
     expect(true).toBe(true);
   });
 
+  // The ceiling holds ONE LEVEL DOWN. A subquery runs on the same engine, so the `inner` builder a
+  // callback receives is the SAME narrow view — a wrong-dialect method is just as absent inside the
+  // callback as at the top level. Without the callback-param rewrite, `inner` would be the wide
+  // QueryBuilder and top() would wrongly autocomplete inside a Postgres subquery.
+  it('narrows the inner builder inside a subquery callback (compile-time)', () => {
+    // Present on MSSQL, inside and out:
+    void (() =>
+      new MssqlQuery().newBuilder().fromWithBuilder('sub', (inner) => {
+        inner.selectAll().fromTable('users', 'u').top(5);
+      }));
+
+    // Absent inside a Postgres subquery, exactly as at the top level:
+    void (() =>
+      new PostgresQuery().newBuilder().fromWithBuilder('sub', (inner) => {
+        // @ts-expect-error top() is MSSQL-only — absent on the inner Postgres view too
+        inner.top(5);
+      }));
+
+    // And absent inside a nested whereExists on SQLite:
+    void (() =>
+      new SqliteQuery().newBuilder().whereExists((inner) => {
+        // @ts-expect-error forUpdate() is absent on SQLite — including one level down
+        inner.forUpdate();
+      }));
+
+    expect(true).toBe(true);
+  });
+
   // The views are static types over the one runtime class; the object a facade returns is a real
   // QueryBuilder, so shared (and each engine's own) behaviour still runs.
   it('a shared method still runs on the concrete builder', () => {

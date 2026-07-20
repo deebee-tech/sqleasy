@@ -1873,15 +1873,29 @@ declare class QueryBuilder {
  * {@link BuilderView} maps over a curated set of method keys and, for every method that returns the
  * builder (`this`, which resolves to `QueryBuilder` when indexed), REBINDS the return to the viewing
  * type `Self` — so `mssql.selectAll().where(…).top(…)` stays typed as the MSSQL view through the
- * whole chain. Terminal methods that return something else (`parsePrepared`, `state`, …) keep their
- * real return. Everything NOT in the key set is simply absent.
+ * whole chain. It ALSO rebinds subquery-callback parameters (see {@link RebindArgs}): a
+ * `fromWithBuilder('sub', (inner) => …)` on the Postgres view hands back an `inner` that is itself
+ * the Postgres view, so the ceiling holds one level down — a subquery runs on the SAME engine, and
+ * `inner.top(5)` must be just as absent as `pg.top(5)`. Terminal methods that return something else
+ * (`parsePrepared`, `state`, …) keep their real return. Everything NOT in the key set is absent.
  *
  * Two other approaches were measured and rejected: a `this`-returning `Omit<QueryBuilder, K>` does
  * NOT drop the omitted method (polymorphic `this` reintroduces it), and a method typed to `never` on
  * the wrong dialect still autocompletes and only fails on call — which defeats the "hit the dot"
  * test. Only structural absence via this mapped-type derivation passes.
  */
-type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBuilder[K] extends ((...args: infer A) => QueryBuilder) ? (...args: A) => Self : QueryBuilder[K]; };
+/**
+ * Rewrites ONE method argument for the viewing type: a subquery callback `(b: QueryBuilder) => R`
+ * becomes `(b: Self) => R`, so nested completion is narrowed to the same dialect. Every other
+ * argument — a string, a `JoinOnBuilder`/`MergeBuilder`/`WindowBuilder` callback (a different builder
+ * type, so it does not match) — is left exactly as it was. The contravariant position is why the
+ * anti-drift guard still holds: a concrete `QueryBuilder` is WIDER than the view, which is precisely
+ * what a `(b: Self) => R` parameter accepts.
+ */
+type RebindArg<T, Self> = T extends ((b: QueryBuilder) => infer R) ? (b: Self) => R : T;
+/** Rewrites each argument in a method's parameter tuple via {@link RebindArg}. */
+type RebindArgs<A extends readonly unknown[], Self> = { [I in keyof A]: RebindArg<A[I], Self>; };
+type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBuilder[K] extends ((...args: infer A) => QueryBuilder) ? (...args: RebindArgs<A, Self>) => Self : QueryBuilder[K]; };
 /**
  * ── THE ADJUDICATION ──
  *
