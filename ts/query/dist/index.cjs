@@ -3641,7 +3641,11 @@ var MergeBuilder = class {
 		};
 		return this;
 	};
-	/** `USING (<subquery>) AS alias`. */
+	/**
+	* `USING (<subquery>) AS alias`. MERGE is MSSQL-only, so its USING subquery runs on MSSQL — the
+	* callback builder is the MSSQL view, keeping the honest-surface ceiling inside the subquery too.
+	* The concrete `QueryBuilder` the runtime passes is assignable to that view.
+	*/
 	usingSelect = (alias, build) => {
 		const child = this.#child();
 		build(child);

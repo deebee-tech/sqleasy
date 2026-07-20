@@ -1,6 +1,7 @@
 import type { Dialect } from '../configuration/configuration';
 import { JoinOnBuilder } from './join-on';
 import { QueryBuilder } from './query';
+import type { MssqlQueryBuilder } from './typed-views';
 import type {
   MergeAssignment,
   MergeExpr,
@@ -97,8 +98,12 @@ export class MergeBuilder {
     return this;
   };
 
-  /** `USING (<subquery>) AS alias`. */
-  public usingSelect = (alias: string, build: (q: QueryBuilder) => void): this => {
+  /**
+   * `USING (<subquery>) AS alias`. MERGE is MSSQL-only, so its USING subquery runs on MSSQL — the
+   * callback builder is the MSSQL view, keeping the honest-surface ceiling inside the subquery too.
+   * The concrete `QueryBuilder` the runtime passes is assignable to that view.
+   */
+  public usingSelect = (alias: string, build: (q: MssqlQueryBuilder) => void): this => {
     const child = this.#child();
     build(child);
     child.state().isInnerStatement = true;

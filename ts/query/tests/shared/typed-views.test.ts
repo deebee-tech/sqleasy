@@ -136,6 +136,16 @@ describe('per-engine typed views', () => {
         inner.forUpdate();
       }));
 
+    // The ceiling also holds inside a MERGE USING (SELECT …) subquery. MERGE is MSSQL-only, so its
+    // using-select builder is the MSSQL view — a Postgres-only method is absent there too.
+    void (() =>
+      new MssqlQuery().newBuilder().merge((m) =>
+        m.usingSelect('s', (sub) => {
+          // @ts-expect-error distinctOn is Postgres-only — absent on the inner MSSQL view
+          sub.distinctOn([]);
+        }),
+      ));
+
     expect(true).toBe(true);
   });
 

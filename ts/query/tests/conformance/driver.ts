@@ -244,7 +244,8 @@ const applyMerge = (m: MergeBuilder, mergeOps: Op[]): void => {
         m.usingTable(str(op, 'table'), str(op, 'alias'), op.owner as string | undefined);
         break;
       case 'usingSelect':
-        m.usingSelect(str(op, 'alias'), (q) => apply(q, ops(op)));
+        // usingSelect now hands back the narrow MSSQL view; `apply` drives the wide builder, so cast.
+        m.usingSelect(str(op, 'alias'), (q) => apply(q as unknown as QueryBuilder, ops(op)));
         break;
       case 'usingRaw':
         m.usingRaw(str(op, 'sql'), str(op, 'alias'));
