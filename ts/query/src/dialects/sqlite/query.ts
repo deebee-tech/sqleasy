@@ -29,7 +29,7 @@ export class SqliteQuery {
   };
 
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder => {
-    return new MultiBuilder(rc ? sqliteConfiguration(rc) : this.#configuration);
+  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder<SqliteQueryBuilder> => {
+    return new MultiBuilder<SqliteQueryBuilder>(rc ? sqliteConfiguration(rc) : this.#configuration);
   };
 }

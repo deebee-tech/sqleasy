@@ -92,6 +92,19 @@ void callbackNarrowsToTheView() {
   });
 }
 
+// The ceiling holds through a MultiBuilder batch: addBuilder() hands back the SAME narrow view, so a
+// wrong-dialect method is absent on a batched statement too.
+void multiBuilderNarrows() {
+  PostgresQuery()
+      .newMultiBuilder()
+      .addBuilder('b')
+      .top(5); // expect-error: top on a Postgres batch statement
+  MssqlQuery()
+      .newMultiBuilder()
+      .addBuilder('b')
+      .forUpdate(); // expect-error: forUpdate renamed to updlock on an MSSQL batch statement
+}
+
 // The ceiling also holds inside a MERGE USING (SELECT ...) subquery. MERGE is MSSQL-only, so its
 // using-select builder is the MSSQL view — a Postgres-only method is absent there too.
 void mergeUsingSelectNarrows() {

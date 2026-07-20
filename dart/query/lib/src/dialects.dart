@@ -18,8 +18,9 @@ class MssqlQuery {
   MssqlQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? mssqlConfiguration(rc) : _configuration);
 
-  MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
-      MultiBuilder(rc != null ? mssqlConfiguration(rc) : _configuration);
+  MultiBuilder<MssqlQueryBuilder> newMultiBuilder([RuntimeConfiguration? rc]) =>
+      MultiBuilder<MssqlQueryBuilder>(
+          rc != null ? mssqlConfiguration(rc) : _configuration);
 }
 
 /// Main entry point for MySQL: backtick identifiers, `?` placeholders, no default schema.
@@ -34,8 +35,9 @@ class MysqlQuery {
   MysqlQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? mysqlConfiguration(rc) : _configuration);
 
-  MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
-      MultiBuilder(rc != null ? mysqlConfiguration(rc) : _configuration);
+  MultiBuilder<MysqlQueryBuilder> newMultiBuilder([RuntimeConfiguration? rc]) =>
+      MultiBuilder<MysqlQueryBuilder>(
+          rc != null ? mysqlConfiguration(rc) : _configuration);
 }
 
 /// Main entry point for PostgreSQL: double-quoted identifiers, `$n` placeholders, `public` schema.
@@ -50,8 +52,10 @@ class PostgresQuery {
   PostgresQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? postgresConfiguration(rc) : _configuration);
 
-  MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
-      MultiBuilder(rc != null ? postgresConfiguration(rc) : _configuration);
+  MultiBuilder<PostgresQueryBuilder> newMultiBuilder(
+          [RuntimeConfiguration? rc]) =>
+      MultiBuilder<PostgresQueryBuilder>(
+          rc != null ? postgresConfiguration(rc) : _configuration);
 }
 
 /// Main entry point for SQLite: double-quoted identifiers, `?` placeholders, no default schema.
@@ -66,6 +70,8 @@ class SqliteQuery {
   SqliteQueryBuilder newBuilder([RuntimeConfiguration? rc]) =>
       QueryBuilder(rc != null ? sqliteConfiguration(rc) : _configuration);
 
-  MultiBuilder newMultiBuilder([RuntimeConfiguration? rc]) =>
-      MultiBuilder(rc != null ? sqliteConfiguration(rc) : _configuration);
+  MultiBuilder<SqliteQueryBuilder> newMultiBuilder(
+          [RuntimeConfiguration? rc]) =>
+      MultiBuilder<SqliteQueryBuilder>(
+          rc != null ? sqliteConfiguration(rc) : _configuration);
 }

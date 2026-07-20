@@ -1,17 +1,20 @@
 @TestOn('vm')
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
 
 /// The COMPILE-TIME ceiling proof. `test/ceiling/negative_cases.dart` calls, on each dialect's view,
-/// a method that dialect cannot run; every call must fail analysis with `undefined_method`. This test
-/// runs the analyzer on that fixture and asserts each expected `(method, view)` rejection is present —
-/// the Dart analog of TypeScript's `@ts-expect-error` block. If a wrong-dialect method ever becomes
-/// reachable on the wrong view, its expected error disappears and this test fails.
+/// a method that dialect cannot run; every call must fail analysis with `undefined_method`. This runs
+/// the analyzer (JSON output) on that fixture and asserts it rejects EXACTLY the intended calls — the
+/// Dart analog of TypeScript's `@ts-expect-error` block. If a wrong-dialect method ever becomes
+/// reachable on the wrong view, its rejection disappears and this fails; if a new spurious error
+/// appears, the multiset equality fails too.
 void main() {
-  // Each pair is a wrong-dialect call in the fixture that MUST be rejected.
+  // Intended wrong-dialect rejections — one per unique (method, view). Removing a method from an
+  // AbsentOn set (TS) / a dialect's `absent` set (Dart manifest) drops its rejection and fails here.
   const expected = <(String method, String view)>[
     ('top', 'PostgresQueryBuilder'),
     ('top', 'MysqlQueryBuilder'),
@@ -25,70 +28,71 @@ void main() {
     ('hintUseIndex', 'PostgresQueryBuilder'),
     ('callProcedure', 'SqliteQueryBuilder'),
     ('forUpdate', 'SqliteQueryBuilder'),
-    // Engine-native renames: the generic is hidden where the alias is shown, and the alias is
-    // absent off its home dialect.
+    // Engine-native renames: the generic is hidden where the alias is shown, and the alias is absent
+    // off its home dialect.
     ('forUpdate', 'MssqlQueryBuilder'),
     ('onConflictDoNothing', 'MysqlQueryBuilder'),
     ('updlock', 'PostgresQueryBuilder'),
     ('insertIgnore', 'PostgresQueryBuilder'),
   ];
 
-  late String analyzerOutput;
+  // The SAME rejection reached again through a NESTED context — each contributes one more error, so
+  // if nested narrowing regressed (the nested call stopped erroring) the count would drop and the
+  // multiset equality would fail, even though the pair still appears at top level.
+  const nested = <(String method, String view)>[
+    (
+      'top',
+      'PostgresQueryBuilder'
+    ), // inside a fromWithBuilder subquery callback
+    ('distinctOn', 'MssqlQueryBuilder'), // inside a MERGE using-select subquery
+    ('top', 'PostgresQueryBuilder'), // a Postgres MultiBuilder statement
+    ('forUpdate', 'MssqlQueryBuilder'), // an MSSQL MultiBuilder statement
+  ];
+
+  final pairPattern =
+      RegExp(r"The method '(\w+)' isn't defined for the type '(\w+)'");
+
+  late List<Map<String, Object?>> errors;
+  late List<(String, String)> pairs;
 
   setUpAll(() {
-    // `dart analyze` exits non-zero when it finds issues — that is the expected, healthy case here.
+    // `dart analyze` exits non-zero when it finds issues — the expected, healthy case here.
     final result = Process.runSync(
-        'dart', ['analyze', 'test/ceiling/negative_cases.dart']);
-    analyzerOutput = '${result.stdout}\n${result.stderr}';
-  });
-
-  test('every wrong-dialect call in the fixture is rejected at compile time',
-      () {
-    for (final (method, view) in expected) {
-      expect(
-        analyzerOutput,
-        allOf(
-          contains("The method '$method' isn't defined for the type '$view'"),
-          contains('undefined_method'),
-        ),
-        reason: '$method should be ABSENT from $view (honest-surface ceiling)',
-      );
-    }
-  });
-
-  test(
-      'the ceiling holds one level down — a subquery callback is the same narrow view',
-      () {
-    // negative_cases.dart calls `inner.top(5)` inside a Postgres `fromWithBuilder` callback; `inner`
-    // is the Postgres view, so top() is absent there too.
-    expect(
-      analyzerOutput,
-      contains(
-          "The method 'top' isn't defined for the type 'PostgresQueryBuilder'"),
+      'dart',
+      ['analyze', '--format=json', 'test/ceiling/negative_cases.dart'],
     );
+    final decoded = jsonDecode(result.stdout as String) as Map<String, Object?>;
+    final diagnostics =
+        (decoded['diagnostics']! as List).cast<Map<String, Object?>>();
+    errors = diagnostics.where((d) => d['severity'] == 'ERROR').toList();
+    pairs = [
+      for (final d in errors)
+        if (pairPattern.firstMatch(d['problemMessage'] as String? ?? '')
+            case final m?)
+          (m.group(1)!, m.group(2)!),
+    ];
   });
 
-  test('the ceiling holds inside a MERGE using-select subquery', () {
-    // negative_cases.dart calls `sub.distinctOn(...)` inside `merge((m) => m.usingSelect('s', ...))`;
-    // MERGE is MSSQL-only, so `sub` is the MSSQL view and distinctOn (Postgres-only) is absent there.
-    expect(
-      analyzerOutput,
-      contains(
-          "The method 'distinctOn' isn't defined for the type 'MssqlQueryBuilder'"),
-    );
-  });
-
-  test('the fixture produces ONLY the expected undefined_method rejections',
-      () {
-    // Guards against the fixture rotting into unrelated errors (a typo, a renamed method) that would
-    // make the assertions above pass for the wrong reason.
-    final errorLines =
-        analyzerOutput.split('\n').where((l) => l.contains(' error ')).toList();
-    // +2: the fromWithBuilder callback case and the MERGE using-select callback case.
-    expect(errorLines, hasLength(expected.length + 2));
-    for (final line in errorLines) {
-      expect(line, contains('undefined_method'),
-          reason: 'unexpected error: $line');
+  test('every rejection is a compile-time undefined_method, nothing else', () {
+    for (final d in errors) {
+      expect(d['code'], 'undefined_method',
+          reason: 'unexpected error: ${d['problemMessage']}');
     }
+    // Every ERROR must have parsed into a (method, view) pair — otherwise the message shape drifted.
+    expect(pairs, hasLength(errors.length));
+  });
+
+  test('rejects EXACTLY the intended wrong-dialect calls, at every level', () {
+    Map<(String, String), int> tally(Iterable<(String, String)> ps) {
+      final m = <(String, String), int>{};
+      for (final p in ps) {
+        m[p] = (m[p] ?? 0) + 1;
+      }
+      return m;
+    }
+
+    // Multiset equality: a missing rejection, an extra one, or a nested case that stopped narrowing
+    // all fail here.
+    expect(tally(pairs), equals(tally([...expected, ...nested])));
   });
 }

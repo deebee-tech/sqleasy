@@ -10,12 +10,14 @@ import 'package:test/test.dart';
 /// (no bound params) and, because numbering restarts per statement, are not runnable as one call.
 void main() {
   // Fill a batch with the same two statements used on the TypeScript side.
-  (QueryBuilder, QueryBuilder) fill(MultiBuilder multi) {
-    final b1 = multi.addBuilder('ins');
+  // addBuilder hands back the engine's narrow view; these statements use only shared methods, so the
+  // batch is driven through the wide QueryBuilder via a downcast (the runtime object implements it).
+  (QueryBuilder, QueryBuilder) fill(MultiBuilder<SqlBuilderView> multi) {
+    final b1 = multi.addBuilder('ins') as QueryBuilder;
     b1
         .insertInto('users')
         .insertColumns(['name', 'age']).insertValues(['Ada', 36]);
-    final b2 = multi.addBuilder('upd');
+    final b2 = multi.addBuilder('upd') as QueryBuilder;
     b2
         .updateTable('stats', alias: 's')
         .set('n', 100)
@@ -71,8 +73,7 @@ void main() {
         SqliteQuery().newMultiBuilder(),
       ]) {
         fill(multi);
-        multi
-            .addBuilder('del')
+        (multi.addBuilder('del') as QueryBuilder)
             .deleteFrom('users', alias: 'u')
             .where('u', 'id', WhereOperator.equals, 9);
 

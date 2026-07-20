@@ -22,7 +22,6 @@ import {
   type JoinOnBuilder,
   type MergeBuilder,
   type MergeExpr,
-  type MultiBuilder,
   type WindowBuilder,
 } from '../../src';
 import type {
@@ -816,12 +815,13 @@ export const runCase = (testCase: Case, dialect: Dialect): Expectation => {
 
   try {
     if (testCase.builders) {
-      const multi: MultiBuilder = query.newMultiBuilder();
+      const multi = query.newMultiBuilder();
       if (testCase.transaction === 'off') {
         multi.setTransactionState(MultiBuilderTransactionState.TransactionOff);
       }
       for (const spec of testCase.builders) {
-        apply(multi.addBuilder(spec.name), spec.ops);
+        // addBuilder hands back the engine's narrow view; the replay drives the wide builder.
+        apply(multi.addBuilder(spec.name) as unknown as QueryBuilder, spec.ops);
       }
       // MultiBuilder has no `parsePrepared` — it batches statements, and MSSQL inlines its values —
       // so the batch contract is the SQL string alone. Bound params are covered by single-statement

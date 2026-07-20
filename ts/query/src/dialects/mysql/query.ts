@@ -29,7 +29,7 @@ export class MysqlQuery {
   };
 
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder => {
-    return new MultiBuilder(rc ? mysqlConfiguration(rc) : this.#configuration);
+  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder<MysqlQueryBuilder> => {
+    return new MultiBuilder<MysqlQueryBuilder>(rc ? mysqlConfiguration(rc) : this.#configuration);
   };
 }

@@ -37,7 +37,10 @@ QueryBuilder _newBuilder(Object? query) => switch (query) {
       _ => throw StateError('not a query'),
     };
 
-MultiBuilder _newMultiBuilder(Object? query) => switch (query) {
+// The facades return their own narrow MultiBuilder<XQueryBuilder>; each is assignable to
+// MultiBuilder<SqlBuilderView> (Dart generics are covariant), and the addBuilder result is downcast
+// to the wide QueryBuilder at the call site so the replay can drive any op.
+MultiBuilder<SqlBuilderView> _newMultiBuilder(Object? query) => switch (query) {
       MssqlQuery() => query.newMultiBuilder(),
       MysqlQuery() => query.newMultiBuilder(),
       PostgresQuery() => query.newMultiBuilder(),
@@ -645,7 +648,7 @@ Map<String, Object?> runCase(GoldenCase c, String dialect) {
         multi.setTransactionState(MultiBuilderTransactionState.transactionOff);
       }
       for (final spec in c.builders!) {
-        final b = multi.addBuilder(spec['name']! as String);
+        final b = multi.addBuilder(spec['name']! as String) as QueryBuilder;
         applyOps(
             b, (spec['ops']! as List<Object?>).cast<Map<String, Object?>>());
       }

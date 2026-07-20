@@ -29,7 +29,7 @@ export class MssqlQuery {
   };
 
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder => {
-    return new MultiBuilder(rc ? mssqlConfiguration(rc) : this.#configuration);
+  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder<MssqlQueryBuilder> => {
+    return new MultiBuilder<MssqlQueryBuilder>(rc ? mssqlConfiguration(rc) : this.#configuration);
   };
 }

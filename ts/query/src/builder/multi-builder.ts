@@ -9,8 +9,12 @@ import { QueryBuilder } from './query';
  * in a transaction. Obtain one from a dialect entry point (e.g.
  * `new PostgresQuery().newMultiBuilder()`) rather than constructing directly. Named builders can
  * be removed or reordered before rendering.
+ *
+ * `V` is the per-engine builder view {@link addBuilder} hands back, so a batch obtained from a
+ * dialect facade narrows each statement to that engine's honest surface — exactly like
+ * `newBuilder()`. It defaults to the wide {@link QueryBuilder} for a directly-constructed batch.
  */
-export class MultiBuilder {
+export class MultiBuilder<V = QueryBuilder> {
   #config: Dialect;
   #builders: QueryBuilder[] = [];
   #transactionState: MultiBuilderTransactionState = MultiBuilderTransactionState.TransactionOn;
@@ -19,13 +23,13 @@ export class MultiBuilder {
     this.#config = config;
   }
 
-  /** Adds a named builder to the batch and returns it for configuration. */
-  public addBuilder = (builderName: string): QueryBuilder => {
+  /** Adds a named builder to the batch and returns it, typed as the engine's narrow view {@link V}. */
+  public addBuilder = (builderName: string): V => {
     const builder = new QueryBuilder(this.#config);
     builder.state().builderName = builderName;
     this.#builders.push(builder);
 
-    return builder;
+    return builder as unknown as V;
   };
 
   /** Renders the batch as a single prepared SQL string (transaction-wrapped when enabled). */

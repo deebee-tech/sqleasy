@@ -167,6 +167,18 @@ describe('per-engine typed views', () => {
         }),
       ));
 
+    // And the ceiling holds through a MultiBuilder batch: addBuilder() hands back the SAME narrow
+    // view, so a wrong-dialect method is absent on a batched statement too.
+    void (() => new MssqlQuery().newMultiBuilder().addBuilder('b').top(5));
+    void (() => {
+      // @ts-expect-error top() is MSSQL-only — absent on a Postgres MultiBuilder's statement
+      new PostgresQuery().newMultiBuilder().addBuilder('b').top(5);
+    });
+    void (() => {
+      // @ts-expect-error forUpdate is renamed to updlock on MSSQL — absent even in a batch
+      new MssqlQuery().newMultiBuilder().addBuilder('b').forUpdate();
+    });
+
     expect(true).toBe(true);
   });
 

@@ -29,7 +29,9 @@ export class PostgresQuery {
   };
 
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder => {
-    return new MultiBuilder(rc ? postgresConfiguration(rc) : this.#configuration);
+  public newMultiBuilder = (rc?: RuntimeConfiguration): MultiBuilder<PostgresQueryBuilder> => {
+    return new MultiBuilder<PostgresQueryBuilder>(
+      rc ? postgresConfiguration(rc) : this.#configuration,
+    );
   };
 }

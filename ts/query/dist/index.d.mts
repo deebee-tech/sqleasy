@@ -2019,12 +2019,16 @@ declare class QueryBuilder {
  * in a transaction. Obtain one from a dialect entry point (e.g.
  * `new PostgresQuery().newMultiBuilder()`) rather than constructing directly. Named builders can
  * be removed or reordered before rendering.
+ *
+ * `V` is the per-engine builder view {@link addBuilder} hands back, so a batch obtained from a
+ * dialect facade narrows each statement to that engine's honest surface — exactly like
+ * `newBuilder()`. It defaults to the wide {@link QueryBuilder} for a directly-constructed batch.
  */
-declare class MultiBuilder {
+declare class MultiBuilder<V = QueryBuilder> {
   #private;
   constructor(config: Dialect);
-  /** Adds a named builder to the batch and returns it for configuration. */
-  addBuilder: (builderName: string) => QueryBuilder;
+  /** Adds a named builder to the batch and returns it, typed as the engine's narrow view {@link V}. */
+  addBuilder: (builderName: string) => V;
   /** Renders the batch as a single prepared SQL string (transaction-wrapped when enabled). */
   parse: () => string;
   /** Renders the batch as a single raw SQL string with values inlined. DEBUG / TEST only. */
@@ -2128,7 +2132,7 @@ declare class MssqlQuery {
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
   newBuilder: (rc?: RuntimeConfiguration) => MssqlQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
+  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder<MssqlQueryBuilder>;
 }
 //#endregion
 //#region src/dialects/mysql/configuration.d.ts
@@ -2150,7 +2154,7 @@ declare class MysqlQuery {
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
   newBuilder: (rc?: RuntimeConfiguration) => MysqlQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
+  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder<MysqlQueryBuilder>;
 }
 //#endregion
 //#region src/dialects/postgres/configuration.d.ts
@@ -2172,7 +2176,7 @@ declare class PostgresQuery {
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
   newBuilder: (rc?: RuntimeConfiguration) => PostgresQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
+  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder<PostgresQueryBuilder>;
 }
 //#endregion
 //#region src/dialects/sqlite/configuration.d.ts
@@ -2194,7 +2198,7 @@ declare class SqliteQuery {
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
   newBuilder: (rc?: RuntimeConfiguration) => SqliteQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
-  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
+  newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder<SqliteQueryBuilder>;
 }
 //#endregion
 //#region src/expression/scalar.d.ts

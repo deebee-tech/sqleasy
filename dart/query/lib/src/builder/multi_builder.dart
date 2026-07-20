@@ -6,7 +6,10 @@ import 'query_builder.dart';
 
 /// Composes multiple [QueryBuilder] statements into a single SQL string, optionally wrapped in a
 /// transaction. Obtain one from a dialect entry point (e.g. `PostgresQuery().newMultiBuilder()`).
-class MultiBuilder {
+///
+/// [V] is the per-engine builder view [addBuilder] hands back, so a batch obtained from a dialect
+/// facade narrows each statement to that engine's honest surface — exactly like `newBuilder()`.
+class MultiBuilder<V extends SqlBuilderView> {
   MultiBuilder(this._config);
 
   final Dialect _config;
@@ -14,12 +17,13 @@ class MultiBuilder {
   MultiBuilderTransactionState _transactionState =
       MultiBuilderTransactionState.transactionOn;
 
-  /// Adds a named builder to the batch and returns it for configuration.
-  QueryBuilder addBuilder(String builderName) {
+  /// Adds a named builder to the batch and returns it, typed as the engine's narrow view [V]. The
+  /// runtime object is a real [QueryBuilder] that implements the view.
+  V addBuilder(String builderName) {
     final builder = QueryBuilder(_config);
     builder.state.builderName = builderName;
     _builders.add(builder);
-    return builder;
+    return builder as V;
   }
 
   /// Removes a previously added builder from the batch by name.
