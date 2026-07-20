@@ -39,6 +39,23 @@ void emitTrailingRowLockClause(
 /// locking hint on the table reference itself. `UPDLOCK`/`HOLDLOCK` approximate `FOR
 /// UPDATE`/`FOR SHARE`; `ROWLOCK` asks for row- (not page/table-) granularity; `NOWAIT`/
 /// `READPAST` approximate `NOWAIT`/`SKIP LOCKED`.
+/// Refuses a row lock that MSSQL has nowhere to put.
+///
+/// T-SQL's `table_hint` production attaches to a `table_or_view_name` and nothing else, so a
+/// derived table, a table-valued function, a LATERAL/APPLY body or a raw FROM fragment cannot carry
+/// a locking hint. Emitting none silently returned rows the caller believed were locked.
+void refuseUnplaceableMssqlRowLock(
+    Dialect config, RowLockState? rowLock, String sourceDescription) {
+  if (rowLock == null || config.databaseType != DatabaseType.mssql) {
+    return;
+  }
+
+  throw ParserError(
+    ParserArea.general,
+    'MSSQL cannot lock $sourceDescription — a locking hint attaches to a table reference only',
+  );
+}
+
 String mssqlRowLockHint(RowLockState rowLock) {
   final strength = rowLock.mode == RowLockMode.forUpdate
       ? 'UPDLOCK, ROWLOCK'

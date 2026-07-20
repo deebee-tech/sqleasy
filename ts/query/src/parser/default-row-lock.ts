@@ -45,6 +45,34 @@ export const emitTrailingRowLockClause = (
  * UPDATE`/`FOR SHARE`; `ROWLOCK` asks for row- (not page/table-) granularity; `NOWAIT`/
  * `READPAST` approximate `NOWAIT`/`SKIP LOCKED`.
  */
+/**
+ * Refuses a row lock that MSSQL has nowhere to put.
+ *
+ * T-SQL's `table_hint` production attaches to a `table_or_view_name` and nothing else, so a derived
+ * table, a table-valued function, a LATERAL/APPLY body or a raw FROM fragment cannot carry a
+ * locking hint. Through 10.x those sources emitted no hint and no error, so `forUpdate()` returned
+ * rows the caller believed were locked and which were read at plain READ COMMITTED — the failure is
+ * silent, and it is a data-integrity bug rather than a syntax one.
+ *
+ * Postgres and MySQL are unaffected: their `FOR UPDATE` is a statement-level clause that locks every
+ * table the statement reads, so it needs no per-source placement. (Postgres separately rejects a
+ * locking clause over a sub-select, which is a loud failure from the server, not a silent one.)
+ */
+export const refuseUnplaceableMssqlRowLock = (
+  config: Dialect,
+  rowLock: RowLockState | undefined,
+  sourceDescription: string,
+): void => {
+  if (!rowLock || config.databaseType !== DatabaseType.Mssql) {
+    return;
+  }
+
+  throw new ParserError(
+    ParserArea.General,
+    `MSSQL cannot lock ${sourceDescription} — a locking hint attaches to a table reference only`,
+  );
+};
+
 export const mssqlRowLockHint = (rowLock: RowLockState): string => {
   const strength =
     rowLock.mode === RowLockMode.ForUpdate ? 'UPDLOCK, ROWLOCK' : 'HOLDLOCK, ROWLOCK';

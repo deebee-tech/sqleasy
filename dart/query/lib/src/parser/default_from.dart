@@ -26,6 +26,8 @@ SqlHelper defaultFrom(
     final fromState = state.fromStates[i];
 
     if (fromState.builderType == BuilderType.fromRaw) {
+      refuseUnplaceableMssqlRowLock(
+          config, state.rowLock, 'a raw FROM fragment');
       sqlHelper.addSqlSnippet(fromState.raw ?? '');
       if (i < state.fromStates.length - 1) {
         sqlHelper.addSqlSnippet(', ');
@@ -75,6 +77,7 @@ SqlHelper defaultFrom(
     }
 
     if (fromState.builderType == BuilderType.fromBuilder) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a derived table');
       final subHelper = defaultToSql(fromState.subquery, config, mode, options);
 
       // Merge the subquery's bound values, not just its SQL — else its placeholders ship with no
@@ -96,6 +99,8 @@ SqlHelper defaultFrom(
     }
 
     if (fromState.builderType == BuilderType.fromLateral) {
+      refuseUnplaceableMssqlRowLock(
+          config, state.rowLock, 'a LATERAL subquery');
       if (config.databaseType == DatabaseType.sqlite) {
         throw ParserError(
             ParserArea.from, 'SQLite does not support LATERAL derived tables');
@@ -127,6 +132,8 @@ SqlHelper defaultFrom(
     }
 
     if (fromState.builderType == BuilderType.fromFunction) {
+      refuseUnplaceableMssqlRowLock(
+          config, state.rowLock, 'a table-valued function');
       // MySQL has no FROM-clause table functions at all. `fromFunctionRaw()` remains the escape
       // hatch for hand-written JSON_TABLE and friends.
       if (config.databaseType == DatabaseType.mysql) {

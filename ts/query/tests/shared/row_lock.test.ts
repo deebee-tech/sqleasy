@@ -96,7 +96,11 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
       );
     });
 
-    it('MSSQL applies the hint to the FROM table even alongside a JOIN', () => {
+    // This test previously asserted that ONLY the FROM table carried a hint — its name even said
+    // "even alongside a JOIN", which reads as deliberate. It was pinning a data-integrity bug:
+    // a T-SQL locking hint binds to a single table reference, so the joined table was read at plain
+    // READ COMMITTED while the caller believed the whole result was locked.
+    it('MSSQL applies the hint to every table reference, including joined ones', () => {
       const builder = new MssqlQuery().newBuilder();
       builder
         .selectAll()
@@ -108,7 +112,7 @@ describe('Row locks (FOR UPDATE / FOR SHARE)', () => {
 
       expect(builder.parseRaw()).toEqual(
         'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK) ' +
-          'INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id];',
+          'INNER JOIN [dbo].[orders] AS [o] WITH (UPDLOCK, ROWLOCK) ON [u].[id] = [o].[user_id];',
       );
     });
   });

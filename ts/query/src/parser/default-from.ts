@@ -6,7 +6,7 @@ import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
-import { mssqlRowLockHint } from './default-row-lock';
+import { mssqlRowLockHint, refuseUnplaceableMssqlRowLock } from './default-row-lock';
 import { mysqlIndexHintForTable } from './default-hint';
 import type { QueryState } from '../state/query';
 import type { ToSqlOptions } from './to-sql';
@@ -28,6 +28,7 @@ export const defaultFrom = (
 
   state.fromStates.forEach((fromState, i) => {
     if (fromState.builderType === BuilderType.FromRaw) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a raw FROM fragment');
       sqlHelper.addSqlSnippet(fromState.raw ?? '');
       if (i < state.fromStates.length - 1) {
         sqlHelper.addSqlSnippet(', ');
@@ -72,6 +73,7 @@ export const defaultFrom = (
     }
 
     if (fromState.builderType === BuilderType.FromBuilder) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a derived table');
       const subHelper = defaultToSql(fromState.subquery, config, mode, options);
 
       // Merge the subquery's bound values, not just its SQL — else its `?`/`$n` placeholders ship
@@ -91,6 +93,7 @@ export const defaultFrom = (
     }
 
     if (fromState.builderType === BuilderType.FromLateral) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a LATERAL subquery');
       if (config.databaseType === DatabaseType.Sqlite) {
         throw new ParserError(ParserArea.From, 'SQLite does not support LATERAL derived tables');
       }
@@ -119,6 +122,7 @@ export const defaultFrom = (
     }
 
     if (fromState.builderType === BuilderType.FromFunction) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a table-valued function');
       // MySQL has no FROM-clause table functions at all. `fromFunctionRaw()` remains the escape
       // hatch for hand-written JSON_TABLE and friends.
       if (config.databaseType === DatabaseType.Mysql) {

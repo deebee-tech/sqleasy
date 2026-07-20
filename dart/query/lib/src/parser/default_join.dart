@@ -5,6 +5,7 @@ import '../identifier.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 import 'default_hint.dart';
+import 'default_row_lock.dart';
 import 'to_sql.dart';
 
 SqlHelper defaultJoin(
@@ -23,6 +24,8 @@ SqlHelper defaultJoin(
     final joinState = state.joinStates[i];
 
     if (joinState.builderType == BuilderType.joinRaw) {
+      refuseUnplaceableMssqlRowLock(
+          config, state.rowLock, 'a raw JOIN fragment');
       sqlHelper.addSqlSnippet(joinState.raw ?? '');
       if (i < state.joinStates.length - 1) {
         sqlHelper.addSqlSnippet(' ');
@@ -114,6 +117,14 @@ SqlHelper defaultJoin(
       sqlHelper.addSqlSnippet(mysqlIndexHintForTable(
           state, config, joinState.alias ?? joinState.tableName ?? ''));
 
+      // A T-SQL locking hint binds to ONE table reference, so a joined table needs its own.
+      // Through 10.x only the FROM table got one and every joined table was read unlocked while
+      // the caller believed otherwise. Postgres/MySQL need nothing here — their FOR UPDATE is
+      // statement-level and already covers every table the statement reads.
+      if (state.rowLock != null && config.databaseType == DatabaseType.mssql) {
+        sqlHelper.addSqlSnippet(mssqlRowLockHint(state.rowLock!));
+      }
+
       sqlHelper = _defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
 
       if (i < state.joinStates.length - 1) {
@@ -124,6 +135,8 @@ SqlHelper defaultJoin(
     }
 
     if (joinState.builderType == BuilderType.joinBuilder) {
+      refuseUnplaceableMssqlRowLock(
+          config, state.rowLock, 'a joined derived table');
       final subHelper = defaultToSql(joinState.subquery, config, mode, options);
 
       sqlHelper.addSqlSnippetWithValues(

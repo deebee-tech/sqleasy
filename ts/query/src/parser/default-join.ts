@@ -14,6 +14,7 @@ import type { QueryState } from '../state/query';
 import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
 import { mysqlIndexHintForTable } from './default-hint';
+import { mssqlRowLockHint, refuseUnplaceableMssqlRowLock } from './default-row-lock';
 
 export const defaultJoin = (
   state: QueryState,
@@ -30,6 +31,7 @@ export const defaultJoin = (
   for (let i = 0; i < state.joinStates.length; i++) {
     const joinState = state.joinStates[i]!;
     if (joinState.builderType === BuilderType.JoinRaw) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a raw JOIN fragment');
       sqlHelper.addSqlSnippet(joinState.raw ?? '');
       if (i < state.joinStates.length - 1) {
         sqlHelper.addSqlSnippet(' ');
@@ -125,6 +127,14 @@ export const defaultJoin = (
         mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ''),
       );
 
+      // A T-SQL locking hint binds to ONE table reference, so a joined table needs its own. Through
+      // 10.x only the FROM table got one and every joined table was read unlocked while the caller
+      // believed otherwise. Postgres/MySQL need nothing here — their FOR UPDATE is statement-level
+      // and already covers every table the statement reads.
+      if (state.rowLock && config.databaseType === DatabaseType.Mssql) {
+        sqlHelper.addSqlSnippet(mssqlRowLockHint(state.rowLock));
+      }
+
       sqlHelper = defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
 
       if (i < state.joinStates.length - 1) {
@@ -135,6 +145,7 @@ export const defaultJoin = (
     }
 
     if (joinState.builderType === BuilderType.JoinBuilder) {
+      refuseUnplaceableMssqlRowLock(config, state.rowLock, 'a joined derived table');
       const subHelper = defaultToSql(joinState.subquery, config, mode, options);
 
       sqlHelper.addSqlSnippetWithValues('(' + subHelper.getSql() + ')', subHelper.getValues());

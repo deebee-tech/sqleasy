@@ -916,6 +916,51 @@ const validateHints = (state, config, area) => {
 	}
 };
 //#endregion
+//#region src/parser/default-row-lock.ts
+/**
+* Trailing `FOR UPDATE`/`FOR SHARE` clause for Postgres/MySQL, appended after the whole SELECT
+* (including ORDER BY/LIMIT). SQLite has no row-level locking at all and refuses it. MSSQL emits
+* nothing here — its locking is a `WITH (...)` table hint on each FROM table; see
+* {@link mssqlRowLockHint}.
+*/
+const emitTrailingRowLockClause = (sqlHelper, config, rowLock) => {
+	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite does not support row locking (FOR UPDATE/FOR SHARE)");
+	if (config.databaseType === DatabaseType.Mssql) return;
+	sqlHelper.addSqlSnippet(" ");
+	sqlHelper.addSqlSnippet(rowLock.mode === RowLockMode.ForUpdate ? "FOR UPDATE" : "FOR SHARE");
+	if (rowLock.wait === RowLockWait.Nowait) sqlHelper.addSqlSnippet(" NOWAIT");
+	else if (rowLock.wait === RowLockWait.SkipLocked) sqlHelper.addSqlSnippet(" SKIP LOCKED");
+};
+/**
+* MSSQL has no `FOR UPDATE`/`FOR SHARE` clause — the nearest equivalent is a `WITH (...)`
+* locking hint on the table reference itself. `UPDLOCK`/`HOLDLOCK` approximate `FOR
+* UPDATE`/`FOR SHARE`; `ROWLOCK` asks for row- (not page/table-) granularity; `NOWAIT`/
+* `READPAST` approximate `NOWAIT`/`SKIP LOCKED`.
+*/
+/**
+* Refuses a row lock that MSSQL has nowhere to put.
+*
+* T-SQL's `table_hint` production attaches to a `table_or_view_name` and nothing else, so a derived
+* table, a table-valued function, a LATERAL/APPLY body or a raw FROM fragment cannot carry a
+* locking hint. Through 10.x those sources emitted no hint and no error, so `forUpdate()` returned
+* rows the caller believed were locked and which were read at plain READ COMMITTED — the failure is
+* silent, and it is a data-integrity bug rather than a syntax one.
+*
+* Postgres and MySQL are unaffected: their `FOR UPDATE` is a statement-level clause that locks every
+* table the statement reads, so it needs no per-source placement. (Postgres separately rejects a
+* locking clause over a sub-select, which is a loud failure from the server, not a silent one.)
+*/
+const refuseUnplaceableMssqlRowLock = (config, rowLock, sourceDescription) => {
+	if (!rowLock || config.databaseType !== DatabaseType.Mssql) return;
+	throw new ParserError(ParserArea.General, `MSSQL cannot lock ${sourceDescription} — a locking hint attaches to a table reference only`);
+};
+const mssqlRowLockHint = (rowLock) => {
+	const strength = rowLock.mode === RowLockMode.ForUpdate ? "UPDLOCK, ROWLOCK" : "HOLDLOCK, ROWLOCK";
+	if (rowLock.wait === RowLockWait.Nowait) return ` WITH (${strength}, NOWAIT)`;
+	if (rowLock.wait === RowLockWait.SkipLocked) return ` WITH (${strength}, READPAST)`;
+	return ` WITH (${strength})`;
+};
+//#endregion
 //#region src/parser/default-join.ts
 const defaultJoin = (state, config, mode, options) => {
 	let sqlHelper = new SqlHelper(mode);
@@ -923,6 +968,7 @@ const defaultJoin = (state, config, mode, options) => {
 	for (let i = 0; i < state.joinStates.length; i++) {
 		const joinState = state.joinStates[i];
 		if (joinState.builderType === BuilderType.JoinRaw) {
+			refuseUnplaceableMssqlRowLock(config, state.rowLock, "a raw JOIN fragment");
 			sqlHelper.addSqlSnippet(joinState.raw ?? "");
 			if (i < state.joinStates.length - 1) sqlHelper.addSqlSnippet(" ");
 			continue;
@@ -988,11 +1034,13 @@ const defaultJoin = (state, config, mode, options) => {
 				sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
 			}
 			sqlHelper.addSqlSnippet(mysqlIndexHintForTable(state, config, joinState.alias ?? joinState.tableName ?? ""));
+			if (state.rowLock && config.databaseType === DatabaseType.Mssql) sqlHelper.addSqlSnippet(mssqlRowLockHint(state.rowLock));
 			sqlHelper = defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
 			if (i < state.joinStates.length - 1) sqlHelper.addSqlSnippet(" ");
 			continue;
 		}
 		if (joinState.builderType === BuilderType.JoinBuilder) {
+			refuseUnplaceableMssqlRowLock(config, state.rowLock, "a joined derived table");
 			const subHelper = defaultToSql(joinState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
 			if (joinState.alias !== "") {
@@ -1353,34 +1401,6 @@ const defaultDelete = (state, config, mode, options) => {
 	return sqlHelper;
 };
 //#endregion
-//#region src/parser/default-row-lock.ts
-/**
-* Trailing `FOR UPDATE`/`FOR SHARE` clause for Postgres/MySQL, appended after the whole SELECT
-* (including ORDER BY/LIMIT). SQLite has no row-level locking at all and refuses it. MSSQL emits
-* nothing here — its locking is a `WITH (...)` table hint on each FROM table; see
-* {@link mssqlRowLockHint}.
-*/
-const emitTrailingRowLockClause = (sqlHelper, config, rowLock) => {
-	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite does not support row locking (FOR UPDATE/FOR SHARE)");
-	if (config.databaseType === DatabaseType.Mssql) return;
-	sqlHelper.addSqlSnippet(" ");
-	sqlHelper.addSqlSnippet(rowLock.mode === RowLockMode.ForUpdate ? "FOR UPDATE" : "FOR SHARE");
-	if (rowLock.wait === RowLockWait.Nowait) sqlHelper.addSqlSnippet(" NOWAIT");
-	else if (rowLock.wait === RowLockWait.SkipLocked) sqlHelper.addSqlSnippet(" SKIP LOCKED");
-};
-/**
-* MSSQL has no `FOR UPDATE`/`FOR SHARE` clause — the nearest equivalent is a `WITH (...)`
-* locking hint on the table reference itself. `UPDLOCK`/`HOLDLOCK` approximate `FOR
-* UPDATE`/`FOR SHARE`; `ROWLOCK` asks for row- (not page/table-) granularity; `NOWAIT`/
-* `READPAST` approximate `NOWAIT`/`SKIP LOCKED`.
-*/
-const mssqlRowLockHint = (rowLock) => {
-	const strength = rowLock.mode === RowLockMode.ForUpdate ? "UPDLOCK, ROWLOCK" : "HOLDLOCK, ROWLOCK";
-	if (rowLock.wait === RowLockWait.Nowait) return ` WITH (${strength}, NOWAIT)`;
-	if (rowLock.wait === RowLockWait.SkipLocked) return ` WITH (${strength}, READPAST)`;
-	return ` WITH (${strength})`;
-};
-//#endregion
 //#region src/parser/default-from.ts
 const defaultFrom = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
@@ -1388,6 +1408,7 @@ const defaultFrom = (state, config, mode, options) => {
 	sqlHelper.addSqlSnippet("FROM ");
 	state.fromStates.forEach((fromState, i) => {
 		if (fromState.builderType === BuilderType.FromRaw) {
+			refuseUnplaceableMssqlRowLock(config, state.rowLock, "a raw FROM fragment");
 			sqlHelper.addSqlSnippet(fromState.raw ?? "");
 			if (i < state.fromStates.length - 1) sqlHelper.addSqlSnippet(", ");
 			return;
@@ -1409,6 +1430,7 @@ const defaultFrom = (state, config, mode, options) => {
 			return;
 		}
 		if (fromState.builderType === BuilderType.FromBuilder) {
+			refuseUnplaceableMssqlRowLock(config, state.rowLock, "a derived table");
 			const subHelper = defaultToSql(fromState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues("(" + subHelper.getSql() + ")", subHelper.getValues());
 			if (fromState.alias !== "") {
@@ -1419,6 +1441,7 @@ const defaultFrom = (state, config, mode, options) => {
 			return;
 		}
 		if (fromState.builderType === BuilderType.FromLateral) {
+			refuseUnplaceableMssqlRowLock(config, state.rowLock, "a LATERAL subquery");
 			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.From, "SQLite does not support LATERAL derived tables");
 			if (config.databaseType === DatabaseType.Mssql) throw new ParserError(ParserArea.From, "MSSQL LATERAL belongs in APPLY joins — use joinCrossApply/joinOuterApply");
 			const subHelper = defaultToSql(fromState.subquery, config, mode, options);
@@ -1433,6 +1456,7 @@ const defaultFrom = (state, config, mode, options) => {
 			return;
 		}
 		if (fromState.builderType === BuilderType.FromFunction) {
+			refuseUnplaceableMssqlRowLock(config, state.rowLock, "a table-valued function");
 			if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table functions in FROM — use fromFunctionRaw");
 			if (fromState.owner && fromState.owner !== "") {
 				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
