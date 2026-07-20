@@ -1,8 +1,8 @@
 {
-  "_comment": "HAND-AUTHORED adjudications, merged over the extracted hypothesis by scripts/build-capability-manifest.mjs. This file is the source of truth and is never generated; capabilities.json IS generated and must never be hand-edited. Each entry records what a human decided about one (op|enum, dialect) cell: `kind` native|absent, `name` the engine's OWN term for it, and `refusal` the exact message when absent. Filling all four dialects with the SAME name is what makes a capability shared — sharedness is DERIVED from the names agreeing, never authored. Leave `name` empty when the kind is settled but the surface term is still a design decision; the cell then stays unadjudicated on purpose.",
+  "_comment": "HAND-AUTHORED adjudications, merged over the extracted hypothesis by scripts/build-capability-manifest.mjs. This file is the source of truth and is never generated; capabilities.json IS generated and must never be hand-edited. Each entry records what a human decided about one (op|enum, dialect) cell: `kind` native|absent, `name` the engine's OWN term for it, and `refusal` the exact message when absent. Filling all four dialects with the SAME name is what makes a capability shared \u2014 sharedness is DERIVED from the names agreeing, never authored. Leave `name` empty when the kind is settled but the surface term is still a design decision; the cell then stays unadjudicated on purpose.",
   "ops": {
     "top": {
-      "_why": "T-SQL has TOP and, since 2012, OFFSET/FETCH. They are two different constructs, not two spellings of one — SQL Server gained OFFSET/FETCH later for standards compliance and kept TOP. So MSSQL genuinely has both, and the other three have only the LIMIT concept, which is reached by limit(). Through 10.x .top(n) was SILENTLY DISCARDED on the other three: the row cap the caller wrote vanished with no error and no clause. Fixed 2026-07-20.",
+      "_why": "T-SQL has TOP and, since 2012, OFFSET/FETCH. They are two different constructs, not two spellings of one \u2014 SQL Server gained OFFSET/FETCH later for standards compliance and kept TOP. So MSSQL genuinely has both, and the other three have only the LIMIT concept, which is reached by limit(). Through 10.x .top(n) was SILENTLY DISCARDED on the other three: the row cap the caller wrote vanished with no error and no clause. Fixed 2026-07-20.",
       "mssql": {
         "kind": "native",
         "name": "top",
@@ -11,24 +11,24 @@
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no TOP clause — use limit() instead",
+        "refusal": "MySQL has no TOP clause \u2014 use limit() instead",
         "adjudicated": true
       },
       "postgres": {
         "kind": "absent",
         "name": "",
-        "refusal": "Postgres has no TOP clause — use limit() instead",
+        "refusal": "Postgres has no TOP clause \u2014 use limit() instead",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite has no TOP clause — use limit() instead",
+        "refusal": "SQLite has no TOP clause \u2014 use limit() instead",
         "adjudicated": true
       }
     },
     "limitWithTies": {
-      "_why": "WITH TIES is real in MSSQL and Postgres and absent from MySQL and SQLite. The two that have it spell it differently — T-SQL `TOP (n) WITH TIES`, Postgres `FETCH FIRST n ROWS WITH TIES` — but both engines use the phrase WITH TIES, so the shared term is real rather than coined. Through 10.x MSSQL emitted `OFFSET 0 ROWS FETCH NEXT n ROWS WITH TIES`, which no T-SQL production allows: <offset_fetch> ends in a mandatory ONLY and TOP admits no offset. Fixed 2026-07-20 to render through TOP. NAME LEFT EMPTY DELIBERATELY: `limitWithTies` is SQLEasy's coinage, not either engine's term. The honest term is `withTies`, but renaming is an API decision that belongs with the typed per-engine surface, not with this behavioural fix.",
+      "_why": "WITH TIES is real in MSSQL and Postgres and absent from MySQL and SQLite. The two that have it spell it differently \u2014 T-SQL `TOP (n) WITH TIES`, Postgres `FETCH FIRST n ROWS WITH TIES` \u2014 but both engines use the phrase WITH TIES, so the shared term is real rather than coined. Through 10.x MSSQL emitted `OFFSET 0 ROWS FETCH NEXT n ROWS WITH TIES`, which no T-SQL production allows: <offset_fetch> ends in a mandatory ONLY and TOP admits no offset. Fixed 2026-07-20 to render through TOP. NAME LEFT EMPTY DELIBERATELY: `limitWithTies` is SQLEasy's coinage, not either engine's term. The honest term is `withTies`, but renaming is an API decision that belongs with the typed per-engine surface, not with this behavioural fix.",
       "mssql": {
         "kind": "native",
         "name": "",
@@ -53,7 +53,7 @@
       }
     },
     "joinOuterApply": {
-      "_why": "MSSQL OUTER APPLY is native and takes no ON clause. Postgres and MySQL express the same semantics as LEFT JOIN LATERAL, which is equally native — but a LEFT JOIN REQUIRES ON or USING, and an APPLY has no ON conditions by construction, so the emitted statement had no ON at all and neither engine could parse it. Closed with the documented `ON TRUE` idiom 2026-07-20. SQLite has neither LATERAL nor APPLY.\n\nNAMES LEFT EMPTY DELIBERATELY, and this op is the design's own worked example: `outerApply` is T-SQL vocabulary, yet the capability is genuinely native on three engines. Because all three cells read `native`, nothing about a per-engine type split would move it off the shared surface — a Postgres user would still hit the dot and see a T-SQL term. Only derived sharedness forces the question, by requiring someone to assert `outerApply` is a real term in Postgres and MySQL, which it is not. The rename belongs with the typed surface. See docs/capability-manifest-design.md.",
+      "_why": "MSSQL OUTER APPLY is native and takes no ON clause. Postgres and MySQL express the same semantics as LEFT JOIN LATERAL, which is equally native \u2014 but a LEFT JOIN REQUIRES ON or USING, and an APPLY has no ON conditions by construction, so the emitted statement had no ON at all and neither engine could parse it. Closed with the documented `ON TRUE` idiom 2026-07-20. SQLite has neither LATERAL nor APPLY.\n\nNAMES LEFT EMPTY DELIBERATELY, and this op is the design's own worked example: `outerApply` is T-SQL vocabulary, yet the capability is genuinely native on three engines. Because all three cells read `native`, nothing about a per-engine type split would move it off the shared surface \u2014 a Postgres user would still hit the dot and see a T-SQL term. Only derived sharedness forces the question, by requiring someone to assert `outerApply` is a real term in Postgres and MySQL, which it is not. The rename belongs with the typed surface. See docs/capability-manifest-design.md.",
       "mssql": {
         "kind": "native",
         "name": "",
@@ -77,7 +77,7 @@
       }
     },
     "forUpdate": {
-      "_why": "Postgres and MySQL have a statement-level FOR UPDATE that locks every table the statement reads — one clause, no placement question. MSSQL has no such clause at all: its nearest equivalent is a WITH (UPDLOCK, ROWLOCK) hint, and T-SQL's table_hint production attaches to a table_or_view_name, i.e. ONE table reference. Through 10.x the hint was emitted only in the FROM-table branch, so a joined table was read at plain READ COMMITTED while the caller believed the whole result was locked, and a derived-table or TVF source got no hint anywhere. Silent, and a data-integrity bug rather than a syntax one.\n\nThe corpus could not have caught it: of 322 cases, 8 use a row lock and NONE combines one with a join or a non-table FROM. A hand-written test asserted the bug outright, named 'MSSQL applies the hint to the FROM table even alongside a JOIN'.\n\nFixed 2026-07-20: the hint now reaches every table reference, and MSSQL REFUSES where T-SQL has nowhere to put one. SQLite has no row-level locking at any version — its locking is whole-database/WAL-level.\n\nMSSQL NAME LEFT EMPTY: forUpdate is Postgres/MySQL vocabulary. A T-SQL DBA looks for UPDLOCK, not FOR UPDATE. Re-homing it under the engine's own term is queued with the typed surface.",
+      "_why": "Postgres and MySQL have a statement-level FOR UPDATE that locks every table the statement reads \u2014 one clause, no placement question. MSSQL has no such clause at all: its nearest equivalent is a WITH (UPDLOCK, ROWLOCK) hint, and T-SQL's table_hint production attaches to a table_or_view_name, i.e. ONE table reference. Through 10.x the hint was emitted only in the FROM-table branch, so a joined table was read at plain READ COMMITTED while the caller believed the whole result was locked, and a derived-table or TVF source got no hint anywhere. Silent, and a data-integrity bug rather than a syntax one.\n\nThe corpus could not have caught it: of 322 cases, 8 use a row lock and NONE combines one with a join or a non-table FROM. A hand-written test asserted the bug outright, named 'MSSQL applies the hint to the FROM table even alongside a JOIN'.\n\nFixed 2026-07-20: the hint now reaches every table reference, and MSSQL REFUSES where T-SQL has nowhere to put one. SQLite has no row-level locking at any version \u2014 its locking is whole-database/WAL-level.\n\nMSSQL NAME LEFT EMPTY: forUpdate is Postgres/MySQL vocabulary. A T-SQL DBA looks for UPDLOCK, not FOR UPDATE. Re-homing it under the engine's own term is queued with the typed surface.",
       "postgres": {
         "kind": "native",
         "name": "forUpdate",
@@ -122,6 +122,52 @@
         "name": "",
         "refusal": "SQLite does not support CROSS APPLY/LATERAL joins",
         "adjudicated": true
+      }
+    },
+    "onConflictDoUpdate": {
+      "_why": "Postgres (9.5+) and SQLite (3.24+) have a real conflict TARGET: ON CONFLICT (cols) DO UPDATE. MySQL does not \u2014 ON DUPLICATE KEY UPDATE fires on ANY unique or primary key and its grammar accepts no column list. Through 10.x naming columns on MySQL was silently discarded, so 'conflict on email' became 'conflict on any unique key', which matches a DIFFERENT set of rows and can update rows the caller never intended. Fixed 2026-07-20: MySQL refuses a named target and still accepts the untargeted form, which is honest about what the engine means. MSSQL is NOT adjudicated here \u2014 it has no upsert primitive at all and is currently synthesized as MERGE without HOLDLOCK; that is queued for re-homing under an explicit merge surface.",
+      "postgres": {
+        "kind": "native",
+        "name": "onConflict",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "onConflict",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "onDuplicateKeyUpdate",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "unadjudicated",
+        "name": "",
+        "adjudicated": false
+      }
+    },
+    "onConflictDoNothing": {
+      "_why": "Same conflict-target story as onConflictDoUpdate. Postgres/SQLite spell it DO NOTHING with an optional target; MySQL spells it INSERT IGNORE, which is a genuinely different construct \u2014 it suppresses OTHER errors too, not just duplicate keys \u2014 and accepts no target. Both engines' terms are real, and they are DIFFERENT terms, so this does not derive shared. MSSQL unadjudicated pending the merge re-home.",
+      "postgres": {
+        "kind": "native",
+        "name": "onConflict",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "onConflict",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "insertIgnore",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "unadjudicated",
+        "name": "",
+        "adjudicated": false
       }
     }
   },

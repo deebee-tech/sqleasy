@@ -19,17 +19,17 @@
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 368,
+      "native": 374,
       "absent": 26,
-      "unadjudicated": 94
+      "unadjudicated": 88
     },
     "enumCells": {
       "native": 154,
       "absent": 10,
       "unadjudicated": 156
     },
-    "adjudicated": 11,
-    "namesAssigned": 3
+    "adjudicated": 17,
+    "namesAssigned": 9
   },
   "ops": {
     "and": {
@@ -2451,8 +2451,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 17,
-            "casesThrowing": 7,
+            "casesEmitting": 12,
+            "casesThrowing": 12,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2499,8 +2499,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 17,
-            "casesThrowing": 5,
+            "casesEmitting": 12,
+            "casesThrowing": 10,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -2691,8 +2691,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 17,
-            "casesThrowing": 7,
+            "casesEmitting": 12,
+            "casesThrowing": 12,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3306,40 +3306,40 @@
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 2,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE; MySQL silently ignores conflictColumns"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "insertIgnore",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 2,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE; MySQL silently ignores conflictColumns"
+            "casesEmitting": 1,
+            "casesThrowing": 4,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onConflict",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE; MySQL silently ignores conflictColumns"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onConflict",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE; MySQL silently ignores conflictColumns"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -3354,40 +3354,40 @@
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE (a different statement) with no HOLDLOCK"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onDuplicateKeyUpdate",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE (a different statement) with no HOLDLOCK"
+            "casesEmitting": 1,
+            "casesThrowing": 2,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onConflict",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE (a different statement) with no HOLDLOCK"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "onConflict",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: MSSQL synthesizes MERGE (a different statement) with no HOLDLOCK"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -3411,8 +3411,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
+            "casesEmitting": 0,
+            "casesThrowing": 1,
             "note": "forced unadjudicated — sweep: same MSSQL MERGE substitution"
           }
         },

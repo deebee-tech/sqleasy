@@ -2119,6 +2119,7 @@ const emitConflictColumns = (sqlHelper, config, columns) => {
 const emitUpsertClause = (sqlHelper, config, upsertState, area) => {
 	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, "MSSQL upsert is emitted as MERGE by defaultInsert — this path should not run");
 	if (config.databaseType === DatabaseType.Mysql) {
+		if (upsertState.conflictColumns.length > 0) throw new ParserError(area, "MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them");
 		if (upsertState.action === UpsertAction.DoNothing) return;
 		sqlHelper.addSqlSnippet(" ON DUPLICATE KEY UPDATE ");
 		emitSetList(sqlHelper, config, upsertState, area);

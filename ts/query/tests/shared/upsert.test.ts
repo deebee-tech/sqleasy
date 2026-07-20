@@ -43,11 +43,25 @@ describe('Upsert (INSERT conflict clause)', () => {
         .insertInto('users')
         .insertColumns(['email'])
         .insertValues(['ada@example.com'])
-        .onConflictDoNothing(['email']);
+        .onConflictDoNothing();
 
       expect(builder.parseRaw()).toEqual(
         'INSERT IGNORE INTO `users` (`email`) VALUES (ada@example.com);',
       );
+    });
+
+    // This case previously passed `['email']` and asserted the same output, i.e. it pinned the
+    // conflict target being silently discarded. MySQL has no conflict target at all: INSERT IGNORE
+    // fires on ANY unique key, so naming a column asked for something the engine cannot express.
+    it('MySQL refuses a named conflict target rather than ignoring it', () => {
+      const builder = new MysqlQuery().newBuilder();
+      builder
+        .insertInto('users')
+        .insertColumns(['email'])
+        .insertValues(['ada@example.com'])
+        .onConflictDoNothing(['email']);
+
+      expect(() => builder.parseRaw()).toThrow(/MySQL has no conflict target/);
     });
 
     it('MSSQL emits MERGE for onConflictDoNothing', () => {

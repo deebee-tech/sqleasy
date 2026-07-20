@@ -17569,20 +17569,7 @@
           "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com, Ada)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]);"
         },
         "mysql": {
-          "prepared": {
-            "sql": "INSERT IGNORE INTO `users` (`email`, `name`) VALUES (?, ?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "ada@example.com"
-              },
-              {
-                "t": "string",
-                "v": "Ada"
-              }
-            ]
-          },
-          "raw": "INSERT IGNORE INTO `users` (`email`, `name`) VALUES (ada@example.com, Ada);"
+          "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
         },
         "postgres": {
           "prepared": {
@@ -17740,24 +17727,7 @@
           "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com, Ada Lovelace)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]) WHEN MATCHED THEN UPDATE SET [name] = [source].[name];"
         },
         "mysql": {
-          "prepared": {
-            "sql": "INSERT INTO `users` (`email`, `name`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `name` = ?;",
-            "params": [
-              {
-                "t": "string",
-                "v": "ada@example.com"
-              },
-              {
-                "t": "string",
-                "v": "Ada Lovelace"
-              },
-              {
-                "t": "string",
-                "v": "Ada Lovelace"
-              }
-            ]
-          },
-          "raw": "INSERT INTO `users` (`email`, `name`) VALUES (ada@example.com, Ada Lovelace) ON DUPLICATE KEY UPDATE `name` = Ada Lovelace;"
+          "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
         },
         "postgres": {
           "prepared": {
@@ -17845,20 +17815,7 @@
           "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com, 1)) AS [source] ([email], [hits]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [hits]) VALUES ([source].[email], [source].[hits]) WHEN MATCHED THEN UPDATE SET hits = users.hits + 1;"
         },
         "mysql": {
-          "prepared": {
-            "sql": "INSERT INTO `users` (`email`, `hits`) VALUES (?, ?) ON DUPLICATE KEY UPDATE hits = users.hits + 1;",
-            "params": [
-              {
-                "t": "string",
-                "v": "ada@example.com"
-              },
-              {
-                "t": "num",
-                "v": 1
-              }
-            ]
-          },
-          "raw": "INSERT INTO `users` (`email`, `hits`) VALUES (ada@example.com, 1) ON DUPLICATE KEY UPDATE hits = users.hits + 1;"
+          "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
         },
         "postgres": {
           "prepared": {
@@ -18012,7 +17969,7 @@
           "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (ada@example.com)) AS [source] ([email]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email]) VALUES ([source].[email]);"
         },
         "mysql": {
-          "throws": "Insert: MySQL does not support RETURNING"
+          "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
         },
         "postgres": {
           "prepared": {
@@ -22358,24 +22315,7 @@
           "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (a@b.c, Ada)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]) WHEN MATCHED THEN UPDATE SET [name] = [source].[name];"
         },
         "mysql": {
-          "prepared": {
-            "sql": "INSERT INTO `users` (`email`, `name`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `name` = ?;",
-            "params": [
-              {
-                "t": "string",
-                "v": "a@b.c"
-              },
-              {
-                "t": "string",
-                "v": "Ada"
-              },
-              {
-                "t": "string",
-                "v": "Grace"
-              }
-            ]
-          },
-          "raw": "INSERT INTO `users` (`email`, `name`) VALUES (a@b.c, Ada) ON DUPLICATE KEY UPDATE `name` = Grace;"
+          "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
         },
         "postgres": {
           "prepared": {
@@ -22462,20 +22402,7 @@
           "raw": "MERGE INTO [dbo].[users] AS [target] USING (VALUES (a@b.c, Ada)) AS [source] ([email], [name]) ON [target].[email] = [source].[email] WHEN NOT MATCHED BY TARGET THEN INSERT ([email], [name]) VALUES ([source].[email], [source].[name]);"
         },
         "mysql": {
-          "prepared": {
-            "sql": "INSERT IGNORE INTO `users` (`email`, `name`) VALUES (?, ?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "a@b.c"
-              },
-              {
-                "t": "string",
-                "v": "Ada"
-              }
-            ]
-          },
-          "raw": "INSERT IGNORE INTO `users` (`email`, `name`) VALUES (a@b.c, Ada);"
+          "throws": "Insert: MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so conflict columns cannot be honored; omit them"
         },
         "postgres": {
           "prepared": {

@@ -72,6 +72,18 @@ void emitUpsertClause(
   }
 
   if (config.databaseType == DatabaseType.mysql) {
+    // MySQL has no conflict TARGET. `ON DUPLICATE KEY UPDATE` and `INSERT IGNORE` both fire on ANY
+    // unique or primary key, and neither accepts a column list. Naming columns therefore asked for
+    // something MySQL cannot express, and it was silently answered with "on any key instead" —
+    // which matches a different set of rows than the caller wrote.
+    if (upsertState.conflictColumns.isNotEmpty) {
+      throw ParserError(
+        area,
+        'MySQL has no conflict target — ON DUPLICATE KEY UPDATE fires on any unique key, so '
+        'conflict columns cannot be honored; omit them',
+      );
+    }
+
     if (upsertState.action == UpsertAction.doNothing) {
       // Handled by the `INSERT IGNORE` prefix — see `isMysqlInsertIgnore`.
       return;
