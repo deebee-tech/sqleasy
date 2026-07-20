@@ -4,7 +4,10 @@
   "private": true,
   "description": "Shared TypeScript compiler presets for the SQLEasy monorepo. Never published.",
   "license": "MIT",
-  "files": ["base.json", "node.json"],
+  "files": [
+    "base.json",
+    "node.json"
+  ],
   "exports": {
     "./base.json": "./base.json",
     "./node.json": "./node.json"

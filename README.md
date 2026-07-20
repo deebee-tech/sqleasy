@@ -4,7 +4,7 @@ A dialect-aware SQL builder and execution engine for **MSSQL, MySQL, Postgres, a
 zero-dependency, and not an ORM.
 
 This is a **polyglot, contract-first monorepo**. The same two packages are implemented in several
-languages, and every implementation is held to the others *byte-for-byte* by a shared golden contract.
+languages, and every implementation is held to the others _byte-for-byte_ by a shared golden contract.
 
 ## Layout
 
@@ -24,8 +24,8 @@ scripts/     repo guardrails (check-deps, check-dialect-parity, ...)
 
 **Every port depends on the contract, never on the TypeScript implementation.**
 
-TypeScript is the *reference* — it mints the golden corpora. Every other language, TypeScript
-included, only *replays* them. That single rule is what makes the turbo graph do the right thing
+TypeScript is the _reference_ — it mints the golden corpora. Every other language, TypeScript
+included, only _replays_ them. That single rule is what makes the turbo graph do the right thing
 automatically: a change under `contract/` reruns every language's conformance suite; a change under
 `ts/query/src/` reruns only TypeScript, because no port depends on it.
 

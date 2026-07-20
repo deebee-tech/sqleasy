@@ -39,7 +39,9 @@ function walk(dir, files = []) {
  */
 function hashCorpusCases(file) {
   const parsed = JSON.parse(readFileSync(file, 'utf8'));
-  return createHash('sha256').update(JSON.stringify(parsed.cases ?? parsed)).digest('hex');
+  return createHash('sha256')
+    .update(JSON.stringify(parsed.cases ?? parsed))
+    .digest('hex');
 }
 
 function computeHashes() {

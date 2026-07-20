@@ -645,11 +645,11 @@ That is not decoration; it defends against a real, silent trap.
 JavaScript has one number type. Dart has `int` and `double` — **and Dart does not agree with itself
 across platforms:**
 
-| expression | Dart VM (Flutter mobile/desktop) | dart2js (Flutter **web**) |
-|---|---|---|
-| `5.0 is int` | `false` | **`true`** |
-| `(5.0).toString()` | `"5.0"` | **`"5"`** |
-| `double.infinity is int` | `false` | **`true`** |
+| expression               | Dart VM (Flutter mobile/desktop) | dart2js (Flutter **web**) |
+| ------------------------ | -------------------------------- | ------------------------- |
+| `5.0 is int`             | `false`                          | **`true`**                |
+| `(5.0).toString()`       | `"5.0"`                          | **`"5"`**                 |
+| `double.infinity is int` | `false`                          | **`true`**                |
 
 So a naive builder emits **different SQL on Flutter web than on Flutter mobile**, from the same
 source, with nothing thrown and nothing logged: `5.0` binds as `@p0 tinyint` / `= 5` on the web and

@@ -56,10 +56,7 @@ function collectOps(ops, sink) {
 const seen = new Map();
 const touch = (op) => {
   if (!seen.has(op)) {
-    seen.set(
-      op,
-      Object.fromEntries(DIALECTS.map((d) => [d, { conformed: false, thrown: false }])),
-    );
+    seen.set(op, Object.fromEntries(DIALECTS.map((d) => [d, { conformed: false, thrown: false }])));
   }
   return seen.get(op);
 };

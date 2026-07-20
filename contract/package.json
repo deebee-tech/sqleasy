@@ -2,7 +2,13 @@
   "name": "@deebeetech/sqleasy-contract",
   "version": "2.0.0",
   "description": "The cross-language SQLEasy contract: the golden corpora every language port is held to, plus the schema that describes them. Independently versioned — its version tracks the CONTRACT, not any one implementation.",
-  "keywords": ["sqleasy", "conformance", "golden", "contract", "sql"],
+  "keywords": [
+    "sqleasy",
+    "conformance",
+    "golden",
+    "contract",
+    "sql"
+  ],
   "homepage": "https://github.com/deebee-tech/sqleasy",
   "license": "MIT",
   "private": false,
