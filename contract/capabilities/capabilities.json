@@ -24,12 +24,12 @@
       "unadjudicated": 88
     },
     "enumCells": {
-      "native": 169,
+      "native": 173,
       "absent": 31,
-      "unadjudicated": 120
+      "unadjudicated": 116
     },
-    "adjudicated": 45,
-    "namesAssigned": 16
+    "adjudicated": 49,
+    "namesAssigned": 20
   },
   "ops": {
     "and": {
@@ -9218,47 +9218,47 @@
       "usedByOps": [],
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "range",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL admits RANGE only with UNBOUNDED/CURRENT ROW"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "range",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL admits RANGE only with UNBOUNDED/CURRENT ROW"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "range",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL admits RANGE only with UNBOUNDED/CURRENT ROW"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "range",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL admits RANGE only with UNBOUNDED/CURRENT ROW"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }

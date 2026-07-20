@@ -399,6 +399,29 @@
         "refusal": "SQLite FTS only supports Natural/Boolean-style MATCH queries",
         "adjudicated": true
       }
+    },
+    "FrameUnit.Range": {
+      "_why": "default-window.ts carried NO dialect branching at all, on the stated assumption that window frames are identical across the four engines. They are not, in exactly one place: T-SQL's RANGE accepts only UNBOUNDED PRECEDING, CURRENT ROW and UNBOUNDED FOLLOWING. A numeric offset is legal on ROWS but not on RANGE, so `RANGE 5 PRECEDING` is a syntax error on every SQL Server version. Postgres, MySQL 8.0+ and SQLite 3.28+ all accept it.\n\nMSSQL is marked native because it genuinely HAS the RANGE unit \u2014 refusing the whole unit would be the opposite error. What it refuses is RANGE combined with a numeric offset, which is a constraint on the argument rather than on the unit. That distinction is exactly why the manifest carries an enum axis: a method-level cell could not express it.\n\nThe combination had no corpus coverage, so the fix moved zero goldens; the hand-written tests are its only coverage.",
+      "postgres": {
+        "kind": "native",
+        "name": "range",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "range",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "range",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "native",
+        "name": "range",
+        "adjudicated": true
+      }
     }
   }
 }

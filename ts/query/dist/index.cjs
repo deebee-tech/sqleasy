@@ -2507,9 +2507,18 @@ const emitFrameBound = (sqlHelper, bound) => {
 	}
 };
 /**
+* True when a frame bound carries a numeric offset (`n PRECEDING` / `n FOLLOWING`) rather than one
+* of the unbounded/current-row keywords.
+*/
+const hasNumericOffset = (bound) => bound?.type === FrameBoundType.Preceding || bound?.type === FrameBoundType.Following;
+/**
 * Renders a window's `OVER (...)` clause: `PARTITION BY`, `ORDER BY` (with `NULLS FIRST`/`LAST`
-* — see {@link emitOrderByTerm}), and an optional `ROWS`/`RANGE` frame. Standard SQL, identical
-* across all four dialects, so there is no dialect branching here.
+* — see {@link emitOrderByTerm}), and an optional `ROWS`/`RANGE` frame.
+*
+* Nearly identical across the four dialects, with one real exception: T-SQL's `RANGE` accepts only
+* `UNBOUNDED PRECEDING`, `CURRENT ROW` and `UNBOUNDED FOLLOWING`. A numeric offset is valid on
+* `ROWS` but not on `RANGE`, and `RANGE 5 PRECEDING` is a syntax error on every SQL Server version.
+* Postgres, MySQL 8.0+ and SQLite 3.28+ all accept it.
 */
 const defaultWindow = (windowState, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
@@ -2538,6 +2547,7 @@ const defaultWindow = (windowState, config, mode) => {
 		if (needsSpace) sqlHelper.addSqlSnippet(" ");
 		if (windowState.frame.raw !== void 0) sqlHelper.addSqlSnippet(windowState.frame.raw);
 		else {
+			if (config.databaseType === DatabaseType.Mssql && windowState.frame.unit === FrameUnit.Range && (hasNumericOffset(windowState.frame.start) || hasNumericOffset(windowState.frame.end))) throw new ParserError(ParserArea.Select, "MSSQL RANGE frames accept only UNBOUNDED PRECEDING, CURRENT ROW and UNBOUNDED FOLLOWING — use a ROWS frame for a numeric offset");
 			sqlHelper.addSqlSnippet(windowState.frame.unit === FrameUnit.Rows ? "ROWS " : "RANGE ");
 			if (windowState.frame.end) {
 				sqlHelper.addSqlSnippet("BETWEEN ");

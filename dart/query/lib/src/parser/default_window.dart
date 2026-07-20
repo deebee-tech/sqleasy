@@ -1,5 +1,6 @@
 import '../configuration.dart';
 import '../enums.dart';
+import '../errors/parser_error.dart';
 import '../identifier.dart';
 import '../sql_helper.dart';
 import '../state.dart';
@@ -19,6 +20,12 @@ void _emitFrameBound(SqlHelper sqlHelper, WindowFrameBoundState bound) {
       sqlHelper.addSqlSnippet('UNBOUNDED FOLLOWING');
   }
 }
+
+/// True when a frame bound carries a numeric offset (`n PRECEDING` / `n FOLLOWING`) rather than one
+/// of the unbounded/current-row keywords.
+bool _hasNumericOffset(WindowFrameBoundState? bound) =>
+    bound?.type == FrameBoundType.preceding ||
+    bound?.type == FrameBoundType.following;
 
 SqlHelper defaultWindow(
   WindowState windowState,
@@ -85,6 +92,19 @@ SqlHelper defaultWindow(
     if (frame.raw != null) {
       sqlHelper.addSqlSnippet(frame.raw!);
     } else {
+      // This file used to carry no dialect branching at all, on the stated assumption that window
+      // frames are identical everywhere. They are not, in exactly one place: T-SQL's RANGE accepts
+      // only UNBOUNDED PRECEDING, CURRENT ROW and UNBOUNDED FOLLOWING.
+      if (config.databaseType == DatabaseType.mssql &&
+          frame.unit == FrameUnit.range &&
+          (_hasNumericOffset(frame.start) || _hasNumericOffset(frame.end))) {
+        throw ParserError(
+          ParserArea.select,
+          'MSSQL RANGE frames accept only UNBOUNDED PRECEDING, CURRENT ROW and UNBOUNDED '
+          'FOLLOWING — use a ROWS frame for a numeric offset',
+        );
+      }
+
       sqlHelper
           .addSqlSnippet(frame.unit == FrameUnit.rows ? 'ROWS ' : 'RANGE ');
 
