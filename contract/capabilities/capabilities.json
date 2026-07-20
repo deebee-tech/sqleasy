@@ -4,7 +4,7 @@
   "generatedFrom": {
     "corpus": "contract/corpora/emission/corpus.json",
     "corpusVersion": "1.0.0",
-    "corpusCases": 322,
+    "corpusCases": 323,
     "audit": "docs/audits/dialect-parity-2026-07-19.md",
     "sweep": "2026-07-20 approximation sweep (39 confirmed violations)"
   },
@@ -15,12 +15,12 @@
     "sqlite"
   ],
   "summary": {
-    "ops": 122,
+    "ops": 129,
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 379,
-      "absent": 31,
+      "native": 386,
+      "absent": 52,
       "unadjudicated": 78
     },
     "enumCells": {
@@ -28,8 +28,8 @@
       "absent": 31,
       "unadjudicated": 116
     },
-    "adjudicated": 60,
-    "namesAssigned": 26
+    "adjudicated": 64,
+    "namesAssigned": 27
   },
   "ops": {
     "and": {
@@ -2432,6 +2432,54 @@
         }
       }
     },
+    "holdlock": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        }
+      }
+    },
     "insertColumns": {
       "cells": {
         "mssql": {
@@ -2763,6 +2811,54 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        }
+      }
+    },
+    "into": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -3152,6 +3248,54 @@
         }
       }
     },
+    "merge": {
+      "cells": {
+        "mssql": {
+          "name": "merge",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL has no MERGE statement — it is native T-SQL only",
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "Postgres has no MERGE statement — it is native T-SQL only",
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no MERGE statement — it is native T-SQL only",
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        }
+      }
+    },
     "offset": {
       "cells": {
         "mssql": {
@@ -3208,7 +3352,7 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 23,
+            "casesEmitting": 24,
             "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
@@ -3220,7 +3364,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 19,
-            "casesThrowing": 6,
+            "casesThrowing": 7,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3231,7 +3375,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 21,
-            "casesThrowing": 5,
+            "casesThrowing": 6,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3242,7 +3386,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 19,
-            "casesThrowing": 6,
+            "casesThrowing": 7,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -5072,6 +5216,198 @@
         }
       }
     },
+    "usingValues": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        }
+      }
+    },
+    "whenMatchedThenUpdate": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        }
+      }
+    },
+    "whenNotMatchedBySourceThenDelete": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        }
+      }
+    },
+    "whenNotMatchedThenInsert": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "extraction hypothesis from generated goldens; not an independent check"
+          }
+        }
+      }
+    },
     "where": {
       "cells": {
         "mssql": {
@@ -6384,7 +6720,7 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 106,
+            "casesEmitting": 107,
             "casesThrowing": 20,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
@@ -6396,7 +6732,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 99,
-            "casesThrowing": 23,
+            "casesThrowing": 24,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6407,7 +6743,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 105,
-            "casesThrowing": 18,
+            "casesThrowing": 19,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6418,7 +6754,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 95,
-            "casesThrowing": 27,
+            "casesThrowing": 28,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -7896,7 +8232,7 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 106,
+            "casesEmitting": 107,
             "casesThrowing": 20,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
@@ -7908,7 +8244,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 99,
-            "casesThrowing": 23,
+            "casesThrowing": 24,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7919,7 +8255,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 105,
-            "casesThrowing": 18,
+            "casesThrowing": 19,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7930,7 +8266,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 95,
-            "casesThrowing": 27,
+            "casesThrowing": 28,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }

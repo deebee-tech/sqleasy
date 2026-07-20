@@ -1,6 +1,6 @@
 {
   "name": "@deebeetech/sqleasy-contract",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "The cross-language SQLEasy contract: the golden corpora every language port is held to, plus the schema that describes them. Independently versioned \u2014 its version tracks the CONTRACT, not any one implementation.",
   "keywords": [
     "sqleasy",

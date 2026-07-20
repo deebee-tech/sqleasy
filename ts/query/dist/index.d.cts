@@ -829,6 +829,98 @@ type JoinOnState = {
 /** Creates a {@link JoinOnState} with default field values. */
 declare const createJoinOnState: () => JoinOnState;
 //#endregion
+//#region src/state/merge.d.ts
+/**
+ * A right-hand-side expression in a MERGE `SET` assignment or `INSERT ... VALUES` list.
+ *
+ * MERGE is unusual in that the RHS is almost always a reference to the *source* row
+ * (`source.col`), not a bound literal — which is why this is a tagged type rather than a plain
+ * `value: any`. Making `source(...)` the natural spelling keeps the surface honest about how a
+ * MERGE is actually written; `value(...)` is the escape for a genuine bound literal.
+ */
+type MergeExpr = {
+  kind: 'source';
+  columnName: string;
+} | {
+  kind: 'target';
+  columnName: string;
+} | {
+  kind: 'value';
+  value: any;
+} | {
+  kind: 'raw';
+  sql: string;
+};
+/** How the MERGE `USING` source is expressed. */
+type MergeUsing = {
+  kind: 'values';
+  alias: string;
+  columns: string[];
+  rows: any[][];
+} | {
+  kind: 'table';
+  owner: string | undefined;
+  table: string;
+  alias: string;
+} | {
+  kind: 'select';
+  alias: string;
+  subquery: unknown;
+} | {
+  kind: 'raw';
+  alias: string;
+  sql: string;
+};
+/** One SET assignment inside a WHEN … THEN UPDATE arm. */
+type MergeAssignment = {
+  columnName: string;
+  value: MergeExpr;
+};
+/** The action taken by one WHEN clause. */
+type MergeWhenAction = {
+  kind: 'update';
+  assignments: MergeAssignment[];
+  raw: string | undefined;
+} | {
+  kind: 'delete';
+} | {
+  kind: 'insert';
+  columns: string[];
+  values: MergeExpr[];
+} | {
+  kind: 'insertDefaultValues';
+};
+/** Which side of the match a WHEN clause fires on. */
+type MergeWhenMatch = 'matched' | 'notMatchedByTarget' | 'notMatchedBySource';
+/** One WHEN clause of a MERGE, in author order. */
+type MergeWhenState = {
+  match: MergeWhenMatch;
+  /** Optional `AND <condition>` guard, rendered with {@link renderJoinOnConditions}. */
+  and: JoinOnState[] | undefined;
+  action: MergeWhenAction;
+};
+/**
+ * State for a T-SQL `MERGE` statement. MERGE is native T-SQL only; the parser refuses it on every
+ * other dialect. This is a first-class statement, NOT an INSERT carrying an upsert clause — that
+ * conflation is precisely the "upsert wearing MERGE's name" that was removed.
+ */
+type MergeState = {
+  targetOwner: string | undefined;
+  targetTable: string | undefined;
+  targetAlias: string;
+  /** `WITH (HOLDLOCK)` on the target. `undefined` means the caller did not decide either way. */
+  holdlock: boolean | undefined;
+  using: MergeUsing | undefined;
+  /** `ON <merge_search_condition>` — required. */
+  onStates: JoinOnState[];
+  /** WHEN clauses in author order. */
+  whenStates: MergeWhenState[];
+  /** Raw `OUTPUT` result-set expression, e.g. `$action, inserted.id, deleted.status`. */
+  outputRaw: string | undefined;
+};
+/** Creates a {@link MergeState} with default field values. */
+declare const createMergeState: () => MergeState;
+//#endregion
 //#region src/state/join.d.ts
 /**
  * Holds state for one JOIN (table/subquery, type, and ON clauses).
@@ -1149,6 +1241,8 @@ declare const QueryType: {
   readonly Delete: "Delete";
   /** Stored procedure/function invocation (`CALL`/`EXEC`/`SELECT func(...)`). */
   readonly Call: "Call";
+  /** `MERGE` statement — native T-SQL only. */
+  readonly Merge: "Merge";
 };
 /** One of the {@link QueryType} statement kinds. */
 type QueryType = (typeof QueryType)[keyof typeof QueryType];
@@ -1187,6 +1281,8 @@ type QueryState = {
   updateStates: UpdateState[];
   /** INSERT conflict clause (upsert); undefined when not configured. */
   upsertState: UpsertState | undefined;
+  /** MERGE statement (native T-SQL only); undefined when not a MERGE. */
+  mergeState: MergeState | undefined;
   /** RETURNING/OUTPUT clause for INSERT/UPDATE/DELETE; undefined when not configured. */
   returningState: ReturningState | undefined;
   /** Row-locking clause for SELECT (`FOR UPDATE`/`FOR SHARE`); undefined when not configured. */
@@ -1304,6 +1400,78 @@ declare class JoinOnBuilder {
   onNotBetween: (aliasLeft: string, columnLeft: string, value1: any, value2: any) => this;
   or: () => this;
   states: () => JoinOnState[];
+}
+//#endregion
+//#region src/builder/merge.d.ts
+/** `source.<col>` — a reference to the USING source row (the common MERGE RHS). */
+declare const source: (columnName: string) => MergeExpr;
+/** `target.<col>` — a reference to the target row. */
+declare const target: (columnName: string) => MergeExpr;
+/** A genuine bound literal (`@pN`), for the rarer case where a WHEN action assigns a constant. */
+declare const value: (v: any) => MergeExpr;
+/** A raw SQL fragment for an RHS the structured forms cannot express. */
+declare const raw: (sql: string) => MergeExpr;
+/**
+ * Builds a T-SQL `MERGE` statement, one clause per method, in the grammar's own vocabulary.
+ *
+ * MERGE is native T-SQL and exists on no other dialect; {@link QueryBuilder.merge} stores this
+ * state and the parser refuses it everywhere but MSSQL. This is a whole statement, not an INSERT
+ * with a conflict clause — that conflation was the removed lie.
+ *
+ * Populated through a callback, the same shape as `joinTable((j) => …)` and
+ * `selectWindow(fn, (w) => …)`.
+ */
+declare class MergeBuilder {
+  #private;
+  constructor(config: Dialect);
+  /** `MERGE INTO <table> [AS alias]` — target defaults to the alias `target`, owner to the dialect default. */
+  into: (table: string, alias?: string) => this;
+  /** `MERGE INTO <owner>.<table> [AS alias]`. */
+  intoWithOwner: (owner: string, table: string, alias?: string) => this;
+  /**
+   * `WITH (HOLDLOCK)` on the target.
+   *
+   * A MERGE used as an upsert is race-prone at READ COMMITTED without it — under concurrency an
+   * un-hinted MERGE can still raise a duplicate-key violation, which `HOLDLOCK` (a SERIALIZABLE
+   * hint on the target only) prevents. The builder does not add it for you: it emits the MERGE you
+   * wrote, and this is how you write the concurrency-safe one.
+   */
+  holdlock: (on?: boolean) => this;
+  /** `USING (VALUES …) AS alias (columns)` — one or more literal rows. */
+  usingValues: (alias: string, columns: string[], rows: any[][]) => this;
+  /** `USING <table> AS alias`. */
+  usingTable: (table: string, alias: string, owner?: string) => this;
+  /** `USING (<subquery>) AS alias`. */
+  usingSelect: (alias: string, build: (q: QueryBuilder) => void) => this;
+  /** `USING <raw> AS alias`, for a source the structured forms cannot express (APPLY, TVF, …). */
+  usingRaw: (sql: string, alias: string) => this;
+  /** `ON <merge_search_condition>` — required; full predicate strength via {@link JoinOnBuilder}. */
+  on: (build: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN MATCHED [AND …] THEN UPDATE SET …`. */
+  whenMatchedThenUpdate: (assignments: MergeAssignment[], and?: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN MATCHED [AND …] THEN UPDATE SET <raw>`. */
+  whenMatchedThenUpdateRaw: (raw: string, and?: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN MATCHED [AND …] THEN DELETE`. */
+  whenMatchedThenDelete: (and?: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN NOT MATCHED [BY TARGET] [AND …] THEN INSERT (columns) VALUES (…)`. */
+  whenNotMatchedThenInsert: (columns: string[], values: MergeExpr[], and?: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN NOT MATCHED [BY TARGET] [AND …] THEN INSERT DEFAULT VALUES`. */
+  whenNotMatchedThenInsertDefaultValues: (and?: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN NOT MATCHED BY SOURCE [AND …] THEN UPDATE SET …`. */
+  whenNotMatchedBySourceThenUpdate: (assignments: MergeAssignment[], and?: (j: JoinOnBuilder) => void) => this;
+  /** `WHEN NOT MATCHED BY SOURCE [AND …] THEN DELETE`. */
+  whenNotMatchedBySourceThenDelete: (and?: (j: JoinOnBuilder) => void) => this;
+  /**
+   * `OUTPUT <expression>` as a raw fragment, e.g. `$action, inserted.id, deleted.status`.
+   *
+   * Deliberately raw, and the only OUTPUT form offered here. MERGE's OUTPUT is materially richer
+   * than an INSERT/UPDATE/DELETE OUTPUT — it exposes the per-row `$action` and can mix `inserted.*`
+   * and `deleted.*` in one row — so a structured `output(columns)` that quietly captured a single
+   * side would be exactly the kind of half-true convenience this library refuses. Write the
+   * expression; the builder does not pretend to know which side each column comes from.
+   */
+  outputRaw: (sql: string) => this;
+  state: () => MergeState;
 }
 //#endregion
 //#region src/builder/window.d.ts
@@ -1551,6 +1719,13 @@ declare class QueryBuilder {
   havingNotInValues: (tableNameOrAlias: string, columnName: string, values: any[]) => this;
   havingNotNull: (tableNameOrAlias: string, columnName: string) => this;
   havingNull: (tableNameOrAlias: string, columnName: string) => this;
+  /**
+   * Assembles a T-SQL `MERGE` statement via a {@link MergeBuilder} callback — native T-SQL only;
+   * the parser refuses it on every other dialect. MERGE is its own statement kind, mutually
+   * exclusive with SELECT/INSERT/UPDATE/DELETE, so this flips {@link QueryType} the way
+   * `insertInto` does rather than contributing a clause the way `joinTable` does.
+   */
+  merge: (build: (merge: MergeBuilder) => void) => this;
   insertInto: (tableName: string) => this;
   insertIntoWithOwner: (owner: string, tableName: string) => this;
   insertColumns: (columns: string[]) => this;
@@ -1747,6 +1922,8 @@ declare const ParserArea: {
   readonly Delete: "Delete";
   /** Stored procedure/function invocation. */
   readonly Call: "Call";
+  /** MERGE statement. */
+  readonly Merge: "Merge";
   /** Cross-clause or unspecified area. */
   readonly General: "General";
 };
@@ -1887,5 +2064,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { BuilderType, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
+export { BuilderType, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.cts.map

@@ -22,6 +22,7 @@ import type { CallState } from '../state/call';
 import { createInsertState } from '../state/insert';
 import { createQueryState, type QueryState } from '../state/query';
 import { JoinOnBuilder } from './join-on';
+import { MergeBuilder } from './merge';
 import { WindowBuilder } from './window';
 
 /**
@@ -1602,6 +1603,20 @@ export class QueryBuilder {
       values: [],
     });
 
+    return this;
+  };
+
+  /**
+   * Assembles a T-SQL `MERGE` statement via a {@link MergeBuilder} callback — native T-SQL only;
+   * the parser refuses it on every other dialect. MERGE is its own statement kind, mutually
+   * exclusive with SELECT/INSERT/UPDATE/DELETE, so this flips {@link QueryType} the way
+   * `insertInto` does rather than contributing a clause the way `joinTable` does.
+   */
+  public merge = (build: (merge: MergeBuilder) => void): this => {
+    this.#state.queryType = QueryType.Merge;
+    const mergeBuilder = new MergeBuilder(this.#config);
+    build(mergeBuilder);
+    this.#state.mergeState = mergeBuilder.state();
     return this;
   };
 

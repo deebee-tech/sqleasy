@@ -290,7 +290,7 @@ enum DatabaseType {
 }
 
 /// The kind of statement a query state renders as.
-enum QueryType { select, insert, update, delete, call }
+enum QueryType { select, insert, update, delete, call, merge }
 
 /// Whether a [QueryBuilder.callProcedure]/[QueryBuilder.callFunction] invocation targets a stored
 /// procedure or a stored function — the two are emitted differently on every dialect (a

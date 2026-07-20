@@ -16,6 +16,7 @@ import { defaultGroupBy } from './default-group-by';
 import { defaultHaving } from './default-having';
 import { emitTrailingHints, validateHints } from './default-hint';
 import { defaultInsert } from './default-insert';
+import { defaultMerge } from './default-merge';
 import { defaultJoin } from './default-join';
 import { defaultLimitOffset, hasExplicitTop } from './default-limit-offset';
 import { buildPostgresMutationJoinPredicate } from './default-mutation-join';
@@ -134,6 +135,14 @@ export const defaultToSql = (
 
   if (state.callState && state.queryType !== QueryType.Call) {
     throw new ParserError(ParserArea.Call, 'Procedure/function call state requires queryType Call');
+  }
+
+  if (state.queryType === QueryType.Merge) {
+    // MERGE emits its own terminating semicolon (mandatory in T-SQL) and is never an inner
+    // statement, so it returns straight from here.
+    const merge = defaultMerge(state, config, mode, options);
+    sqlHelper.addSqlSnippetWithValues(merge.getSql(), merge.getValues());
+    return sqlHelper;
   }
 
   if (state.queryType === QueryType.Call) {

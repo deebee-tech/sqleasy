@@ -5,6 +5,7 @@ import '../parser/to_sql.dart' as parser;
 import '../parser/to_sql.dart' show PreparedSql;
 import '../state.dart';
 import 'join_on_builder.dart';
+import 'merge_builder.dart';
 import 'window_builder.dart';
 
 /// A column reference for [QueryBuilder.selectColumns].
@@ -1113,6 +1114,17 @@ class QueryBuilder {
   }
 
   // ---- INSERT / UPDATE / DELETE --------------------------------------------------------------
+
+  /// Assembles a T-SQL `MERGE` statement via a [MergeBuilder] callback — native T-SQL only; the
+  /// parser refuses it on every other dialect. MERGE is its own statement kind, so this flips
+  /// [QueryType] the way `insertInto` does rather than contributing a clause.
+  QueryBuilder merge(void Function(MergeBuilder) build) {
+    _state.queryType = QueryType.merge;
+    final mergeBuilder = MergeBuilder(_config);
+    build(mergeBuilder);
+    _state.mergeState = mergeBuilder.state;
+    return this;
+  }
 
   QueryBuilder insertInto(String table, {String? owner}) {
     _state.queryType = QueryType.insert;

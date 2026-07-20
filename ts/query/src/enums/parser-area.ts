@@ -24,6 +24,8 @@ export const ParserArea = {
   Delete: 'Delete',
   /** Stored procedure/function invocation. */
   Call: 'Call',
+  /** MERGE statement. */
+  Merge: 'Merge',
   /** Cross-clause or unspecified area. */
   General: 'General',
 } as const;

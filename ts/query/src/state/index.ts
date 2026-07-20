@@ -5,6 +5,7 @@ export * from './group-by';
 export * from './having';
 export * from './hint';
 export * from './insert';
+export * from './merge';
 export * from './join-on';
 export * from './join';
 export * from './order-by';

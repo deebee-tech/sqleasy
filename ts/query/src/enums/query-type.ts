@@ -12,6 +12,8 @@ export const QueryType = {
   Delete: 'Delete',
   /** Stored procedure/function invocation (`CALL`/`EXEC`/`SELECT func(...)`). */
   Call: 'Call',
+  /** `MERGE` statement — native T-SQL only. */
+  Merge: 'Merge',
 } as const;
 
 /** One of the {@link QueryType} statement kinds. */

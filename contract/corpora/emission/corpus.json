@@ -23518,6 +23518,125 @@
           "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"email\" LIKE %a[b]c% ESCAPE '\\';"
         }
       }
+    },
+    {
+      "name": "mssql merge with three when arms and holdlock",
+      "note": "MERGE is native T-SQL only. mssql emits the full statement; the other three refuse.",
+      "ops": [
+        {
+          "op": "merge",
+          "ops": [
+            {
+              "op": "into",
+              "table": "users",
+              "alias": "target"
+            },
+            {
+              "op": "holdlock"
+            },
+            {
+              "op": "usingValues",
+              "alias": "source",
+              "columns": [
+                "id",
+                "email",
+                "name"
+              ],
+              "rows": [
+                [
+                  {
+                    "t": "int",
+                    "v": 1
+                  },
+                  {
+                    "t": "string",
+                    "v": "a@x.io"
+                  },
+                  {
+                    "t": "string",
+                    "v": "Ada"
+                  }
+                ]
+              ]
+            },
+            {
+              "op": "on",
+              "ops": [
+                {
+                  "op": "on",
+                  "leftAlias": "target",
+                  "leftColumn": "id",
+                  "operator": "Equals",
+                  "rightAlias": "source",
+                  "rightColumn": "id"
+                }
+              ]
+            },
+            {
+              "op": "whenMatchedThenUpdate",
+              "assignments": [
+                {
+                  "column": "email",
+                  "expr": {
+                    "kind": "source",
+                    "column": "email"
+                  }
+                },
+                {
+                  "column": "name",
+                  "expr": {
+                    "kind": "source",
+                    "column": "name"
+                  }
+                }
+              ]
+            },
+            {
+              "op": "whenNotMatchedThenInsert",
+              "columns": [
+                "id",
+                "email",
+                "name"
+              ],
+              "values": [
+                {
+                  "kind": "source",
+                  "column": "id"
+                },
+                {
+                  "kind": "source",
+                  "column": "email"
+                },
+                {
+                  "kind": "source",
+                  "column": "name"
+                }
+              ]
+            },
+            {
+              "op": "whenNotMatchedBySourceThenDelete"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] WITH (HOLDLOCK) AS [target] USING (VALUES (@p0, @p1, @p2)) AS [source] ([id], [email], [name]) ON [target].[id] = [source].[id] WHEN MATCHED THEN UPDATE SET [email] = [source].[email], [name] = [source].[name] WHEN NOT MATCHED BY TARGET THEN INSERT ([id], [email], [name]) VALUES ([source].[id], [source].[email], [source].[name]) WHEN NOT MATCHED BY SOURCE THEN DELETE;', N'@p0 tinyint, @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = 1, @p1 = N'a@x.io', @p2 = N'Ada';",
+            "params": []
+          },
+          "raw": "MERGE INTO [dbo].[users] WITH (HOLDLOCK) AS [target] USING (VALUES (1, a@x.io, Ada)) AS [source] ([id], [email], [name]) ON [target].[id] = [source].[id] WHEN MATCHED THEN UPDATE SET [email] = [source].[email], [name] = [source].[name] WHEN NOT MATCHED BY TARGET THEN INSERT ([id], [email], [name]) VALUES ([source].[id], [source].[email], [source].[name]) WHEN NOT MATCHED BY SOURCE THEN DELETE;"
+        },
+        "mysql": {
+          "throws": "Merge: MySQL has no MERGE statement — it is native T-SQL only"
+        },
+        "postgres": {
+          "throws": "Merge: Postgres has no MERGE statement — it is native T-SQL only"
+        },
+        "sqlite": {
+          "throws": "Merge: SQLite has no MERGE statement — it is native T-SQL only"
+        }
+      }
     }
   ]
 }

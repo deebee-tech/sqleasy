@@ -220,6 +220,32 @@
         "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
         "adjudicated": true
       }
+    },
+    "merge": {
+      "_why": "MERGE is native T-SQL and exists on no other dialect. RE-HOMED 2026-07-20 as an explicit surface \u2014 QueryBuilder.merge((m) => \u2026) over a MergeBuilder \u2014 after Sandy approved bringing it back. It expresses MERGE as T-SQL defines it (INTO/USING/ON/WHEN MATCHED/WHEN NOT MATCHED [BY SOURCE]/OUTPUT/mandatory semicolon/WITH (HOLDLOCK)), NOT the merge(conflictColumns, updates) upsert-keyhole a reviewer flagged as a worse lie than mergeMssql(). Through 7015f6c it had been REFUSED, because the only MERGE in the codebase was the silent INSERT-becomes-MERGE upsert substitution, which was removed. This is its honest return. HOLDLOCK is exposed via .holdlock(), documented as the concurrency-safe form, and NOT injected \u2014 the builder emits the MERGE the caller wrote. Name = 'merge' with no suffix: it collides with nothing, so when the per-engine typed builders land it moves verbatim to MssqlQueryBuilder and the runtime refusal on the other three becomes a compile-time absence.",
+      "mssql": {
+        "kind": "native",
+        "name": "merge",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
     }
   },
   "enums": {

@@ -15,7 +15,13 @@ import {
   QueryBuilder,
   SqliteQuery,
   WhereOperator,
+  source,
+  target,
+  value,
+  raw,
   type JoinOnBuilder,
+  type MergeBuilder,
+  type MergeExpr,
   type MultiBuilder,
   type WindowBuilder,
 } from '../../src';
@@ -182,9 +188,111 @@ const applyWindow = (w: WindowBuilder, windowOps: Op[]): void => {
   }
 };
 
+/** Decode a corpus-encoded MERGE RHS expression back into a {@link MergeExpr}. */
+const mergeExpr = (o: {
+  kind: string;
+  column?: string;
+  value?: InputValue;
+  sql?: string;
+}): MergeExpr => {
+  switch (o.kind) {
+    case 'source':
+      return source(o.column as string);
+    case 'target':
+      return target(o.column as string);
+    case 'value':
+      return value(toValue(o.value as InputValue));
+    case 'raw':
+      return raw(o.sql as string);
+    default:
+      throw new Error(`unknown merge expr kind: ${o.kind}`);
+  }
+};
+
+type MergeAssignmentOp = {
+  column: string;
+  expr: { kind: string; column?: string; value?: InputValue; sql?: string };
+};
+const mergeAssignments = (op: Op): { columnName: string; value: MergeExpr }[] =>
+  list<MergeAssignmentOp>(op, 'assignments').map((a) => ({
+    columnName: a.column,
+    value: mergeExpr(a.expr),
+  }));
+const andArg = (op: Op): ((j: JoinOnBuilder) => void) | undefined =>
+  op.and ? (j) => applyJoinOn(j, ops(op, 'and')) : undefined;
+
+const applyMerge = (m: MergeBuilder, mergeOps: Op[]): void => {
+  for (const op of mergeOps) {
+    switch (op.op) {
+      case 'into':
+        m.into(str(op, 'table'), opt(op, 'alias') || 'target');
+        break;
+      case 'intoWithOwner':
+        m.intoWithOwner(str(op, 'owner'), str(op, 'table'), opt(op, 'alias') || 'target');
+        break;
+      case 'holdlock':
+        m.holdlock(op.on === undefined ? true : (op.on as boolean));
+        break;
+      case 'usingValues':
+        m.usingValues(
+          str(op, 'alias'),
+          list<string>(op, 'columns'),
+          list<InputValue[]>(op, 'rows').map((row) => row.map(toValue)),
+        );
+        break;
+      case 'usingTable':
+        m.usingTable(str(op, 'table'), str(op, 'alias'), op.owner as string | undefined);
+        break;
+      case 'usingSelect':
+        m.usingSelect(str(op, 'alias'), (q) => apply(q, ops(op)));
+        break;
+      case 'usingRaw':
+        m.usingRaw(str(op, 'sql'), str(op, 'alias'));
+        break;
+      case 'on':
+        m.on((j) => applyJoinOn(j, ops(op)));
+        break;
+      case 'whenMatchedThenUpdate':
+        m.whenMatchedThenUpdate(mergeAssignments(op), andArg(op));
+        break;
+      case 'whenMatchedThenUpdateRaw':
+        m.whenMatchedThenUpdateRaw(str(op, 'raw'), andArg(op));
+        break;
+      case 'whenMatchedThenDelete':
+        m.whenMatchedThenDelete(andArg(op));
+        break;
+      case 'whenNotMatchedThenInsert':
+        m.whenNotMatchedThenInsert(
+          list<string>(op, 'columns'),
+          list<{ kind: string }>(op, 'values').map(mergeExpr),
+          andArg(op),
+        );
+        break;
+      case 'whenNotMatchedThenInsertDefaultValues':
+        m.whenNotMatchedThenInsertDefaultValues(andArg(op));
+        break;
+      case 'whenNotMatchedBySourceThenUpdate':
+        m.whenNotMatchedBySourceThenUpdate(mergeAssignments(op), andArg(op));
+        break;
+      case 'whenNotMatchedBySourceThenDelete':
+        m.whenNotMatchedBySourceThenDelete(andArg(op));
+        break;
+      case 'outputRaw':
+        m.outputRaw(str(op, 'sql'));
+        break;
+      default:
+        throw new Error(`unknown merge op: ${op.op}`);
+    }
+  }
+};
+
 const apply = (b: QueryBuilder, opList: Op[]): void => {
   for (const op of opList) {
     switch (op.op) {
+      // ---- MERGE ----
+      case 'merge':
+        b.merge((m) => applyMerge(m, ops(op)));
+        break;
       // ---- SELECT ----
       case 'selectAll':
         b.selectAll();

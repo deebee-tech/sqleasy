@@ -1,210 +1,254 @@
-// PARKED, NOT DEAD. Nothing calls this today.
-//
-// `onConflict*()` used to route MSSQL here, silently turning an INSERT into a MERGE — a different
-// statement with different atomicity, trigger and error semantics. That substitution is gone and
-// MSSQL now refuses, because T-SQL has no upsert primitive.
-//
-// MERGE itself is genuine, native T-SQL and should come BACK as an explicit surface a caller opts
-// into knowingly, named in T-SQL's own vocabulary. That waits for the per-engine typed builders:
-// naming it now would produce `mergeMssql()`, and the suffix is only an artifact of four dialects
-// sharing one namespace. This emitter is the working implementation for that surface — kept so it
-// is not re-derived, and left unreferenced on purpose.
-//
-// See docs/capability-manifest-design.md.
-
 import '../configuration.dart';
+import '../dialect_name.dart';
 import '../enums.dart';
 import '../errors/parser_error.dart';
 import '../identifier.dart';
 import '../sql_helper.dart';
 import '../state.dart';
+import 'default_join.dart';
 import 'to_sql.dart';
 
-void _emitMergeSetList(
-  SqlHelper sqlHelper,
-  Dialect config,
-  UpsertState upsertState,
-  String sourceAlias,
-  List<String> columns,
-) {
-  if ((upsertState.updateRaw ?? '').isNotEmpty) {
-    sqlHelper.addSqlSnippet(upsertState.updateRaw!);
-    return;
-  }
+String _qi(String? name, Dialect config) =>
+    quoteIdentifier(name, config.identifierDelimiters);
 
-  final updates = upsertState.updateColumns.isNotEmpty
-      ? upsertState.updateColumns
-      : [
-          for (final column in columns) UpsertSetState(column, null),
-        ];
+String _columnRef(Dialect config, String alias, String column) =>
+    '${_qi(alias, config)}.${_qi(column, config)}';
 
-  if (updates.isEmpty) {
-    throw ParserError(
-        ParserArea.insert, 'MERGE DO UPDATE requires at least one SET column');
-  }
+String _usingAlias(MergeState state) => state.using?.alias ?? 'source';
 
-  for (var i = 0; i < updates.length; i++) {
-    final update = updates[i];
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(update.columnName, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet(' = ');
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(sourceAlias, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet('.');
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(update.columnName, config.identifierDelimiters));
-
-    if (i < updates.length - 1) {
-      sqlHelper.addSqlSnippet(', ');
-    }
+void _emitExpr(
+    SqlHelper sqlHelper, Dialect config, MergeState state, MergeExpr expr) {
+  switch (expr) {
+    case MergeSourceExpr(:final columnName):
+      sqlHelper
+          .addSqlSnippet(_columnRef(config, _usingAlias(state), columnName));
+    case MergeTargetExpr(:final columnName):
+      sqlHelper
+          .addSqlSnippet(_columnRef(config, state.targetAlias, columnName));
+    case MergeValueExpr(:final value):
+      sqlHelper.addDynamicValue(value);
+    case MergeRawExpr(:final sql):
+      sqlHelper.addSqlSnippet(sql);
   }
 }
 
-/// Emits a T-SQL `MERGE` upsert instead of `INSERT ... VALUES` when [QueryState.upsertState]
-/// is set on MSSQL.
-SqlHelper emitMssqlMergeInsert(
+void _emitAnd(SqlHelper sqlHelper, Dialect config, MergeWhenState when) {
+  final and = when.and;
+  if (and == null || and.isEmpty) return;
+  sqlHelper.addSqlSnippet(' AND ');
+  renderJoinOnConditions(sqlHelper, config, and);
+}
+
+void _emitAction(SqlHelper sqlHelper, Dialect config, MergeState state,
+    MergeWhenAction action) {
+  switch (action) {
+    case MergeDeleteAction():
+      sqlHelper.addSqlSnippet('DELETE');
+    case MergeUpdateAction(:final assignments, :final raw):
+      sqlHelper.addSqlSnippet('UPDATE SET ');
+      if (raw != null) {
+        sqlHelper.addSqlSnippet(raw);
+        return;
+      }
+      if (assignments.isEmpty) {
+        throw ParserError(ParserArea.merge,
+            'MERGE UPDATE requires at least one SET assignment');
+      }
+      for (var i = 0; i < assignments.length; i++) {
+        sqlHelper.addSqlSnippet(_qi(assignments[i].columnName, config));
+        sqlHelper.addSqlSnippet(' = ');
+        _emitExpr(sqlHelper, config, state, assignments[i].value);
+        if (i < assignments.length - 1) sqlHelper.addSqlSnippet(', ');
+      }
+    case MergeInsertAction(:final columns, :final values):
+      if (columns.length != values.length) {
+        throw ParserError(ParserArea.merge,
+            'MERGE INSERT column count must equal the VALUES count');
+      }
+      sqlHelper.addSqlSnippet('INSERT (');
+      for (var i = 0; i < columns.length; i++) {
+        sqlHelper.addSqlSnippet(_qi(columns[i], config));
+        if (i < columns.length - 1) sqlHelper.addSqlSnippet(', ');
+      }
+      sqlHelper.addSqlSnippet(') VALUES (');
+      for (var i = 0; i < values.length; i++) {
+        _emitExpr(sqlHelper, config, state, values[i]);
+        if (i < values.length - 1) sqlHelper.addSqlSnippet(', ');
+      }
+      sqlHelper.addSqlSnippet(')');
+    case MergeInsertDefaultValuesAction():
+      sqlHelper.addSqlSnippet('INSERT DEFAULT VALUES');
+  }
+}
+
+String _whenKeyword(MergeWhenMatch match) {
+  switch (match) {
+    case MergeWhenMatch.matched:
+      return 'WHEN MATCHED';
+    case MergeWhenMatch.notMatchedByTarget:
+      return 'WHEN NOT MATCHED BY TARGET';
+    case MergeWhenMatch.notMatchedBySource:
+      return 'WHEN NOT MATCHED BY SOURCE';
+  }
+}
+
+void _emitUsing(SqlHelper sqlHelper, Dialect config, ParserMode mode,
+    MergeUsing using, ToSqlOptions? options) {
+  sqlHelper.addSqlSnippet('USING ');
+  switch (using) {
+    case MergeUsingValues(:final alias, :final columns, :final rows):
+      if (rows.isEmpty) {
+        throw ParserError(ParserArea.merge,
+            'MERGE USING (VALUES …) requires at least one row');
+      }
+      sqlHelper.addSqlSnippet('(VALUES ');
+      for (var r = 0; r < rows.length; r++) {
+        final row = rows[r];
+        if (row.length != columns.length) {
+          throw ParserError(ParserArea.merge,
+              'MERGE USING VALUES row width must equal the column count');
+        }
+        sqlHelper.addSqlSnippet('(');
+        for (var c = 0; c < row.length; c++) {
+          sqlHelper.addDynamicValue(row[c]);
+          if (c < row.length - 1) sqlHelper.addSqlSnippet(', ');
+        }
+        sqlHelper.addSqlSnippet(')');
+        if (r < rows.length - 1) sqlHelper.addSqlSnippet(', ');
+      }
+      sqlHelper.addSqlSnippet(') AS ');
+      sqlHelper.addSqlSnippet(_qi(alias, config));
+      sqlHelper.addSqlSnippet(' (');
+      for (var i = 0; i < columns.length; i++) {
+        sqlHelper.addSqlSnippet(_qi(columns[i], config));
+        if (i < columns.length - 1) sqlHelper.addSqlSnippet(', ');
+      }
+      sqlHelper.addSqlSnippet(')');
+    case MergeUsingTable(:final alias, :final table, :final owner):
+      if (owner != null && owner.isNotEmpty) {
+        sqlHelper.addSqlSnippet(_qi(owner, config));
+        sqlHelper.addSqlSnippet('.');
+      }
+      sqlHelper.addSqlSnippet(_qi(table, config));
+      sqlHelper.addSqlSnippet(' AS ');
+      sqlHelper.addSqlSnippet(_qi(alias, config));
+    case MergeUsingSelect(:final alias, :final subquery):
+      final sub = defaultToSql(subquery, config, mode, options);
+      sqlHelper.addSqlSnippetWithValues('(${sub.getSql()})', sub.getValues());
+      sqlHelper.addSqlSnippet(' AS ');
+      sqlHelper.addSqlSnippet(_qi(alias, config));
+    case MergeUsingRaw(:final alias, :final sql):
+      sqlHelper.addSqlSnippet(sql);
+      sqlHelper.addSqlSnippet(' AS ');
+      sqlHelper.addSqlSnippet(_qi(alias, config));
+  }
+}
+
+int _unconditionalCount(List<MergeWhenState> whens, MergeWhenMatch match) =>
+    whens
+        .where((w) => w.match == match && (w.and == null || w.and!.isEmpty))
+        .length;
+
+void _validateWhenCardinality(MergeState state) {
+  final whens = state.whenStates;
+  if (whens.isEmpty) {
+    throw ParserError(
+        ParserArea.merge, 'MERGE requires at least one WHEN clause');
+  }
+
+  final matched =
+      whens.where((w) => w.match == MergeWhenMatch.matched).toList();
+  if (matched.length > 2) {
+    throw ParserError(ParserArea.merge,
+        'MERGE allows at most two WHEN MATCHED clauses (one UPDATE and one DELETE)');
+  }
+  if (matched.length == 2) {
+    final kinds = matched.map((w) => w.action.runtimeType).toSet();
+    if (!(kinds.contains(MergeUpdateAction) &&
+        kinds.contains(MergeDeleteAction))) {
+      throw ParserError(ParserArea.merge,
+          'two WHEN MATCHED clauses must be one UPDATE and one DELETE, not two of the same');
+    }
+    final first = matched.first;
+    if (first.and == null || first.and!.isEmpty) {
+      throw ParserError(ParserArea.merge,
+          'with two WHEN MATCHED clauses the first must carry an AND condition');
+    }
+  }
+  if (_unconditionalCount(whens, MergeWhenMatch.matched) > 1) {
+    throw ParserError(ParserArea.merge,
+        'MERGE allows at most one unconditional WHEN MATCHED');
+  }
+  if (_unconditionalCount(whens, MergeWhenMatch.notMatchedByTarget) > 1) {
+    throw ParserError(ParserArea.merge,
+        'MERGE allows at most one unconditional WHEN NOT MATCHED BY TARGET');
+  }
+}
+
+/// Renders a T-SQL `MERGE` statement from [MergeState]. Native T-SQL only — every other dialect is
+/// refused. Replaced the parked upsert-shaped emitter, which structurally could not carry a USING
+/// alias, an arbitrary ON, WHEN NOT MATCHED BY SOURCE, DELETE arms, or multiple WHENs.
+SqlHelper defaultMerge(
   QueryState state,
   Dialect config,
   ParserMode mode, [
   ToSqlOptions? options,
 ]) {
-  if (config.databaseType != DatabaseType.mssql) {
-    throw ParserError(ParserArea.insert, 'MERGE upsert emission is MSSQL-only');
-  }
-
-  final insertState = state.insertState;
-  final upsertState = state.upsertState;
-  if (insertState == null || upsertState == null) {
-    throw ParserError(ParserArea.insert, 'MERGE requires INSERT upsert state');
-  }
-
   final sqlHelper = SqlHelper(mode);
 
-  if ((insertState.tableName ?? '').isEmpty) {
-    throw ParserError(ParserArea.insert, 'MERGE requires a target table');
+  if (config.databaseType != DatabaseType.mssql) {
+    throw ParserError(ParserArea.merge,
+        '${dialectDisplayName(config.databaseType)} has no MERGE statement — it is native T-SQL only');
   }
 
-  const targetAlias = 'target';
-  const sourceAlias = 'source';
-  final columns = insertState.columns;
-
-  if (columns.isEmpty) {
+  final merge = state.mergeState;
+  if (merge == null || merge.targetTable == null) {
     throw ParserError(
-        ParserArea.insert, 'MERGE requires an explicit INSERT column list');
+        ParserArea.merge, 'MERGE requires a target table — call into(...)');
   }
-
-  if (upsertState.conflictColumns.isEmpty) {
-    throw ParserError(
-        ParserArea.insert, 'MERGE requires at least one conflict column');
+  if (merge.using == null) {
+    throw ParserError(ParserArea.merge, 'MERGE requires a USING source');
   }
+  if (merge.onStates.isEmpty) {
+    throw ParserError(ParserArea.merge, 'MERGE requires an ON condition');
+  }
+  _validateWhenCardinality(merge);
 
+  // MERGE [INTO] <target> [WITH (hint)] [AS alias] — the hint precedes the alias.
   sqlHelper.addSqlSnippet('MERGE INTO ');
-
-  if ((insertState.owner ?? '').isNotEmpty) {
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(insertState.owner, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet('.');
+  final owner = (merge.targetOwner != null && merge.targetOwner!.isNotEmpty)
+      ? merge.targetOwner
+      : config.defaultOwner;
+  sqlHelper.addSqlSnippet(_qi(owner, config));
+  sqlHelper.addSqlSnippet('.');
+  sqlHelper.addSqlSnippet(_qi(merge.targetTable, config));
+  if (merge.holdlock == true) {
+    sqlHelper.addSqlSnippet(' WITH (HOLDLOCK)');
   }
-
-  sqlHelper.addSqlSnippet(
-      quoteIdentifier(insertState.tableName, config.identifierDelimiters));
   sqlHelper.addSqlSnippet(' AS ');
-  sqlHelper
-      .addSqlSnippet(quoteIdentifier(targetAlias, config.identifierDelimiters));
-  sqlHelper.addSqlSnippet(' USING (');
+  sqlHelper.addSqlSnippet(_qi(merge.targetAlias, config));
+  sqlHelper.addSqlSnippet(' ');
 
-  final selectSubquery = insertState.selectSubquery;
-  if (selectSubquery != null) {
-    final subHelper = defaultToSql(selectSubquery, config, mode, options);
-    sqlHelper.addSqlSnippetWithValues(
-        subHelper.getSql(), subHelper.getValues());
-  } else {
-    if (insertState.values.isEmpty) {
-      throw ParserError(ParserArea.insert,
-          'MERGE requires VALUES or INSERT SELECT source rows');
-    }
+  _emitUsing(sqlHelper, config, mode, merge.using!, options);
 
-    if (insertState.values.length != 1) {
-      throw ParserError(
-        ParserArea.insert,
-        'MERGE currently supports a single VALUES row — use insertSelect for multi-row sources',
-      );
-    }
+  sqlHelper.addSqlSnippet(' ON ');
+  renderJoinOnConditions(sqlHelper, config, merge.onStates);
 
-    sqlHelper.addSqlSnippet('VALUES (');
-    final row = insertState.values.first;
-    if (row.length != columns.length) {
-      throw ParserError(
-        ParserArea.insert,
-        'MERGE column count (${columns.length}) does not match value count (${row.length})',
-      );
-    }
-
-    for (var c = 0; c < row.length; c++) {
-      sqlHelper.addDynamicValue(row[c]);
-      if (c < row.length - 1) {
-        sqlHelper.addSqlSnippet(', ');
-      }
-    }
-    sqlHelper.addSqlSnippet(')');
+  for (final when in merge.whenStates) {
+    sqlHelper.addSqlSnippet(' ');
+    sqlHelper.addSqlSnippet(_whenKeyword(when.match));
+    _emitAnd(sqlHelper, config, when);
+    sqlHelper.addSqlSnippet(' THEN ');
+    _emitAction(sqlHelper, config, merge, when.action);
   }
 
-  sqlHelper.addSqlSnippet(') AS ');
-  sqlHelper
-      .addSqlSnippet(quoteIdentifier(sourceAlias, config.identifierDelimiters));
-  sqlHelper.addSqlSnippet(' (');
-  for (var i = 0; i < columns.length; i++) {
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(columns[i], config.identifierDelimiters));
-    if (i < columns.length - 1) {
-      sqlHelper.addSqlSnippet(', ');
-    }
-  }
-  sqlHelper.addSqlSnippet(') ON ');
-
-  for (var i = 0; i < upsertState.conflictColumns.length; i++) {
-    final conflictColumn = upsertState.conflictColumns[i];
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(targetAlias, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet('.');
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(conflictColumn, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet(' = ');
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(sourceAlias, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet('.');
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(conflictColumn, config.identifierDelimiters));
-    if (i < upsertState.conflictColumns.length - 1) {
-      sqlHelper.addSqlSnippet(' AND ');
-    }
+  if (merge.outputRaw != null) {
+    sqlHelper.addSqlSnippet(' OUTPUT ');
+    sqlHelper.addSqlSnippet(merge.outputRaw!);
   }
 
-  sqlHelper.addSqlSnippet(' WHEN NOT MATCHED BY TARGET THEN INSERT (');
-  for (var i = 0; i < columns.length; i++) {
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(columns[i], config.identifierDelimiters));
-    if (i < columns.length - 1) {
-      sqlHelper.addSqlSnippet(', ');
-    }
-  }
-  sqlHelper.addSqlSnippet(') VALUES (');
-  for (var i = 0; i < columns.length; i++) {
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(sourceAlias, config.identifierDelimiters));
-    sqlHelper.addSqlSnippet('.');
-    sqlHelper.addSqlSnippet(
-        quoteIdentifier(columns[i], config.identifierDelimiters));
-    if (i < columns.length - 1) {
-      sqlHelper.addSqlSnippet(', ');
-    }
-  }
-  sqlHelper.addSqlSnippet(')');
-
-  if (upsertState.action == UpsertAction.doUpdate) {
-    sqlHelper.addSqlSnippet(' WHEN MATCHED THEN UPDATE SET ');
-    _emitMergeSetList(sqlHelper, config, upsertState, sourceAlias, columns);
-  }
+  // The terminating semicolon is MANDATORY on MERGE. MERGE is top-level, so always emitted.
+  sqlHelper.addSqlSnippet(';');
 
   return sqlHelper;
 }

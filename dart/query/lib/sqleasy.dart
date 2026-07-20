@@ -12,6 +12,8 @@
 library;
 
 export 'src/builder/join_on_builder.dart' show JoinOnBuilder;
+export 'src/builder/merge_builder.dart'
+    show MergeBuilder, source, target, value, raw;
 export 'src/builder/multi_builder.dart' show MultiBuilder;
 export 'src/builder/query_builder.dart'
     show
@@ -52,4 +54,5 @@ export 'src/enums.dart'
 export 'src/errors/parser_error.dart' show ParserArea, ParserError;
 export 'src/expression/scalar.dart' show Fn;
 export 'src/parser/to_sql.dart' show PreparedSql;
-export 'src/state.dart' show QueryState, JoinOnState;
+export 'src/state.dart'
+    show QueryState, JoinOnState, MergeExpr, MergeAssignment;

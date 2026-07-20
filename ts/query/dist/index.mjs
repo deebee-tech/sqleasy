@@ -253,6 +253,8 @@ const ParserArea = {
 	Delete: "Delete",
 	/** Stored procedure/function invocation. */
 	Call: "Call",
+	/** MERGE statement. */
+	Merge: "Merge",
 	/** Cross-clause or unspecified area. */
 	General: "General"
 };
@@ -329,7 +331,9 @@ const QueryType = {
 	/** DELETE statement. */
 	Delete: "Delete",
 	/** Stored procedure/function invocation (`CALL`/`EXEC`/`SELECT func(...)`). */
-	Call: "Call"
+	Call: "Call",
+	/** `MERGE` statement — native T-SQL only. */
+	Merge: "Merge"
 };
 //#endregion
 //#region src/enums/row-lock-mode.ts
@@ -1637,7 +1641,7 @@ const emitComparisonPredicate = (sqlHelper, config, columnSql, whereOperator, va
 };
 //#endregion
 //#region src/parser/default-full-text.ts
-const columnRef$1 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+const columnRef$2 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
 /**
 * Emits a dialect-specific full-text predicate for one or more columns and a bound query term.
 * The query value is appended by the caller via {@link SqlHelper.addDynamicValue}.
@@ -1663,7 +1667,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 			sqlHelper.addSqlSnippet("to_tsvector(");
 			sqlHelper.addSqlSnippet(JSON.stringify("english"));
 			sqlHelper.addSqlSnippet(", ");
-			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 			sqlHelper.addSqlSnippet(") @@ ");
 			sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
 			sqlHelper.addSqlSnippet(JSON.stringify("english"));
@@ -1675,7 +1679,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 		sqlHelper.addSqlSnippet(", ");
 		sqlHelper.addSqlSnippet("concat(");
 		columns.forEach((col, i) => {
-			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 			if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ' ', ");
 		});
 		sqlHelper.addSqlSnippet(")) @@ ");
@@ -1688,7 +1692,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 		if (mode === FullTextMode.Phrase) throw new ParserError(area, "MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw");
 		sqlHelper.addSqlSnippet("MATCH (");
 		columns.forEach((col, i) => {
-			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 			if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
 		});
 		sqlHelper.addSqlSnippet(") AGAINST (");
@@ -1700,12 +1704,12 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 		const col = columns[0];
 		if (mode === FullTextMode.Natural) {
 			sqlHelper.addSqlSnippet("FREETEXT(");
-			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+			sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 			sqlHelper.addSqlSnippet(", ");
 			return;
 		}
 		sqlHelper.addSqlSnippet("CONTAINS(");
-		sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+		sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 		sqlHelper.addSqlSnippet(", ");
 		return;
 	}
@@ -1713,7 +1717,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 		if (columns.length !== 1) throw new ParserError(area, "SQLite FTS MATCH accepts a single FTS column — pass one column or use whereMatchRaw");
 		if (mode !== FullTextMode.Natural && mode !== FullTextMode.Boolean) throw new ParserError(area, "SQLite FTS only supports Natural/Boolean-style MATCH queries");
 		const col = columns[0];
-		sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
+		sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 		sqlHelper.addSqlSnippet(" MATCH ");
 		return;
 	}
@@ -1735,7 +1739,7 @@ const emitFullTextValueSuffix = (sqlHelper, config, mode) => {
 };
 //#endregion
 //#region src/parser/default-json.ts
-const columnRef = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+const columnRef$1 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
 const pgPathLiteral = (path) => {
 	return `'${path.replaceAll("'", "''")}'`;
 };
@@ -1744,7 +1748,7 @@ const pgPathLiteral = (path) => {
 * `path` is a single Postgres key segment (`'email'`) or a JSON path (`'$.email'`) on other dialects.
 */
 const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnName, path, mode, area) => {
-	const col = columnRef(config, tableNameOrAlias, columnName);
+	const col = columnRef$1(config, tableNameOrAlias, columnName);
 	if (config.databaseType === DatabaseType.Postgres) {
 		sqlHelper.addSqlSnippet(col);
 		sqlHelper.addSqlSnippet(mode === JsonExtractMode.Text ? "->>" : "->");
@@ -1796,7 +1800,7 @@ const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnNa
 };
 /** Emits `column @> value` / `JSON_CONTAINS` / equivalent containment predicate (lhs only). */
 const emitJsonContainsExpression = (sqlHelper, config, tableNameOrAlias, columnName, area) => {
-	const col = columnRef(config, tableNameOrAlias, columnName);
+	const col = columnRef$1(config, tableNameOrAlias, columnName);
 	if (config.databaseType === DatabaseType.Postgres) {
 		sqlHelper.addSqlSnippet(col);
 		sqlHelper.addSqlSnippet(" @> ");
@@ -2227,6 +2231,186 @@ const defaultInsert = (state, config, mode, options) => {
 		if (r < insertState.values.length - 1) sqlHelper.addSqlSnippet(", ");
 	}
 	if (state.upsertState) emitUpsertClause(sqlHelper, config, state.upsertState, ParserArea.Insert);
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-merge.ts
+const qi = (name, config) => quoteIdentifier(name, config.identifierDelimiters);
+/** `alias.column`, both quoted. */
+const columnRef = (config, alias, column) => qi(alias, config) + "." + qi(column, config);
+const usingAlias = (state) => state.using ? state.using.alias : "source";
+/** Emit one MERGE RHS expression — a source/target column, a bound literal, or raw SQL. */
+const emitExpr = (sqlHelper, config, state, expr) => {
+	switch (expr.kind) {
+		case "source":
+			sqlHelper.addSqlSnippet(columnRef(config, usingAlias(state), expr.columnName));
+			return;
+		case "target":
+			sqlHelper.addSqlSnippet(columnRef(config, state.targetAlias, expr.columnName));
+			return;
+		case "value":
+			sqlHelper.addDynamicValue(expr.value);
+			return;
+		case "raw":
+			sqlHelper.addSqlSnippet(expr.sql);
+			return;
+	}
+};
+/** `AND <condition>` guard on a WHEN clause, via the shared join-on predicate machinery. */
+const emitAnd = (sqlHelper, config, when) => {
+	if (!when.and || when.and.length === 0) return;
+	sqlHelper.addSqlSnippet(" AND ");
+	renderJoinOnConditions(sqlHelper, config, when.and);
+};
+const emitAction = (sqlHelper, config, state, action) => {
+	switch (action.kind) {
+		case "delete":
+			sqlHelper.addSqlSnippet("DELETE");
+			return;
+		case "update":
+			sqlHelper.addSqlSnippet("UPDATE SET ");
+			if (action.raw !== void 0) {
+				sqlHelper.addSqlSnippet(action.raw);
+				return;
+			}
+			if (action.assignments.length === 0) throw new ParserError(ParserArea.Merge, "MERGE UPDATE requires at least one SET assignment");
+			action.assignments.forEach((assignment, i) => {
+				sqlHelper.addSqlSnippet(qi(assignment.columnName, config));
+				sqlHelper.addSqlSnippet(" = ");
+				emitExpr(sqlHelper, config, state, assignment.value);
+				if (i < action.assignments.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			return;
+		case "insert":
+			if (action.columns.length !== action.values.length) throw new ParserError(ParserArea.Merge, "MERGE INSERT column count must equal the VALUES count");
+			sqlHelper.addSqlSnippet("INSERT (");
+			action.columns.forEach((column, i) => {
+				sqlHelper.addSqlSnippet(qi(column, config));
+				if (i < action.columns.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(") VALUES (");
+			action.values.forEach((expr, i) => {
+				emitExpr(sqlHelper, config, state, expr);
+				if (i < action.values.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(")");
+			return;
+		case "insertDefaultValues":
+			sqlHelper.addSqlSnippet("INSERT DEFAULT VALUES");
+			return;
+	}
+};
+const whenKeyword = (match) => {
+	switch (match) {
+		case "matched": return "WHEN MATCHED";
+		case "notMatchedByTarget": return "WHEN NOT MATCHED BY TARGET";
+		case "notMatchedBySource": return "WHEN NOT MATCHED BY SOURCE";
+	}
+};
+const emitUsing = (sqlHelper, config, mode, using, options) => {
+	sqlHelper.addSqlSnippet("USING ");
+	switch (using.kind) {
+		case "values":
+			if (using.rows.length === 0) throw new ParserError(ParserArea.Merge, "MERGE USING (VALUES …) requires at least one row");
+			sqlHelper.addSqlSnippet("(VALUES ");
+			using.rows.forEach((row, r) => {
+				if (row.length !== using.columns.length) throw new ParserError(ParserArea.Merge, "MERGE USING VALUES row width must equal the column count");
+				sqlHelper.addSqlSnippet("(");
+				row.forEach((cell, c) => {
+					sqlHelper.addDynamicValue(cell);
+					if (c < row.length - 1) sqlHelper.addSqlSnippet(", ");
+				});
+				sqlHelper.addSqlSnippet(")");
+				if (r < using.rows.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(") AS ");
+			sqlHelper.addSqlSnippet(qi(using.alias, config));
+			sqlHelper.addSqlSnippet(" (");
+			using.columns.forEach((column, i) => {
+				sqlHelper.addSqlSnippet(qi(column, config));
+				if (i < using.columns.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(")");
+			return;
+		case "table":
+			if (using.owner !== void 0 && using.owner !== "") {
+				sqlHelper.addSqlSnippet(qi(using.owner, config));
+				sqlHelper.addSqlSnippet(".");
+			}
+			sqlHelper.addSqlSnippet(qi(using.table, config));
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(qi(using.alias, config));
+			return;
+		case "select": {
+			const sub = defaultToSql(using.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues("(" + sub.getSql() + ")", sub.getValues());
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(qi(using.alias, config));
+			return;
+		}
+		case "raw":
+			sqlHelper.addSqlSnippet(using.sql);
+			sqlHelper.addSqlSnippet(" AS ");
+			sqlHelper.addSqlSnippet(qi(using.alias, config));
+			return;
+	}
+};
+const unconditionalCount = (whens, match) => whens.filter((w) => w.match === match && (!w.and || w.and.length === 0)).length;
+/**
+* Validates the WHEN-clause cardinality T-SQL enforces, so a MERGE SQL Server would reject at
+* runtime (Msg 10714/10715) never leaves the builder — the same "don't emit unrunnable SQL" rule
+* the rest of the surface holds to.
+*/
+const validateWhenCardinality = (state) => {
+	const whens = state.whenStates;
+	if (whens.length === 0) throw new ParserError(ParserArea.Merge, "MERGE requires at least one WHEN clause");
+	const matched = whens.filter((w) => w.match === "matched");
+	if (matched.length > 2) throw new ParserError(ParserArea.Merge, "MERGE allows at most two WHEN MATCHED clauses (one UPDATE and one DELETE)");
+	if (matched.length === 2) {
+		const kinds = new Set(matched.map((w) => w.action.kind));
+		if (!(kinds.has("update") && kinds.has("delete"))) throw new ParserError(ParserArea.Merge, "two WHEN MATCHED clauses must be one UPDATE and one DELETE, not two of the same");
+		if (!matched[0].and || matched[0].and.length === 0) throw new ParserError(ParserArea.Merge, "with two WHEN MATCHED clauses the first must carry an AND condition");
+	}
+	if (unconditionalCount(whens, "matched") > 1) throw new ParserError(ParserArea.Merge, "MERGE allows at most one unconditional WHEN MATCHED");
+	if (unconditionalCount(whens, "notMatchedByTarget") > 1) throw new ParserError(ParserArea.Merge, "MERGE allows at most one unconditional WHEN NOT MATCHED BY TARGET");
+};
+/**
+* Renders a T-SQL `MERGE` statement from {@link MergeState}. Native T-SQL only — every other
+* dialect is refused, because MERGE exists nowhere else and the builder does not approximate it.
+* This replaced the parked upsert-shaped emitter, which structurally could not carry a USING
+* alias, an arbitrary ON, WHEN NOT MATCHED BY SOURCE, DELETE arms, or multiple WHENs.
+*/
+const defaultMerge = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (config.databaseType !== DatabaseType.Mssql) throw new ParserError(ParserArea.Merge, `${dialectDisplayName(config.databaseType)} has no MERGE statement — it is native T-SQL only`);
+	const merge = state.mergeState;
+	if (!merge || !merge.targetTable) throw new ParserError(ParserArea.Merge, "MERGE requires a target table — call into(...)");
+	if (!merge.using) throw new ParserError(ParserArea.Merge, "MERGE requires a USING source");
+	if (merge.onStates.length === 0) throw new ParserError(ParserArea.Merge, "MERGE requires an ON condition");
+	validateWhenCardinality(merge);
+	sqlHelper.addSqlSnippet("MERGE INTO ");
+	sqlHelper.addSqlSnippet(qi(merge.targetOwner !== void 0 && merge.targetOwner !== "" ? merge.targetOwner : config.defaultOwner, config));
+	sqlHelper.addSqlSnippet(".");
+	sqlHelper.addSqlSnippet(qi(merge.targetTable, config));
+	if (merge.holdlock === true) sqlHelper.addSqlSnippet(" WITH (HOLDLOCK)");
+	sqlHelper.addSqlSnippet(" AS ");
+	sqlHelper.addSqlSnippet(qi(merge.targetAlias, config));
+	sqlHelper.addSqlSnippet(" ");
+	emitUsing(sqlHelper, config, mode, merge.using, options);
+	sqlHelper.addSqlSnippet(" ON ");
+	renderJoinOnConditions(sqlHelper, config, merge.onStates);
+	for (const when of merge.whenStates) {
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippet(whenKeyword(when.match));
+		emitAnd(sqlHelper, config, when);
+		sqlHelper.addSqlSnippet(" THEN ");
+		emitAction(sqlHelper, config, merge, when.action);
+	}
+	if (merge.outputRaw !== void 0) {
+		sqlHelper.addSqlSnippet(" OUTPUT ");
+		sqlHelper.addSqlSnippet(merge.outputRaw);
+	}
+	sqlHelper.addSqlSnippet(";");
 	return sqlHelper;
 };
 //#endregion
@@ -2869,6 +3053,11 @@ const defaultToSql = (state, config, mode, options) => {
 	if (state.rowLock && state.queryType !== QueryType.Select) throw new ParserError(ParserArea.General, "FOR UPDATE/FOR SHARE requires a SELECT query");
 	if (state.upsertState && state.queryType !== QueryType.Insert) throw new ParserError(ParserArea.Insert, "Upsert (ON CONFLICT) requires INSERT");
 	if (state.callState && state.queryType !== QueryType.Call) throw new ParserError(ParserArea.Call, "Procedure/function call state requires queryType Call");
+	if (state.queryType === QueryType.Merge) {
+		const merge = defaultMerge(state, config, mode, options);
+		sqlHelper.addSqlSnippetWithValues(merge.getSql(), merge.getValues());
+		return sqlHelper;
+	}
 	if (state.queryType === QueryType.Call) {
 		if (state.cteStates.length > 0) throw new ParserError(ParserArea.Call, "A CTE cannot be combined with a procedure/function call");
 		if (state.returningState) throw new ParserError(ParserArea.Call, "RETURNING/OUTPUT cannot be combined with a procedure/function call");
@@ -3149,6 +3338,7 @@ const createQueryState = () => ({
 	insertState: void 0,
 	updateStates: [],
 	upsertState: void 0,
+	mergeState: void 0,
 	returningState: void 0,
 	rowLock: void 0,
 	callState: void 0,
@@ -3338,6 +3528,190 @@ var JoinOnBuilder = class JoinOnBuilder {
 	states = () => {
 		return this.#states;
 	};
+};
+//#endregion
+//#region src/state/merge.ts
+/** Creates a {@link MergeState} with default field values. */
+const createMergeState = () => ({
+	targetOwner: void 0,
+	targetTable: void 0,
+	targetAlias: "target",
+	holdlock: void 0,
+	using: void 0,
+	onStates: [],
+	whenStates: [],
+	outputRaw: void 0
+});
+//#endregion
+//#region src/builder/merge.ts
+/** `source.<col>` — a reference to the USING source row (the common MERGE RHS). */
+const source = (columnName) => ({
+	kind: "source",
+	columnName
+});
+/** `target.<col>` — a reference to the target row. */
+const target = (columnName) => ({
+	kind: "target",
+	columnName
+});
+/** A genuine bound literal (`@pN`), for the rarer case where a WHEN action assigns a constant. */
+const value = (v) => ({
+	kind: "value",
+	value: v
+});
+/** A raw SQL fragment for an RHS the structured forms cannot express. */
+const raw = (sql) => ({
+	kind: "raw",
+	sql
+});
+/**
+* Builds a T-SQL `MERGE` statement, one clause per method, in the grammar's own vocabulary.
+*
+* MERGE is native T-SQL and exists on no other dialect; {@link QueryBuilder.merge} stores this
+* state and the parser refuses it everywhere but MSSQL. This is a whole statement, not an INSERT
+* with a conflict clause — that conflation was the removed lie.
+*
+* Populated through a callback, the same shape as `joinTable((j) => …)` and
+* `selectWindow(fn, (w) => …)`.
+*/
+var MergeBuilder = class {
+	#state = createMergeState();
+	#config;
+	constructor(config) {
+		this.#config = config;
+	}
+	#child = () => new QueryBuilder(this.#config);
+	#collectAnd = (and) => {
+		if (!and) return;
+		const j = new JoinOnBuilder(this.#config);
+		and(j);
+		return j.states();
+	};
+	#pushWhen = (match, action, and) => {
+		this.#state.whenStates.push({
+			match,
+			and: this.#collectAnd(and),
+			action
+		});
+		return this;
+	};
+	/** `MERGE INTO <table> [AS alias]` — target defaults to the alias `target`, owner to the dialect default. */
+	into = (table, alias = "target") => {
+		this.#state.targetTable = table;
+		this.#state.targetAlias = alias;
+		return this;
+	};
+	/** `MERGE INTO <owner>.<table> [AS alias]`. */
+	intoWithOwner = (owner, table, alias = "target") => {
+		this.#state.targetOwner = owner;
+		this.#state.targetTable = table;
+		this.#state.targetAlias = alias;
+		return this;
+	};
+	/**
+	* `WITH (HOLDLOCK)` on the target.
+	*
+	* A MERGE used as an upsert is race-prone at READ COMMITTED without it — under concurrency an
+	* un-hinted MERGE can still raise a duplicate-key violation, which `HOLDLOCK` (a SERIALIZABLE
+	* hint on the target only) prevents. The builder does not add it for you: it emits the MERGE you
+	* wrote, and this is how you write the concurrency-safe one.
+	*/
+	holdlock = (on = true) => {
+		this.#state.holdlock = on;
+		return this;
+	};
+	/** `USING (VALUES …) AS alias (columns)` — one or more literal rows. */
+	usingValues = (alias, columns, rows) => {
+		this.#state.using = {
+			kind: "values",
+			alias,
+			columns,
+			rows
+		};
+		return this;
+	};
+	/** `USING <table> AS alias`. */
+	usingTable = (table, alias, owner) => {
+		this.#state.using = {
+			kind: "table",
+			owner,
+			table,
+			alias
+		};
+		return this;
+	};
+	/** `USING (<subquery>) AS alias`. */
+	usingSelect = (alias, build) => {
+		const child = this.#child();
+		build(child);
+		child.state().isInnerStatement = true;
+		this.#state.using = {
+			kind: "select",
+			alias,
+			subquery: child.state()
+		};
+		return this;
+	};
+	/** `USING <raw> AS alias`, for a source the structured forms cannot express (APPLY, TVF, …). */
+	usingRaw = (sql, alias) => {
+		this.#state.using = {
+			kind: "raw",
+			alias,
+			sql
+		};
+		return this;
+	};
+	/** `ON <merge_search_condition>` — required; full predicate strength via {@link JoinOnBuilder}. */
+	on = (build) => {
+		const j = new JoinOnBuilder(this.#config);
+		build(j);
+		this.#state.onStates = j.states();
+		return this;
+	};
+	/** `WHEN MATCHED [AND …] THEN UPDATE SET …`. */
+	whenMatchedThenUpdate = (assignments, and) => this.#pushWhen("matched", {
+		kind: "update",
+		assignments,
+		raw: void 0
+	}, and);
+	/** `WHEN MATCHED [AND …] THEN UPDATE SET <raw>`. */
+	whenMatchedThenUpdateRaw = (raw, and) => this.#pushWhen("matched", {
+		kind: "update",
+		assignments: [],
+		raw
+	}, and);
+	/** `WHEN MATCHED [AND …] THEN DELETE`. */
+	whenMatchedThenDelete = (and) => this.#pushWhen("matched", { kind: "delete" }, and);
+	/** `WHEN NOT MATCHED [BY TARGET] [AND …] THEN INSERT (columns) VALUES (…)`. */
+	whenNotMatchedThenInsert = (columns, values, and) => this.#pushWhen("notMatchedByTarget", {
+		kind: "insert",
+		columns,
+		values
+	}, and);
+	/** `WHEN NOT MATCHED [BY TARGET] [AND …] THEN INSERT DEFAULT VALUES`. */
+	whenNotMatchedThenInsertDefaultValues = (and) => this.#pushWhen("notMatchedByTarget", { kind: "insertDefaultValues" }, and);
+	/** `WHEN NOT MATCHED BY SOURCE [AND …] THEN UPDATE SET …`. */
+	whenNotMatchedBySourceThenUpdate = (assignments, and) => this.#pushWhen("notMatchedBySource", {
+		kind: "update",
+		assignments,
+		raw: void 0
+	}, and);
+	/** `WHEN NOT MATCHED BY SOURCE [AND …] THEN DELETE`. */
+	whenNotMatchedBySourceThenDelete = (and) => this.#pushWhen("notMatchedBySource", { kind: "delete" }, and);
+	/**
+	* `OUTPUT <expression>` as a raw fragment, e.g. `$action, inserted.id, deleted.status`.
+	*
+	* Deliberately raw, and the only OUTPUT form offered here. MERGE's OUTPUT is materially richer
+	* than an INSERT/UPDATE/DELETE OUTPUT — it exposes the per-row `$action` and can mix `inserted.*`
+	* and `deleted.*` in one row — so a structured `output(columns)` that quietly captured a single
+	* side would be exactly the kind of half-true convenience this library refuses. Write the
+	* expression; the builder does not pretend to know which side each column comes from.
+	*/
+	outputRaw = (sql) => {
+		this.#state.outputRaw = sql;
+		return this;
+	};
+	state = () => this.#state;
 };
 //#endregion
 //#region src/state/window.ts
@@ -4620,6 +4994,19 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/**
+	* Assembles a T-SQL `MERGE` statement via a {@link MergeBuilder} callback — native T-SQL only;
+	* the parser refuses it on every other dialect. MERGE is its own statement kind, mutually
+	* exclusive with SELECT/INSERT/UPDATE/DELETE, so this flips {@link QueryType} the way
+	* `insertInto` does rather than contributing a clause the way `joinTable` does.
+	*/
+	merge = (build) => {
+		this.#state.queryType = QueryType.Merge;
+		const mergeBuilder = new MergeBuilder(this.#config);
+		build(mergeBuilder);
+		this.#state.mergeState = mergeBuilder.state();
+		return this;
+	};
 	insertInto = (tableName) => {
 		this.#state.queryType = QueryType.Insert;
 		if (!this.#state.insertState) this.#state.insertState = createInsertState();
@@ -5650,6 +6037,6 @@ const Fn = {
 	}
 };
 //#endregion
-export { BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, sqliteConfiguration };
+export { BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 
 //# sourceMappingURL=index.mjs.map

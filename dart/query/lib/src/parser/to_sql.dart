@@ -10,6 +10,7 @@ import '../state.dart';
 import '../values/mssql_parameter.dart';
 import '../values/sql_value.dart';
 import 'default_call.dart';
+import 'default_merge.dart';
 import 'default_cte.dart';
 import 'default_delete.dart';
 import 'default_from.dart';
@@ -128,6 +129,13 @@ SqlHelper defaultToSql(
   if (state.callState != null && state.queryType != QueryType.call) {
     throw ParserError(ParserArea.call,
         'Procedure/function call state requires queryType Call');
+  }
+
+  if (state.queryType == QueryType.merge) {
+    // MERGE emits its own mandatory terminating semicolon and is never an inner statement.
+    final merge = defaultMerge(state, config, mode, options);
+    sqlHelper.addSqlSnippetWithValues(merge.getSql(), merge.getValues());
+    return sqlHelper;
   }
 
   if (state.queryType == QueryType.call) {

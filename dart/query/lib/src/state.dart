@@ -27,6 +27,9 @@ class QueryState {
   /// INSERT conflict clause (upsert); null when not configured.
   UpsertState? upsertState;
 
+  /// MERGE statement (native T-SQL only); null when not a MERGE.
+  MergeState? mergeState;
+
   /// RETURNING/OUTPUT clause for INSERT/UPDATE/DELETE; null when not configured.
   ReturningState? returningState;
 
@@ -268,6 +271,117 @@ class UpsertSetState {
 
   String columnName;
   Object? value;
+}
+
+/// A right-hand-side expression in a MERGE `SET` or `INSERT ... VALUES` — usually a reference to
+/// the source row (`source.col`), not a bound literal, which is why this is a sealed union rather
+/// than a plain value.
+sealed class MergeExpr {
+  const MergeExpr();
+}
+
+class MergeSourceExpr extends MergeExpr {
+  const MergeSourceExpr(this.columnName);
+  final String columnName;
+}
+
+class MergeTargetExpr extends MergeExpr {
+  const MergeTargetExpr(this.columnName);
+  final String columnName;
+}
+
+class MergeValueExpr extends MergeExpr {
+  const MergeValueExpr(this.value);
+  final Object? value;
+}
+
+class MergeRawExpr extends MergeExpr {
+  const MergeRawExpr(this.sql);
+  final String sql;
+}
+
+/// How the MERGE `USING` source is expressed.
+sealed class MergeUsing {
+  const MergeUsing(this.alias);
+  final String alias;
+}
+
+class MergeUsingValues extends MergeUsing {
+  const MergeUsingValues(super.alias, this.columns, this.rows);
+  final List<String> columns;
+  final List<List<Object?>> rows;
+}
+
+class MergeUsingTable extends MergeUsing {
+  const MergeUsingTable(super.alias, this.table, this.owner);
+  final String table;
+  final String? owner;
+}
+
+class MergeUsingSelect extends MergeUsing {
+  const MergeUsingSelect(super.alias, this.subquery);
+  final QueryState subquery;
+}
+
+class MergeUsingRaw extends MergeUsing {
+  const MergeUsingRaw(super.alias, this.sql);
+  final String sql;
+}
+
+/// One SET assignment inside a WHEN … THEN UPDATE arm.
+class MergeAssignment {
+  MergeAssignment(this.columnName, this.value);
+  final String columnName;
+  final MergeExpr value;
+}
+
+/// The action taken by one WHEN clause.
+sealed class MergeWhenAction {
+  const MergeWhenAction();
+}
+
+class MergeUpdateAction extends MergeWhenAction {
+  const MergeUpdateAction(this.assignments, this.raw);
+  final List<MergeAssignment> assignments;
+  final String? raw;
+}
+
+class MergeDeleteAction extends MergeWhenAction {
+  const MergeDeleteAction();
+}
+
+class MergeInsertAction extends MergeWhenAction {
+  const MergeInsertAction(this.columns, this.values);
+  final List<String> columns;
+  final List<MergeExpr> values;
+}
+
+class MergeInsertDefaultValuesAction extends MergeWhenAction {
+  const MergeInsertDefaultValuesAction();
+}
+
+/// Which side of the match a WHEN clause fires on.
+enum MergeWhenMatch { matched, notMatchedByTarget, notMatchedBySource }
+
+/// One WHEN clause of a MERGE, in author order.
+class MergeWhenState {
+  MergeWhenState(this.match, this.and, this.action);
+  final MergeWhenMatch match;
+  final List<JoinOnState>? and;
+  final MergeWhenAction action;
+}
+
+/// State for a T-SQL `MERGE`. Native T-SQL only; a first-class statement, NOT an INSERT carrying
+/// an upsert clause.
+class MergeState {
+  String? targetOwner;
+  String? targetTable;
+  String targetAlias = 'target';
+  bool? holdlock;
+  MergeUsing? using;
+  List<JoinOnState> onStates = [];
+  List<MergeWhenState> whenStates = [];
+  String? outputRaw;
 }
 
 /// Holds state for a SELECT's row-locking clause (`FOR UPDATE`/`FOR SHARE`, or MSSQL's

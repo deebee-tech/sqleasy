@@ -168,19 +168,35 @@ List<Map<String, Object?>>? _flatScalarValues(GoldenCase c) {
 }
 
 Iterable<Map<String, Object?>> _inputValuesOf(GoldenCase c) sync* {
+  // An input value is a `{"t": ..., "v": ...}` map and nothing else. A MERGE `values` list holds
+  // MergeExpr objects (`{"kind": "source", ...}`), NOT input values, so every yield is guarded on
+  // the presence of a `t` tag rather than assuming a given key always holds input values.
+  bool isTagged(Object? v) => v is Map<String, Object?> && v.containsKey('t');
+
   Iterable<Map<String, Object?>> walk(List<Map<String, Object?>> ops) sync* {
     for (final op in ops) {
       for (final key in const ['value', 'from', 'to']) {
         final v = op[key];
-        if (v is Map<String, Object?>) yield v;
+        if (isTagged(v)) yield v! as Map<String, Object?>;
       }
       final values = op['values'];
       if (values is List) {
         for (final v in values) {
-          if (v is Map<String, Object?>) yield v;
+          if (isTagged(v)) yield v! as Map<String, Object?>;
         }
       }
-      for (final key in const ['ops', 'on']) {
+      // MERGE `usingValues` holds tagged values two levels down: rows -> row -> value.
+      final rows = op['rows'];
+      if (rows is List) {
+        for (final row in rows) {
+          if (row is List) {
+            for (final v in row) {
+              if (isTagged(v)) yield v! as Map<String, Object?>;
+            }
+          }
+        }
+      }
+      for (final key in const ['ops', 'on', 'and']) {
         final nested = op[key];
         if (nested is List) {
           yield* walk(nested.cast<Map<String, Object?>>());

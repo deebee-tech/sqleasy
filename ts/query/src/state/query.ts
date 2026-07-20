@@ -5,6 +5,7 @@ import type { FromState } from './from';
 import type { GroupByState } from './group-by';
 import type { HavingState } from './having';
 import type { InsertState } from './insert';
+import type { MergeState } from './merge';
 import type { JoinState } from './join';
 import type { OrderByState } from './order-by';
 import type { ReturningState } from './returning';
@@ -49,6 +50,8 @@ export type QueryState = {
   updateStates: UpdateState[];
   /** INSERT conflict clause (upsert); undefined when not configured. */
   upsertState: UpsertState | undefined;
+  /** MERGE statement (native T-SQL only); undefined when not a MERGE. */
+  mergeState: MergeState | undefined;
   /** RETURNING/OUTPUT clause for INSERT/UPDATE/DELETE; undefined when not configured. */
   returningState: ReturningState | undefined;
   /** Row-locking clause for SELECT (`FOR UPDATE`/`FOR SHARE`); undefined when not configured. */
@@ -97,6 +100,7 @@ export const createQueryState = (): QueryState => ({
   insertState: undefined,
   updateStates: [],
   upsertState: undefined,
+  mergeState: undefined,
   returningState: undefined,
   rowLock: undefined,
   callState: undefined,

@@ -131,9 +131,96 @@ void _applyWindow(WindowBuilder w, List<Map<String, Object?>> windowOps) {
   }
 }
 
+MergeExpr _mergeExpr(Map<String, Object?> o) {
+  switch (o['kind']) {
+    case 'source':
+      return source(o['column']! as String);
+    case 'target':
+      return target(o['column']! as String);
+    case 'value':
+      return value(decodeInputValue(o['value']! as Map<String, Object?>));
+    case 'raw':
+      return raw(o['sql']! as String);
+    default:
+      throw StateError('unknown merge expr kind "${o['kind']}"');
+  }
+}
+
+List<MergeAssignment> _mergeAssignments(Map<String, Object?> op) =>
+    ((op['assignments'] as List<Object?>?) ?? const [])
+        .cast<Map<String, Object?>>()
+        .map((a) => MergeAssignment(a['column']! as String,
+            _mergeExpr(a['expr']! as Map<String, Object?>)))
+        .toList();
+
+void Function(JoinOnBuilder)? _andArg(Map<String, Object?> op) =>
+    op['and'] == null ? null : (j) => _applyJoinOn(j, _ops(op, 'and'));
+
+void _applyMerge(MergeBuilder m, List<Map<String, Object?>> mergeOps) {
+  for (final op in mergeOps) {
+    switch (op['op']) {
+      case 'into':
+        m.into(_str(op, 'table'), _optStr(op, 'alias') ?? 'target');
+      case 'intoWithOwner':
+        m.intoWithOwner(_str(op, 'owner'), _str(op, 'table'),
+            _optStr(op, 'alias') ?? 'target');
+      case 'holdlock':
+        m.holdlock(op['on'] == null ? true : op['on']! as bool);
+      case 'usingValues':
+        m.usingValues(
+          _str(op, 'alias'),
+          _strs(op, 'columns'),
+          ((op['rows'] as List<Object?>?) ?? const [])
+              .cast<List<Object?>>()
+              .map((row) => row
+                  .map((v) => decodeInputValue(v! as Map<String, Object?>))
+                  .toList())
+              .toList(),
+        );
+      case 'usingTable':
+        m.usingTable(
+            _str(op, 'table'), _str(op, 'alias'), _optStr(op, 'owner'));
+      case 'usingSelect':
+        m.usingSelect(_str(op, 'alias'), (q) => applyOps(q, _ops(op)));
+      case 'usingRaw':
+        m.usingRaw(_str(op, 'sql'), _str(op, 'alias'));
+      case 'on':
+        m.on((j) => _applyJoinOn(j, _ops(op)));
+      case 'whenMatchedThenUpdate':
+        m.whenMatchedThenUpdate(_mergeAssignments(op), _andArg(op));
+      case 'whenMatchedThenUpdateRaw':
+        m.whenMatchedThenUpdateRaw(_str(op, 'raw'), _andArg(op));
+      case 'whenMatchedThenDelete':
+        m.whenMatchedThenDelete(_andArg(op));
+      case 'whenNotMatchedThenInsert':
+        m.whenNotMatchedThenInsert(
+          _strs(op, 'columns'),
+          ((op['values'] as List<Object?>?) ?? const [])
+              .cast<Map<String, Object?>>()
+              .map(_mergeExpr)
+              .toList(),
+          _andArg(op),
+        );
+      case 'whenNotMatchedThenInsertDefaultValues':
+        m.whenNotMatchedThenInsertDefaultValues(_andArg(op));
+      case 'whenNotMatchedBySourceThenUpdate':
+        m.whenNotMatchedBySourceThenUpdate(_mergeAssignments(op), _andArg(op));
+      case 'whenNotMatchedBySourceThenDelete':
+        m.whenNotMatchedBySourceThenDelete(_andArg(op));
+      case 'outputRaw':
+        m.outputRaw(_str(op, 'sql'));
+      default:
+        throw StateError('unknown merge op "${op['op']}"');
+    }
+  }
+}
+
 void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
   for (final op in ops) {
     switch (op['op']) {
+      // ---- MERGE ----
+      case 'merge':
+        b.merge((m) => _applyMerge(m, _ops(op)));
       // ---- SELECT ----
       case 'selectAll':
         b.selectAll();

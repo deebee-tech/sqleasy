@@ -14,6 +14,7 @@ enum ParserArea {
   update('Update'),
   delete('Delete'),
   call('Call'),
+  merge('Merge'),
   general('General');
 
   const ParserArea(this.value);
