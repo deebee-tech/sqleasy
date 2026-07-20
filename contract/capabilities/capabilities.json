@@ -28,8 +28,8 @@
       "absent": 31,
       "unadjudicated": 116
     },
-    "adjudicated": 59,
-    "namesAssigned": 25
+    "adjudicated": 60,
+    "namesAssigned": 26
   },
   "ops": {
     "and": {
@@ -851,9 +851,9 @@
     "forUpdate": {
       "cells": {
         "mssql": {
-          "name": "",
+          "name": "updlock",
           "kind": "native",
-          "adjudicated": false,
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,

@@ -77,7 +77,7 @@
       }
     },
     "forUpdate": {
-      "_why": "Postgres and MySQL have a statement-level FOR UPDATE that locks every table the statement reads \u2014 one clause, no placement question. MSSQL has no such clause at all: its nearest equivalent is a WITH (UPDLOCK, ROWLOCK) hint, and T-SQL's table_hint production attaches to a table_or_view_name, i.e. ONE table reference. Through 10.x the hint was emitted only in the FROM-table branch, so a joined table was read at plain READ COMMITTED while the caller believed the whole result was locked, and a derived-table or TVF source got no hint anywhere. Silent, and a data-integrity bug rather than a syntax one.\n\nThe corpus could not have caught it: of 322 cases, 8 use a row lock and NONE combines one with a join or a non-table FROM. A hand-written test asserted the bug outright, named 'MSSQL applies the hint to the FROM table even alongside a JOIN'.\n\nFixed 2026-07-20: the hint now reaches every table reference, and MSSQL REFUSES where T-SQL has nowhere to put one. SQLite has no row-level locking at any version \u2014 its locking is whole-database/WAL-level.\n\nMSSQL NAME LEFT EMPTY: forUpdate is Postgres/MySQL vocabulary. A T-SQL DBA looks for UPDLOCK, not FOR UPDATE. Re-homing it under the engine's own term is queued with the typed surface.",
+      "_why": "Postgres and MySQL have a statement-level FOR UPDATE that locks every table the statement reads \u2014 one clause, no placement question. MSSQL has no such clause at all: its nearest equivalent is a WITH (UPDLOCK, ROWLOCK) hint, and T-SQL's table_hint production attaches to a table_or_view_name, i.e. ONE table reference. Through 10.x the hint was emitted only in the FROM-table branch, so a joined table was read at plain READ COMMITTED while the caller believed the whole result was locked, and a derived-table or TVF source got no hint anywhere. Silent, and a data-integrity bug rather than a syntax one.\n\nThe corpus could not have caught it: of 322 cases, 8 use a row lock and NONE combines one with a join or a non-table FROM. A hand-written test asserted the bug outright, named 'MSSQL applies the hint to the FROM table even alongside a JOIN'.\n\nFixed 2026-07-20: the hint now reaches every table reference, and MSSQL REFUSES where T-SQL has nowhere to put one. SQLite has no row-level locking at any version \u2014 its locking is whole-database/WAL-level.\n\nMSSQL NAME = 'updlock' (Sandy's decision 2026-07-20). forUpdate is Postgres/MySQL vocabulary; a T-SQL DBA reaches for UPDLOCK, which is exactly what the hint emits \u2014 WITH (UPDLOCK, ROWLOCK). So the shared portable name does NOT derive here: Postgres and MySQL name it forUpdate, MSSQL names it updlock, and those are different real terms. The METHOD rename to .updlock() on the MSSQL builder lands with the typed surface; this cell records the target name now so the surface work has it.",
       "postgres": {
         "kind": "native",
         "name": "forUpdate",
@@ -90,8 +90,8 @@
       },
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "updlock",
+        "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
