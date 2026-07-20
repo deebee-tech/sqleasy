@@ -8,6 +8,10 @@ import 'comparison_operator.dart';
 import 'default_full_text.dart';
 import 'default_json.dart';
 
+/// Stand-in column name used while rendering a comparison against a JSON extraction, then
+/// substituted for the real expression. Deliberately unquotable and unlikely to occur in user data.
+const _jsonColumnSentinel = '___json___';
+
 void emitJsonExtractPredicate(
   SqlHelper sqlHelper,
   Dialect config,
@@ -28,8 +32,16 @@ void emitJsonExtractPredicate(
         area, 'JSON extract predicate requires table, column, path, and mode');
   }
 
+  // The comparison operators are written against a plain column reference, so the JSON extraction
+  // is rendered under a sentinel name and then substituted back in.
+  //
+  // This used to strip the sentinel by matching three hard-coded PREFIXES, which silently assumed
+  // every operator puts the column first. Any operator that wraps it instead —
+  // `REGEXP_LIKE(col, ?, 'i')` — matches none of them, and the sentinel leaks into the emitted SQL
+  // as a nonexistent column. Substituting every occurrence works for any operator shape.
+  final jsonScratch = SqlHelper(mode);
   emitJsonExtractExpression(
-    sqlHelper,
+    jsonScratch,
     config,
     tableNameOrAlias,
     columnName,
@@ -37,27 +49,31 @@ void emitJsonExtractPredicate(
     jsonExtractMode,
     area,
   );
+  final jsonSql = jsonScratch.getSql();
 
   final scratch = SqlHelper(mode);
   emitComparisonPredicate(
     scratch,
     config,
-    '___json___',
+    _jsonColumnSentinel,
     whereOperator,
     values.isNotEmpty ? values[0] : null,
     area,
   );
-  var tail = scratch.getSql();
-  if (tail.startsWith('___json___ ')) {
-    tail = tail.substring('___json___ '.length);
-  } else if (tail.startsWith('LOWER(___json___)')) {
-    tail = 'LOWER(${tail.substring('LOWER(___json___)'.length)}';
-  } else if (tail.startsWith('NOT (___json___')) {
-    tail = 'NOT (${tail.substring('NOT (___json___'.length)}';
+
+  final predicate = scratch.getSql().split(_jsonColumnSentinel).join(jsonSql);
+
+  if (predicate.contains(_jsonColumnSentinel)) {
+    throw ParserError(
+        area, 'JSON predicate failed to resolve its column reference');
   }
 
-  sqlHelper.addSqlSnippet(' ');
-  sqlHelper.addSqlSnippetWithValues(tail, scratch.getValues());
+  // The extraction's own bound values come first because it is leftmost in every operator shape
+  // emitted here; positional placeholders would otherwise bind in the wrong order.
+  sqlHelper.addSqlSnippetWithValues(predicate, [
+    ...jsonScratch.getValues(),
+    ...scratch.getValues(),
+  ]);
 }
 
 void emitJsonContainsPredicate(

@@ -502,6 +502,26 @@ const ParserMode = {
 	None: "None"
 };
 //#endregion
+//#region src/helpers/dialect-name.ts
+/**
+* How a dialect is named in a refusal message, so every one of them reads `<Dialect> has no ...`.
+*
+* Refusals are part of the contract — the golden corpus pins their exact text and every language
+* port reproduces it — so the spelling has to come from one place rather than being retyped at each
+* throw site.
+*
+* `Unknown` is a real member of {@link DatabaseType} and reaches here whenever a dialect branch
+* falls through, so it gets a reading that is honest about not knowing rather than blaming whichever
+* engine happened to be last in the chain.
+*/
+const dialectDisplayName = (databaseType) => ({
+	[DatabaseType.Mssql]: "MSSQL",
+	[DatabaseType.Mysql]: "MySQL",
+	[DatabaseType.Postgres]: "Postgres",
+	[DatabaseType.Sqlite]: "SQLite",
+	[DatabaseType.Unknown]: "This dialect"
+})[databaseType];
+//#endregion
 //#region src/helpers/sql.ts
 const NUL = String.fromCharCode(0);
 /**
@@ -1548,12 +1568,7 @@ const emitComparisonPredicate = (sqlHelper, config, columnSql, whereOperator, va
 			sqlHelper.addDynamicValue(value);
 			return;
 		}
-		sqlHelper.addSqlSnippet("LOWER(");
-		sqlHelper.addSqlSnippet(columnSql);
-		sqlHelper.addSqlSnippet(negate ? ") NOT LIKE LOWER(" : ") LIKE LOWER(");
-		sqlHelper.addDynamicValue(value);
-		sqlHelper.addSqlSnippet(")");
-		return;
+		throw new ParserError(area, `${dialectDisplayName(config.databaseType)} has no ILIKE operator — its LIKE case-sensitivity is collation-dependent`);
 	}
 	if (whereOperator === WhereOperator.Regex || whereOperator === WhereOperator.NotRegex || whereOperator === WhereOperator.Iregex || whereOperator === WhereOperator.NotIregex) {
 		const negate = whereOperator === WhereOperator.NotRegex || whereOperator === WhereOperator.NotIregex;
@@ -1565,9 +1580,12 @@ const emitComparisonPredicate = (sqlHelper, config, columnSql, whereOperator, va
 			return;
 		}
 		if (config.databaseType === DatabaseType.Mysql) {
+			if (negate) sqlHelper.addSqlSnippet("NOT ");
+			sqlHelper.addSqlSnippet("REGEXP_LIKE(");
 			sqlHelper.addSqlSnippet(columnSql);
-			sqlHelper.addSqlSnippet(negate ? " NOT REGEXP " : " REGEXP ");
+			sqlHelper.addSqlSnippet(", ");
 			sqlHelper.addDynamicValue(value);
+			sqlHelper.addSqlSnippet(insensitive ? ", 'i')" : ", 'c')");
 			return;
 		}
 		throw new ParserError(area, `${config.databaseType === DatabaseType.Sqlite ? "SQLite" : "MSSQL"} has no built-in regular-expression operator`);
@@ -1780,17 +1798,21 @@ const emitJsonContainsExpression = (sqlHelper, config, tableNameOrAlias, columnN
 };
 //#endregion
 //#region src/parser/default-json-predicate.ts
+/**
+* Stand-in column name used while rendering a comparison against a JSON extraction, then
+* substituted for the real expression. Deliberately unquotable and unlikely to occur in user data.
+*/
+const JSON_COLUMN_SENTINEL = "___json___";
 const emitJsonExtractPredicate = (sqlHelper, config, mode, state, area) => {
 	if (!state.tableNameOrAlias || !state.columnName || !state.jsonPath || !state.jsonExtractMode) throw new ParserError(area, "JSON extract predicate requires table, column, path, and mode");
-	emitJsonExtractExpression(sqlHelper, config, state.tableNameOrAlias, state.columnName, state.jsonPath, state.jsonExtractMode, area);
+	const jsonScratch = new SqlHelper(mode);
+	emitJsonExtractExpression(jsonScratch, config, state.tableNameOrAlias, state.columnName, state.jsonPath, state.jsonExtractMode, area);
+	const jsonSql = jsonScratch.getSql();
 	const scratch = new SqlHelper(mode);
-	emitComparisonPredicate(scratch, config, "___json___", state.whereOperator, state.values[0], area);
-	let tail = scratch.getSql();
-	if (tail.startsWith("___json___ ")) tail = tail.slice(11);
-	else if (tail.startsWith("LOWER(___json___)")) tail = "LOWER(" + tail.slice(17);
-	else if (tail.startsWith("NOT (___json___")) tail = "NOT (" + tail.slice(15);
-	sqlHelper.addSqlSnippet(" ");
-	sqlHelper.addSqlSnippetWithValues(tail, scratch.getValues());
+	emitComparisonPredicate(scratch, config, JSON_COLUMN_SENTINEL, state.whereOperator, state.values[0], area);
+	const predicate = scratch.getSql().split(JSON_COLUMN_SENTINEL).join(jsonSql);
+	if (predicate.includes(JSON_COLUMN_SENTINEL)) throw new ParserError(area, "JSON predicate failed to resolve its column reference");
+	sqlHelper.addSqlSnippetWithValues(predicate, [...jsonScratch.getValues(), ...scratch.getValues()]);
 };
 const emitJsonContainsPredicate = (sqlHelper, config, state, area) => {
 	if (!state.tableNameOrAlias || !state.columnName) throw new ParserError(area, "JSON contains predicate requires table and column");
@@ -2306,14 +2328,6 @@ const unboundedLimit = {
 	[DatabaseType.Mysql]: "18446744073709551615",
 	[DatabaseType.Sqlite]: "-1"
 };
-/** How each dialect is named in a refusal, so every message reads `<Dialect> has no ...`. */
-const dialectDisplayName = (databaseType) => ({
-	[DatabaseType.Mssql]: "MSSQL",
-	[DatabaseType.Mysql]: "MySQL",
-	[DatabaseType.Postgres]: "Postgres",
-	[DatabaseType.Sqlite]: "SQLite",
-	[DatabaseType.Unknown]: "This dialect"
-})[databaseType];
 /**
 * True when the caller called `.top(n)` at all.
 *

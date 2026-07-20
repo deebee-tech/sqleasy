@@ -1,5 +1,6 @@
 import '../configuration.dart';
 import '../enums.dart';
+import '../dialect_name.dart';
 import '../errors/parser_error.dart';
 import '../sql_helper.dart';
 
@@ -89,8 +90,12 @@ void emitComparisonPredicate(
       whereOperator == WhereOperator.notIlike) {
     final negate = whereOperator == WhereOperator.notIlike;
 
-    // Postgres has native ILIKE. Every other dialect here has no case-insensitive LIKE
-    // operator, so it is emulated by lower-casing both sides — the standard portable rewrite.
+    // `ILIKE` is a Postgres operator and exists nowhere else. It used to be synthesized elsewhere
+    // as `LOWER(col) LIKE LOWER(?)` — plausible results, but not what the caller asked for, and it
+    // diverges on non-ASCII input where SQLite's LOWER() is ASCII-only.
+    //
+    // Note what the refusal does NOT claim: MySQL, MSSQL and SQLite all DO have a case-insensitive
+    // LIKE, it is just collation- or pragma-driven rather than a distinct operator.
     if (config.databaseType == DatabaseType.postgres) {
       sqlHelper.addSqlSnippet(columnSql);
       sqlHelper.addSqlSnippet(negate ? ' NOT ILIKE ' : ' ILIKE ');
@@ -98,12 +103,11 @@ void emitComparisonPredicate(
       return;
     }
 
-    sqlHelper.addSqlSnippet('LOWER(');
-    sqlHelper.addSqlSnippet(columnSql);
-    sqlHelper.addSqlSnippet(negate ? ') NOT LIKE LOWER(' : ') LIKE LOWER(');
-    sqlHelper.addDynamicValue(value);
-    sqlHelper.addSqlSnippet(')');
-    return;
+    throw ParserError(
+      area,
+      '${dialectDisplayName(config.databaseType)} has no ILIKE operator — its LIKE '
+      'case-sensitivity is collation-dependent',
+    );
   }
 
   if (whereOperator == WhereOperator.regex ||
@@ -125,12 +129,27 @@ void emitComparisonPredicate(
       return;
     }
 
-    // MySQL: REGEXP / NOT REGEXP. Case sensitivity is COLLATION-driven (the default utf8mb4_*_ci is
-    // case-insensitive), not operator-driven, so iregex emits the same as regex here.
+    // MySQL 8.0.4+ has `REGEXP_LIKE(expr, pat, match_type)` on the ICU engine, where match_type
+    // takes precedence over the column's collation: 'i' is case-insensitive, 'c' case-sensitive.
+    //
+    // The bare `REGEXP` operator this used to emit is collation-driven, so BOTH operators lied.
+    // Iregex was case-insensitive only if the collation happened to be (the default utf8mb4_*_ci
+    // is, so it usually looked right), and Regex was case-INsensitive under that same default —
+    // silently the opposite of what it says. Naming the match_type makes each one mean what it
+    // claims, independent of collation.
+    //
+    // This raises the floor to MySQL 8.0.4, which the library already assumes elsewhere: FOR SHARE,
+    // NOWAIT and SKIP LOCKED are all emitted unconditionally and are 8.0.1+. MySQL 5.7 reached EOL
+    // in October 2023.
     if (config.databaseType == DatabaseType.mysql) {
+      if (negate) {
+        sqlHelper.addSqlSnippet('NOT ');
+      }
+      sqlHelper.addSqlSnippet('REGEXP_LIKE(');
       sqlHelper.addSqlSnippet(columnSql);
-      sqlHelper.addSqlSnippet(negate ? ' NOT REGEXP ' : ' REGEXP ');
+      sqlHelper.addSqlSnippet(', ');
       sqlHelper.addDynamicValue(value);
+      sqlHelper.addSqlSnippet(insensitive ? ", 'i')" : ", 'c')");
       return;
     }
 

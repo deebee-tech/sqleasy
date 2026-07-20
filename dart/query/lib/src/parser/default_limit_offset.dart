@@ -16,15 +16,6 @@ const _unboundedLimit = <DatabaseType, String>{
   DatabaseType.sqlite: '-1',
 };
 
-/// How each dialect is named in a refusal, so every message reads `<Dialect> has no ...`.
-String dialectDisplayName(DatabaseType databaseType) => const {
-      DatabaseType.mssql: 'MSSQL',
-      DatabaseType.mysql: 'MySQL',
-      DatabaseType.postgres: 'Postgres',
-      DatabaseType.sqlite: 'SQLite',
-      DatabaseType.unknown: 'This dialect',
-    }[databaseType]!;
-
 /// True when the caller called `.top(n)` at all.
 ///
 /// Presence, not positivity: `.top(0)` still counts as "the caller asked for a TOP", which is what

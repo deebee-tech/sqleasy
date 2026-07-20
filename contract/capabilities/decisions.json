@@ -171,5 +171,158 @@
       }
     }
   },
-  "enums": {}
+  "enums": {
+    "WhereOperator.Ilike": {
+      "_why": "ILIKE is a Postgres operator and exists nowhere else. It was synthesized elsewhere as LOWER(col) LIKE LOWER(?) \u2014 plausible results, but not the operator asked for, and SQLite's LOWER() is ASCII-only so non-ASCII input case-folded differently from Postgres. Refused 2026-07-20.\n\nThe refusal message is deliberately narrow: MySQL, MSSQL and SQLite all DO have a case-insensitive LIKE, driven by collation or pragma rather than by a distinct operator. Claiming otherwise would state something false about the database \u2014 the same dishonesty pointed the other way.",
+      "postgres": {
+        "kind": "native",
+        "name": "ilike",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
+        "adjudicated": true
+      }
+    },
+    "WhereOperator.NotIlike": {
+      "_why": "ILIKE is a Postgres operator and exists nowhere else. It was synthesized elsewhere as LOWER(col) LIKE LOWER(?) \u2014 plausible results, but not the operator asked for, and SQLite's LOWER() is ASCII-only so non-ASCII input case-folded differently from Postgres. Refused 2026-07-20.\n\nThe refusal message is deliberately narrow: MySQL, MSSQL and SQLite all DO have a case-insensitive LIKE, driven by collation or pragma rather than by a distinct operator. Claiming otherwise would state something false about the database \u2014 the same dishonesty pointed the other way.",
+      "postgres": {
+        "kind": "native",
+        "name": "ilike",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
+        "adjudicated": true
+      }
+    },
+    "WhereOperator.Regex": {
+      "_why": "The case-sensitive regex match. Postgres has dedicated operators (~ !~ ~* !~*). MySQL 8.0.4+ has REGEXP_LIKE(expr, pat, match_type) on the ICU engine, where match_type overrides the collation \u2014 so the match type is now NAMED rather than inherited. The bare REGEXP operator emitted through 10.x was collation-driven, which made BOTH operators dishonest: Iregex only worked when the collation happened to be case-insensitive, and Regex was case-INsensitive under MySQL's default utf8mb4_*_ci, silently the opposite of its name. This raises the floor to MySQL 8.0.4; the library already assumes 8.0.1+ by emitting FOR SHARE/NOWAIT/SKIP LOCKED unconditionally, and 5.7 reached EOL in October 2023. SQLite's REGEXP is only a hook for an app-registered function (stock builds have none) and MSSQL had no regex engine before SQL Server 2025 \u2014 both refuse.",
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no built-in regular-expression operator",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no built-in regular-expression operator",
+        "adjudicated": true
+      }
+    },
+    "WhereOperator.NotRegex": {
+      "_why": "The negated case-sensitive regex match. Postgres has dedicated operators (~ !~ ~* !~*). MySQL 8.0.4+ has REGEXP_LIKE(expr, pat, match_type) on the ICU engine, where match_type overrides the collation \u2014 so the match type is now NAMED rather than inherited. The bare REGEXP operator emitted through 10.x was collation-driven, which made BOTH operators dishonest: Iregex only worked when the collation happened to be case-insensitive, and Regex was case-INsensitive under MySQL's default utf8mb4_*_ci, silently the opposite of its name. This raises the floor to MySQL 8.0.4; the library already assumes 8.0.1+ by emitting FOR SHARE/NOWAIT/SKIP LOCKED unconditionally, and 5.7 reached EOL in October 2023. SQLite's REGEXP is only a hook for an app-registered function (stock builds have none) and MSSQL had no regex engine before SQL Server 2025 \u2014 both refuse.",
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no built-in regular-expression operator",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no built-in regular-expression operator",
+        "adjudicated": true
+      }
+    },
+    "WhereOperator.Iregex": {
+      "_why": "The case-insensitive regex match. Postgres has dedicated operators (~ !~ ~* !~*). MySQL 8.0.4+ has REGEXP_LIKE(expr, pat, match_type) on the ICU engine, where match_type overrides the collation \u2014 so the match type is now NAMED rather than inherited. The bare REGEXP operator emitted through 10.x was collation-driven, which made BOTH operators dishonest: Iregex only worked when the collation happened to be case-insensitive, and Regex was case-INsensitive under MySQL's default utf8mb4_*_ci, silently the opposite of its name. This raises the floor to MySQL 8.0.4; the library already assumes 8.0.1+ by emitting FOR SHARE/NOWAIT/SKIP LOCKED unconditionally, and 5.7 reached EOL in October 2023. SQLite's REGEXP is only a hook for an app-registered function (stock builds have none) and MSSQL had no regex engine before SQL Server 2025 \u2014 both refuse.",
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no built-in regular-expression operator",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no built-in regular-expression operator",
+        "adjudicated": true
+      }
+    },
+    "WhereOperator.NotIregex": {
+      "_why": "The negated case-insensitive regex match. Postgres has dedicated operators (~ !~ ~* !~*). MySQL 8.0.4+ has REGEXP_LIKE(expr, pat, match_type) on the ICU engine, where match_type overrides the collation \u2014 so the match type is now NAMED rather than inherited. The bare REGEXP operator emitted through 10.x was collation-driven, which made BOTH operators dishonest: Iregex only worked when the collation happened to be case-insensitive, and Regex was case-INsensitive under MySQL's default utf8mb4_*_ci, silently the opposite of its name. This raises the floor to MySQL 8.0.4; the library already assumes 8.0.1+ by emitting FOR SHARE/NOWAIT/SKIP LOCKED unconditionally, and 5.7 reached EOL in October 2023. SQLite's REGEXP is only a hook for an app-registered function (stock builds have none) and MSSQL had no regex engine before SQL Server 2025 \u2014 both refuse.",
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no built-in regular-expression operator",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no built-in regular-expression operator",
+        "adjudicated": true
+      }
+    }
+  }
 }

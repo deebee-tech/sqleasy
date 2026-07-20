@@ -353,7 +353,10 @@ void main() {
       );
     });
 
-    test('ILIKE is native on Postgres and rewritten to LOWER() elsewhere', () {
+    // Previously asserted the LOWER() rewrite on SQLite. ILIKE is a Postgres operator and exists
+    // nowhere else; the rewrite returned plausible results but was not the operator asked for, and
+    // SQLite's LOWER() is ASCII-only so non-ASCII input case-folded differently from Postgres.
+    test('ILIKE is native on Postgres and refused elsewhere', () {
       final pgBuilder = PostgresQuery().newBuilder()
         ..selectAll()
         ..fromTable('users', alias: 'u')
@@ -364,8 +367,11 @@ void main() {
         ..selectAll()
         ..fromTable('users', alias: 'u')
         ..where('u', 'name', WhereOperator.ilike, '%ada%');
-      expect(sqliteBuilder.parsePrepared().sql,
-          contains('LOWER("u"."name") LIKE LOWER(?)'));
+      expect(
+        () => sqliteBuilder.parsePrepared(),
+        throwsA(predicate(
+            (e) => e.toString().contains('SQLite has no ILIKE operator'))),
+      );
     });
 
     test('whereExists / whereNotExists build without a table/column', () {

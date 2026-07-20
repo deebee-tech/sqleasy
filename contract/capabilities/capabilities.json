@@ -24,12 +24,12 @@
       "unadjudicated": 88
     },
     "enumCells": {
-      "native": 154,
-      "absent": 10,
-      "unadjudicated": 156
+      "native": 164,
+      "absent": 24,
+      "unadjudicated": 132
     },
-    "adjudicated": 17,
-    "namesAssigned": 9
+    "adjudicated": 33,
+    "namesAssigned": 11
   },
   "ops": {
     "and": {
@@ -40,8 +40,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 45,
-            "casesThrowing": 10,
+            "casesEmitting": 44,
+            "casesThrowing": 11,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -51,8 +51,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 45,
-            "casesThrowing": 10,
+            "casesEmitting": 44,
+            "casesThrowing": 11,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -73,8 +73,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 45,
-            "casesThrowing": 10,
+            "casesEmitting": 44,
+            "casesThrowing": 11,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -1240,8 +1240,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 193,
-            "casesThrowing": 42,
+            "casesEmitting": 189,
+            "casesThrowing": 46,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1251,8 +1251,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 186,
-            "casesThrowing": 42,
+            "casesEmitting": 182,
+            "casesThrowing": 46,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1273,8 +1273,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 171,
-            "casesThrowing": 58,
+            "casesEmitting": 167,
+            "casesThrowing": 62,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -1480,8 +1480,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 25,
-            "casesThrowing": 2,
+            "casesEmitting": 24,
+            "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1491,8 +1491,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 26,
-            "casesThrowing": 2,
+            "casesEmitting": 25,
+            "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1513,8 +1513,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 25,
-            "casesThrowing": 2,
+            "casesEmitting": 24,
+            "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -1720,8 +1720,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 12,
-            "casesThrowing": 2,
+            "casesEmitting": 11,
+            "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1731,8 +1731,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 12,
-            "casesThrowing": 2,
+            "casesEmitting": 11,
+            "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1753,8 +1753,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 12,
-            "casesThrowing": 2,
+            "casesEmitting": 11,
+            "casesThrowing": 3,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -4360,8 +4360,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 146,
-            "casesThrowing": 34,
+            "casesEmitting": 143,
+            "casesThrowing": 37,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4371,8 +4371,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 141,
-            "casesThrowing": 34,
+            "casesEmitting": 138,
+            "casesThrowing": 37,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4393,8 +4393,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 131,
-            "casesThrowing": 46,
+            "casesEmitting": 128,
+            "casesThrowing": 49,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -4408,8 +4408,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 62,
-            "casesThrowing": 7,
+            "casesEmitting": 61,
+            "casesThrowing": 8,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4419,8 +4419,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 59,
-            "casesThrowing": 8,
+            "casesEmitting": 58,
+            "casesThrowing": 9,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4441,8 +4441,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 54,
-            "casesThrowing": 13,
+            "casesEmitting": 53,
+            "casesThrowing": 14,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -4552,8 +4552,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 26,
-            "casesThrowing": 3,
+            "casesEmitting": 25,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4563,8 +4563,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 26,
-            "casesThrowing": 3,
+            "casesEmitting": 25,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4585,8 +4585,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 26,
-            "casesThrowing": 3,
+            "casesEmitting": 25,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -5080,8 +5080,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 116,
-            "casesThrowing": 15,
+            "casesEmitting": 113,
+            "casesThrowing": 18,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -5091,8 +5091,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 112,
-            "casesThrowing": 15,
+            "casesEmitting": 109,
+            "casesThrowing": 18,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -5113,8 +5113,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 103,
-            "casesThrowing": 22,
+            "casesEmitting": 100,
+            "casesThrowing": 25,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -6384,8 +6384,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 110,
-            "casesThrowing": 16,
+            "casesEmitting": 109,
+            "casesThrowing": 17,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6395,8 +6395,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 100,
-            "casesThrowing": 22,
+            "casesEmitting": 99,
+            "casesThrowing": 23,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -6417,8 +6417,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 96,
-            "casesThrowing": 26,
+            "casesEmitting": 95,
+            "casesThrowing": 27,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -7896,8 +7896,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 110,
-            "casesThrowing": 16,
+            "casesEmitting": 109,
+            "casesThrowing": 17,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7907,8 +7907,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 100,
-            "casesThrowing": 22,
+            "casesEmitting": 99,
+            "casesThrowing": 23,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7929,8 +7929,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 96,
-            "casesThrowing": 26,
+            "casesEmitting": 95,
+            "casesThrowing": 27,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         }
@@ -8058,46 +8058,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: rewritten as LOWER(col) LIKE LOWER(?) on mysql/sqlite/mssql — none has ILIKE"
+            "casesEmitting": 0,
+            "casesThrowing": 3,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: rewritten as LOWER(col) LIKE LOWER(?) on mysql/sqlite/mssql — none has ILIKE"
+            "casesEmitting": 0,
+            "casesThrowing": 3,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ilike",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 3,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: rewritten as LOWER(col) LIKE LOWER(?) on mysql/sqlite/mssql — none has ILIKE"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: rewritten as LOWER(col) LIKE LOWER(?) on mysql/sqlite/mssql — none has ILIKE"
+            "casesEmitting": 0,
+            "casesThrowing": 3,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8111,46 +8111,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — audit-S3: MySQL degrades to collation-dependent matching"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S3: MySQL degrades to collation-dependent matching"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S3: MySQL degrades to collation-dependent matching"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — audit-S3: MySQL degrades to collation-dependent matching"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8598,46 +8598,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same LOWER() rewrite"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same LOWER() rewrite"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "ilike",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same LOWER() rewrite"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same LOWER() rewrite"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8705,46 +8705,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: same"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -8758,46 +8758,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: collation-dependent on MySQL; scope-consistent with Iregex"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent on MySQL; scope-consistent with Iregex"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: collation-dependent on MySQL; scope-consistent with Iregex"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: collation-dependent on MySQL; scope-consistent with Iregex"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -10086,46 +10086,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S3: same collation degradation"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S3: same collation degradation"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S3: same collation degradation"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite has no built-in regular-expression operator",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S3: same collation degradation"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }

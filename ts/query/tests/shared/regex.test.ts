@@ -3,7 +3,7 @@ import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery, WhereOperator } fro
 
 /**
  * Regular-expression operators. Postgres has native `~` / `~*` (+ negations); MySQL has `REGEXP`
- * (case sensitivity is collation-driven, so the case-insensitive variant emits the same operator);
+ * (case sensitivity is named explicitly via REGEXP_LIKE's match_type, not left to the collation);
  * SQLite (needs an app-registered function) and MSSQL (no engine before SQL Server 2025) throw.
  */
 const pg = () => new PostgresQuery().newBuilder().selectAll().fromTable('users', 'u');
@@ -28,17 +28,32 @@ describe('regex operators', () => {
     ]);
   });
 
-  it('MySQL uses REGEXP / NOT REGEXP; the case-insensitive variant emits the same operator', () => {
+  // This case previously asserted that Regex and Iregex emit the SAME operator on MySQL, because
+  // the bare `REGEXP` operator takes its case sensitivity from the collation. That made both
+  // operators dishonest: Iregex was case-insensitive only when the collation happened to be (the
+  // default utf8mb4_*_ci is, so it usually looked correct), and Regex was case-INsensitive under
+  // that same default — silently the opposite of its name. MySQL 8.0.4+ can say which it means.
+  it('MySQL names the match type explicitly instead of inheriting the collation', () => {
     expect(my().where('u', 'email', WhereOperator.Regex, '^a').parsePrepared().sql).toContain(
-      '`u`.`email` REGEXP ?',
+      "REGEXP_LIKE(`u`.`email`, ?, 'c')",
     );
     expect(my().where('u', 'email', WhereOperator.NotRegex, '^a').parsePrepared().sql).toContain(
-      '`u`.`email` NOT REGEXP ?',
+      "NOT REGEXP_LIKE(`u`.`email`, ?, 'c')",
     );
-    // Iregex is collation-driven on MySQL, so it emits identically to Regex.
     expect(my().where('u', 'email', WhereOperator.Iregex, '^a').parsePrepared().sql).toContain(
-      '`u`.`email` REGEXP ?',
+      "REGEXP_LIKE(`u`.`email`, ?, 'i')",
     );
+    expect(my().where('u', 'email', WhereOperator.NotIregex, '^a').parsePrepared().sql).toContain(
+      "NOT REGEXP_LIKE(`u`.`email`, ?, 'i')",
+    );
+  });
+
+  // Regex and Iregex must now emit DIFFERENT SQL. Asserting the difference directly is what stops
+  // a future collation-driven shortcut from quietly collapsing them back together.
+  it('MySQL Regex and Iregex are no longer the same statement', () => {
+    const sensitive = my().where('u', 'email', WhereOperator.Regex, '^a').parsePrepared().sql;
+    const insensitive = my().where('u', 'email', WhereOperator.Iregex, '^a').parsePrepared().sql;
+    expect(sensitive).not.toEqual(insensitive);
   });
 
   it('SQLite and MSSQL throw — no built-in regex engine', () => {

@@ -19,16 +19,6 @@ const unboundedLimit: Partial<Record<DatabaseType, string>> = {
   [DatabaseType.Sqlite]: '-1',
 };
 
-/** How each dialect is named in a refusal, so every message reads `<Dialect> has no ...`. */
-export const dialectDisplayName = (databaseType: DatabaseType): string =>
-  ({
-    [DatabaseType.Mssql]: 'MSSQL',
-    [DatabaseType.Mysql]: 'MySQL',
-    [DatabaseType.Postgres]: 'Postgres',
-    [DatabaseType.Sqlite]: 'SQLite',
-    [DatabaseType.Unknown]: 'This dialect',
-  })[databaseType];
-
 /**
  * True when the caller called `.top(n)` at all.
  *

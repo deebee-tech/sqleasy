@@ -4,6 +4,7 @@ library;
 import '../configuration.dart';
 import '../enums.dart';
 import '../errors/parser_error.dart';
+import '../dialect_name.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 import '../values/mssql_parameter.dart';

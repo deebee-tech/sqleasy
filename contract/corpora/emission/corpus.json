@@ -15732,23 +15732,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE LOWER([u].[email]) LIKE LOWER(@p0);', N'@p0 nvarchar(max)', @p0 = N'%ADMIN%';",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE LOWER([u].[email]) LIKE LOWER(%ADMIN%);"
+          "throws": "Where: MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE LOWER(`u`.`email`) LIKE LOWER(?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "%ADMIN%"
-              }
-            ]
-          },
-          "raw": "SELECT * FROM `users` AS `u` WHERE LOWER(`u`.`email`) LIKE LOWER(%ADMIN%);"
+          "throws": "Where: MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "postgres": {
           "prepared": {
@@ -15763,16 +15750,7 @@
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" ILIKE %ADMIN%;"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE LOWER(\"u\".\"email\") LIKE LOWER(?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "%ADMIN%"
-              }
-            ]
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE LOWER(\"u\".\"email\") LIKE LOWER(%ADMIN%);"
+          "throws": "Where: SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         }
       }
     },
@@ -15800,23 +15778,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE LOWER([u].[email]) NOT LIKE LOWER(@p0);', N'@p0 nvarchar(max)', @p0 = N'%admin%';",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE LOWER([u].[email]) NOT LIKE LOWER(%admin%);"
+          "throws": "Where: MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE LOWER(`u`.`email`) NOT LIKE LOWER(?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "%admin%"
-              }
-            ]
-          },
-          "raw": "SELECT * FROM `users` AS `u` WHERE LOWER(`u`.`email`) NOT LIKE LOWER(%admin%);"
+          "throws": "Where: MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "postgres": {
           "prepared": {
@@ -15831,16 +15796,7 @@
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" NOT ILIKE %admin%;"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE LOWER(\"u\".\"email\") NOT LIKE LOWER(?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "%admin%"
-              }
-            ]
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE LOWER(\"u\".\"email\") NOT LIKE LOWER(%admin%);"
+          "throws": "Where: SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         }
       }
     },
@@ -15881,27 +15837,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE LOWER([u].[email]) LIKE LOWER(@p0) AND [u].[active] = @p1;', N'@p0 nvarchar(max), @p1 bit', @p0 = N'%a%', @p1 = 1;",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE LOWER([u].[email]) LIKE LOWER(%a%) AND [u].[active] = true;"
+          "throws": "Where: MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE LOWER(`u`.`email`) LIKE LOWER(?) AND `u`.`active` = ?;",
-            "params": [
-              {
-                "t": "string",
-                "v": "%a%"
-              },
-              {
-                "t": "bool",
-                "v": true
-              }
-            ]
-          },
-          "raw": "SELECT * FROM `users` AS `u` WHERE LOWER(`u`.`email`) LIKE LOWER(%a%) AND `u`.`active` = true;"
+          "throws": "Where: MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "postgres": {
           "prepared": {
@@ -15920,20 +15859,7 @@
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"email\" ILIKE %a% AND \"u\".\"active\" = true;"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE LOWER(\"u\".\"email\") LIKE LOWER(?) AND \"u\".\"active\" = ?;",
-            "params": [
-              {
-                "t": "string",
-                "v": "%a%"
-              },
-              {
-                "t": "bool",
-                "v": true
-              }
-            ]
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE LOWER(\"u\".\"email\") LIKE LOWER(%a%) AND \"u\".\"active\" = true;"
+          "throws": "Where: SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         }
       }
     },
@@ -16135,23 +16061,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[email], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[email] HAVING LOWER([u].[email]) LIKE LOWER(@p0);', N'@p0 nvarchar(max)', @p0 = N'%a%';",
-            "params": []
-          },
-          "raw": "SELECT [u].[email], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[email] HAVING LOWER([u].[email]) LIKE LOWER(%a%);"
+          "throws": "Having: MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT `u`.`email`, COUNT(*) AS cnt FROM `users` AS `u` GROUP BY `u`.`email` HAVING LOWER(`u`.`email`) LIKE LOWER(?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "%a%"
-              }
-            ]
-          },
-          "raw": "SELECT `u`.`email`, COUNT(*) AS cnt FROM `users` AS `u` GROUP BY `u`.`email` HAVING LOWER(`u`.`email`) LIKE LOWER(%a%);"
+          "throws": "Having: MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         },
         "postgres": {
           "prepared": {
@@ -16166,16 +16079,7 @@
           "raw": "SELECT \"u\".\"email\", COUNT(*) AS cnt FROM \"public\".\"users\" AS \"u\" GROUP BY \"u\".\"email\" HAVING \"u\".\"email\" ILIKE %a%;"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT \"u\".\"email\", COUNT(*) AS cnt FROM \"users\" AS \"u\" GROUP BY \"u\".\"email\" HAVING LOWER(\"u\".\"email\") LIKE LOWER(?);",
-            "params": [
-              {
-                "t": "string",
-                "v": "%a%"
-              }
-            ]
-          },
-          "raw": "SELECT \"u\".\"email\", COUNT(*) AS cnt FROM \"users\" AS \"u\" GROUP BY \"u\".\"email\" HAVING LOWER(\"u\".\"email\") LIKE LOWER(%a%);"
+          "throws": "Having: SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent"
         }
       }
     },
@@ -23191,7 +23095,7 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ?;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE REGEXP_LIKE(`u`.`email`, ?, 'c');",
             "params": [
               {
                 "t": "string",
@@ -23199,7 +23103,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ^A.*Z$;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE REGEXP_LIKE(`u`.`email`, ^A.*Z$, 'c');"
         },
         "postgres": {
           "prepared": {
@@ -23247,7 +23151,7 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` NOT REGEXP ?;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE NOT REGEXP_LIKE(`u`.`email`, ?, 'c');",
             "params": [
               {
                 "t": "string",
@@ -23255,7 +23159,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` NOT REGEXP ^A.*Z$;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE NOT REGEXP_LIKE(`u`.`email`, ^A.*Z$, 'c');"
         },
         "postgres": {
           "prepared": {
@@ -23303,7 +23207,7 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ?;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE REGEXP_LIKE(`u`.`email`, ?, 'i');",
             "params": [
               {
                 "t": "string",
@@ -23311,7 +23215,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`email` REGEXP ^a.*z$;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE REGEXP_LIKE(`u`.`email`, ^a.*z$, 'i');"
         },
         "postgres": {
           "prepared": {
