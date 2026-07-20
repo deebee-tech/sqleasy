@@ -1642,10 +1642,22 @@ const columnRef$1 = (config, tableNameOrAlias, columnName) => quoteIdentifier(ta
 * Emits a dialect-specific full-text predicate for one or more columns and a bound query term.
 * The query value is appended by the caller via {@link SqlHelper.addDynamicValue}.
 */
+/**
+* Postgres has a distinct tsquery constructor per search mode, and all three are native.
+*
+* `Phrase` used to be refused outright as "not structured yet". It is structured: `phraseto_tsquery`
+* (9.6+) joins the terms with the `<->` distance operator, which is exactly a phrase match. Routing
+* it to `plainto_tsquery` instead would match the words in any order — the one thing a phrase search
+* exists to prevent.
+*/
+const postgresTsQueryFunction = (mode) => {
+	if (mode === FullTextMode.Boolean) return "to_tsquery(";
+	if (mode === FullTextMode.Phrase) return "phraseto_tsquery(";
+	return "plainto_tsquery(";
+};
 const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 	if (columns.length === 0) throw new ParserError(area, "Full-text search requires at least one column");
 	if (config.databaseType === DatabaseType.Postgres) {
-		if (mode === FullTextMode.Phrase) throw new ParserError(area, "Postgres phrase full-text search is not structured yet — use whereMatchRaw or plainto_tsquery in raw SQL");
 		if (columns.length === 1) {
 			const col = columns[0];
 			sqlHelper.addSqlSnippet("to_tsvector(");
@@ -1653,7 +1665,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 			sqlHelper.addSqlSnippet(", ");
 			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
 			sqlHelper.addSqlSnippet(") @@ ");
-			sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? "to_tsquery(" : "plainto_tsquery(");
+			sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
 			sqlHelper.addSqlSnippet(JSON.stringify("english"));
 			sqlHelper.addSqlSnippet(", ");
 			return;
@@ -1667,12 +1679,13 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 			if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ' ', ");
 		});
 		sqlHelper.addSqlSnippet(")) @@ ");
-		sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? "to_tsquery(" : "plainto_tsquery(");
+		sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
 		sqlHelper.addSqlSnippet(JSON.stringify("english"));
 		sqlHelper.addSqlSnippet(", ");
 		return;
 	}
 	if (config.databaseType === DatabaseType.Mysql) {
+		if (mode === FullTextMode.Phrase) throw new ParserError(area, "MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw");
 		sqlHelper.addSqlSnippet("MATCH (");
 		columns.forEach((col, i) => {
 			sqlHelper.addSqlSnippet(columnRef$1(config, col.tableNameOrAlias, col.columnName));
@@ -1683,6 +1696,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 	}
 	if (config.databaseType === DatabaseType.Mssql) {
 		if (columns.length !== 1) throw new ParserError(area, "MSSQL CONTAINS/FREETEXT accepts a single column — pass one column or use whereMatchRaw");
+		if (mode === FullTextMode.Phrase) throw new ParserError(area, "MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw");
 		const col = columns[0];
 		if (mode === FullTextMode.Natural) {
 			sqlHelper.addSqlSnippet("FREETEXT(");
@@ -1712,7 +1726,7 @@ const emitFullTextValueSuffix = (sqlHelper, config, mode) => {
 		return;
 	}
 	if (config.databaseType === DatabaseType.Mysql) {
-		if (mode === FullTextMode.Boolean || mode === FullTextMode.Phrase) {
+		if (mode === FullTextMode.Boolean) {
 			sqlHelper.addSqlSnippet(" IN BOOLEAN MODE)");
 			return;
 		}

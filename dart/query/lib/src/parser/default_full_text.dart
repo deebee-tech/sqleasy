@@ -13,6 +13,22 @@ String _columnRef(Dialect config, FullTextColumnRef column) =>
 
 /// Emits a dialect-specific full-text predicate for [columns] and a bound query term.
 /// The query value is appended by the caller via [SqlHelper.addDynamicValue].
+/// Postgres has a distinct tsquery constructor per search mode, and all three are native.
+///
+/// `phrase` used to be refused outright as "not structured yet". It is structured:
+/// `phraseto_tsquery` (9.6+) joins the terms with the `<->` distance operator, which is exactly a
+/// phrase match. Routing it to `plainto_tsquery` would match the words in any order — the one thing
+/// a phrase search exists to prevent.
+String _postgresTsQueryFunction(FullTextMode mode) {
+  if (mode == FullTextMode.boolean) {
+    return 'to_tsquery(';
+  }
+  if (mode == FullTextMode.phrase) {
+    return 'phraseto_tsquery(';
+  }
+  return 'plainto_tsquery(';
+}
+
 void emitFullTextPredicate(
   SqlHelper sqlHelper,
   Dialect config,
@@ -25,13 +41,6 @@ void emitFullTextPredicate(
   }
 
   if (config.databaseType == DatabaseType.postgres) {
-    if (mode == FullTextMode.phrase) {
-      throw ParserError(
-        area,
-        'Postgres phrase full-text search is not structured yet — use whereMatchRaw or plainto_tsquery in raw SQL',
-      );
-    }
-
     if (columns.length == 1) {
       final col = columns.first;
       sqlHelper.addSqlSnippet('to_tsvector(');
@@ -40,7 +49,7 @@ void emitFullTextPredicate(
       sqlHelper.addSqlSnippet(_columnRef(config, col));
       sqlHelper.addSqlSnippet(') @@ ');
       sqlHelper.addSqlSnippet(
-        mode == FullTextMode.boolean ? 'to_tsquery(' : 'plainto_tsquery(',
+        _postgresTsQueryFunction(mode),
       );
       sqlHelper.addSqlSnippet(jsonEncode('english'));
       sqlHelper.addSqlSnippet(', ');
@@ -59,7 +68,7 @@ void emitFullTextPredicate(
     }
     sqlHelper.addSqlSnippet(')) @@ ');
     sqlHelper.addSqlSnippet(
-      mode == FullTextMode.boolean ? 'to_tsquery(' : 'plainto_tsquery(',
+      _postgresTsQueryFunction(mode),
     );
     sqlHelper.addSqlSnippet(jsonEncode('english'));
     sqlHelper.addSqlSnippet(', ');
@@ -67,6 +76,16 @@ void emitFullTextPredicate(
   }
 
   if (config.databaseType == DatabaseType.mysql) {
+    // MySQL expresses a phrase by quoting the search STRING, which lives in the bound value rather
+    // than the statement — so `phrase` emitted exactly the same SQL as `boolean`.
+    if (mode == FullTextMode.phrase) {
+      throw ParserError(
+        area,
+        'MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted '
+        'phrase to a Boolean search, or use whereMatchRaw',
+      );
+    }
+
     sqlHelper.addSqlSnippet('MATCH (');
     for (var i = 0; i < columns.length; i++) {
       sqlHelper.addSqlSnippet(_columnRef(config, columns[i]));
@@ -83,6 +102,17 @@ void emitFullTextPredicate(
       throw ParserError(
         area,
         'MSSQL CONTAINS/FREETEXT accepts a single column — pass one column or use whereMatchRaw',
+      );
+    }
+
+    // Same as MySQL: MSSQL phrases live inside the CONTAINS search condition as `"a b"`, which is
+    // part of the bound value rather than the statement. `phrase` emitted plain CONTAINS, identical
+    // to `boolean`.
+    if (mode == FullTextMode.phrase) {
+      throw ParserError(
+        area,
+        'MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a '
+        'mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw',
       );
     }
 
@@ -136,7 +166,7 @@ void emitFullTextValueSuffix(
   }
 
   if (config.databaseType == DatabaseType.mysql) {
-    if (mode == FullTextMode.boolean || mode == FullTextMode.phrase) {
+    if (mode == FullTextMode.boolean) {
       sqlHelper.addSqlSnippet(' IN BOOLEAN MODE)');
       return;
     }

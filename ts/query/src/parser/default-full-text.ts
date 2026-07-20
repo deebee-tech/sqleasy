@@ -20,6 +20,24 @@ const columnRef = (config: Dialect, tableNameOrAlias: string, columnName: string
  * Emits a dialect-specific full-text predicate for one or more columns and a bound query term.
  * The query value is appended by the caller via {@link SqlHelper.addDynamicValue}.
  */
+/**
+ * Postgres has a distinct tsquery constructor per search mode, and all three are native.
+ *
+ * `Phrase` used to be refused outright as "not structured yet". It is structured: `phraseto_tsquery`
+ * (9.6+) joins the terms with the `<->` distance operator, which is exactly a phrase match. Routing
+ * it to `plainto_tsquery` instead would match the words in any order — the one thing a phrase search
+ * exists to prevent.
+ */
+const postgresTsQueryFunction = (mode: FullTextMode): string => {
+  if (mode === FullTextMode.Boolean) {
+    return 'to_tsquery(';
+  }
+  if (mode === FullTextMode.Phrase) {
+    return 'phraseto_tsquery(';
+  }
+  return 'plainto_tsquery(';
+};
+
 export const emitFullTextPredicate = (
   sqlHelper: SqlHelper,
   config: Dialect,
@@ -32,13 +50,6 @@ export const emitFullTextPredicate = (
   }
 
   if (config.databaseType === DatabaseType.Postgres) {
-    if (mode === FullTextMode.Phrase) {
-      throw new ParserError(
-        area,
-        'Postgres phrase full-text search is not structured yet — use whereMatchRaw or plainto_tsquery in raw SQL',
-      );
-    }
-
     if (columns.length === 1) {
       const col = columns[0]!;
       sqlHelper.addSqlSnippet('to_tsvector(');
@@ -46,7 +57,7 @@ export const emitFullTextPredicate = (
       sqlHelper.addSqlSnippet(', ');
       sqlHelper.addSqlSnippet(columnRef(config, col.tableNameOrAlias, col.columnName));
       sqlHelper.addSqlSnippet(') @@ ');
-      sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? 'to_tsquery(' : 'plainto_tsquery(');
+      sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
       sqlHelper.addSqlSnippet(JSON.stringify('english'));
       sqlHelper.addSqlSnippet(', ');
       return;
@@ -63,13 +74,26 @@ export const emitFullTextPredicate = (
       }
     });
     sqlHelper.addSqlSnippet(')) @@ ');
-    sqlHelper.addSqlSnippet(mode === FullTextMode.Boolean ? 'to_tsquery(' : 'plainto_tsquery(');
+    sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
     sqlHelper.addSqlSnippet(JSON.stringify('english'));
     sqlHelper.addSqlSnippet(', ');
     return;
   }
 
   if (config.databaseType === DatabaseType.Mysql) {
+    // MySQL can do phrase search, but only by quoting the search STRING — `AGAINST('"a b"' IN
+    // BOOLEAN MODE)`. The query text is a bound parameter here, so the builder cannot add those
+    // quotes without rewriting the caller's value, and it never did: `Phrase` emitted exactly the
+    // same statement as `Boolean`, where the words match independently. Use whereMatchRaw, or quote
+    // the phrase in the value you pass to a Boolean search.
+    if (mode === FullTextMode.Phrase) {
+      throw new ParserError(
+        area,
+        'MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted ' +
+          'phrase to a Boolean search, or use whereMatchRaw',
+      );
+    }
+
     sqlHelper.addSqlSnippet('MATCH (');
     columns.forEach((col, i) => {
       sqlHelper.addSqlSnippet(columnRef(config, col.tableNameOrAlias, col.columnName));
@@ -86,6 +110,17 @@ export const emitFullTextPredicate = (
       throw new ParserError(
         area,
         'MSSQL CONTAINS/FREETEXT accepts a single column — pass one column or use whereMatchRaw',
+      );
+    }
+
+    // Same as MySQL: MSSQL phrases live inside the CONTAINS search condition as `"a b"`, which is
+    // part of the bound value rather than the statement. `Phrase` emitted plain CONTAINS, identical
+    // to `Boolean`.
+    if (mode === FullTextMode.Phrase) {
+      throw new ParserError(
+        area,
+        'MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a ' +
+          'mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw',
       );
     }
 
@@ -136,7 +171,7 @@ export const emitFullTextValueSuffix = (
   }
 
   if (config.databaseType === DatabaseType.Mysql) {
-    if (mode === FullTextMode.Boolean || mode === FullTextMode.Phrase) {
+    if (mode === FullTextMode.Boolean) {
       sqlHelper.addSqlSnippet(' IN BOOLEAN MODE)');
       return;
     }

@@ -24,12 +24,12 @@
       "unadjudicated": 88
     },
     "enumCells": {
-      "native": 168,
-      "absent": 28,
-      "unadjudicated": 124
+      "native": 169,
+      "absent": 31,
+      "unadjudicated": 120
     },
-    "adjudicated": 41,
-    "namesAssigned": 15
+    "adjudicated": 45,
+    "namesAssigned": 16
   },
   "ops": {
     "and": {
@@ -9270,46 +9270,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: dropped or approximated on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: dropped or approximated on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "phrase",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: dropped or approximated on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite FTS only supports Natural/Boolean-style MATCH queries",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: dropped or approximated on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }

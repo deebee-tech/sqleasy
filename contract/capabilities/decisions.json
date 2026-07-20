@@ -373,6 +373,32 @@
         "refusal": "MSSQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
         "adjudicated": true
       }
+    },
+    "FullTextMode.Phrase": {
+      "_why": "Had ZERO coverage anywhere: the corpus contains 'Natural' twice, 'Boolean' once and 'Phrase' not at all, and there was no hand-written test either. A reachable enum member nothing checked, which is how it came to mean three different things on four engines.\n\nIt resolves three ways and all three are honest. POSTGRES genuinely supports it and now emits it \u2014 phraseto_tsquery (9.6+) joins terms with the `<->` distance operator, which is exactly a phrase match. It had been refused as 'not structured yet', which was wrong: the capability exists, so refusing it was the opposite error to emulating it. MYSQL and MSSQL express a phrase by quoting the search VALUE ('\"a b\"' IN BOOLEAN MODE; CONTAINS(col, '\"a b\"')), not by a mode \u2014 the query text is a bound parameter, so the builder cannot add those quotes without rewriting the caller's value, and it never tried: Phrase emitted exactly the same statement as Boolean, where words match independently. SQLITE has no phrase form and already refused.",
+      "postgres": {
+        "kind": "native",
+        "name": "phrase",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL expresses a phrase by quoting the search string, not by a mode \u2014 pass a quoted phrase to a Boolean search, or use whereMatchRaw",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a mode \u2014 pass a quoted phrase to a Boolean search, or use whereMatchRaw",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite FTS only supports Natural/Boolean-style MATCH queries",
+        "adjudicated": true
+      }
     }
   }
 }
