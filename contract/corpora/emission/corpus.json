@@ -22606,17 +22606,17 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `orders` AS `o` LEFT JOIN LATERAL (SELECT `li`.`sku` FROM `line_items` AS `li`) AS `x`;",
+            "sql": "SELECT * FROM `orders` AS `o` LEFT JOIN LATERAL (SELECT `li`.`sku` FROM `line_items` AS `li`) AS `x` ON TRUE;",
             "params": []
           },
-          "raw": "SELECT * FROM `orders` AS `o` LEFT JOIN LATERAL (SELECT `li`.`sku` FROM `line_items` AS `li`) AS `x`;"
+          "raw": "SELECT * FROM `orders` AS `o` LEFT JOIN LATERAL (SELECT `li`.`sku` FROM `line_items` AS `li`) AS `x` ON TRUE;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"orders\" AS \"o\" LEFT JOIN LATERAL (SELECT \"li\".\"sku\" FROM \"public\".\"line_items\" AS \"li\") AS \"x\";",
+            "sql": "SELECT * FROM \"public\".\"orders\" AS \"o\" LEFT JOIN LATERAL (SELECT \"li\".\"sku\" FROM \"public\".\"line_items\" AS \"li\") AS \"x\" ON TRUE;",
             "params": []
           },
-          "raw": "SELECT * FROM \"public\".\"orders\" AS \"o\" LEFT JOIN LATERAL (SELECT \"li\".\"sku\" FROM \"public\".\"line_items\" AS \"li\") AS \"x\";"
+          "raw": "SELECT * FROM \"public\".\"orders\" AS \"o\" LEFT JOIN LATERAL (SELECT \"li\".\"sku\" FROM \"public\".\"line_items\" AS \"li\") AS \"x\" ON TRUE;"
         },
         "sqlite": {
           "throws": "Join: SQLite does not support OUTER APPLY/LATERAL joins"

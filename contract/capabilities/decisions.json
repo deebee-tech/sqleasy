@@ -51,6 +51,54 @@
         "refusal": "SQLite does not support WITH TIES",
         "adjudicated": true
       }
+    },
+    "joinOuterApply": {
+      "_why": "MSSQL OUTER APPLY is native and takes no ON clause. Postgres and MySQL express the same semantics as LEFT JOIN LATERAL, which is equally native — but a LEFT JOIN REQUIRES ON or USING, and an APPLY has no ON conditions by construction, so the emitted statement had no ON at all and neither engine could parse it. Closed with the documented `ON TRUE` idiom 2026-07-20. SQLite has neither LATERAL nor APPLY.\n\nNAMES LEFT EMPTY DELIBERATELY, and this op is the design's own worked example: `outerApply` is T-SQL vocabulary, yet the capability is genuinely native on three engines. Because all three cells read `native`, nothing about a per-engine type split would move it off the shared surface — a Postgres user would still hit the dot and see a T-SQL term. Only derived sharedness forces the question, by requiring someone to assert `outerApply` is a real term in Postgres and MySQL, which it is not. The rename belongs with the typed surface. See docs/capability-manifest-design.md.",
+      "mssql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support OUTER APPLY/LATERAL joins",
+        "adjudicated": true
+      }
+    },
+    "joinCrossApply": {
+      "_why": "Same shape as joinOuterApply and unaffected by its bug: CROSS APPLY translates to CROSS JOIN LATERAL, and a CROSS JOIN never accepts an ON clause, so nothing was missing. Native on MSSQL, Postgres and MySQL; SQLite has neither. Names left empty for the same vocabulary reason as joinOuterApply.",
+      "mssql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support CROSS APPLY/LATERAL joins",
+        "adjudicated": true
+      }
     }
   },
   "enums": {}

@@ -19,16 +19,16 @@
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 359,
-      "absent": 23,
-      "unadjudicated": 106
+      "native": 365,
+      "absent": 25,
+      "unadjudicated": 98
     },
     "enumCells": {
       "native": 154,
       "absent": 10,
       "unadjudicated": 156
     },
-    "adjudicated": 6,
+    "adjudicated": 8,
     "namesAssigned": 1
   },
   "ops": {
@@ -2772,46 +2772,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: a T-SQL term that emits valid SQL on Postgres and MySQL, so it would extract native on all three and stay on the shared surface"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: a T-SQL term that emits valid SQL on Postgres and MySQL, so it would extract native on all three and stay on the shared surface"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: a T-SQL term that emits valid SQL on Postgres and MySQL, so it would extract native on all three and stay on the shared surface"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support CROSS APPLY/LATERAL joins",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: a T-SQL term that emits valid SQL on Postgres and MySQL, so it would extract native on all three and stay on the shared surface"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -2820,46 +2820,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: emits LEFT JOIN LATERAL with NO ON clause — invalid on Postgres and MySQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: emits LEFT JOIN LATERAL with NO ON clause — invalid on Postgres and MySQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: emits LEFT JOIN LATERAL with NO ON clause — invalid on Postgres and MySQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite does not support OUTER APPLY/LATERAL joins",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: emits LEFT JOIN LATERAL with NO ON clause — invalid on Postgres and MySQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }

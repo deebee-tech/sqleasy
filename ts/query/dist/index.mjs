@@ -1000,6 +1000,7 @@ const defaultJoin = (state, config, mode, options) => {
 				sqlHelper.addSqlSnippet(quoteIdentifier(joinState.alias, config.identifierDelimiters));
 			}
 			sqlHelper = defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
+			if (joinState.joinType === JoinType.OuterApply && joinState.joinOnStates.length === 0 && (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql)) sqlHelper.addSqlSnippet(" ON TRUE");
 			if (i < state.joinStates.length - 1) sqlHelper.addSqlSnippet(" ");
 		}
 	}

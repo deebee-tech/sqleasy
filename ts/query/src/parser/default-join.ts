@@ -146,6 +146,20 @@ export const defaultJoin = (
 
       sqlHelper = defaultJoinOns(sqlHelper, config, joinState.joinOnStates);
 
+      // MSSQL's `OUTER APPLY` carries its own join semantics and takes no ON clause. Postgres and
+      // MySQL express the same thing as `LEFT JOIN LATERAL`, and a LEFT JOIN *requires* ON or
+      // USING — the documented idiom is `ON TRUE`. An APPLY has no ON conditions by construction,
+      // so `defaultJoinOns` returns empty and the statement was emitted without one at all, which
+      // neither engine can parse. `CROSS JOIN LATERAL` is unaffected: a CROSS JOIN never takes ON.
+      if (
+        joinState.joinType === JoinType.OuterApply &&
+        joinState.joinOnStates.length === 0 &&
+        (config.databaseType === DatabaseType.Postgres ||
+          config.databaseType === DatabaseType.Mysql)
+      ) {
+        sqlHelper.addSqlSnippet(' ON TRUE');
+      }
+
       if (i < state.joinStates.length - 1) {
         sqlHelper.addSqlSnippet(' ');
       }
