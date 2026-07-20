@@ -5,10 +5,10 @@ import {
   MssqlQuery,
   MysqlQuery,
   PostgresQuery,
-  QueryBuilder,
   SqliteQuery,
   WhereOperator,
 } from '../../src';
+import type { CommonQueryBuilder } from '../../src';
 
 /**
  * Join-backed UPDATE/DELETE (`.join(...)` combined with `.updateTable`/`.deleteFrom`).
@@ -20,7 +20,7 @@ import {
  * into a `WHERE` predicate; SQLite throws, since it has no multi-table UPDATE/DELETE syntax).
  */
 describe('join-backed UPDATE/DELETE', () => {
-  const addJoin = (b: QueryBuilder): QueryBuilder =>
+  const addJoin = (b: CommonQueryBuilder): CommonQueryBuilder =>
     b.joinTable(JoinType.Inner, 'customers', 'c', (j) =>
       j.on('o', 'customer_id', JoinOperator.Equals, 'c', 'id'),
     );

@@ -87,6 +87,19 @@ export interface SqliteQueryBuilder extends BuilderView<
 > {}
 
 /**
+ * The surface every dialect shares — the intersection of the four views (nothing dialect-exclusive).
+ *
+ * All four dialect views are assignable to this, so a helper that works on *any* dialect's builder
+ * and only touches common methods should accept `CommonQueryBuilder` (or be generic over it) rather
+ * than the concrete `QueryBuilder`, which the narrow views are NOT assignable to.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface CommonQueryBuilder extends BuilderView<
+  Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>,
+  CommonQueryBuilder
+> {}
+
+/**
  * Anti-drift guard, checked at compile time only (never called).
  *
  * A view is a hand-curated subset of `QueryBuilder`'s surface. If a method a view names is renamed

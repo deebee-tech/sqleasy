@@ -1,5 +1,6 @@
 import { MultiBuilder } from '../../builder/multi-builder';
 import { QueryBuilder } from '../../builder/query';
+import type { SqliteQueryBuilder } from '../../builder/typed-views';
 import type { Dialect } from '../../configuration/configuration';
 import { RuntimeConfiguration } from '../../configuration/runtime';
 import { sqliteConfiguration } from './configuration';
@@ -19,8 +20,12 @@ export class SqliteQuery {
   };
 
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
-  public newBuilder = (rc?: RuntimeConfiguration): QueryBuilder => {
-    return new QueryBuilder(rc ? sqliteConfiguration(rc) : this.#configuration);
+  public newBuilder = (rc?: RuntimeConfiguration): SqliteQueryBuilder => {
+    // One runtime class, narrowed static type: the builder is a real QueryBuilder, typed as the
+    // per-engine view so only what SQLITE can run is on the dot. See builder/typed-views.ts.
+    return new QueryBuilder(
+      rc ? sqliteConfiguration(rc) : this.#configuration,
+    ) as unknown as SqliteQueryBuilder;
   };
 
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */

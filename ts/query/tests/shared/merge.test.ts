@@ -8,6 +8,7 @@ import {
   source,
   value,
 } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 // MERGE is native T-SQL and exists on no other dialect. This is an EXPLICIT surface a caller opts
 // into knowingly — not the silent INSERT-becomes-MERGE substitution that was removed. The whole
@@ -175,9 +176,14 @@ describe('MERGE cardinality rules', () => {
   });
 });
 
+// A NOTE on the wrong-dialect calls below: the per-engine builder TYPE no longer exposes the
+// method being refused (that compile-time absence is proven in typed-views.test.ts). These
+// tests verify the RUNTIME floor instead — a caller who reaches the method by bypassing the
+// type (plain JS, or another language port) must still be refused — so they cast to the wide
+// QueryBuilder to reach it.
 describe('MERGE is refused off MSSQL', () => {
-  const build = (make: () => ReturnType<MssqlQuery['newBuilder']>) => {
-    const b = make();
+  const build = (make: () => unknown) => {
+    const b = make() as QueryBuilder;
     b.merge((m) => {
       m.into('t')
         .usingTable('s', 'source')

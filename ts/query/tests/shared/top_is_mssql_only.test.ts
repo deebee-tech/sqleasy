@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MssqlQuery, MysqlQuery, OrderByDirection, PostgresQuery, SqliteQuery } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 // `TOP` is a T-SQL keyword and nothing else, so `.top(n)` is MSSQL-only. Through 10.x it was
 // SILENTLY DISCARDED on the other three dialects: `toSqlOptionsFor` returned `{}` for them and the
@@ -18,8 +19,13 @@ describe('top() is MSSQL-only', () => {
   ] as const;
 
   for (const [name, make] of others) {
+    // A NOTE on the wrong-dialect calls below: the per-engine builder TYPE no longer exposes the
+    // method being refused (that compile-time absence is proven in typed-views.test.ts). These
+    // tests verify the RUNTIME floor instead — a caller who reaches the method by bypassing the
+    // type (plain JS, or another language port) must still be refused — so they cast to the wide
+    // QueryBuilder to reach it.
     it(`${name} refuses top() instead of discarding it`, () => {
-      const b = make();
+      const b = make() as unknown as QueryBuilder;
       b.selectAll().fromTable('users', 'u').top(5);
       expect(() => b.parseRaw()).toThrow(new RegExp(`${name} has no TOP clause`));
     });
@@ -27,7 +33,7 @@ describe('top() is MSSQL-only', () => {
     // Presence, not positivity. `.top(0)` is still the caller asking for a TOP, and silently
     // ignoring it would be the same defect in miniature.
     it(`${name} refuses top(0) too — presence, not positivity`, () => {
-      const b = make();
+      const b = make() as unknown as QueryBuilder;
       b.selectAll().fromTable('users', 'u').top(0);
       expect(() => b.parseRaw()).toThrow(/has no TOP clause/);
     });
@@ -44,7 +50,7 @@ describe('top() is MSSQL-only', () => {
     // The guard sits at the top of defaultToSql rather than in the SELECT hook, so it must fire on
     // the paths that never reach that hook.
     it(`${name} refuses top() through parsePrepared, not just parseRaw`, () => {
-      const b = make();
+      const b = make() as unknown as QueryBuilder;
       b.selectAll().fromTable('users', 'u').top(5);
       expect(() => b.parsePrepared()).toThrow(/has no TOP clause/);
     });
@@ -58,7 +64,7 @@ describe('top() is MSSQL-only', () => {
     });
 
     it(`${name} accepts a query once clearTop() removes the request`, () => {
-      const b = make();
+      const b = make() as unknown as QueryBuilder;
       b.selectAll().fromTable('users', 'u').top(5).clearTop();
       expect(b.parseRaw()).not.toContain('TOP');
     });

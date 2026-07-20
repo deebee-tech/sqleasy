@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
+import type { QueryBuilder } from '../../src';
 
 /** `DISTINCT ON (...)` — Postgres-only; every other dialect has no equivalent and throws. */
 describe('DISTINCT ON', () => {
@@ -29,8 +30,13 @@ describe('DISTINCT ON', () => {
   });
 
   it('throws on MySQL, MSSQL, and SQLite', () => {
+    // A NOTE on the wrong-dialect calls here: the per-engine builder TYPE no longer exposes the
+    // method being refused (that compile-time absence is proven in typed-views.test.ts). These
+    // tests verify the RUNTIME floor instead — a caller who reaches the method by bypassing the
+    // type (plain JS, or another language port) must still be refused — so they cast to the wide
+    // QueryBuilder to reach it.
     for (const Query of [MysqlQuery, MssqlQuery, SqliteQuery]) {
-      const builder = new Query().newBuilder();
+      const builder = new Query().newBuilder() as unknown as QueryBuilder;
       builder
         .distinctOn([{ tableNameOrAlias: 'o', columnName: 'customer_id' }])
         .selectAll()

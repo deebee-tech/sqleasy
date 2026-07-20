@@ -1904,6 +1904,14 @@ interface MysqlQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, Mssq
 /** The SQLite builder view. */
 interface SqliteQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>, SqliteQueryBuilder> {}
 /**
+ * The surface every dialect shares — the intersection of the four views (nothing dialect-exclusive).
+ *
+ * All four dialect views are assignable to this, so a helper that works on *any* dialect's builder
+ * and only touches common methods should accept `CommonQueryBuilder` (or be generic over it) rather
+ * than the concrete `QueryBuilder`, which the narrow views are NOT assignable to.
+ */
+interface CommonQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, MssqlOnly | PostgresOnly>, CommonQueryBuilder> {}
+/**
  * Anti-drift guard, checked at compile time only (never called).
  *
  * A view is a hand-curated subset of `QueryBuilder`'s surface. If a method a view names is renamed
@@ -2027,7 +2035,7 @@ declare class MssqlQuery {
   /** Returns the shared MSSQL dialect configuration for this instance. */
   configuration: () => Dialect;
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
-  newBuilder: (rc?: RuntimeConfiguration) => QueryBuilder;
+  newBuilder: (rc?: RuntimeConfiguration) => MssqlQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
   newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
 }
@@ -2049,7 +2057,7 @@ declare class MysqlQuery {
   /** Returns the shared MySQL dialect configuration for this instance. */
   configuration: () => Dialect;
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
-  newBuilder: (rc?: RuntimeConfiguration) => QueryBuilder;
+  newBuilder: (rc?: RuntimeConfiguration) => MysqlQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
   newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
 }
@@ -2071,7 +2079,7 @@ declare class PostgresQuery {
   /** Returns the shared PostgreSQL dialect configuration for this instance. */
   configuration: () => Dialect;
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
-  newBuilder: (rc?: RuntimeConfiguration) => QueryBuilder;
+  newBuilder: (rc?: RuntimeConfiguration) => PostgresQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
   newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
 }
@@ -2093,7 +2101,7 @@ declare class SqliteQuery {
   /** Returns the shared SQLite dialect configuration for this instance. */
   configuration: () => Dialect;
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
-  newBuilder: (rc?: RuntimeConfiguration) => QueryBuilder;
+  newBuilder: (rc?: RuntimeConfiguration) => SqliteQueryBuilder;
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
   newMultiBuilder: (rc?: RuntimeConfiguration) => MultiBuilder;
 }
@@ -2124,5 +2132,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.mts.map

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MssqlQuery, PostgresQuery } from '../../src';
+import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
 import type {
   MssqlQueryBuilder,
   MysqlQueryBuilder,
@@ -50,9 +50,25 @@ describe('per-engine typed views', () => {
     expect(true).toBe(true); // the real assertions are the @ts-expect-error lines above
   });
 
-  // The views are static types over the one runtime class; a facade hands back the narrow type but
-  // the object is a real QueryBuilder, so shared behaviour still runs. (Facade return types are not
-  // switched yet — that is the next step; this pins the mechanism first.)
+  // The user-facing proof: a facade hands back the NARROW view, so the ceiling holds through the
+  // real entry point, not just when a view type is written by hand.
+  it('the dialect facades hand back the narrow view (compile-time)', () => {
+    void (() => new MssqlQuery().newBuilder().top(5));
+    void (() => new PostgresQuery().newBuilder().distinctOn([]));
+    // @ts-expect-error top() is MSSQL-only — absent on the type PostgresQuery.newBuilder() returns
+    void (() => new PostgresQuery().newBuilder().top(5));
+    // @ts-expect-error top() is MSSQL-only — absent on MySQL's builder
+    void (() => new MysqlQuery().newBuilder().top(5));
+    // @ts-expect-error merge() is MSSQL-only — absent on SQLite's builder
+    void (() => new SqliteQuery().newBuilder().merge(() => {}));
+    // @ts-expect-error distinctOn() is Postgres-only — absent on MSSQL's builder
+    void (() => new MssqlQuery().newBuilder().distinctOn([]));
+
+    expect(true).toBe(true);
+  });
+
+  // The views are static types over the one runtime class; the object a facade returns is a real
+  // QueryBuilder, so shared (and each engine's own) behaviour still runs.
   it('a shared method still runs on the concrete builder', () => {
     const sql = new MssqlQuery().newBuilder().selectAll().fromTable('users', 'u').top(5).parseRaw();
     expect(sql).toContain('TOP (5)');

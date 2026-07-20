@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
+import type { CommonQueryBuilder } from '../../src';
 
 // MSSQL's `OUTER APPLY` carries its own join semantics and takes no ON clause. Postgres and MySQL
 // express the same thing as `LEFT JOIN LATERAL` — but a LEFT JOIN *requires* ON or USING, and an
@@ -9,7 +10,7 @@ import { MssqlQuery, MysqlQuery, PostgresQuery, SqliteQuery } from '../../src';
 // The corpus pinned the broken form green, because it was only ever checked against our own
 // emitter. `CROSS JOIN LATERAL` was never affected: a CROSS JOIN takes no ON.
 describe('joinOuterApply emits a complete join', () => {
-  const build = (make: () => ReturnType<MssqlQuery['newBuilder']>) => {
+  const build = (make: () => CommonQueryBuilder) => {
     const b = make();
     b.selectAll()
       .fromTable('orders', 'o')
@@ -49,7 +50,7 @@ describe('joinOuterApply emits a complete join', () => {
 // CROSS JOIN LATERAL, and a CROSS JOIN never accepts an ON clause — adding one would be a syntax
 // error, the same class of bug in the opposite direction.
 describe('joinCrossApply takes no ON clause', () => {
-  const build = (make: () => ReturnType<MssqlQuery['newBuilder']>) => {
+  const build = (make: () => CommonQueryBuilder) => {
     const b = make();
     b.selectAll()
       .fromTable('orders', 'o')

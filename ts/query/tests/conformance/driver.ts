@@ -828,7 +828,10 @@ export const runCase = (testCase: Case, dialect: Dialect): Expectation => {
       return { prepared: { sql: multi.parse(), params: [] }, raw: multi.parseRaw() };
     }
 
-    const builder = query.newBuilder();
+    // The replay must be able to call ANY builder method for ANY dialect — including ones a dialect
+    // refuses — because that is how the {throws} goldens are minted. So it uses the WIDE runtime
+    // surface, not the narrow per-engine view a facade now hands back.
+    const builder = query.newBuilder() as unknown as QueryBuilder;
     apply(builder, testCase.ops ?? []);
 
     const { sql, params } = builder.parsePrepared();

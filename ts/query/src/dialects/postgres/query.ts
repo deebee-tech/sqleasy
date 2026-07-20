@@ -1,5 +1,6 @@
 import { MultiBuilder } from '../../builder/multi-builder';
 import { QueryBuilder } from '../../builder/query';
+import type { PostgresQueryBuilder } from '../../builder/typed-views';
 import type { Dialect } from '../../configuration/configuration';
 import { RuntimeConfiguration } from '../../configuration/runtime';
 import { postgresConfiguration } from './configuration';
@@ -19,8 +20,12 @@ export class PostgresQuery {
   };
 
   /** Creates a query builder, optionally with a one-off {@link RuntimeConfiguration}. */
-  public newBuilder = (rc?: RuntimeConfiguration): QueryBuilder => {
-    return new QueryBuilder(rc ? postgresConfiguration(rc) : this.#configuration);
+  public newBuilder = (rc?: RuntimeConfiguration): PostgresQueryBuilder => {
+    // One runtime class, narrowed static type: the builder is a real QueryBuilder, typed as the
+    // per-engine view so only what POSTGRES can run is on the dot. See builder/typed-views.ts.
+    return new QueryBuilder(
+      rc ? postgresConfiguration(rc) : this.#configuration,
+    ) as unknown as PostgresQueryBuilder;
   };
 
   /** Creates a multi-statement builder for batching statements, optionally in a transaction. */
