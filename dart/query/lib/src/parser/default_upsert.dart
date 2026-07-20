@@ -56,8 +56,8 @@ void _emitConflictColumns(
 
 /// Emits the trailing conflict clause after `VALUES (...)`: PG/SQLite `ON CONFLICT ...`, MySQL
 /// `ON DUPLICATE KEY UPDATE ...` (its [UpsertAction.doNothing] case is instead an `INSERT IGNORE`
-/// prefix — see [isMysqlInsertIgnore] — and emits nothing here). MSSQL upsert is emitted as
-/// `MERGE` by [defaultInsert] via [emitMssqlMergeInsert]; this helper throws if called on MSSQL.
+/// prefix — see [isMysqlInsertIgnore] — and emits nothing here). MSSQL has no upsert at all:
+/// [defaultInsert] refuses before reaching here, and this helper throws if called on MSSQL anyway.
 void emitUpsertClause(
   SqlHelper sqlHelper,
   Dialect config,

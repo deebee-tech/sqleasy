@@ -1,3 +1,17 @@
+// PARKED, NOT DEAD. Nothing calls this today.
+//
+// `onConflict*()` used to route MSSQL here, silently turning an INSERT into a MERGE — a different
+// statement with different atomicity, trigger and error semantics. That substitution is gone and
+// MSSQL now refuses, because T-SQL has no upsert primitive.
+//
+// MERGE itself is genuine, native T-SQL and should come BACK as an explicit surface a caller opts
+// into knowingly, named in T-SQL's own vocabulary. That waits for the per-engine typed builders:
+// naming it now would produce `mergeMssql()`, and the suffix is only an artifact of four dialects
+// sharing one namespace. This emitter is the working implementation for that surface — kept so it
+// is not re-derived, and left unreferenced on purpose.
+//
+// See docs/capability-manifest-design.md.
+
 import type { Dialect } from '../configuration/configuration';
 import { DatabaseType } from '../enums/database-type';
 import { ParserArea } from '../enums/parser-area';

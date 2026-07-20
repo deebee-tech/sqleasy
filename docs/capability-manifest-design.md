@@ -1,7 +1,35 @@
 # The capability manifest: design of record
 
-**Status:** approved in principle 2026-07-20. Nothing implemented yet.
+**Status:** approved 2026-07-20. The manifest is shipped and inert; the behavioural sweep is done.
 **Authorizes:** a complete rewrite of the capability surface. Explicitly **not** a migration.
+
+## Progress
+
+**Done — the behavioural sweep.** Every confirmed emulation, silent no-op and lossy coercion has
+been fixed or refused, across both TypeScript and the Dart port, with the corpus re-minted at each
+step. Contract at **0.11.0**; **59 of 808 cells adjudicated**, 25 carrying an engine-native name.
+
+Two findings from doing it are worth keeping:
+
+- **The existing suite was agreeing with the bugs.** Of eleven defects fixed, _seven_ were asserted
+  as intended behaviour by a golden or a hand-written test — including a golden literally named
+  "top is silently ignored by the non-mssql dialects" and a test named "MSSQL applies the hint to
+  the FROM table even alongside a JOIN". That is the argument for a rewrite over a migration, and
+  it is why every fix here also carries hand-written coverage.
+- **An empty corpus diff is a finding, not a success.** Four fixes moved zero goldens because the
+  broken combination had no coverage at all: row-lock + join, `FullTextMode.Phrase` on any dialect,
+  MSSQL `RANGE` with a numeric offset, and the whole engine bucket. Check coverage before
+  concluding a change is inert.
+
+**Not started — the typed surface**, and with it the renaming. Three capabilities are deliberately
+parked on it rather than guessed at, because naming them now would mint exactly the suffixed forms
+(`mergeMssql()`, `forShareMssql()`) that the shared namespace forces and the types dissolve:
+
+| parked                | why it waits                                                                                                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MSSQL `MERGE`         | Genuine native T-SQL, currently refused because it was substituting for an upsert MSSQL does not have. The emitter is kept, unreferenced, in `default-merge.ts`. |
+| MSSQL lock hints      | `forShare` is refused because HOLDLOCK silently escalates to SERIALIZABLE. A DBA should be able to name `UPDLOCK`/`HOLDLOCK`/`REPEATABLEREAD` directly.          |
+| MySQL `INSERT IGNORE` | Already adjudicated with its own engine-native name; only the surface rename is outstanding.                                                                     |
 
 ---
 
