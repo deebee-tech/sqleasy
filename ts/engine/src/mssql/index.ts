@@ -132,8 +132,93 @@ export function parsePlanXml(xml: string): ExplainEstimate {
   };
 }
 
+/** T-SQL's exact-numeric types — the ones that promise a precision the caller is relying on. */
+const EXACT_NUMERIC_DECLARATIONS = new Set(['decimal', 'numeric', 'money', 'smallmoney']);
+
+/**
+ * The largest integer a JavaScript double represents exactly is 2^53-1, which is 16 digits.
+ * A `decimal(p,0)` up to 15 digits therefore round-trips losslessly and is left as a number.
+ */
+const MAX_EXACT_INTEGER_DIGITS = 15;
+
+/**
+ * Column names whose values `tedious` cannot hand back without losing precision.
+ *
+ * `readNumeric` computes `value * sign / Math.pow(10, scale)`, i.e. it lands in a double. That is
+ * exact when `scale === 0` and the precision fits in 2^53-1, and lossy otherwise — so
+ * `decimal(10,2)` holding 1234567.89 comes back as a float that is *close*, and money quietly stops
+ * balancing. `money` and `smallmoney` are always fractional (scale 4) and always qualify.
+ *
+ * Deliberately NARROW. An earlier draft coerced every decimal/numeric column, which would have
+ * turned `decimal(9,0)` — a perfectly exact integer id — into a string for no reason. Refusing to
+ * hand back a correct value is its own kind of wrong.
+ */
+const lossyNumericColumns = (result: IResult<unknown>): string[] => {
+  const columns = (
+    result.recordset as unknown as
+      | {
+          columns?: Record<
+            string,
+            { type?: { declaration?: string }; scale?: number; precision?: number }
+          >;
+        }
+      | undefined
+  )?.columns;
+  if (!columns) {
+    return [];
+  }
+
+  return Object.entries(columns)
+    .filter(([, meta]) => {
+      const declaration = meta?.type?.declaration?.toLowerCase();
+      if (!declaration || !EXACT_NUMERIC_DECLARATIONS.has(declaration)) {
+        return false;
+      }
+      if (declaration === 'money' || declaration === 'smallmoney') {
+        return true;
+      }
+      return (meta.scale ?? 0) > 0 || (meta.precision ?? 0) > MAX_EXACT_INTEGER_DIGITS;
+    })
+    .map(([name]) => name);
+};
+
+/**
+ * Returns exact-numeric values as strings so their digits survive the trip.
+ *
+ * Through 1.x these arrived as JavaScript numbers, i.e. as doubles, so a `decimal(19,4)` amount came
+ * back near-but-not-equal to what was stored. Nothing failed; the money was just slightly wrong, in
+ * a direction that compounds when it is summed.
+ *
+ * A string is the honest carrier: it preserves every digit, it is JSON-safe, and it matches what the
+ * MySQL driver now does for BIGINT. This is BREAKING for callers doing arithmetic directly on the
+ * returned value — which is the point, because that arithmetic was already operating on a number
+ * that had lost information.
+ */
+const coerceLossyNumerics = <T>(rows: T[], lossy: string[]): T[] => {
+  if (lossy.length === 0) {
+    return rows;
+  }
+
+  return rows.map((row) => {
+    if (row === null || typeof row !== 'object') {
+      return row;
+    }
+    const copy = { ...(row as Record<string, unknown>) };
+    for (const column of lossy) {
+      const value = copy[column];
+      if (value !== null && value !== undefined && typeof value !== 'string') {
+        copy[column] = String(value);
+      }
+    }
+    return copy as T;
+  });
+};
+
 const toResult = <T>(result: IResult<unknown>): QueryResult<T> => ({
-  rows: (result.recordset ?? []) as unknown as T[],
+  rows: coerceLossyNumerics(
+    (result.recordset ?? []) as unknown as T[],
+    lossyNumericColumns(result),
+  ),
   rowCount: result.recordset ? result.recordset.length : (result.rowsAffected?.[0] ?? 0),
 });
 

@@ -96,6 +96,13 @@ export type MysqlExecutorOptions = ExecutorOptions;
  * Build a MySQL executor over an EXISTING pool — bring your own `mysql2` Pool to share one across
  * your app (or hand in a test double). {@link close} is a no-op: you own the pool's lifetime.
  * Prefer {@link createMysqlExecutor} when the engine should create and close the pool.
+ *
+ * **BIGINT precision is yours to configure on this path.** `mysql2` fixes its value-decoding
+ * behaviour when the pool is created, so a pool handed in here was already built and this factory
+ * cannot change it. Set `supportBigNumbers: true` and `bigNumberStrings: true` on your own pool, or
+ * any BIGINT past 2^53-1 is decoded through a JavaScript double and comes back with different
+ * digits — no error, just a wrong number. {@link createMysqlExecutor} applies both by default
+ * because it owns the pool it builds.
  */
 export function createMysqlExecutorFromPool(
   pool: Pool,
@@ -167,11 +174,39 @@ export function createMysqlExecutorFromPool(
  * `{ statementTimeoutMs }` for a per-statement ceiling (MySQL has no pool-level knob for it).
  * {@link close} ends the pool this factory created.
  */
+/**
+ * Pool options that make MySQL hand back large integers without losing digits.
+ *
+ * `mysql2` decodes BIGINT into a JavaScript number by default, and a JS number is a double: every
+ * value above 2^53-1 silently loses precision. A snowflake ID, a bigint primary key past ~9.007e15,
+ * or a bigint money-in-cents column all come back subtly wrong with no error anywhere — the read
+ * succeeds and the digits are simply different.
+ *
+ * `supportBigNumbers` makes the driver notice the case; `bigNumberStrings` makes it return those
+ * values as STRINGS rather than as `BigInt`. String is the deliberate choice: it is JSON-safe,
+ * it matches how the MSSQL driver now returns exact-numeric values, and a `BigInt` cannot be mixed
+ * with a number in arithmetic without throwing, which would turn a silent corruption into a
+ * confusing runtime error one layer further out.
+ *
+ * This is BREAKING for any caller doing arithmetic on a value from a BIGINT column: it now arrives
+ * as a string. The alternative is continuing to return a number that is quietly wrong.
+ *
+ * NOTE the asymmetry with {@link createMysqlExecutorFromPool}: a caller-supplied pool was built
+ * before this factory ever saw it, so these defaults cannot be applied there. That path documents
+ * the requirement instead of silently under-delivering it.
+ */
+const losslessNumericDefaults = {
+  supportBigNumbers: true,
+  bigNumberStrings: true,
+} as const;
+
 export function createMysqlExecutor(
   config: MysqlConfig,
   opts: MysqlExecutorOptions = {},
 ): DbExecutor {
-  const pool = createPool(config);
+  // Caller-supplied values win: someone who deliberately sets `bigNumberStrings: false` has made an
+  // informed choice, and overriding it would be its own kind of dishonesty.
+  const pool = createPool({ ...losslessNumericDefaults, ...config });
   const executor = createMysqlExecutorFromPool(pool, opts);
   return {
     run: (prepared) => executor.run(prepared),

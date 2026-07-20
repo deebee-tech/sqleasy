@@ -40,6 +40,26 @@ const toResult = <T>(rs: ResultSet): QueryResult<T> => {
  */
 export function createSqliteExecutor(config: SqliteConfig, opts: ExecutorOptions = {}): DbExecutor {
   const { statementTimeoutMs } = opts;
+
+  // `intMode` is deliberately left at `@libsql/client`'s `'number'` default, and that is a
+  // DECISION rather than an oversight — the 2026-07-19 audit listed it as a wrong default.
+  //
+  // On a value it cannot represent, `'number'` THROWS. That is the honest outcome: an integer past
+  // 2^53-1 does not fit in a JavaScript double, and the driver says so instead of handing back
+  // different digits. It is the opposite of the MySQL BIGINT and MSSQL DECIMAL defects fixed
+  // alongside this, where the value came back silently wrong; a loud failure needs no repair.
+  //
+  // Neither alternative is an improvement here, because libSQL's setting is global rather than
+  // per-column:
+  //   'bigint' — returns EVERY integer as a BigInt, including a plain `id` of 1. BigInt cannot be
+  //              mixed with a number in arithmetic without throwing, so this trades a rare loud
+  //              failure for a pervasive one.
+  //   'string' — also rebinds BOOLEAN parameters as TEXT, which silently breaks `= 1` predicates
+  //              against untyped or BLOB-affinity columns. Repairing a numeric read by corrupting
+  //              boolean writes is not a trade worth making.
+  //
+  // A caller who genuinely stores integers past 2^53-1 can pass `intMode` themselves and take the
+  // BigInt consequences knowingly, which is the right place for that decision to be made.
   const clientConfig: Config = 'file' in config ? { url: `file:${config.file}` } : config;
   const client = createClient(clientConfig);
 
