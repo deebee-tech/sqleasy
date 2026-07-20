@@ -16,14 +16,19 @@
 // dated audit it would replace.
 //
 // Three defenses, all load-bearing:
-//   1. `kind` is extraction's HYPOTHESIS, never a finding. `adjudicated` is false on every cell at
-//      seed time and only a human may set it.
+//   1. `kind` on an UNADJUDICATED cell is extraction's HYPOTHESIS, never a finding. A cell only
+//      becomes adjudicated from a HUMAN source: decisions.json, or the typed-view surface
+//      (dart/query/tool/view_manifest.dart — hand-authored, gate-enforced, parity-checked against
+//      the TS AbsentOn* sets). Extraction never sets `adjudicated`.
 //   2. Every op and enum member named by the 2026-07-19 parity audit (Parts 2-4) or the 2026-07-20
-//      approximation sweep is FORCED to `unadjudicated` regardless of what extraction concluded.
-//      Those are exactly the cells extraction gets wrong.
-//   3. `name` — the engine's own term for this capability, and the field that decides what a caller
-//      sees when they hit the dot — is seeded EMPTY and is never inferred from the current
-//      TypeScript method name. A pre-filled default means never corrected.
+//      approximation sweep is FORCED to `unadjudicated` UNLESS a human source settled it. The forced
+//      list is the nuance guard: for a forced op the view surface trusts only the ABSENCE side, never
+//      "present, therefore native" — because presence does not settle a meaning that turns on an enum
+//      or argument the view cannot see (whereMatch's full-text subsystem, updateTable's SQLite gap).
+//   3. `name` is never inferred from GENERATED goldens. It comes only from a human source — the
+//      engine-native names in decisions.json, or the verified view surface (where a method present on
+//      a non-forced op is native under its own name, and a renamed method is native under its alias).
+//      The laundering trap below is about extraction, not about the hand-verified view surface.
 //
 // There is deliberately no `emulated` kind. It is the low-energy path, and the 39 confirmed
 // violations accumulated under a regime that already had a corpus, a parity ratchet, and code review.
@@ -242,32 +247,101 @@ const DECISIONS = existsSync(DECISIONS_PATH)
   ? JSON.parse(readFileSync(DECISIONS_PATH, 'utf8'))
   : { ops: {}, enums: {} };
 
-function buildCells(counts, forcedReason, decision) {
+// ── The typed-view surface as an adjudication source ──────────────────────────────────────────────
+// The per-engine typed views (dart/query/tool/view_manifest.dart, held in lockstep with the TS
+// AbsentOn* sets by scripts/check-surface-parity.mjs) are a HAND-AUTHORED, gate-enforced record of
+// exactly which methods each dialect can run. That is a human adjudication, the same class as
+// decisions.json — so its FIRM facts feed the manifest and complete the method (op) axis:
+//
+//   • a method in a dialect's `absent` set that is NOT a rename target → the capability is genuinely
+//     ABSENT on that dialect (adjudicated absent);
+//   • a method that a dialect renames (its generic name is hidden and an engine-native alias shown) →
+//     the capability is NATIVE there, under the alias's name (adjudicated native, name = the alias).
+//
+// It deliberately does NOT touch PRESENT-but-unrenamed cells: a method being on the view means it
+// runs, but not that it means the SAME thing on every engine — `whereMatch` spans four unrelated
+// full-text subsystems, `orderByColumn` carries NullsOrder nuance — so those stay on the
+// forced/extraction path for a human to judge at the enum/argument level. This is NOT laundering:
+// nothing here is read from the generated goldens; it is read from the verified honest surface.
+const VIEW_MANIFEST = join(ROOT, 'dart', 'query', 'tool', 'view_manifest.dart');
+
+function readViewSurface() {
+  const stripComments = (t) =>
+    t
+      .split('\n')
+      .map((l) => l.replace(/\/\/.*$/, ''))
+      .join('\n');
+  const src = stripComments(readFileSync(VIEW_MANIFEST, 'utf8'));
+  const surface = {};
+  for (const dialect of DIALECTS) {
+    const block = src.match(
+      new RegExp(`'${dialect}':\\s*DialectViewPolicy\\(([\\s\\S]*?)\\n  \\),`, 'm'),
+    );
+    if (!block) throw new Error(`build-capability-manifest: policy for '${dialect}' not found`);
+    const absentMatch = block[1].match(/absent:\s*\{([\s\S]*?)\}/);
+    const absent = new Set(
+      [...(absentMatch?.[1] ?? '').matchAll(/'([A-Za-z][A-Za-z0-9]*)'/g)].map((m) => m[1]),
+    );
+    const aliasMatch = block[1].match(/aliases:\s*\{([\s\S]*?)\}/);
+    const aliasTargetToSurface = {};
+    for (const pair of (aliasMatch?.[1] ?? '').matchAll(/'([A-Za-z0-9]+)':\s*'([A-Za-z0-9]+)'/g)) {
+      aliasTargetToSurface[pair[2]] = pair[1]; // target method -> engine-native surface name
+    }
+    surface[dialect] = { absent, aliasTargetToSurface };
+  }
+  return surface;
+}
+
+const VIEW = readViewSurface();
+
+/**
+ * The firm typed-view fact for one (op, dialect), or null to leave it to forced/extraction.
+ *
+ * `isForced` is the nuance guard: an op on the {@link FORCED} list is one whose mere presence on a
+ * view does NOT settle it (its per-dialect meaning turns on an enum or argument the view cannot see —
+ * `whereMatch`'s full-text subsystem, `updateTable`'s SQLite UPDATE…FROM gap). For those, only the
+ * ABSENCE side is firm; a present cell is left flagged for a human. For every other op, present means
+ * genuinely native under its own name — the clean-sweep removed the emulations that made presence
+ * untrustworthy, so this is the honest surface, not laundering.
+ */
+function viewFact(op, dialect, isForced) {
+  const { absent, aliasTargetToSurface } = VIEW[dialect];
+  const renamedTo = aliasTargetToSurface[op];
+  if (renamedTo) return { kind: 'native', name: renamedTo }; // hidden generic, shown as the alias
+  if (absent.has(op)) return { kind: 'absent', name: '' }; // genuinely absent
+  if (isForced) return null; // present but nuanced — leave for a human to judge
+  return { kind: 'native', name: op }; // present and unambiguous — native under its own name
+}
+
+function buildCells(counts, forcedReason, decision, viewFor) {
   const cells = {};
   for (const dialect of DIALECTS) {
     const observed = counts[dialect];
     const forced = Boolean(forcedReason);
     const decided = decision?.[dialect];
+    // decisions.json (richest — carries refusal + prose) outranks the view surface, which outranks
+    // the forced list and raw extraction. decisions.json and the view surface are both human and are
+    // held consistent, so this order only decides which one supplies the prose.
+    const view = decided ? null : (viewFor?.(dialect) ?? null);
+    const source = decided ? 'decisions' : view ? 'view' : forced ? 'forced' : 'extraction';
     cells[dialect] = {
-      // The engine's OWN term for this capability. Seeded empty; it is what a caller sees when they
-      // hit the dot, and it is the field nothing can infer. Filling all four with the same string is
-      // what makes a capability shared — sharedness is derived, never authored.
-      name: decided?.name ?? '',
-      // A human decision always wins over extraction, including over the forced list: the forced
-      // list exists to stop extraction claiming support nobody verified, not to outrank a person.
-      kind: decided?.kind ?? (forced ? 'unadjudicated' : hypothesize(observed)),
-      adjudicated: decided?.adjudicated ?? false,
+      name: decided?.name ?? view?.name ?? '',
+      kind: decided?.kind ?? view?.kind ?? (forced ? 'unadjudicated' : hypothesize(observed)),
+      adjudicated: decided?.adjudicated ?? (view ? true : false),
       refusal: decided?.refusal ?? null,
       evidence: {
         casesEmitting: observed.emitted,
         casesThrowing: observed.threw,
-        note: decided
-          ? 'adjudicated in contract/capabilities/decisions.json'
-          : forced
-            ? `forced unadjudicated — ${forcedReason}`
-            : observed.emitted === 0 && observed.threw === 0
-              ? 'no corpus coverage on this dialect'
-              : 'extraction hypothesis from generated goldens; not an independent check',
+        note:
+          source === 'decisions'
+            ? 'adjudicated in contract/capabilities/decisions.json'
+            : source === 'view'
+              ? 'adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)'
+              : source === 'forced'
+                ? `forced unadjudicated — ${forcedReason}`
+                : observed.emitted === 0 && observed.threw === 0
+                  ? 'no corpus coverage on this dialect'
+                  : 'extraction hypothesis from generated goldens; not an independent check',
       },
     };
   }
@@ -276,7 +350,11 @@ function buildCells(counts, forcedReason, decision) {
 
 const ops = {};
 for (const op of [...opCells.keys()].sort()) {
-  ops[op] = { cells: buildCells(opCells.get(op), FORCED[op], DECISIONS.ops?.[op]) };
+  ops[op] = {
+    cells: buildCells(opCells.get(op), FORCED[op], DECISIONS.ops?.[op], (d) =>
+      viewFact(op, d, Boolean(FORCED[op])),
+    ),
+  };
 }
 
 const enums = {};
@@ -330,18 +408,26 @@ const countKinds = (collection) => {
 const manifest = {
   _comment:
     'INERT capability manifest. Nothing imports this, nothing generates from it, no gate reads it. ' +
-    "`kind` is extraction's HYPOTHESIS from goldens that are generated rather than independently " +
-    'checked — it is NOT a finding. `adjudicated` is false everywhere and only a human may set it. ' +
-    "`name` is the engine's own term for the capability and is seeded EMPTY on purpose: it decides " +
-    'what a caller sees when they hit the dot, and filling all four dialects with the SAME name is ' +
-    'what makes a capability shared. Sharedness is DERIVED from the names agreeing, never authored. ' +
-    'There is deliberately no "emulated" kind. See docs/capability-manifest-design.md. ' +
+    'A cell is `adjudicated` when a HUMAN source settled it: decisions.json (rich, carries the ' +
+    'refusal text) or the typed-view surface (dart/query/tool/view_manifest.dart, held in lockstep ' +
+    'with the TS AbsentOn* sets by scripts/check-surface-parity.mjs) — the latter now supplies every ' +
+    "method's per-dialect membership and engine-native name. An UNADJUDICATED cell is one no human " +
+    'source has settled: an op on the forced list whose meaning turns on an enum/argument the views ' +
+    "cannot see (whereMatch's full-text subsystem, updateTable's SQLite gap), or a caller-facing enum " +
+    'member (WhereOperator.Ilike, NullsOrder.First, …) — the enum axis is NOT expressible in the typed ' +
+    "views and remains the hand-adjudication frontier. `kind` on an unadjudicated cell is extraction's " +
+    "HYPOTHESIS from generated goldens, never a finding. `name` is the engine's own term; filling all " +
+    'four dialects with the SAME name is what makes a capability shared (sharedness is DERIVED, never ' +
+    'authored). There is deliberately no "emulated" kind. See docs/capability-manifest-design.md. ' +
     'Regenerate with: node scripts/build-capability-manifest.mjs',
   manifestVersion: '0.1.0',
   generatedFrom: {
     corpus: 'contract/corpora/emission/corpus.json',
     corpusVersion: corpus.version ?? null,
     corpusCases: (corpus.cases ?? []).length,
+    decisions: 'contract/capabilities/decisions.json',
+    typedViewSurface:
+      'dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)',
     audit: 'docs/audits/dialect-parity-2026-07-19.md',
     sweep: '2026-07-20 approximation sweep (39 confirmed violations)',
   },
