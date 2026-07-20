@@ -21370,18 +21370,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] ORDER BY CASE WHEN [o].[shipped_at] IS NULL THEN 1 ELSE 0 END, [o].[shipped_at] ASC;', N'';",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[orders] AS [o] ORDER BY CASE WHEN [o].[shipped_at] IS NULL THEN 1 ELSE 0 END, [o].[shipped_at] ASC;"
+          "throws": "OrderBy: MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `orders` AS `o` ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC;",
-            "params": []
-          },
-          "raw": "SELECT * FROM `orders` AS `o` ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC;"
+          "throws": "OrderBy: MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it"
         },
         "postgres": {
           "prepared": {
@@ -21421,18 +21413,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] ORDER BY CASE WHEN [o].[shipped_at] IS NULL THEN 0 ELSE 1 END, [o].[shipped_at] DESC;', N'';",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[orders] AS [o] ORDER BY CASE WHEN [o].[shipped_at] IS NULL THEN 0 ELSE 1 END, [o].[shipped_at] DESC;"
+          "throws": "OrderBy: MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `orders` AS `o` ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 0 ELSE 1 END, `o`.`shipped_at` DESC;",
-            "params": []
-          },
-          "raw": "SELECT * FROM `orders` AS `o` ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 0 ELSE 1 END, `o`.`shipped_at` DESC;"
+          "throws": "OrderBy: MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it"
         },
         "postgres": {
           "prepared": {
@@ -21478,18 +21462,10 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] ORDER BY [o].[customer_id] ASC, CASE WHEN [o].[shipped_at] IS NULL THEN 1 ELSE 0 END, [o].[shipped_at] ASC;', N'';",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[orders] AS [o] ORDER BY [o].[customer_id] ASC, CASE WHEN [o].[shipped_at] IS NULL THEN 1 ELSE 0 END, [o].[shipped_at] ASC;"
+          "throws": "OrderBy: MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `orders` AS `o` ORDER BY `o`.`customer_id` ASC, CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC;",
-            "params": []
-          },
-          "raw": "SELECT * FROM `orders` AS `o` ORDER BY `o`.`customer_id` ASC, CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC;"
+          "throws": "OrderBy: MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it"
         },
         "postgres": {
           "prepared": {

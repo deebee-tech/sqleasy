@@ -24,12 +24,12 @@
       "unadjudicated": 88
     },
     "enumCells": {
-      "native": 164,
-      "absent": 24,
-      "unadjudicated": 132
+      "native": 168,
+      "absent": 28,
+      "unadjudicated": 124
     },
-    "adjudicated": 33,
-    "namesAssigned": 11
+    "adjudicated": 41,
+    "namesAssigned": 15
   },
   "ops": {
     "and": {
@@ -1240,8 +1240,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 189,
-            "casesThrowing": 46,
+            "casesEmitting": 186,
+            "casesThrowing": 49,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -1251,8 +1251,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 182,
-            "casesThrowing": 46,
+            "casesEmitting": 179,
+            "casesThrowing": 49,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -3784,8 +3784,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 22,
-            "casesThrowing": 0,
+            "casesEmitting": 19,
+            "casesThrowing": 3,
             "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
           }
         },
@@ -3795,8 +3795,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 17,
-            "casesThrowing": 3,
+            "casesEmitting": 14,
+            "casesThrowing": 6,
             "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
           }
         },
@@ -4360,8 +4360,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 143,
-            "casesThrowing": 37,
+            "casesEmitting": 140,
+            "casesThrowing": 40,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -4371,8 +4371,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 138,
-            "casesThrowing": 37,
+            "casesEmitting": 135,
+            "casesThrowing": 40,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7354,46 +7354,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "nullsFirst",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "nullsFirst",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7407,46 +7407,46 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
           "evidence": {
-            "casesEmitting": 2,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "casesEmitting": 0,
+            "casesThrowing": 2,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
           "evidence": {
-            "casesEmitting": 2,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "casesEmitting": 0,
+            "casesThrowing": 2,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "nullsLast",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "nullsLast",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -7518,8 +7518,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 15,
-            "casesThrowing": 0,
+            "casesEmitting": 13,
+            "casesThrowing": 2,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7529,8 +7529,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 12,
-            "casesThrowing": 2,
+            "casesEmitting": 10,
+            "casesThrowing": 4,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7571,8 +7571,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 7,
-            "casesThrowing": 0,
+            "casesEmitting": 6,
+            "casesThrowing": 1,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },
@@ -7582,8 +7582,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
-            "casesThrowing": 1,
+            "casesEmitting": 4,
+            "casesThrowing": 2,
             "note": "extraction hypothesis from generated goldens; not an independent check"
           }
         },

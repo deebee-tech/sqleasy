@@ -1,6 +1,8 @@
 import '../configuration.dart';
 import '../enums.dart';
+import '../errors/parser_error.dart';
 import '../identifier.dart';
+import '../dialect_name.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 
@@ -22,9 +24,10 @@ void emitOrderByTerm(
       config.databaseType == DatabaseType.sqlite;
 
   if (nulls != NullsOrder.none && !hasNativeNulls) {
-    final nullsFirst = nulls == NullsOrder.first;
-    sqlHelper.addSqlSnippet(
-      'CASE WHEN $columnSql IS NULL THEN ${nullsFirst ? '0' : '1'} ELSE ${nullsFirst ? '1' : '0'} END, ',
+    throw ParserError(
+      ParserArea.orderBy,
+      '${dialectDisplayName(config.databaseType)} has no NULLS FIRST/LAST — order by a '
+      'nullability expression explicitly if you need it',
     );
   }
 

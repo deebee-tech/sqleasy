@@ -114,6 +114,8 @@ describe('window functions', () => {
     ).fromTable('orders', 'o');
     expect(pg.parseRaw()).toContain('ORDER BY "o"."shipped_at" ASC NULLS LAST');
 
+    // MySQL has no NULLS FIRST/LAST in any version, so it refuses here exactly as it does in a
+    // top-level ORDER BY — the point of this case is that the two clauses never diverge.
     const mysql = new MysqlQuery().newBuilder();
     mysql
       .selectWindow(
@@ -122,9 +124,7 @@ describe('window functions', () => {
         'rn',
       )
       .fromTable('orders', 'o');
-    expect(mysql.parseRaw()).toContain(
-      'ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC',
-    );
+    expect(() => mysql.parseRaw()).toThrow(/MySQL has no NULLS FIRST\/LAST/);
   });
 
   it('supports multiple PARTITION BY columns', () => {

@@ -3,8 +3,11 @@ import { BuilderType } from '../enums/builder-type';
 import { DatabaseType } from '../enums/database-type';
 import { NullsOrder } from '../enums/nulls-order';
 import { OrderByDirection } from '../enums/order-by-direction';
+import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
+import { dialectDisplayName } from '../helpers/dialect-name';
 import { quoteIdentifier } from '../helpers/identifier';
+import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 
@@ -12,10 +15,17 @@ import type { QueryState } from '../state/query';
  * Emits one `<column> [ASC|DESC] [NULLS FIRST|NULLS LAST]` sort term. Shared by the top-level
  * ORDER BY clause and a window's `OVER (... ORDER BY ...)` — both sort NULLs the same way.
  *
- * Postgres/SQLite have native `NULLS FIRST`/`NULLS LAST`. MySQL/MSSQL have neither, so a
- * requested placement is emulated with a leading `CASE WHEN col IS NULL THEN … END` sort key —
- * portable to both (MSSQL's `IS NULL` is a predicate, not a boolean expression, so it cannot be
- * selected directly the way MySQL's can; `CASE` works on every dialect here).
+ * `NULLS FIRST`/`NULLS LAST` is native on Postgres and on SQLite 3.30+. MySQL and MSSQL have no
+ * such syntax in any version, and a requested placement used to be synthesized there as a leading
+ * `CASE WHEN col IS NULL THEN … END` sort key. That is refused now: it is an extra sort expression
+ * the caller never wrote, and it is not merely cosmetic — an index that could have satisfied the
+ * ORDER BY no longer can, so the engine sorts. Getting the right rows in the right order by a route
+ * the caller cannot see is the thing this library does not do.
+ *
+ * {@link NullsOrder.None} is deliberately untouched. That is the dialect's own default placement,
+ * and the dialects genuinely disagree (Postgres sorts NULLs last on ASC, the others first). Forcing
+ * agreement there would mean a `CASE WHEN` on EVERY sort term in the library — the same defeat of
+ * index-ordered scans, applied to queries that never asked about NULLs at all.
  */
 export const emitOrderByTerm = (
   sqlHelper: SqlHelper,
@@ -34,9 +44,10 @@ export const emitOrderByTerm = (
     config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite;
 
   if (nulls !== NullsOrder.None && !hasNativeNulls) {
-    const nullsFirst = nulls === NullsOrder.First;
-    sqlHelper.addSqlSnippet(
-      `CASE WHEN ${columnSql} IS NULL THEN ${nullsFirst ? '0' : '1'} ELSE ${nullsFirst ? '1' : '0'} END, `,
+    throw new ParserError(
+      ParserArea.OrderBy,
+      `${dialectDisplayName(config.databaseType)} has no NULLS FIRST/LAST — order by a ` +
+        'nullability expression explicitly if you need it',
     );
   }
 

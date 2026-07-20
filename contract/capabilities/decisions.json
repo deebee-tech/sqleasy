@@ -323,6 +323,56 @@
         "refusal": "MSSQL has no built-in regular-expression operator",
         "adjudicated": true
       }
+    },
+    "NullsOrder.First": {
+      "_why": "NULLS FIRST/LAST is native on Postgres and on SQLite 3.30+ (Oct 2019). MySQL and MSSQL have no such syntax in ANY version \u2014 MariaDB does, but it is not a dialect here. Through 10.x a requested placement was synthesized on those two as a leading `CASE WHEN col IS NULL THEN 0/1 END` sort key. It produced the right row order, which is why it lasted, but it is an extra sort expression the caller never wrote and it is not cosmetic: an index that could have satisfied the ORDER BY no longer can, so the engine sorts. Refused 2026-07-20.\n\nNullsOrder.None is deliberately NOT adjudicated here and must stay untouched. That is the dialect's own default placement, and the dialects genuinely disagree \u2014 Postgres sorts NULLs last on ASC, the other three first. Normalizing it would put a CASE WHEN on EVERY sort term in the library, defeating index-ordered scans for queries that never mentioned NULLs.\n\nThe same emitOrderByTerm serves a window's OVER (ORDER BY ...), so the refusal covers both clauses; refusing in one and synthesizing in the other would make the same builder call mean different things depending on where it appears.",
+      "postgres": {
+        "kind": "native",
+        "name": "nullsFirst",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "nullsFirst",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
+        "adjudicated": true
+      }
+    },
+    "NullsOrder.Last": {
+      "_why": "NULLS FIRST/LAST is native on Postgres and on SQLite 3.30+ (Oct 2019). MySQL and MSSQL have no such syntax in ANY version \u2014 MariaDB does, but it is not a dialect here. Through 10.x a requested placement was synthesized on those two as a leading `CASE WHEN col IS NULL THEN 0/1 END` sort key. It produced the right row order, which is why it lasted, but it is an extra sort expression the caller never wrote and it is not cosmetic: an index that could have satisfied the ORDER BY no longer can, so the engine sorts. Refused 2026-07-20.\n\nNullsOrder.None is deliberately NOT adjudicated here and must stay untouched. That is the dialect's own default placement, and the dialects genuinely disagree \u2014 Postgres sorts NULLs last on ASC, the other three first. Normalizing it would put a CASE WHEN on EVERY sort term in the library, defeating index-ordered scans for queries that never mentioned NULLs.\n\nThe same emitOrderByTerm serves a window's OVER (ORDER BY ...), so the refusal covers both clauses; refusing in one and synthesizing in the other would make the same builder call mean different things depending on where it appears.",
+      "postgres": {
+        "kind": "native",
+        "name": "nullsLast",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "nullsLast",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
+        "adjudicated": true
+      },
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
+        "adjudicated": true
+      }
     }
   }
 }
