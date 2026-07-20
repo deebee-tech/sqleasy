@@ -37,6 +37,90 @@ if (!corpusPath) {
 
 const corpus = JSON.parse(readFileSync(corpusPath, 'utf8'));
 
+// --derive: REPORT ONLY, never a gate. Derives each case's dialect set from the capability manifest
+// and compares it to the authored one. Under docs/capability-manifest-design.md, `dialects` stops
+// being authored and becomes the intersection, over a case's ops, of the dialects where every op is
+// `native` — so the 289 cases that currently declare nothing are stamped rather than rewritten.
+// While adjudication is in progress most cells are `unadjudicated`, so this mostly measures how much
+// of the corpus rests on unproven capability claims. That number IS the report.
+if (process.argv.includes('--derive')) {
+  const manifestPath = join(ROOT, 'contract', 'capabilities', 'capabilities.json');
+  if (!existsSync(manifestPath)) {
+    console.error('check-dialect-parity --derive: no manifest. Build it with:');
+    console.error('  node scripts/build-capability-manifest.mjs');
+    process.exit(1);
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+
+  let agree = 0;
+  const narrowed = [];
+  const widened = [];
+  const blocked = [];
+
+  for (const testCase of corpus.cases ?? []) {
+    const ops = new Set();
+    collectOps(testCase.ops, ops);
+    for (const builder of testCase.builders ?? []) collectOps(builder.ops, ops);
+    if (ops.size === 0) continue;
+
+    const authored = testCase.dialects ?? DIALECTS;
+    const unproven = new Set();
+    const derived = DIALECTS.filter((dialect) =>
+      [...ops].every((op) => {
+        const cell = manifest.ops?.[op]?.cells?.[dialect];
+        if (!cell) return true; // op absent from the manifest: nothing claimed, do not narrow on it
+        if (cell.kind === 'native') return true;
+        if (cell.kind === 'unadjudicated') {
+          unproven.add(`${op}:${dialect}`);
+          return true; // cannot narrow on an unmade decision
+        }
+        return false; // absent
+      }),
+    );
+
+    const same = derived.length === authored.length && derived.every((d) => authored.includes(d));
+    if (same) agree++;
+    else {
+      // Two very different disagreements, and conflating them misleads. A cell that resolved
+      // `absent` genuinely narrows the case. A cell still `unadjudicated` cannot narrow anything,
+      // so the derived set stays wide — that is not a claim of support, it is "nobody has decided".
+      const lost = authored.filter((d) => !derived.includes(d));
+      const gained = derived.filter((d) => !authored.includes(d));
+      const entry = { name: testCase.name, authored, derived, lost, gained };
+      if (lost.length > 0) narrowed.push(entry);
+      else widened.push(entry);
+    }
+    if (unproven.size > 0) blocked.push({ name: testCase.name, unproven: [...unproven] });
+  }
+
+  const total = (corpus.cases ?? []).length;
+  console.log(`check-dialect-parity --derive: ${total} cases\n`);
+  console.log(`  ${agree} agree with the authored dialect set`);
+  console.log(
+    `  ${narrowed.length} would RENARROW — an op resolved 'absent' on a dialect the case claims`,
+  );
+  console.log(
+    `  ${widened.length} appear wider only because a cell is still 'unadjudicated' (NOT a support claim)`,
+  );
+  console.log(
+    `  ${blocked.length} rest on at least one unadjudicated cell, so cannot be derived yet\n`,
+  );
+
+  if (narrowed.length > 0) {
+    console.log('REAL NARROWINGS — the manifest says the dialect cannot do this:');
+    for (const entry of narrowed.slice(0, 20)) {
+      console.log(`  ~ ${entry.name}\n      loses [${entry.lost.join(', ')}]`);
+    }
+    if (narrowed.length > 20) console.log(`  … and ${narrowed.length - 20} more`);
+  }
+
+  console.log(
+    '\nREPORT ONLY — this never fails the build. The derived set becomes authoritative only when\n' +
+      'the cells it reads have been adjudicated by a human. See docs/capability-manifest-design.md.',
+  );
+  process.exit(0);
+}
+
 /** Ops nest — a subquery/CTE body carries its own op-list under assorted keys. Walk all of them. */
 function collectOps(ops, sink) {
   if (!Array.isArray(ops)) return;

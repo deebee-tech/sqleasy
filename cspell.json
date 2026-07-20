@@ -29,6 +29,12 @@
     "misaligning",
     "misaligns",
     "mydb",
+    "narrowings",
+    "relitigate",
+    "renarrow",
+    "sharedness",
+    "Sybase",
+    "teardowns",
     "NOCOUNT",
     "NOWAIT",
     "Nowait",
@@ -61,6 +67,7 @@
     "pnpm-lock.yaml",
     "**/*.map",
     "assets",
-    "goldens/corpus.json"
+    "contract/corpora/emission/corpus.json",
+    "contract/capabilities/capabilities.json"
   ]
 }
