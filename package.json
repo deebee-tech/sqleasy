@@ -33,7 +33,8 @@
     "format:check": "prettier --check .",
     "spell": "cspell --no-progress \"**\"",
     "goldens": "turbo run goldens",
-    "harness:up": "docker compose -f docker-compose.harness.yml up -d --wait",
+    "harness:up": "docker compose -f docker-compose.harness.yml up -d --wait && pnpm harness:seed",
+    "harness:seed": "docker compose -f docker-compose.harness.yml exec -T mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'SqlEasy_ci_1!' -i /seed/mssql.sql",
     "harness:down": "docker compose -f docker-compose.harness.yml down -v"
   },
   "devDependencies": {

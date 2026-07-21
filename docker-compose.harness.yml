@@ -51,6 +51,10 @@ services:
       MSSQL_SA_PASSWORD: 'SqlEasy_ci_1!'
     ports:
       - '1433:1433'
+    # The SQL Server image has NO /docker-entrypoint-initdb.d, so the seed is mounted here and applied
+    # explicitly once the container is healthy (see `pnpm harness:seed`). It is idempotent.
+    volumes:
+      - ./harness/seed/mssql.sql:/seed/mssql.sql:ro
     healthcheck:
       test:
         [
