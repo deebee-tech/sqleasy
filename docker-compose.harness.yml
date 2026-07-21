@@ -51,10 +51,13 @@ services:
       MSSQL_SA_PASSWORD: 'SqlEasy_ci_1!'
     ports:
       - '1433:1433'
-    # The SQL Server image has NO /docker-entrypoint-initdb.d, so the seed is mounted here and applied
-    # explicitly once the container is healthy (see `pnpm harness:seed`). It is idempotent.
-    volumes:
-      - ./harness/seed/mssql.sql:/seed/mssql.sql:ro
+    # The SQL Server image has NO /docker-entrypoint-initdb.d, so the seed is applied explicitly once
+    # the container is healthy (see `pnpm harness:seed`). It is idempotent.
+    #
+    # The seed is PIPED IN over stdin rather than bind-mounted, and that is not a style preference. A
+    # single-FILE bind mount binds an inode: every editor that writes by replace-and-rename leaves the
+    # container reading the ORIGINAL file forever, so `harness:seed` silently applies a stale schema
+    # and the goldens gate on a database nobody edited. Piping always reads the host file as it is now.
     healthcheck:
       test:
         [

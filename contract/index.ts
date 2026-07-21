@@ -11,6 +11,7 @@
 
 export * from './schema/corpus';
 export * from './schema/normalization';
+export * from './schema/introspection';
 
 /**
  * Absolute path to the emission corpus.
@@ -30,5 +31,16 @@ export const EMISSION_CORPUS_PATH = new URL('./corpora/emission/corpus.json', im
  */
 export const NORMALIZATION_CORPUS_PATH = new URL(
   './corpora/normalization/corpus.json',
+  import.meta.url,
+).pathname;
+
+/**
+ * Absolute path to the INTROSPECTION corpus (corpus D).
+ *
+ * Harness-gated for the same reason as corpus C, and then some: it asserts what a real catalog says
+ * about the schema in `harness/seed/`, so the seed and this corpus move together.
+ */
+export const INTROSPECTION_CORPUS_PATH = new URL(
+  './corpora/introspection/corpus.json',
   import.meta.url,
 ).pathname;

@@ -1,0 +1,293 @@
+{
+  "version": "0.15.0",
+  "schemaName": {
+    "mssql": "dbo",
+    "mysql": "sqleasy_ci",
+    "postgres": "public",
+    "sqlite": "main"
+  },
+  "tables": [
+    {
+      "name": "customers",
+      "type": "table",
+      "columns": [
+        {
+          "name": "id",
+          "note": "SQLite does not mark its rowid primary key NOT NULL: pragma_table_info reports notnull = 0 for INTEGER PRIMARY KEY. The reader honours the pragma rather than correcting it, because SQLite genuinely permits NULL in a non-INTEGER primary key and a reader that assumed otherwise would misreport those. Postgres, MySQL and SQL Server all say NOT NULL.",
+          "dataType": {
+            "mssql": "int",
+            "mysql": "int",
+            "postgres": "integer",
+            "sqlite": "INTEGER"
+          },
+          "nullable": {
+            "mssql": false,
+            "mysql": false,
+            "postgres": false,
+            "sqlite": true
+          },
+          "isPrimaryKey": true,
+          "defaultValue": {
+            "mssql": null,
+            "mysql": null,
+            "postgres": "nextval('customers_id_seq'::regclass)",
+            "sqlite": null
+          }
+        },
+        {
+          "name": "email",
+          "dataType": {
+            "mssql": "nvarchar",
+            "mysql": "varchar",
+            "postgres": "character varying",
+            "sqlite": "VARCHAR(255)"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "display_name",
+          "dataType": {
+            "mssql": "nvarchar",
+            "mysql": "text",
+            "postgres": "text",
+            "sqlite": "TEXT"
+          },
+          "nullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "is_active",
+          "dataType": {
+            "mssql": "bit",
+            "mysql": "tinyint",
+            "postgres": "boolean",
+            "sqlite": "INTEGER"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": {
+            "mssql": "((1))",
+            "mysql": "1",
+            "postgres": "true",
+            "sqlite": "1"
+          }
+        },
+        {
+          "name": "created_at",
+          "dataType": {
+            "mssql": "datetime2",
+            "mysql": "datetime",
+            "postgres": "timestamp without time zone",
+            "sqlite": "TEXT"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [
+        {
+          "name": {
+            "mssql": "customers_pkey",
+            "mysql": "PRIMARY",
+            "postgres": "customers_pkey",
+            "sqlite": null
+          },
+          "columns": ["id"],
+          "unique": true
+        },
+        {
+          "name": "customers_email_key",
+          "columns": ["email"],
+          "unique": true
+        }
+      ],
+      "approxRowCount": {
+        "mssql": "present",
+        "mysql": "present",
+        "postgres": "absent",
+        "sqlite": "absent"
+      }
+    },
+    {
+      "name": "orders",
+      "type": "table",
+      "columns": [
+        {
+          "name": "id",
+          "note": "SQLite does not mark its rowid primary key NOT NULL: pragma_table_info reports notnull = 0 for INTEGER PRIMARY KEY. The reader honours the pragma rather than correcting it, because SQLite genuinely permits NULL in a non-INTEGER primary key and a reader that assumed otherwise would misreport those. Postgres, MySQL and SQL Server all say NOT NULL.",
+          "dataType": {
+            "mssql": "int",
+            "mysql": "int",
+            "postgres": "integer",
+            "sqlite": "INTEGER"
+          },
+          "nullable": {
+            "mssql": false,
+            "mysql": false,
+            "postgres": false,
+            "sqlite": true
+          },
+          "isPrimaryKey": true,
+          "defaultValue": {
+            "mssql": null,
+            "mysql": null,
+            "postgres": "nextval('orders_id_seq'::regclass)",
+            "sqlite": null
+          }
+        },
+        {
+          "name": "customer_id",
+          "dataType": {
+            "mssql": "int",
+            "mysql": "int",
+            "postgres": "integer",
+            "sqlite": "INTEGER"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "total",
+          "dataType": {
+            "mssql": "decimal",
+            "mysql": "decimal",
+            "postgres": "numeric",
+            "sqlite": "TEXT"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "big_ref",
+          "dataType": {
+            "mssql": "bigint",
+            "mysql": "bigint",
+            "postgres": "bigint",
+            "sqlite": "BIGINT"
+          },
+          "nullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "note",
+          "dataType": {
+            "mssql": "nvarchar",
+            "mysql": "text",
+            "postgres": "text",
+            "sqlite": "TEXT"
+          },
+          "nullable": true,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "placed_at",
+          "dataType": {
+            "mssql": "datetime2",
+            "mysql": "datetime",
+            "postgres": "timestamp without time zone",
+            "sqlite": "TEXT"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        }
+      ],
+      "foreignKeys": [
+        {
+          "columnName": "customer_id",
+          "referencedTable": "customers",
+          "referencedColumn": "id",
+          "referencedSchema": {
+            "mssql": "dbo",
+            "mysql": "sqleasy_ci",
+            "postgres": "public",
+            "sqlite": null
+          }
+        }
+      ],
+      "indexes": [
+        {
+          "name": {
+            "mssql": "orders_pkey",
+            "mysql": "PRIMARY",
+            "postgres": "orders_pkey",
+            "sqlite": null
+          },
+          "columns": ["id"],
+          "unique": true
+        },
+        {
+          "name": "orders_customer_idx",
+          "columns": ["customer_id"],
+          "unique": false,
+          "note": "MySQL keeps NO separate index for the foreign key, contrary to the usual folklore that InnoDB always builds one named after the constraint. Measured: information_schema.statistics lists exactly PRIMARY and orders_customer_idx. The corpus predicted a third index and the server disagreed, so the prediction lost."
+        }
+      ],
+      "approxRowCount": {
+        "mssql": "present",
+        "mysql": "present",
+        "postgres": "absent",
+        "sqlite": "absent"
+      }
+    },
+    {
+      "name": "active_customers",
+      "type": "view",
+      "note": "A view's columns are reported from the underlying SELECT, and the engines disagree about whether they are nullable: Postgres declines to prove non-nullability through a view and reports every column NULLable, while MySQL and SQL Server carry the base column's own nullability through. SQLite's pragma reports the source column's DECLARED type but no constraints at all. Nothing here is a defect; it is four catalogs answering an under-specified question.",
+      "columns": [
+        {
+          "name": "id",
+          "note": "MySQL reports COLUMN_DEFAULT = '0' for an integer column of a VIEW, which has no default at all \u2014 a phantom the other three do not invent. Measured against MySQL 8.4, not assumed.",
+          "dataType": {
+            "mssql": "int",
+            "mysql": "int",
+            "postgres": "integer",
+            "sqlite": "INTEGER"
+          },
+          "nullable": {
+            "mssql": false,
+            "mysql": false,
+            "postgres": true,
+            "sqlite": true
+          },
+          "isPrimaryKey": false,
+          "defaultValue": {
+            "mssql": null,
+            "mysql": "0",
+            "postgres": null,
+            "sqlite": null
+          }
+        },
+        {
+          "name": "email",
+          "dataType": {
+            "mssql": "nvarchar",
+            "mysql": "varchar",
+            "postgres": "character varying",
+            "sqlite": "VARCHAR(255)"
+          },
+          "nullable": {
+            "mssql": false,
+            "mysql": false,
+            "postgres": true,
+            "sqlite": true
+          },
+          "isPrimaryKey": false,
+          "defaultValue": null
+        }
+      ],
+      "foreignKeys": [],
+      "indexes": [],
+      "approxRowCount": "absent"
+    }
+  ]
+}

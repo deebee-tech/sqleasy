@@ -1,7 +1,7 @@
 {
   "name": "@deebeetech/sqleasy-engine",
   "version": "1.2.0",
-  "description": "A thin, opt-in executor for @deebeetech/sqleasy: runs its prepared SQL and transactions on Postgres, MySQL, SQL Server, and SQLite — loading only the driver you import.",
+  "description": "A thin, opt-in executor for @deebeetech/sqleasy: runs its prepared SQL and transactions on Postgres, MySQL, SQL Server, and SQLite \u2014 loading only the driver you import.",
   "keywords": [
     "sql",
     "sql-executor",
@@ -104,7 +104,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --exclude \"test/conformance/**\"",
+    "conformance:integration": "vitest run test/conformance",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

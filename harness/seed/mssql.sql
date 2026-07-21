@@ -2,16 +2,23 @@
 -- rationale behind the schema and the deliberately awkward data.
 --
 -- Unlike the Postgres and MySQL images, the SQL Server image has NO /docker-entrypoint-initdb.d
--- mechanism, so this file is applied explicitly AFTER the container is healthy:
---   docker compose -f docker-compose.harness.yml exec -T mssql \
---     /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'SqlEasy_ci_1!' -i /seed/mssql.sql
--- It is therefore responsible for creating its own database, and must be idempotent.
+-- mechanism, so this file is applied explicitly AFTER the container is healthy (`pnpm harness:seed`)
+-- by PIPING it in -- never by bind-mounting it and passing -i, which pins the container to the
+-- inode this file had when the container started. It is therefore responsible for creating its own
+-- database, and must be idempotent.
 --
 -- MSSQL-specific renderings of the one logical schema:
 --   SERIAL        -> INT IDENTITY(1,1)
 --   BOOLEAN       -> BIT (no boolean type; DEFAULT 1 for true)
 --   TEXT          -> NVARCHAR(MAX) (TEXT is deprecated)
 --   TIMESTAMP     -> DATETIME2 (TIMESTAMP in T-SQL is a rowversion, not a time at all)
+--
+-- The PRIMARY KEY constraints are NAMED here, unlike the other three renderings, because SQL Server
+-- is the only one whose auto-generated name is not reproducible: it mints `PK__customers__3213E83F`
+-- plus a random hex suffix that changes every time the table is recreated. Introspection reports the
+-- backing index by name, so an unnamed PK would make that golden unpinnable. Postgres derives
+-- `customers_pkey` deterministically and MySQL always calls it `PRIMARY`; only this one needs saying
+-- out loud.
 
 IF DB_ID('sqleasy_ci') IS NULL CREATE DATABASE sqleasy_ci;
 GO
@@ -25,7 +32,7 @@ DROP TABLE IF EXISTS customers;
 GO
 
 CREATE TABLE customers (
-  id           INT IDENTITY(1,1) PRIMARY KEY,
+  id           INT IDENTITY(1,1) CONSTRAINT customers_pkey PRIMARY KEY,
   email        NVARCHAR(255) NOT NULL,
   display_name NVARCHAR(MAX) NULL,
   is_active    BIT NOT NULL CONSTRAINT customers_is_active_df DEFAULT 1,
@@ -37,7 +44,7 @@ CREATE UNIQUE INDEX customers_email_key ON customers (email);
 GO
 
 CREATE TABLE orders (
-  id          INT IDENTITY(1,1) PRIMARY KEY,
+  id          INT IDENTITY(1,1) CONSTRAINT orders_pkey PRIMARY KEY,
   customer_id INT NOT NULL,
   total       DECIMAL(12, 2) NOT NULL,
   big_ref     BIGINT NULL,
