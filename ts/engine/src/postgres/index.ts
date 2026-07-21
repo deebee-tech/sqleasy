@@ -1,4 +1,5 @@
 import { Pool, type PoolConfig } from 'pg';
+import { normalizeRows } from '../normalize';
 import { explainBody } from '../explain-body';
 import type {
   DbExecutor,
@@ -47,7 +48,11 @@ type PgResultLike = { rows: unknown[]; rowCount: number | null };
 const argsOf = (prepared: PreparedSql): unknown[] => (prepared.params ?? []) as unknown[];
 
 const toResult = <T>(res: PgResultLike): QueryResult<T> => ({
-  rows: res.rows as T[],
+  // Normalization is TYPE-driven only (Date -> canonical timestamp). Exact numerics are left exactly
+  // as the driver returned them: `pg` already hands back `bigint` and `numeric` as exact STRINGS,
+  // which is the representation this engine deliberately standardized on — see the rationale on
+  // `losslessNumericDefaults` in ../mysql/index.ts.
+  rows: normalizeRows(res.rows) as T[],
   rowCount: res.rowCount ?? res.rows.length,
 });
 

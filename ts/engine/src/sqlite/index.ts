@@ -1,3 +1,4 @@
+import { normalizeRows } from '../normalize';
 import { createClient, type Config, type InArgs, type ResultSet } from '@libsql/client';
 import { explainBody } from '../explain-body';
 import type {
@@ -29,7 +30,9 @@ const BUSY_RETRY_DELAYS_MS = [100, 200, 400, 800, 1600, 3200];
 const argsOf = (prepared: PreparedSql): InArgs => (prepared.params ?? []) as InArgs;
 
 const toResult = <T>(rs: ResultSet): QueryResult<T> => {
-  const rows = rs.rows as unknown as T[];
+  // libSQL returns SQLite's own storage classes; timestamps are TEXT there, so this is a no-op
+  // today. It is applied anyway so every leg runs the SAME normalization path.
+  const rows = normalizeRows(rs.rows as unknown as T[]);
   // SELECT → row count; write → affected count (rows is empty).
   return { rows, rowCount: rows.length > 0 ? rows.length : rs.rowsAffected };
 };

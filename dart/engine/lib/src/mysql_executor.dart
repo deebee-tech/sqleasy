@@ -112,15 +112,37 @@ class MysqlExecutor implements DbExecutor {
     return value == null ? null : double.tryParse('$value');
   }
 
+  /// Decodes one row, undoing the driver's `TINYINT(1)` → bool guess.
+  ///
+  /// `typedAssoc()` decodes every column well EXCEPT booleans: it maps any `TINYINT` of display
+  /// width 1 to a Dart `bool`. MySQL cannot support that guess — `BOOLEAN` is pure syntactic sugar
+  /// for `TINYINT(1)` and the server does not remember the keyword, so a column declared `BOOLEAN`
+  /// and one declared `TINYINT(1)` are reported IDENTICALLY as `tinyint(1)`. A `TINYINT(1)` legally
+  /// holds any tinyint value, so the guess turns a stored **5 into `true`** — verified against the
+  /// harness. That is silent data corruption of exactly the kind the 2026-07-19 audit catalogued.
+  ///
+  /// So: keep every other conversion `typedAssoc()` makes, and for the columns it decided were
+  /// boolean, take the RAW digits from `assoc()` instead. MySQL has no boolean type, and this
+  /// reports what it actually stored — the same answer SQLite gives, for the same reason.
+  Map<String, Object?> _decode(my.ResultSetRow row) {
+    final typed = Map<String, Object?>.from(row.typedAssoc());
+    if (!typed.values.any((value) => value is bool)) return typed;
+
+    final raw = row.assoc();
+    for (final entry in typed.entries.toList()) {
+      if (entry.value is! bool) continue;
+      final digits = raw[entry.key] as String?;
+      typed[entry.key] = digits == null ? null : int.tryParse(digits) ?? digits;
+    }
+    return typed;
+  }
+
   Future<QueryResult> _runOn(dynamic session, PreparedSql prepared) async {
     final statement = await session.prepare(prepared.sql) as my.PreparedStmt;
     try {
       final result = await statement.execute(prepared.params);
-      // `typedAssoc()` converts the wire's text protocol into Dart types where it can; the raw
-      // string form is `assoc()`. Which of those is canonical is corpus C's question — this records
-      // the driver's own typed view.
       final rows = [
-        for (final row in result.rows) normalizeRow(row.typedAssoc()),
+        for (final row in result.rows) normalizeRow(_decode(row)),
       ];
       return QueryResult(
         rows: rows,

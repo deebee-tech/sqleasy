@@ -10,16 +10,36 @@
         "postgres": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = $1",
         "sqlite": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = ?"
       },
-      "params": [{ "t": "int", "v": 1 }],
+      "params": [
+        {
+          "t": "int",
+          "v": 1
+        }
+      ],
       "expect": {
         "columns": ["id", "total", "big_ref", "placed_at", "note"],
         "rows": [
           [
-            { "t": "int", "v": "1" },
-            { "t": "string", "v": "19.99" },
-            { "t": "int", "v": "9007199254740993" },
-            { "t": "string", "v": "2024-04-01T10:00:00" },
-            { "t": "string", "v": "first order" }
+            {
+              "t": "int",
+              "v": "1"
+            },
+            {
+              "t": "string",
+              "v": "19.99"
+            },
+            {
+              "t": "int",
+              "v": "9007199254740993"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-01T10:00:00"
+            },
+            {
+              "t": "string",
+              "v": "first order"
+            }
           ]
         ],
         "rowCount": 1
@@ -34,10 +54,24 @@
         "postgres": "SELECT big_ref, note FROM orders WHERE id = $1",
         "sqlite": "SELECT big_ref, note FROM orders WHERE id = ?"
       },
-      "params": [{ "t": "int", "v": 2 }],
+      "params": [
+        {
+          "t": "int",
+          "v": 2
+        }
+      ],
       "expect": {
         "columns": ["big_ref", "note"],
-        "rows": [[{ "t": "null" }, { "t": "null" }]],
+        "rows": [
+          [
+            {
+              "t": "null"
+            },
+            {
+              "t": "null"
+            }
+          ]
+        ],
         "rowCount": 1
       }
     },
@@ -50,16 +84,28 @@
         "postgres": "SELECT big_ref FROM orders WHERE id = $1",
         "sqlite": "SELECT big_ref FROM orders WHERE id = ?"
       },
-      "params": [{ "t": "int", "v": 1 }],
+      "params": [
+        {
+          "t": "int",
+          "v": 1
+        }
+      ],
       "expect": {
         "columns": ["big_ref"],
-        "rows": [[{ "t": "int", "v": "9007199254740993" }]],
+        "rows": [
+          [
+            {
+              "t": "int",
+              "v": "9007199254740993"
+            }
+          ]
+        ],
         "rowCount": 1
       }
     },
     {
       "name": "a DECIMAL keeps every digit",
-      "note": "1234567.89 is the value MSSQL used to return as a lossy float. SQLite reaches the exact string only because the seed stores decimals as TEXT — a NUMERIC column there has REAL affinity and loses it at rest.",
+      "note": "1234567.89 is the value MSSQL used to return as a lossy float. SQLite reaches the exact string only because the seed stores decimals as TEXT \u2014 a NUMERIC column there has REAL affinity and loses it at rest.",
       "sql": {
         "mssql": "SELECT total FROM orders ORDER BY id",
         "mysql": "SELECT total FROM orders ORDER BY id",
@@ -69,9 +115,24 @@
       "expect": {
         "columns": ["total"],
         "rows": [
-          [{ "t": "string", "v": "19.99" }],
-          [{ "t": "string", "v": "1234567.89" }],
-          [{ "t": "string", "v": "0.01" }]
+          [
+            {
+              "t": "string",
+              "v": "19.99"
+            }
+          ],
+          [
+            {
+              "t": "string",
+              "v": "1234567.89"
+            }
+          ],
+          [
+            {
+              "t": "string",
+              "v": "0.01"
+            }
+          ]
         ],
         "rowCount": 3
       }
@@ -88,16 +149,31 @@
       "expect": {
         "columns": ["placed_at"],
         "rows": [
-          [{ "t": "string", "v": "2024-04-01T10:00:00" }],
-          [{ "t": "string", "v": "2024-04-02T11:15:00" }],
-          [{ "t": "string", "v": "2024-04-03T12:30:00" }]
+          [
+            {
+              "t": "string",
+              "v": "2024-04-01T10:00:00"
+            }
+          ],
+          [
+            {
+              "t": "string",
+              "v": "2024-04-02T11:15:00"
+            }
+          ],
+          [
+            {
+              "t": "string",
+              "v": "2024-04-03T12:30:00"
+            }
+          ]
         ],
         "rowCount": 3
       }
     },
     {
       "name": "a BOOLEAN column, where the engines honestly differ",
-      "note": "SQLite has no boolean type and its driver does not expose a result column's declared type, so nothing can tell this int from a count. Faking a bool there would be a lie; levelling Postgres down to 1/0 would degrade a richer engine to match the weakest. The divergence is the truth, so it is recorded.",
+      "note": "Only Postgres (and MSSQL's BIT) have a real boolean type. MySQL's BOOLEAN is pure syntactic sugar for TINYINT(1) \u2014 the server reports a BOOLEAN column and a TINYINT(1) column IDENTICALLY, so a driver that maps width-1 tinyints to bool turns a stored 5 into true (verified). SQLite has no boolean at all. Faking one on either would be a lie, and levelling Postgres down to 1/0 would degrade a richer engine to match the weakest, so the divergence is recorded.",
       "sql": {
         "mssql": "SELECT id, is_active FROM customers ORDER BY id",
         "mysql": "SELECT id, is_active FROM customers ORDER BY id",
@@ -108,34 +184,104 @@
         "columns": ["id", "is_active"],
         "rows": [
           [
-            { "t": "int", "v": "1" },
-            { "t": "bool", "v": true }
+            {
+              "t": "int",
+              "v": "1"
+            },
+            {
+              "t": "bool",
+              "v": true
+            }
           ],
           [
-            { "t": "int", "v": "2" },
-            { "t": "bool", "v": true }
+            {
+              "t": "int",
+              "v": "2"
+            },
+            {
+              "t": "bool",
+              "v": true
+            }
           ],
           [
-            { "t": "int", "v": "3" },
-            { "t": "bool", "v": false }
+            {
+              "t": "int",
+              "v": "3"
+            },
+            {
+              "t": "bool",
+              "v": false
+            }
           ]
         ],
         "rowCount": 3
       },
       "overrides": {
+        "mysql": {
+          "rows": [
+            [
+              {
+                "t": "int",
+                "v": "1"
+              },
+              {
+                "t": "int",
+                "v": "1"
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": "2"
+              },
+              {
+                "t": "int",
+                "v": "1"
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": "3"
+              },
+              {
+                "t": "int",
+                "v": "0"
+              }
+            ]
+          ]
+        },
         "sqlite": {
           "rows": [
             [
-              { "t": "int", "v": "1" },
-              { "t": "int", "v": "1" }
+              {
+                "t": "int",
+                "v": "1"
+              },
+              {
+                "t": "int",
+                "v": "1"
+              }
             ],
             [
-              { "t": "int", "v": "2" },
-              { "t": "int", "v": "1" }
+              {
+                "t": "int",
+                "v": "2"
+              },
+              {
+                "t": "int",
+                "v": "1"
+              }
             ],
             [
-              { "t": "int", "v": "3" },
-              { "t": "int", "v": "0" }
+              {
+                "t": "int",
+                "v": "3"
+              },
+              {
+                "t": "int",
+                "v": "0"
+              }
             ]
           ]
         }
@@ -143,7 +289,7 @@
     },
     {
       "name": "a join returns both sides in column order",
-      "note": "Column ORDER is part of the contract, not incidental — a consumer reading positionally must see the same shape everywhere.",
+      "note": "Column ORDER is part of the contract, not incidental \u2014 a consumer reading positionally must see the same shape everywhere.",
       "sql": {
         "mssql": "SELECT c.email, o.total FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id",
         "mysql": "SELECT c.email, o.total FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id",
@@ -154,16 +300,34 @@
         "columns": ["email", "total"],
         "rows": [
           [
-            { "t": "string", "v": "ada@example.com" },
-            { "t": "string", "v": "19.99" }
+            {
+              "t": "string",
+              "v": "ada@example.com"
+            },
+            {
+              "t": "string",
+              "v": "19.99"
+            }
           ],
           [
-            { "t": "string", "v": "ada@example.com" },
-            { "t": "string", "v": "1234567.89" }
+            {
+              "t": "string",
+              "v": "ada@example.com"
+            },
+            {
+              "t": "string",
+              "v": "1234567.89"
+            }
           ],
           [
-            { "t": "string", "v": "grace@example.com" },
-            { "t": "string", "v": "0.01" }
+            {
+              "t": "string",
+              "v": "grace@example.com"
+            },
+            {
+              "t": "string",
+              "v": "0.01"
+            }
           ]
         ],
         "rowCount": 3
@@ -180,7 +344,14 @@
       },
       "expect": {
         "columns": ["n"],
-        "rows": [[{ "t": "int", "v": "3" }]],
+        "rows": [
+          [
+            {
+              "t": "int",
+              "v": "3"
+            }
+          ]
+        ],
         "rowCount": 1
       }
     }

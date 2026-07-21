@@ -114,6 +114,7 @@
     "teardowns",
     "timestamptz",
     "tinyint",
+    "tinyints",
     "tsbuildinfo",
     "tsdown",
     "tseslint",

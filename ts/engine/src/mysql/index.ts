@@ -1,3 +1,4 @@
+import { normalizeRows } from '../normalize';
 import {
   createPool,
   type Pool,
@@ -79,7 +80,7 @@ const argsOf = (prepared: PreparedSql): unknown[] => (prepared.params ?? []) as 
 // mysql2's query() resolves to `[rows | ResultSetHeader, fields]`. SELECT → an array of rows; a
 // write → a ResultSetHeader carrying affectedRows.
 const toResult = <T>(result: unknown): QueryResult<T> => {
-  if (Array.isArray(result)) return { rows: result as T[], rowCount: result.length };
+  if (Array.isArray(result)) return { rows: normalizeRows(result) as T[], rowCount: result.length };
   return { rows: [], rowCount: (result as ResultSetHeader).affectedRows ?? 0 };
 };
 
