@@ -86,13 +86,26 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'pnpm'
+      # Corpus C and D are replayed by BOTH ports against the SAME containers — that cross-port
+      # agreement is the whole point, and it is what caught the MySQL TINYINT(1) and Uint8List bugs.
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
       - run: pnpm install --frozen-lockfile
 
-      - name: Start the shared harness
-        run: docker compose -f docker-compose.harness.yml up -d --wait
+      # `harness:up` includes `harness:seed`. The seed is NOT optional and NOT only for MSSQL's sake:
+      # Postgres and MySQL self-seed from their entrypoints, but SQL Server has no such mechanism, so
+      # without this step its `sqleasy_ci` database does not exist and every mssql golden fails.
+      - name: Start and seed the shared harness
+        run: pnpm run harness:up
 
-      # NOTE: these env vars must be set explicitly. The engine's integration blocks are gated on
-      # them and SELF-SKIP when absent — which reports green having tested nothing. That is exactly
+      # The corpora connect to fixed localhost ports rather than reading env vars, so this step needs
+      # no configuration — and cannot silently self-skip.
+      - name: Corpus C + D conformance (every port)
+        run: pnpm turbo run conformance:integration
+
+      # NOTE: these env vars must be set explicitly. The engine's OTHER integration blocks are gated
+      # on them and SELF-SKIP when absent — which reports green having tested nothing. That is exactly
       # how a dialect silently loses coverage, so treat a passing run with these unset as a failure.
       - name: Engine integration
         run: pnpm turbo run test --filter='@deebeetech/sqleasy-engine'
