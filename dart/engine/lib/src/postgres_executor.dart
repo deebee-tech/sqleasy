@@ -18,6 +18,15 @@ const Map<int, TemporalKind> _temporalOids = {
   1082: TemporalKind.date,
   1114: TemporalKind.naive,
   1184: TemporalKind.instant,
+  // The ARRAY forms, carrying their ELEMENT's kind — `_date`, `_timestamp`, `_timestamptz`. Without
+  // these a `timestamp[]` had no kind at all, so its `DateTime`s passed through raw: the scalar bug,
+  // one level down and unfixed. On the TypeScript port that read as `["2024-04-01T14:00:00.000Z"]`
+  // in New_York and `["...T01:00:00.000Z"]` in Tokyo, with a `date[]` landing on the WRONG DAY. Dart
+  // was spared the drift — this driver UTC-flags array elements too — but was still handing back raw
+  // driver objects where TypeScript now returns canonical strings, so the PORTS disagreed.
+  1115: TemporalKind.naive,
+  1182: TemporalKind.date,
+  1185: TemporalKind.instant,
 };
 
 /// The temporal kind of each column the driver reported one for.
@@ -26,14 +35,13 @@ const Map<int, TemporalKind> _temporalOids = {
 /// indistinguishable `DateTime`. A column the driver did not name, or whose OID is not temporal, is
 /// simply absent, and [normalizeRows] leaves its values alone.
 ///
-/// SCALAR only, and that is a real boundary rather than an oversight. Measured 2026-07-21, this
-/// driver also hands back temporals wrapped in container types the contract defines no canonical
-/// form for: `timestamp[]`/`date[]`/`timestamptz[]` arrive as `List<DateTime>`, and
-/// `tsrange`/`daterange` as `DateTimeRange`/`DateRange`. None of those IS a `DateTime`, so
-/// [normalizeValue] passes the container through and the `DateTime`s inside stay raw. (`time`,
-/// `timetz` and `interval` do not produce `DateTime`s at all — they decode to the driver's own
-/// `Time`, `UndecodedBytes` and `Interval`.) Reaching inside a container to rewrite it would be
-/// inventing a canonical form corpus C has not defined, on both ports at once.
+/// Arrays are IN, and take their ELEMENT's kind — which is why the `_date`/`_timestamp`/
+/// `_timestamptz` OIDs sit in [_temporalOids] alongside the scalars, and why [normalizeValue]
+/// recurses. `tsrange`, `daterange`, `time`, `timetz` and `interval` are OUT, permanently; this
+/// driver returns them as `DateTimeRange`/`DateRange`, `Time`, `UndecodedBytes` and `Interval`
+/// respectively, none of which is a `DateTime`, so they pass through as the driver made them. The
+/// reasoning for that line lives in `contract/schema/normalization.ts`, where both ports can read
+/// the same ruling — restating it here is how the two drift apart.
 ColumnKinds _temporalKinds(pg.Result result) {
   final kinds = <String, TemporalKind>{};
   for (final column in result.schema.columns) {

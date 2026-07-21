@@ -1,5 +1,5 @@
 {
-  "version": "0.16.0",
+  "version": "0.18.0",
   "cases": [
     {
       "name": "every canonical type in one row",
@@ -418,6 +418,100 @@
             {
               "t": "string",
               "v": "2024-04-01T10:00:00"
+            }
+          ]
+        ],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "an array of temporals is normalized element-wise",
+      "note": "Postgres is the only dialect here with an array type, so this case is Postgres-only \u2014 the honest surface, not a portability gap. It exists because leaving containers alone was NOT neutral: with no kind registered for the array OIDs the elements passed through as raw driver objects, so this same row read as [\"2024-04-01T14:00:00.000Z\"] in America/New_York and [\"2024-04-01T01:00:00.000Z\"] in Asia/Tokyo, and the date[] landed on 2024-03-31. Each element takes the form its own type already has: naive keeps no designator, date keeps no time, and the instant keeps its Z. The text[] proves a non-temporal array is left alone.",
+      "sql": {
+        "postgres": "SELECT ARRAY[TIMESTAMP '2024-04-01 10:00:00', TIMESTAMP '2024-04-02 11:30:00'] AS ts_arr, ARRAY[DATE '2024-04-01'] AS date_arr, ARRAY[TIMESTAMPTZ '2024-04-01 10:00:00+00'] AS tstz_arr, ARRAY['a','b'] AS txt_arr"
+      },
+      "dialects": ["postgres"],
+      "expect": {
+        "columns": ["ts_arr", "date_arr", "tstz_arr", "txt_arr"],
+        "rows": [
+          [
+            {
+              "t": "array",
+              "v": [
+                {
+                  "t": "string",
+                  "v": "2024-04-01T10:00:00"
+                },
+                {
+                  "t": "string",
+                  "v": "2024-04-02T11:30:00"
+                }
+              ]
+            },
+            {
+              "t": "array",
+              "v": [
+                {
+                  "t": "string",
+                  "v": "2024-04-01"
+                }
+              ]
+            },
+            {
+              "t": "array",
+              "v": [
+                {
+                  "t": "string",
+                  "v": "2024-04-01T10:00:00Z"
+                }
+              ]
+            },
+            {
+              "t": "array",
+              "v": [
+                {
+                  "t": "string",
+                  "v": "a"
+                },
+                {
+                  "t": "string",
+                  "v": "b"
+                }
+              ]
+            }
+          ]
+        ],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a multi-dimensional array recurses",
+      "note": "Split out from the flat-array case so ONE port being blocked cannot cost the other its coverage. `package:postgres` 3.5.12 mis-decodes every multi-dimensional array \u2014 not just temporal ones: ARRAY[ARRAY[1,2],ARRAY[3,4]] comes back as [1, 1]. Its readListBytes consumes exactly ONE (dim_size, lower_bound) pair, but the wire format carries one PER DIMENSION, so at ndim=2 it starts reading elements from inside the second dimension's header. Casting the same value ::text returns {{\"2024-04-01 10:00:00\"}}, which proves the server sent the right bytes and the decoder loses them. The golden stays correct and the Dart port records the gap explicitly rather than the contract being weakened to match a driver bug.",
+      "sql": {
+        "postgres": "SELECT ARRAY[ARRAY[TIMESTAMP '2024-04-01 10:00:00', TIMESTAMP '2024-04-02 11:30:00']] AS nested"
+      },
+      "dialects": ["postgres"],
+      "expect": {
+        "columns": ["nested"],
+        "rows": [
+          [
+            {
+              "t": "array",
+              "v": [
+                {
+                  "t": "array",
+                  "v": [
+                    {
+                      "t": "string",
+                      "v": "2024-04-01T10:00:00"
+                    },
+                    {
+                      "t": "string",
+                      "v": "2024-04-02T11:30:00"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         ],

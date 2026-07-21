@@ -73,6 +73,34 @@ void main() {
         reason: 'a dialect silently dropped from the replay is lost coverage');
   });
 
+  /// Corpus cases THIS PORT cannot replay, and exactly why.
+  ///
+  /// Not a way to make a red suite green: a gap here is a promise the port does not keep, so it is
+  /// stated by name, with its cause, and asserted below to still exist in the corpus. The golden
+  /// stays correct — the contract is never weakened to match a driver's limitation, the same way the
+  /// MSSQL leg is recorded as absent rather than quietly dropped.
+  const knownGaps = <String, String>{
+    'a multi-dimensional array recurses':
+        'package:postgres 3.5.12 mis-decodes EVERY multi-dimensional array, temporal or not: '
+            'ARRAY[ARRAY[1,2],ARRAY[3,4]] comes back as [1, 1]. readListBytes consumes one '
+            '(dim_size, lower_bound) pair, but the wire format carries one PER DIMENSION, so at '
+            'ndim=2 it reads elements from inside the second dimension header. The same value cast '
+            '::text returns the correct {{...}}, so the server sends good bytes and the decoder '
+            'loses them. Corrupted before normalization runs — nothing in this package can fix it. '
+            'The TypeScript port replays this case and passes.',
+  };
+
+  test('every known gap still names a real corpus case', () {
+    // A renamed or deleted case must surface the stale exemption instead of silently widening it.
+    final names = cases.map((c) => c['name']! as String).toSet();
+    for (final gap in knownGaps.keys) {
+      expect(names, contains(gap),
+          reason:
+              'knownGaps names "$gap", which the corpus no longer defines — '
+              'delete the exemption or fix the name');
+    }
+  });
+
   for (final testCase in cases) {
     final name = testCase['name']! as String;
     final sqlByDialect = (testCase['sql']! as Map).cast<String, Object?>();
@@ -86,10 +114,13 @@ void main() {
 
     for (final dialect in implemented) {
       if (allowed != null && !allowed.contains(dialect)) continue;
+
       final sql = sqlByDialect[dialect] as String?;
       if (sql == null) continue; // the corpus does not define this case here
 
-      test('[$dialect] $name', () async {
+      // `skip` carries the REASON, so the runner prints why on every run — a bare skip is how a
+      // gap goes quiet.
+      test('[$dialect] $name', skip: knownGaps[name], () async {
         // An override REPLACES only the keys it names; everything else stays canonical.
         final expected = {
           ...baseExpect,
@@ -131,11 +162,22 @@ List<Object?> _bindParams(List<Object?> params) => [
 ///
 /// Integers are tagged with their DIGITS, not a JSON number, because a 64-bit value does not survive
 /// a JSON number — 2^53+1 is in this corpus precisely to catch that.
+///
+/// An `array` tag is built by recursing, so a nested array is tagged all the way down and compares
+/// element-wise and in ORDER. The comparison itself is whole-structure deep equality against the
+/// golden, which means a length mismatch fails: a short array cannot pass as a prefix of a long one,
+/// and a long one cannot pass by containing the expected elements. The fallback arm deliberately
+/// tags anything else as a string of its `toString()` — a raw driver object that escaped
+/// normalization therefore FAILS against a golden rather than being quietly accepted.
 Map<String, Object?> _tag(Object? value) => switch (value) {
       null => {'t': 'null'},
       final bool b => {'t': 'bool', 'v': b},
       final int i => {'t': 'int', 'v': i.toString()},
       final double d => {'t': 'double', 'v': d},
       final String s => {'t': 'string', 'v': s},
+      final List<Object?> list => {
+          't': 'array',
+          'v': [for (final element in list) _tag(element)],
+        },
       _ => {'t': 'string', 'v': value.toString()},
     };

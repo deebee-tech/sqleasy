@@ -85,3 +85,30 @@ describe('normalizeRow', () => {
     expect(out.note).toBe('hello');
   });
 });
+
+describe('arrays', () => {
+  const at = new Date(Date.UTC(2024, 3, 1, 10, 0, 0));
+
+  it('normalizes element-wise, and recurses through nested arrays', () => {
+    expect(normalizeValue([at, at], 'naive', 'utc')).toEqual([
+      '2024-04-01T10:00:00',
+      '2024-04-01T10:00:00',
+    ]);
+    expect(normalizeValue([at], 'date', 'utc')).toEqual(['2024-04-01']);
+    expect(normalizeValue([at], 'instant', 'utc')).toEqual(['2024-04-01T10:00:00Z']);
+    // Postgres multi-dimensional arrays come through as nested arrays; the recursion covers them.
+    expect(normalizeValue([[at]], 'naive', 'utc')).toEqual([['2024-04-01T10:00:00']]);
+  });
+
+  it('returns an array with no temporal kind AS-IS, not rebuilt', () => {
+    // Identity, not just equality: a `text[]` must cost nothing, and nothing inside it may change.
+    const text = ['a', 'b'];
+    expect(normalizeValue(text)).toBe(text);
+    const dates = [at];
+    expect(normalizeValue(dates)).toBe(dates);
+  });
+
+  it('leaves an empty array alone', () => {
+    expect(normalizeValue([], 'naive', 'utc')).toEqual([]);
+  });
+});

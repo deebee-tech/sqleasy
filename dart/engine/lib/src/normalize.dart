@@ -159,6 +159,19 @@ String canonicalInstant(DateTime value) =>
 /// TypeScript port cannot make this check at all — `Date` carries no such flag — which is why the
 /// MySQL mapping there had to be fixed rather than caught.)
 Object? normalizeValue(Object? value, [TemporalKind? kind]) {
+  // An ARRAY of temporals is normalized element-wise. This is not a new canonical form — it is the
+  // form the elements already have, applied one level down, and the recursion carries it through
+  // Postgres's multi-dimensional arrays for free. An array with no temporal kind is returned as-is
+  // rather than rebuilt, so a `text[]` costs nothing.
+  //
+  // A NEW list is built rather than the driver's mutated: `package:postgres` hands back views like
+  // `CastList<DateTime?, DateTime>`, which cannot hold the canonical strings that replace them. The
+  // result is a plain `List<Object?>`.
+  if (value is List<Object?>) {
+    return kind == null
+        ? value
+        : [for (final element in value) normalizeValue(element, kind)];
+  }
   if (value is! DateTime) return value;
   switch (kind) {
     case TemporalKind.instant:

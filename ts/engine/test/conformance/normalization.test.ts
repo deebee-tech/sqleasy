@@ -66,6 +66,13 @@ function matches(expected: Tagged, actual: unknown): boolean {
       return actual === expected.v;
     case 'double':
       return typeof actual === 'number' && actual === expected.v;
+    // An array matches element-wise, in order — the same `matches` applied one level down, so a
+    // nested array recurses for free and a length mismatch fails rather than passing on a prefix.
+    case 'array': {
+      const want = (expected.v ?? []) as Tagged[];
+      if (!Array.isArray(actual) || actual.length !== want.length) return false;
+      return want.every((cell, i) => matches(cell, actual[i]));
+    }
     case 'int': {
       const digits = String(expected.v);
       if (typeof actual === 'bigint') return actual.toString() === digits;

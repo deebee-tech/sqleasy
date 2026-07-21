@@ -75,6 +75,53 @@ void main() {
       expect(normalizeValue(value, TemporalKind.instant), same(value));
     });
 
+    test('normalizes an array element-wise, in the element\'s own form', () {
+      expect(
+        normalizeValue([
+          DateTime.utc(2024, 4, 1, 10),
+          DateTime.utc(2024, 4, 2, 11, 30),
+        ], TemporalKind.naive),
+        ['2024-04-01T10:00:00', '2024-04-02T11:30:00'],
+      );
+      expect(normalizeValue([DateTime.utc(2024, 4, 1)], TemporalKind.date),
+          ['2024-04-01']);
+      expect(
+          normalizeValue([DateTime.utc(2024, 4, 1, 10)], TemporalKind.instant),
+          ['2024-04-01T10:00:00Z']);
+    });
+
+    test('recurses, so a nested array is normalized all the way down', () {
+      expect(
+        normalizeValue([
+          [DateTime.utc(2024, 4, 1, 10)],
+          [DateTime.utc(2024, 4, 2, 11, 30), DateTime.utc(2024, 4, 3, 12)],
+        ], TemporalKind.naive),
+        [
+          ['2024-04-01T10:00:00'],
+          ['2024-04-02T11:30:00', '2024-04-03T12:00:00'],
+        ],
+      );
+    });
+
+    test('returns an array of UNKNOWN kind as-is, not rebuilt', () {
+      // A `text[]` must cost nothing, and an array whose kind the executor could not determine gets
+      // the same refusal a scalar does.
+      final list = [DateTime.utc(2024, 4, 1, 10)];
+      expect(normalizeValue(list), same(list));
+      expect(normalizeValue(<String>['a', 'b']), ['a', 'b']);
+    });
+
+    test('rebuilds the list rather than mutating the driver\'s view', () {
+      // `package:postgres` hands back views like `CastList<DateTime?, DateTime>`, which cannot hold
+      // the strings that replace their elements.
+      final source = <DateTime>[DateTime.utc(2024, 4, 1, 10)];
+      final result = normalizeValue(source, TemporalKind.naive);
+      expect(result, isA<List<Object?>>());
+      expect(result, isNot(same(source)));
+      expect(source.single, DateTime.utc(2024, 4, 1, 10),
+          reason: 'the driver\'s own list is left alone');
+    });
+
     test('passes non-temporal values through untouched', () {
       expect(normalizeValue(null), isNull);
       expect(normalizeValue(9007199254740993), 9007199254740993);

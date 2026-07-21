@@ -63,6 +63,13 @@ const PG_TEMPORAL_OIDS: Readonly<Record<number, TemporalKind>> = {
   1082: 'date',
   1114: 'naive',
   1184: 'instant',
+  // The ARRAY forms, carrying their ELEMENT's kind — `_date`, `_timestamp`, `_timestamptz`. Without
+  // these a `timestamp[]` had no kind at all, so its Dates passed through raw and read differently
+  // in every timezone: `["2024-04-01T14:00:00.000Z"]` in New_York, `["...T01:00:00.000Z"]` in Tokyo,
+  // and a `date[]` landed on the WRONG DAY. The scalar bug, one level down and unfixed.
+  1182: 'date',
+  1115: 'naive',
+  1185: 'instant',
 };
 
 /** The temporal kind of each column the driver reported one for. Empty when `fields` is absent. */

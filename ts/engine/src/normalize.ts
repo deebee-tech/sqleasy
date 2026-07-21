@@ -29,18 +29,17 @@
  * refusing to guess is the whole point, and handing back the driver's own object is the honest
  * answer to "I do not know what this is".
  *
- * ── THE KNOWN BOUNDARY: CONTAINERS ──
- * This normalizes SCALAR columns. A Postgres `timestamp[]` arrives as a real `Array` of `Date`s,
- * which is not itself a `Date`, so the container passes through and the `Date`s inside stay exactly
- * as the driver built them — measured, and the same on the Dart port:
+ * ── ARRAYS ARE NORMALIZED; THE POSTGRES-ONLY TYPES ARE NOT ──
+ * A `timestamp[]` is normalized ELEMENT-WISE, because that is not a new canonical form — it is the
+ * element's existing form applied one level down. It had to be: with no kind for the array OIDs the
+ * elements passed through raw and read differently in every timezone, `date[]` landing on the wrong
+ * day. The scalar bug, unfixed, one level down.
  *
- *     SELECT ARRAY[TIMESTAMP '2024-04-01 10:00:00']   ->   [Date]  <- not canonicalized
- *
- * That is deliberate, not an oversight. Reaching inside a container would invent a canonical form
- * for arrays and ranges that corpus C has never defined, on two ports at once, and the contract is
- * the thing that decides these — not this module. The same applies to the types no driver reduces to
- * a `Date` at all: Postgres `time`/`timetz`/`interval`, and T-SQL `time`. They have no canonical form
- * yet and are passed through untouched rather than guessed at.
+ * What stays out of scope, deliberately, is the set of Postgres types with no analogue in any other
+ * dialect: `tsrange`/`daterange`, `time`, `timetz`, `interval`. They carry NO canonical form — see
+ * the rationale in `contract/schema/normalization.ts`, which is where a scope decision belongs. They
+ * are passed through exactly as the driver produced them, and none of them is TZ-dependent, so this
+ * is a boundary rather than a defect. T-SQL `time` is omitted for the same reason.
  */
 
 /** A timestamp whose sub-second part is all zeroes, so a whole second is written plainly. */
@@ -182,6 +181,13 @@ export function normalizeValue(
   kind?: TemporalKind,
   components: DateComponents = 'local',
 ): unknown {
+  // An ARRAY of temporals is normalized element-wise. This is not a new canonical form — it is the
+  // form the elements already have, applied one level down, and the recursion carries it through
+  // Postgres's multi-dimensional arrays for free. Arrays with no temporal kind are returned as-is
+  // rather than rebuilt, so a `text[]` costs nothing.
+  if (Array.isArray(value)) {
+    return kind === undefined ? value : value.map((el) => normalizeValue(el, kind, components));
+  }
   if (!(value instanceof Date)) return value;
   switch (kind) {
     // An instant is absolute, so it is read the same way whatever the driver chose.
