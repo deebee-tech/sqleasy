@@ -9,5 +9,7 @@ library;
 
 export 'src/executor.dart'
     show DbExecutor, ExplainEstimate, PreparedSql, QueryResult, Row;
+export 'src/mysql_executor.dart' show MysqlConnectionOptions, MysqlExecutor;
 export 'src/postgres_executor.dart'
     show PostgresConnectionOptions, PostgresExecutor;
+export 'src/sqlite_executor.dart' show SqliteExecutor;
