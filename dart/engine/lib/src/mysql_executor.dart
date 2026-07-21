@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:mysql_client_plus/mysql_client_plus.dart' as my;
 
 import 'executor.dart';
+import 'normalize.dart';
 
 /// Connection details for [MysqlExecutor.open].
 class MysqlConnectionOptions {
@@ -118,7 +119,9 @@ class MysqlExecutor implements DbExecutor {
       // `typedAssoc()` converts the wire's text protocol into Dart types where it can; the raw
       // string form is `assoc()`. Which of those is canonical is corpus C's question — this records
       // the driver's own typed view.
-      final rows = [for (final row in result.rows) row.typedAssoc()];
+      final rows = [
+        for (final row in result.rows) normalizeRow(row.typedAssoc()),
+      ];
       return QueryResult(
         rows: rows,
         rowCount: rows.isNotEmpty ? rows.length : result.affectedRows.toInt(),

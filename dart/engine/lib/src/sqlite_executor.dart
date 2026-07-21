@@ -4,6 +4,7 @@ library;
 import 'package:sqlite3/sqlite3.dart' as sq;
 
 import 'executor.dart';
+import 'normalize.dart';
 
 /// Executes prepared SQL against SQLite.
 ///
@@ -70,7 +71,9 @@ class SqliteExecutor implements DbExecutor {
       // `select` serves both shapes: a mutation simply yields no rows, and its affected count comes
       // from the connection's `updatedRows`.
       final result = statement.select(prepared.params);
-      final rows = [for (final row in result) Map<String, Object?>.from(row)];
+      final rows = [
+        for (final row in result) normalizeRow(Map<String, Object?>.from(row)),
+      ];
       return QueryResult(
         rows: rows,
         rowCount: rows.isNotEmpty ? rows.length : _database.updatedRows,

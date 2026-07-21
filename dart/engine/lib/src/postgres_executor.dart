@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:postgres/postgres.dart' as pg;
 
 import 'executor.dart';
+import 'normalize.dart';
 
 /// Connection details for [PostgresExecutor.open].
 class PostgresConnectionOptions {
@@ -104,7 +105,7 @@ class PostgresExecutor implements DbExecutor {
 
   QueryResult _toQueryResult(pg.Result result) {
     final rows = [
-      for (final row in result) row.toColumnMap(),
+      for (final row in result) normalizeRow(row.toColumnMap()),
     ];
     // A SELECT reports 0 affected rows, so the row count is the returned count; a mutation reports
     // the rows it touched and returns none.

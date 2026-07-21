@@ -114,6 +114,26 @@ void main() {
     expect(estimate.rows, isNull);
   });
 
+  // The canonical temporal form: ISO-8601 with NO timezone designator. These columns carry no
+  // timezone, so the Postgres driver's UTC flag (and the `Z` it would print) says something the
+  // column never stored. All three legs must land on the identical string.
+  test('a timestamp normalizes to ISO-8601 with no invented timezone',
+      () async {
+    final result = await executor.run(
+      const PreparedSql('SELECT placed_at FROM orders ORDER BY id'),
+    );
+
+    final stamps = result.rows.map((row) => row['placed_at']).toList();
+    expect(stamps, [
+      '2024-04-01T10:00:00',
+      '2024-04-02T11:15:00',
+      '2024-04-03T12:30:00',
+    ]);
+    expect(stamps.first, isA<String>());
+    expect(stamps.first.toString(), isNot(endsWith('Z')),
+        reason: 'a Z would assert a timezone the column never carried');
+  });
+
   test('records the raw driver types for the normalization design', () async {
     final result = await executor.run(
       const PreparedSql(

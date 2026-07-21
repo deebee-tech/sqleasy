@@ -37,11 +37,11 @@ CREATE VIEW active_customers AS
 
 -- Identity columns assign 1,2,3 in insert order; orders reference those ids.
 INSERT INTO customers (email, display_name, is_active, created_at) VALUES
-  ('ada@example.com',   'Ada Lovelace', TRUE,  '2024-01-15 09:30:00'),
-  ('grace@example.com', NULL,           TRUE,  '2024-02-20 14:45:00'),
-  ('alan@example.com',  'Alan Turing',  FALSE, '2024-03-05 08:00:00');
+  ('ada@example.com',   'Ada Lovelace', TRUE,  '2024-01-15T09:30:00'),
+  ('grace@example.com', NULL,           TRUE,  '2024-02-20T14:45:00'),
+  ('alan@example.com',  'Alan Turing',  FALSE, '2024-03-05T08:00:00');
 
 INSERT INTO orders (customer_id, total, big_ref, note, placed_at) VALUES
-  (1, 19.99,      9007199254740993, 'first order', '2024-04-01 10:00:00'),
-  (1, 1234567.89, NULL,             NULL,          '2024-04-02 11:15:00'),
-  (2, 0.01,       42,               'tiny',        '2024-04-03 12:30:00');
+  (1, 19.99,      9007199254740993, 'first order', '2024-04-01T10:00:00'),
+  (1, 1234567.89, NULL,             NULL,          '2024-04-02T11:15:00'),
+  (2, 0.01,       42,               'tiny',        '2024-04-03T12:30:00');
