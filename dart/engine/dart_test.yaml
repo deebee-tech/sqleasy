@@ -1,0 +1,7 @@
+# `integration` marks suites that need the shared docker harness (`pnpm harness:up`). They are split
+# out of the default `test` run and driven by turbo's `conformance:integration` task, which declares
+# the harness env vars — an undeclared var never reaches the task, and a DB-gated suite that silently
+# self-skips would report green having tested nothing.
+tags:
+  integration:
+    timeout: 2x

@@ -1,0 +1,12 @@
+{
+  "name": "@sqleasy/dart-engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Turbo shim for the Dart engine port (pub.dev: sqleasy_engine). Pulls NO node dependencies — it exists only so turbo can schedule and cache the Dart toolchain as a task-graph node. The real package is defined by pubspec.yaml.",
+  "scripts": {
+    "lint": "dart pub get && dart analyze --fatal-infos",
+    "format:check": "dart format --output=none --set-exit-if-changed .",
+    "test": "dart pub get && dart test --exclude-tags integration",
+    "conformance:integration": "dart pub get && dart test --tags integration"
+  }
+}

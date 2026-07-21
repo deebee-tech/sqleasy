@@ -127,6 +127,8 @@ importers:
 
   contract: {}
 
+  dart/engine: {}
+
   dart/query: {}
 
   ts/engine:

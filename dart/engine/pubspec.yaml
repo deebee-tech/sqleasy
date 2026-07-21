@@ -1,0 +1,37 @@
+name: sqleasy_engine
+description: >-
+  Executes the SQL that SQLEasy builds. Runs a `{sql, params}` pair against a real database,
+  normalizes the rows that come back to one canonical shape across dialects, and introspects schemas.
+  Not an ORM and not a builder: it runs what it is given, verbatim.
+version: 0.1.0
+
+homepage: https://github.com/deebee-tech/sqleasy
+repository: https://github.com/deebee-tech/sqleasy
+issue_tracker: https://github.com/deebee-tech/sqleasy/issues
+
+topics:
+  - sql
+  - database
+  - postgres
+  - mysql
+  - sqlite
+
+# A SERVER-side package, unlike `sqleasy` itself: it opens sockets and (for SQLite) loads a native
+# library, so it is Dart-VM only and deliberately carries no web support.
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  # Pure Dart wire-protocol driver — the cleanest of the four legs.
+  postgres: ^3.5.0
+  # Pure Dart. The original `mysql_client` is abandoned; this is the maintained fork.
+  mysql_client_plus: ^0.1.3
+  # FFI over the bundled SQLite library (by the drift author).
+  sqlite3: ^3.5.0
+  # NOTE: no MSSQL driver yet. There is no native pure-Dart TDS driver; the only server-viable path
+  # is `dart_odbc` (FFI over host unixODBC + MS ODBC Driver 18), or a sidecar. That decision is
+  # deliberately deferred — MSSQL is the last leg built. See docs/engine-pilot-plan.md.
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
