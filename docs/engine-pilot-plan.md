@@ -46,10 +46,27 @@ regardless, so ODBC is the same _class_ of dependency, not a new one; (2) **intr
 hand-rolled for all four anyway** (`information_schema` / `pg_catalog` / `PRAGMA` / `sys.*`), so MSSQL
 is not an outlier there.
 
-**The one open MSSQL decision, deferrable:** accept `dart_odbc` + an ODBC host dependency as the
-MSSQL deployment contract, OR route MSSQL through a small sidecar over the `{sql, params}` contract in
-a language with a native driver (C#/Go/Node). This does NOT block the pilot — MSSQL is the last leg
-built, and Postgres/MySQL/SQLite are unambiguous GO. Resolve it when the MSSQL leg is reached.
+**RESOLVED 2026-07-21 — the Dart engine ships with NO MSSQL leg, and says so in its types.**
+
+Sandy's ruling, once corpora C and D were both green on three legs: leave it absent rather than take
+on an ODBC host dependency or a sidecar crutch nobody would want to ship. The consequences are
+deliberate and already implemented:
+
+- `IntrospectDialect` has **no `mssql` value**. Not a value that throws — no value at all, so calling
+  code cannot even name the thing the port cannot do. That is the founding rule applied to a reader
+  instead of a builder method.
+- `dart/query` still **emits** MSSQL SQL, with the full typed `MssqlView`. Building a statement and
+  executing it are different capabilities and only the second one is missing.
+- The dialect is never unverified: the TypeScript engine replays corpora C and D against **all four**
+  databases, MSSQL included, and both ports read the same corpus files. A divergence between the
+  ports on the three shared legs still fails loudly.
+- The Dart conformance suites assert their own dialect set, so "Dart does not execute MSSQL" is a
+  written-down fact that a future change has to consciously edit, not a silence.
+
+Revisit when a Dart consumer actually needs to reach SQL Server. The options that were on the table
+were: `dart_odbc` + an ODBC host dependency (unixODBC + Microsoft ODBC Driver 18) as the deployment
+contract; a sidecar over the `{sql, params}` contract in a language with a native driver; or writing
+a pure-Dart TDS driver. `dart_odbc` remains the realistic answer of the three.
 
 ## Reassessment after the gate: corpus B is THIN — the real value is behind the docker gate
 
@@ -80,23 +97,21 @@ literal BEGIN/COMMIT calls without conforming exactly the mechanics the design l
 can only pin the ordered `(sql, args)` _payload_, not the wrapper. And since the engine runs SQL
 verbatim, that payload is nearly the identity of the input. Hence: thin.
 
-## Sequence (revised after the gate)
+## Sequence (revised after the gate) — COMPLETE as of 2026-07-21
 
-The gate is answered (GO with caveats) and corpus B is thin, so the runway to the docker gate is
-short. Remaining, in order:
+1. ~~**Corpus B — minimal.**~~ Dropped on the reassessment above: the engine runs SQL verbatim, so B's
+   golden is nearly the identity of its input. Its one real assertion — statements passed separately
+   and in order — is covered by the executors' own transaction tests.
+2. ~~**`dart/engine` scaffold**~~ — done. Postgres, MySQL and SQLite legs all execute.
+3. ~~**THE DOCKER GATE**~~ — passed 2026-07-20 on Sandy's go-ahead. Three containers, four seed
+   renderings of one logical schema.
+4. ~~**Corpus C (normalization) and D (introspection)**~~ — both minted and replayed by BOTH ports.
+   Each caught a real defect on its first cross-port run: C found Dart turning a stored `5` into
+   `true` (MySQL reports `BOOLEAN` and `TINYINT(1)` identically), D found Dart comparing a `Uint8List`
+   to `'YES'` and silently reporting no nullable columns and no primary keys.
+5. ~~**The MSSQL leg**~~ — resolved by NOT building it; see the ruling above.
 
-1. **Corpus B — minimal.** A handful of transaction-ordering cases pinning "statements passed
-   separately, in order," NOT a full mock-driver harness. Pure, no docker. Skippable if judged not
-   worth even that.
-2. **`dart/engine` scaffold** — package, ported `DbExecutor` interface, CI wiring (mirror the
-   `dart/query` turbo-shim + pubspec pattern). Add the Postgres/MySQL/SQLite driver deps now; defer
-   the MSSQL leg and its `dart_odbc`-vs-sidecar decision.
-3. **THE DOCKER GATE.** Corpora C and D need real database containers
-   (`docker-compose.harness.yml` already exists). **Pause and check in with Sandy before standing up
-   databases** — heavier environmental step, the plan's real milestone, and where the actual
-   result-parity value lives.
-4. Corpus C (normalization) and D (introspection), minted against live DBs, replayed by both engines.
-5. The MSSQL leg (last), once its deployment decision is made.
+The engine is at its intended scope. The next move belongs to DeeBee, not to this repo.
 
 ## Provenance
 
