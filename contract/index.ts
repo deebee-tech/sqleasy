@@ -10,6 +10,7 @@
  */
 
 export * from './schema/corpus';
+export * from './schema/normalization';
 
 /**
  * Absolute path to the emission corpus.
@@ -20,3 +21,14 @@ export * from './schema/corpus';
  */
 export const EMISSION_CORPUS_PATH = new URL('./corpora/emission/corpus.json', import.meta.url)
   .pathname;
+
+/**
+ * Absolute path to the NORMALIZATION corpus (corpus C).
+ *
+ * Unlike the emission corpus this one is not pure: replaying it requires the shared docker harness
+ * (`pnpm harness:up`), because it asserts what a real database hands back.
+ */
+export const NORMALIZATION_CORPUS_PATH = new URL(
+  './corpora/normalization/corpus.json',
+  import.meta.url,
+).pathname;

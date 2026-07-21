@@ -1,0 +1,188 @@
+{
+  "version": "0.1.0",
+  "cases": [
+    {
+      "name": "every canonical type in one row",
+      "note": "The whole contract in a single row: an int id, an exact decimal string, a 64-bit integer past 2^53, an ISO-8601 timestamp with no zone, and text.",
+      "sql": {
+        "mssql": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = @p1",
+        "mysql": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = ?",
+        "postgres": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = $1",
+        "sqlite": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = ?"
+      },
+      "params": [{ "t": "int", "v": 1 }],
+      "expect": {
+        "columns": ["id", "total", "big_ref", "placed_at", "note"],
+        "rows": [
+          [
+            { "t": "int", "v": "1" },
+            { "t": "string", "v": "19.99" },
+            { "t": "int", "v": "9007199254740993" },
+            { "t": "string", "v": "2024-04-01T10:00:00" },
+            { "t": "string", "v": "first order" }
+          ]
+        ],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a NULL is a present column holding null",
+      "note": "Absent and null are different answers. A driver that drops the key reports 'no such column' where the database said 'no value'.",
+      "sql": {
+        "mssql": "SELECT big_ref, note FROM orders WHERE id = @p1",
+        "mysql": "SELECT big_ref, note FROM orders WHERE id = ?",
+        "postgres": "SELECT big_ref, note FROM orders WHERE id = $1",
+        "sqlite": "SELECT big_ref, note FROM orders WHERE id = ?"
+      },
+      "params": [{ "t": "int", "v": 2 }],
+      "expect": {
+        "columns": ["big_ref", "note"],
+        "rows": [[{ "t": "null" }, { "t": "null" }]],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a BIGINT past 2^53 is exact",
+      "note": "9007199254740993 is 2^53 + 1. Any port that routes a 64-bit integer through a double returns ...992 instead, silently. This is also why the corpus encodes ints as digit strings.",
+      "sql": {
+        "mssql": "SELECT big_ref FROM orders WHERE id = @p1",
+        "mysql": "SELECT big_ref FROM orders WHERE id = ?",
+        "postgres": "SELECT big_ref FROM orders WHERE id = $1",
+        "sqlite": "SELECT big_ref FROM orders WHERE id = ?"
+      },
+      "params": [{ "t": "int", "v": 1 }],
+      "expect": {
+        "columns": ["big_ref"],
+        "rows": [[{ "t": "int", "v": "9007199254740993" }]],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a DECIMAL keeps every digit",
+      "note": "1234567.89 is the value MSSQL used to return as a lossy float. SQLite reaches the exact string only because the seed stores decimals as TEXT — a NUMERIC column there has REAL affinity and loses it at rest.",
+      "sql": {
+        "mssql": "SELECT total FROM orders ORDER BY id",
+        "mysql": "SELECT total FROM orders ORDER BY id",
+        "postgres": "SELECT total FROM orders ORDER BY id",
+        "sqlite": "SELECT total FROM orders ORDER BY id"
+      },
+      "expect": {
+        "columns": ["total"],
+        "rows": [
+          [{ "t": "string", "v": "19.99" }],
+          [{ "t": "string", "v": "1234567.89" }],
+          [{ "t": "string", "v": "0.01" }]
+        ],
+        "rowCount": 3
+      }
+    },
+    {
+      "name": "a timestamp is ISO-8601 with no invented timezone",
+      "note": "These columns carry no timezone. The Postgres driver flags its DateTime UTC, so an unnormalized port appends a Z that asserts something the column never stored.",
+      "sql": {
+        "mssql": "SELECT placed_at FROM orders ORDER BY id",
+        "mysql": "SELECT placed_at FROM orders ORDER BY id",
+        "postgres": "SELECT placed_at FROM orders ORDER BY id",
+        "sqlite": "SELECT placed_at FROM orders ORDER BY id"
+      },
+      "expect": {
+        "columns": ["placed_at"],
+        "rows": [
+          [{ "t": "string", "v": "2024-04-01T10:00:00" }],
+          [{ "t": "string", "v": "2024-04-02T11:15:00" }],
+          [{ "t": "string", "v": "2024-04-03T12:30:00" }]
+        ],
+        "rowCount": 3
+      }
+    },
+    {
+      "name": "a BOOLEAN column, where the engines honestly differ",
+      "note": "SQLite has no boolean type and its driver does not expose a result column's declared type, so nothing can tell this int from a count. Faking a bool there would be a lie; levelling Postgres down to 1/0 would degrade a richer engine to match the weakest. The divergence is the truth, so it is recorded.",
+      "sql": {
+        "mssql": "SELECT id, is_active FROM customers ORDER BY id",
+        "mysql": "SELECT id, is_active FROM customers ORDER BY id",
+        "postgres": "SELECT id, is_active FROM customers ORDER BY id",
+        "sqlite": "SELECT id, is_active FROM customers ORDER BY id"
+      },
+      "expect": {
+        "columns": ["id", "is_active"],
+        "rows": [
+          [
+            { "t": "int", "v": "1" },
+            { "t": "bool", "v": true }
+          ],
+          [
+            { "t": "int", "v": "2" },
+            { "t": "bool", "v": true }
+          ],
+          [
+            { "t": "int", "v": "3" },
+            { "t": "bool", "v": false }
+          ]
+        ],
+        "rowCount": 3
+      },
+      "overrides": {
+        "sqlite": {
+          "rows": [
+            [
+              { "t": "int", "v": "1" },
+              { "t": "int", "v": "1" }
+            ],
+            [
+              { "t": "int", "v": "2" },
+              { "t": "int", "v": "1" }
+            ],
+            [
+              { "t": "int", "v": "3" },
+              { "t": "int", "v": "0" }
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "name": "a join returns both sides in column order",
+      "note": "Column ORDER is part of the contract, not incidental — a consumer reading positionally must see the same shape everywhere.",
+      "sql": {
+        "mssql": "SELECT c.email, o.total FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id",
+        "mysql": "SELECT c.email, o.total FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id",
+        "postgres": "SELECT c.email, o.total FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id",
+        "sqlite": "SELECT c.email, o.total FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.id"
+      },
+      "expect": {
+        "columns": ["email", "total"],
+        "rows": [
+          [
+            { "t": "string", "v": "ada@example.com" },
+            { "t": "string", "v": "19.99" }
+          ],
+          [
+            { "t": "string", "v": "ada@example.com" },
+            { "t": "string", "v": "1234567.89" }
+          ],
+          [
+            { "t": "string", "v": "grace@example.com" },
+            { "t": "string", "v": "0.01" }
+          ]
+        ],
+        "rowCount": 3
+      }
+    },
+    {
+      "name": "an aggregate count is an integer",
+      "note": "COUNT(*) is a 64-bit integer on every engine here; it must not arrive as a decimal string or a float.",
+      "sql": {
+        "mssql": "SELECT COUNT(*) AS n FROM orders",
+        "mysql": "SELECT COUNT(*) AS n FROM orders",
+        "postgres": "SELECT COUNT(*) AS n FROM orders",
+        "sqlite": "SELECT COUNT(*) AS n FROM orders"
+      },
+      "expect": {
+        "columns": ["n"],
+        "rows": [[{ "t": "int", "v": "3" }]],
+        "rowCount": 1
+      }
+    }
+  ]
+}
