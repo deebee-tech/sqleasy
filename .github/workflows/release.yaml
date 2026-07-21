@@ -9,6 +9,9 @@ name: Release
 # Each package keeps its own release.config.mjs, including the hard-won ordering rules:
 #   - @sebbo2002/semantic-release-jsr is listed BEFORE @semantic-release/github
 #   - the github plugin carries NO `assets` array
+#   - each package sets an explicit `tagFormat`, because the default (`v${version}`) is the QUERY
+#     package's existing lineage — the engine was resolving its previous version from `v10.1.0` and
+#     would have published 11.x instead of 2.x
 # On 2.0.0 the GitHub asset upload crashed and, because JSR was listed after it, JSR never published,
 # stranding npm and JSR on different versions. npm and JSR are the product; the GitHub release is
 # cosmetic, and a cosmetic step must never be able to strand a registry.
@@ -22,7 +25,13 @@ on:
         options:
           - ts/query
           - ts/engine
-          - contract
+        # `contract` is deliberately NOT here. It has no release.config.mjs and no semantic-release
+        # devDependency, so choosing it only ever produced "command not found" in the release step.
+        # The contract is versioned BY HAND and gated by its own hash check: change anything under
+        # corpora/ or schema/ without bumping contract/contract.json and `pnpm check:contract` fails
+        # the build. That gate is what makes the manual bump safe, so there is nothing for
+        # semantic-release to add. Re-record with:
+        #   pnpm --filter @deebeetech/sqleasy-contract validate:write
 
 permissions:
   contents: read

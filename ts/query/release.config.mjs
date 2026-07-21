@@ -1,4 +1,16 @@
 export default {
+  /**
+   * The repo's ORIGINAL tag lineage, kept bare on purpose.
+   *
+   * All 17 existing tags are `v5.0.0` … `v10.1.0`, and every one of them is this package's history —
+   * `sqleasy` WAS this repository before the monorepo. Prefixing it now (the migration plan's
+   * `sqleasy-v*`) would make semantic-release find no prior tag and start over at 1.0.0, throwing
+   * away a major-version lineage to gain symmetry with two packages that have no history here.
+   *
+   * So query keeps `v*` and the OTHER packages take prefixes. Stated explicitly rather than left to
+   * the default, because the default is exactly what made the sibling package wrong.
+   */
+  tagFormat: 'v${version}',
   branches: [
     'main',
     {

@@ -1,4 +1,17 @@
 export default {
+  /**
+   * PREFIXED, and this is load-bearing.
+   *
+   * With no `tagFormat` semantic-release uses `v${version}`, which in this repo matches the QUERY
+   * package's tags — so an engine release resolved `lastRelease` from `v10.1.0` and would have
+   * published `@deebeetech/sqleasy-engine` as **11.x** instead of 2.x. The two packages were sharing
+   * one tag namespace and neither config said so.
+   *
+   * The baseline tag `sqleasy-engine-v1.2.0` sits on 3b2ce97, the commit that folded `ts/engine` in
+   * carrying exactly that version — so the range analyzed is every engine change made since, which
+   * is what turns the accumulated breaking work into 2.0.0.
+   */
+  tagFormat: 'sqleasy-engine-v${version}',
   branches: [
     'main',
     { name: 'beta', prerelease: true },
