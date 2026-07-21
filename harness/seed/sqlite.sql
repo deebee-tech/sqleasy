@@ -9,6 +9,7 @@
 --   BOOLEAN       -> INTEGER (no boolean type; 1/0)
 --   NUMERIC(12,2) -> TEXT — see below
 --   TIMESTAMP     -> TEXT (ISO-8601; SQLite has no date type)
+--   TIMESTAMPTZ   -> TEXT (ISO-8601 WITH its offset — see below)
 --
 -- WHY DECIMAL IS **TEXT** HERE (decided 2026-07-20): SQLite has no fixed-point type. Declaring the
 -- column NUMERIC gives it REAL affinity, so 1234567.89 is stored as a float and the exact value is
@@ -20,6 +21,16 @@
 -- and range predicates on `total` are lexicographic unless the query casts (`CAST(total AS REAL)`).
 -- Exactness is preserved; numeric comparison becomes explicit. That is the deliberate choice —
 -- silently rounding money to make `>` convenient is the trade this project refuses.
+--
+-- WHY `seen_at` KEEPS ITS OFFSET RATHER THAN BEING PRE-CONVERTED TO `...Z`: the same reasoning one
+-- paragraph up — store the digits, do not launder them. Writing '2024-04-01T14:00:00Z' here would
+-- make SQLite APPEAR to agree with Postgres and SQL Server, but nothing would have normalized
+-- anything; the answer would simply have been written into the seed. SQLite's driver does not expose
+-- a result column's declared type, so neither port can tell this string from a `note` a user typed,
+-- and both hand it back VERBATIM — which corpus C records as a SQLite override, exactly as it records
+-- the missing boolean. Keeping the -04:00 also makes that override load-bearing: a port that started
+-- sniffing VALUES instead of COLUMNS would rewrite this to "2024-04-01T14:00:00Z" and the golden
+-- would catch it. Guessing from a value's shape is the failure normalization exists to prevent.
 --
 -- Foreign keys are declared but SQLite only ENFORCES them when `PRAGMA foreign_keys = ON` is set per
 -- connection. The declaration is what introspection reads, so it belongs here regardless.
@@ -40,7 +51,8 @@ CREATE TABLE orders (
   total       TEXT NOT NULL,
   big_ref     BIGINT,
   note        TEXT,
-  placed_at   TEXT NOT NULL
+  placed_at   TEXT NOT NULL,
+  seen_at     TEXT NOT NULL
 );
 
 CREATE INDEX orders_customer_idx ON orders (customer_id);
@@ -56,7 +68,7 @@ INSERT INTO customers (email, display_name, is_active, created_at) VALUES
 -- The decimals are QUOTED: an unquoted 19.99 is parsed as a REAL first and only then coerced to the
 -- column's TEXT affinity, which would round-trip the value through the float we are trying to avoid.
 -- Quoting stores the digits verbatim.
-INSERT INTO orders (customer_id, total, big_ref, note, placed_at) VALUES
-  (1, '19.99',      9007199254740993, 'first order', '2024-04-01T10:00:00'),
-  (1, '1234567.89', NULL,             NULL,          '2024-04-02T11:15:00'),
-  (2, '0.01',       42,               'tiny',        '2024-04-03T12:30:00');
+INSERT INTO orders (customer_id, total, big_ref, note, placed_at, seen_at) VALUES
+  (1, '19.99',      9007199254740993, 'first order', '2024-04-01T10:00:00', '2024-04-01T10:00:00-04:00'),
+  (1, '1234567.89', NULL,             NULL,          '2024-04-02T11:15:00', '2024-04-02T11:15:00+09:00'),
+  (2, '0.01',       42,               'tiny',        '2024-04-03T12:30:00', '2024-04-03T12:30:00+05:30');

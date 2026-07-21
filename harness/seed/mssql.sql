@@ -12,6 +12,7 @@
 --   BOOLEAN       -> BIT (no boolean type; DEFAULT 1 for true)
 --   TEXT          -> NVARCHAR(MAX) (TEXT is deprecated)
 --   TIMESTAMP     -> DATETIME2 (TIMESTAMP in T-SQL is a rowversion, not a time at all)
+--   TIMESTAMPTZ   -> DATETIMEOFFSET (the only T-SQL type that stores an offset alongside the clock)
 --
 -- The PRIMARY KEY constraints are NAMED here, unlike the other three renderings, because SQL Server
 -- is the only one whose auto-generated name is not reproducible: it mints `PK__customers__3213E83F`
@@ -50,6 +51,7 @@ CREATE TABLE orders (
   big_ref     BIGINT NULL,
   note        NVARCHAR(MAX) NULL,
   placed_at   DATETIME2 NOT NULL,
+  seen_at     DATETIMEOFFSET NOT NULL,
   CONSTRAINT orders_customer_fk FOREIGN KEY (customer_id) REFERENCES customers (id)
 );
 GO
@@ -67,8 +69,8 @@ INSERT INTO customers (email, display_name, is_active, created_at) VALUES
   ('alan@example.com',  'Alan Turing',  0, '2024-03-05T08:00:00');
 GO
 
-INSERT INTO orders (customer_id, total, big_ref, note, placed_at) VALUES
-  (1, 19.99,      9007199254740993, 'first order', '2024-04-01T10:00:00'),
-  (1, 1234567.89, NULL,             NULL,          '2024-04-02T11:15:00'),
-  (2, 0.01,       42,               'tiny',        '2024-04-03T12:30:00');
+INSERT INTO orders (customer_id, total, big_ref, note, placed_at, seen_at) VALUES
+  (1, 19.99,      9007199254740993, 'first order', '2024-04-01T10:00:00', '2024-04-01T10:00:00-04:00'),
+  (1, 1234567.89, NULL,             NULL,          '2024-04-02T11:15:00', '2024-04-02T11:15:00+09:00'),
+  (2, 0.01,       42,               'tiny',        '2024-04-03T12:30:00', '2024-04-03T12:30:00+05:30');
 GO

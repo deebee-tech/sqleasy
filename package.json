@@ -2,7 +2,7 @@
   "name": "sqleasy-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Polyglot, contract-first monorepo for SQLEasy — the query builder and execution engine across TypeScript, Dart, Python, C#, and Go, held to one another by a shared golden contract.",
+  "description": "Polyglot, contract-first monorepo for SQLEasy \u2014 the query builder and execution engine across TypeScript, Dart, Python, C#, and Go, held to one another by a shared golden contract.",
   "license": "MIT",
   "author": {
     "name": "Sandy Weatherby",
@@ -34,7 +34,7 @@
     "spell": "cspell --no-progress \"**\"",
     "goldens": "turbo run goldens",
     "harness:up": "docker compose -f docker-compose.harness.yml up -d --wait && pnpm harness:seed",
-    "harness:seed": "docker compose -f docker-compose.harness.yml exec -T mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'SqlEasy_ci_1!' < harness/seed/mssql.sql",
+    "harness:seed": "docker compose -f docker-compose.harness.yml exec -T postgres psql -q -U sqleasy -d sqleasy_ci < harness/seed/postgres.sql && docker compose -f docker-compose.harness.yml exec -T mysql mysql -uroot -psqleasy_ci sqleasy_ci < harness/seed/mysql.sql && docker compose -f docker-compose.harness.yml exec -T mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'SqlEasy_ci_1!' < harness/seed/mssql.sql",
     "harness:down": "docker compose -f docker-compose.harness.yml down -v"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 {
-  "version": "0.15.0",
+  "version": "0.19.0",
   "schemaName": {
     "mssql": "dbo",
     "mysql": "sqleasy_ci",
@@ -194,6 +194,19 @@
             "mssql": "datetime2",
             "mysql": "datetime",
             "postgres": "timestamp without time zone",
+            "sqlite": "TEXT"
+          },
+          "nullable": false,
+          "isPrimaryKey": false,
+          "defaultValue": null
+        },
+        {
+          "name": "seen_at",
+          "note": "The one ZONE-CARRYING column in the schema, and the four catalogs name it four different ways — including one outright trap: MySQL's `timestamp` is the type that DOES carry a zone while its `datetime` (placed_at, directly above) does not, which is the opposite of the Postgres naming right beside it. SQLite reports the declared TEXT because it has no temporal type at all. No dialect invents a default here, and MySQL's absence is the one worth stating: `explicit_defaults_for_timestamp` has defaulted to ON since 8.0.2, so a TIMESTAMP NOT NULL column no longer silently acquires the legacy DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP — which would have been a moving default in a corpus whose whole premise is byte-stable rows. Measured against MySQL 8.4.10 (COLUMN_DEFAULT NULL, EXTRA empty), not assumed.",
+          "dataType": {
+            "mssql": "datetimeoffset",
+            "mysql": "timestamp",
+            "postgres": "timestamp with time zone",
             "sqlite": "TEXT"
           },
           "nullable": false,

@@ -1,5 +1,5 @@
 {
-  "version": "0.18.0",
+  "version": "0.19.0",
   "cases": [
     {
       "name": "every canonical type in one row",
@@ -378,6 +378,158 @@
           ]
         ],
         "rowCount": 1
+      }
+    },
+    {
+      "name": "the seeded zone-carrying column, beside its zone-less twin",
+      "note": "The SEEDED counterpart to the case above, and the one that actually guards the `instant` path against stored data. Until orders.seen_at existed, no seeded column carried a zone at all — which is how a real bug lived for hours without the corpus seeing it: the engine mapped MySQL's TIMESTAMP to the `instant` kind, so ONE stored row read back as \"2024-04-01T14:00:00Z\" under TZ=America/New_York and \"2024-04-01T01:00:00Z\" under TZ=Asia/Tokyo. Hand-probing found it; no golden could. placed_at and seen_at deliberately hold the SAME digits row for row ('2024-04-01T10:00:00' against '2024-04-01T10:00:00-04:00'), so a port that flattens the two temporal kinds into one form cannot pass this case: the pair must come back as a wall clock with NO designator and an instant in UTC, side by side in one row. The three offsets are -04:00, +09:00 and +05:30 — never UTC, never all equal, and one of them a HALF hour, so dropping the offset, applying a single fixed shift, and assuming whole-hour zones each fail on a different row. MYSQL DIVERGES HONESTLY and is overridden rather than papered over: MySQL stores a TIMESTAMP as UTC, but converts it into the SESSION time zone and puts zone-less digits on the wire, so no offset ever reaches the driver and the instant is unrecoverable there. The engine reports `naive` and writes those digits with no designator, which is exactly true; asserting the Z is the corruption described above. The digits happen to equal the UTC ones only because this harness's server runs `time_zone = SYSTEM` over a UTC container — the MISSING Z is the divergence, not the numbers. SQLITE DIVERGES for the same reason its BOOLEAN does: its driver exposes no declared type for a result column, so the seeded ISO string is indistinguishable from a note a user typed and both ports hand it back VERBATIM, offset and all. That override is load-bearing rather than a concession — a port that started sniffing VALUES instead of COLUMNS would rewrite it to \"2024-04-01T14:00:00Z\" and fail here, and guessing from a value's shape is precisely what normalization exists to forbid.",
+      "sql": {
+        "mssql": "SELECT id, placed_at, seen_at FROM orders ORDER BY id",
+        "mysql": "SELECT id, placed_at, seen_at FROM orders ORDER BY id",
+        "postgres": "SELECT id, placed_at, seen_at FROM orders ORDER BY id",
+        "sqlite": "SELECT id, placed_at, seen_at FROM orders ORDER BY id"
+      },
+      "expect": {
+        "columns": ["id", "placed_at", "seen_at"],
+        "rows": [
+          [
+            {
+              "t": "int",
+              "v": "1"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-01T10:00:00"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-01T14:00:00Z"
+            }
+          ],
+          [
+            {
+              "t": "int",
+              "v": "2"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-02T11:15:00"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-02T02:15:00Z"
+            }
+          ],
+          [
+            {
+              "t": "int",
+              "v": "3"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-03T12:30:00"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-03T07:00:00Z"
+            }
+          ]
+        ],
+        "rowCount": 3
+      },
+      "overrides": {
+        "mysql": {
+          "rows": [
+            [
+              {
+                "t": "int",
+                "v": "1"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-01T10:00:00"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-01T14:00:00"
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": "2"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-02T11:15:00"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-02T02:15:00"
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": "3"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-03T12:30:00"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-03T07:00:00"
+              }
+            ]
+          ]
+        },
+        "sqlite": {
+          "rows": [
+            [
+              {
+                "t": "int",
+                "v": "1"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-01T10:00:00"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-01T10:00:00-04:00"
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": "2"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-02T11:15:00"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-02T11:15:00+09:00"
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": "3"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-03T12:30:00"
+              },
+              {
+                "t": "string",
+                "v": "2024-04-03T12:30:00+05:30"
+              }
+            ]
+          ]
+        }
       }
     },
     {

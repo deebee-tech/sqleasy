@@ -9,6 +9,17 @@
 # SQLite has no container — each language opens a file/in-memory DB seeded from harness/seed/sqlite.sql.
 name: sqleasy-harness
 
+# ONE SEEDING PATH: every container is seeded by `pnpm harness:seed`, which PIPES each file in over
+# stdin. No container mounts a seed file, and that is deliberate — both alternatives fail silently.
+#
+#   • /docker-entrypoint-initdb.d runs ONLY on an empty data dir. Postgres and MySQL used it, so
+#     editing postgres.sql or mysql.sql and re-running `harness:seed` applied NOTHING and the corpora
+#     replayed against the old schema. A total stale read, with no error anywhere.
+#   • A single-FILE bind mount binds an INODE, so every editor that writes by replace-and-rename
+#     leaves the container reading the original file forever. That one cost an hour chasing a phantom
+#     syntax error from a half-written file.
+#
+# Piping always reads the host file as it is right now, which is why all three seeds are idempotent.
 services:
   postgres:
     image: postgres:17-alpine
@@ -18,8 +29,6 @@ services:
       POSTGRES_DB: sqleasy_ci
     ports:
       - '5432:5432'
-    volumes:
-      - ./harness/seed/postgres.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U sqleasy -d sqleasy_ci']
       interval: 5s
@@ -33,8 +42,6 @@ services:
       MYSQL_DATABASE: sqleasy_ci
     ports:
       - '3306:3306'
-    volumes:
-      - ./harness/seed/mysql.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-psqleasy_ci']
       interval: 5s
@@ -51,10 +58,7 @@ services:
       MSSQL_SA_PASSWORD: 'SqlEasy_ci_1!'
     ports:
       - '1433:1433'
-    # The SQL Server image has NO /docker-entrypoint-initdb.d, so the seed is applied explicitly once
-    # the container is healthy (see `pnpm harness:seed`). It is idempotent.
-    #
-    # The seed is PIPED IN over stdin rather than bind-mounted, and that is not a style preference. A
+    # Seeded by `pnpm harness:seed`, like the other two — see the note at the top of this file. A
     # single-FILE bind mount binds an inode: every editor that writes by replace-and-rename leaves the
     # container reading the ORIGINAL file forever, so `harness:seed` silently applies a stale schema
     # and the goldens gate on a database nobody edited. Piping always reads the host file as it is now.
