@@ -27,8 +27,32 @@ When `HARNESS_DIALECTS=1` is set and a database is unreachable, every language's
 must **hard-error**. A suite that self-skips on a missing connection reports green having tested
 nothing — which is precisely how a dialect silently loses coverage.
 
+## One seeding path
+
+`pnpm harness:up` starts the containers and seeds them; `pnpm harness:seed` re-seeds without a
+restart. **That one command is the only way any of these databases gets its schema**, and every seed
+file is idempotent so it can be re-applied over an existing one.
+
+That is a deliberate design, not an accident of convenience — no container mounts a seed file, and
+both of the obvious alternatives fail SILENTLY:
+
+- **`/docker-entrypoint-initdb.d` runs only on an empty data directory.** Postgres and MySQL were
+  seeded this way, so editing `postgres.sql` or `mysql.sql` and running the documented re-seed command
+  applied _nothing_. The corpora then replayed against the previous schema and passed or failed for
+  the wrong reason. The stale read was total, and there was no error anywhere to notice.
+- **A single-FILE bind mount binds an inode.** Every editor that writes by replace-and-rename leaves
+  the container reading the original file forever, so the seed silently applies a stale schema. That
+  one cost an hour chasing a phantom syntax error out of a half-written file.
+
+Piping over stdin has neither failure mode: it reads the host file as it is right now, every time.
+
+**So: if you edit a seed, run `pnpm harness:seed` and the change is live.** If you ever find yourself
+reaching for `docker compose rm -sfv` to pick up a seed edit, something has regressed back into one
+of the traps above.
+
 ## Status
 
-Seeds are authored in Phase 5 alongside the Dart engine pilot, when the normalization and
-introspection corpora that consume them are minted. The compose file and the fail-loud rule are in
-place now so the shape is fixed before any port is written against it.
+The seeds, both corpora, and the TypeScript and Dart replays are all live. Corpus C (normalization)
+and corpus D (introspection) run against these databases in CI, and the integration lanes are run
+under more than one `TZ` on purpose — several real bugs here were visible only as a disagreement
+between two timezones.
