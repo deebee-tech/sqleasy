@@ -55,6 +55,21 @@ void main() {
     expect(result.rows.single['big_ref'], 9007199254740993);
   });
 
+  // SQLite has no fixed-point type: a NUMERIC column has REAL affinity, so an exact decimal is lost
+  // AT REST before any driver sees it. The seed therefore stores decimals as TEXT — the only SQLite
+  // rendering that reaches the canonical "decimal is an exact string" that Postgres and MySQL already
+  // produce. This pins that decision: revert the seed to NUMERIC and this fails.
+  test('a DECIMAL is exact, because the seed stores it as TEXT', () async {
+    final result = await executor.run(
+      const PreparedSql('SELECT total FROM orders ORDER BY id'),
+    );
+
+    final totals = result.rows.map((row) => row['total']).toList();
+    expect(totals, ['19.99', '1234567.89', '0.01']);
+    expect(totals.first, isA<String>(),
+        reason: 'a double here would mean the value was rounded at rest');
+  });
+
   test(
       'statements in a transaction run in order and each returns its own result',
       () async {

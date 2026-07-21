@@ -7,10 +7,19 @@
 -- SQLite-specific renderings of the one logical schema:
 --   SERIAL        -> INTEGER PRIMARY KEY AUTOINCREMENT (the rowid alias)
 --   BOOLEAN       -> INTEGER (no boolean type; 1/0)
---   NUMERIC(12,2) -> NUMERIC (affinity only — SQLite has no fixed-point type, so an exact decimal
---                    may be stored as a float. That divergence is REAL and corpus C must define the
---                    canonical form rather than hide it.)
+--   NUMERIC(12,2) -> TEXT — see below
 --   TIMESTAMP     -> TEXT (ISO-8601; SQLite has no date type)
+--
+-- WHY DECIMAL IS **TEXT** HERE (decided 2026-07-20): SQLite has no fixed-point type. Declaring the
+-- column NUMERIC gives it REAL affinity, so 1234567.89 is stored as a float and the exact value is
+-- lost AT REST — the driver never had a chance. Postgres and MySQL both hand decimals back as exact
+-- strings, so "decimal is a string" is the canonical form; TEXT is the only SQLite rendering that can
+-- actually reach it. This library does not ship approximations, so it stores the digits.
+--
+-- The honest trade-off: a TEXT-affinity column follows SQLite's text comparison rules, so ordering
+-- and range predicates on `total` are lexicographic unless the query casts (`CAST(total AS REAL)`).
+-- Exactness is preserved; numeric comparison becomes explicit. That is the deliberate choice —
+-- silently rounding money to make `>` convenient is the trade this project refuses.
 --
 -- Foreign keys are declared but SQLite only ENFORCES them when `PRAGMA foreign_keys = ON` is set per
 -- connection. The declaration is what introspection reads, so it belongs here regardless.
@@ -28,7 +37,7 @@ CREATE UNIQUE INDEX customers_email_key ON customers (email);
 CREATE TABLE orders (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   customer_id INTEGER NOT NULL REFERENCES customers (id),
-  total       NUMERIC(12, 2) NOT NULL,
+  total       TEXT NOT NULL,
   big_ref     BIGINT,
   note        TEXT,
   placed_at   TEXT NOT NULL
@@ -44,7 +53,10 @@ INSERT INTO customers (email, display_name, is_active, created_at) VALUES
   ('grace@example.com', NULL,           1, '2024-02-20 14:45:00'),
   ('alan@example.com',  'Alan Turing',  0, '2024-03-05 08:00:00');
 
+-- The decimals are QUOTED: an unquoted 19.99 is parsed as a REAL first and only then coerced to the
+-- column's TEXT affinity, which would round-trip the value through the float we are trying to avoid.
+-- Quoting stores the digits verbatim.
 INSERT INTO orders (customer_id, total, big_ref, note, placed_at) VALUES
-  (1, 19.99,      9007199254740993, 'first order', '2024-04-01 10:00:00'),
-  (1, 1234567.89, NULL,             NULL,          '2024-04-02 11:15:00'),
-  (2, 0.01,       42,               'tiny',        '2024-04-03 12:30:00');
+  (1, '19.99',      9007199254740993, 'first order', '2024-04-01 10:00:00'),
+  (1, '1234567.89', NULL,             NULL,          '2024-04-02 11:15:00'),
+  (2, '0.01',       42,               'tiny',        '2024-04-03 12:30:00');
