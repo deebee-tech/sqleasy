@@ -1,4 +1,4 @@
-import { normalizeRows } from '../normalize';
+import { normalizeRows, type ColumnKinds, type TemporalKind } from '../normalize';
 import {
   createPool,
   type Pool,
@@ -77,10 +77,57 @@ export function parseMysqlPlan(raw: string): ExplainEstimate {
 
 const argsOf = (prepared: PreparedSql): unknown[] => (prepared.params ?? []) as unknown[];
 
+/**
+ * MySQL protocol column types for the temporal columns, from `mysql_com.h`. mysql2 reports these on
+ * each field as `columnType`.
+ *
+ * `DATETIME` (12) is a wall clock with no zone — which is exactly why the harness seed uses DATETIME
+ * and not TIMESTAMP. `DATE` (10) and its legacy `NEWDATE` (14) have no time component.
+ *
+ * ── WHY `TIMESTAMP` (7) IS 'naive' AND NOT 'instant' ──
+ * MySQL genuinely stores a `TIMESTAMP` as UTC, so on paper it is an instant. In practice the instant
+ * cannot survive the trip: the server converts it into the SESSION time zone and puts zone-less
+ * digits on the wire, and `mysql2` then builds a `Date` by reading those digits in the READER's zone.
+ * The two zones are unrelated, so the resulting `Date` points at an arbitrary instant. Measured on
+ * one stored row, `TIMESTAMP '2024-04-01 10:00:00`:
+ *
+ *     TZ=America/New_York  ->  "2024-04-01T14:00:00Z"   <- same row,
+ *     TZ=Asia/Tokyo        ->  "2024-04-01T01:00:00Z"      two different instants
+ *
+ * Calling that an instant would assert a point in time nobody stored — the precise failure this
+ * whole module exists to prevent, and it was here for a few hours because MySQL's own documentation
+ * says "stored as UTC" and the harness seed has no TIMESTAMP column to contradict it.
+ *
+ * 'naive' reports the digits the session actually handed over and asserts NO zone, which is exactly
+ * true and (as the `dt` column above shows) independent of the reader's `TZ`. A caller who needs the
+ * instant must know the session zone, which is information this layer does not have and will not
+ * invent. See {@link canonicalInstant} for the case where an offset genuinely does survive.
+ */
+const MYSQL_TEMPORAL_TYPES: Readonly<Record<number, TemporalKind>> = {
+  7: 'naive',
+  10: 'date',
+  12: 'naive',
+  14: 'date',
+};
+
+/** The temporal kind of each column mysql2 typed. Empty when the driver reported no fields. */
+const temporalKinds = (fields: unknown): ColumnKinds =>
+  new Map(
+    (Array.isArray(fields) ? (fields as { name?: string; columnType?: number }[]) : []).flatMap(
+      (field) => {
+        const kind = field.columnType == null ? undefined : MYSQL_TEMPORAL_TYPES[field.columnType];
+        return kind && field.name ? [[field.name, kind] as const] : [];
+      },
+    ),
+  );
+
 // mysql2's query() resolves to `[rows | ResultSetHeader, fields]`. SELECT → an array of rows; a
-// write → a ResultSetHeader carrying affectedRows.
-const toResult = <T>(result: unknown): QueryResult<T> => {
-  if (Array.isArray(result)) return { rows: normalizeRows(result) as T[], rowCount: result.length };
+// write → a ResultSetHeader carrying affectedRows. `fields` is the only carrier of the temporal
+// kind — DATE, DATETIME and TIMESTAMP all arrive as an indistinguishable `Date`.
+const toResult = <T>(result: unknown, fields?: unknown): QueryResult<T> => {
+  if (Array.isArray(result)) {
+    return { rows: normalizeRows(result, temporalKinds(fields)) as T[], rowCount: result.length };
+  }
   return { rows: [], rowCount: (result as ResultSetHeader).affectedRows ?? 0 };
 };
 
@@ -119,8 +166,8 @@ export function createMysqlExecutorFromPool(
 
   return {
     async run<T = Row>(prepared: PreparedSql): Promise<QueryResult<T>> {
-      const [result] = await query(pool, prepared.sql, argsOf(prepared));
-      return toResult<T>(result);
+      const [result, fields] = await query(pool, prepared.sql, argsOf(prepared));
+      return toResult<T>(result, fields);
     },
 
     async transaction(statements: readonly PreparedSql[]): Promise<QueryResult[]> {
@@ -133,8 +180,8 @@ export function createMysqlExecutorFromPool(
         await conn.beginTransaction();
         const results: QueryResult[] = [];
         for (const s of statements) {
-          const [result] = await query(conn, s.sql, argsOf(s));
-          results.push(toResult(result));
+          const [result, fields] = await query(conn, s.sql, argsOf(s));
+          results.push(toResult(result, fields));
         }
         await conn.commit();
         return results;
@@ -191,6 +238,18 @@ export function createMysqlExecutorFromPool(
  *
  * This is BREAKING for any caller doing arithmetic on a value from a BIGINT column: it now arrives
  * as a string. The alternative is continuing to return a number that is quietly wrong.
+ *
+ * **It applies to EVERY value in a BIGINT-typed column, not only the ones past 2^53-1.** `mysql2`
+ * decides by the column's protocol type, never by the magnitude of the value in front of it, so a
+ * BIGINT primary key of `1` arrives as `"1"`. The reach is wider than it looks, because MySQL types
+ * several results BIGINT that nobody declared that way — measured against the harness:
+ *
+ *     SELECT COUNT(*) AS n FROM orders   ->   { n: "3" }        <- a string, not the number 3
+ *
+ * So any caller comparing a BIGINT key with `===` against a number, or reading an aggregate count
+ * without coercing, is affected. That is the honest cost of the guarantee: mysql2 offers no way to
+ * stringify conditionally, and picking the threshold ourselves would mean decoding through the very
+ * double this exists to avoid.
  *
  * NOTE the asymmetry with {@link createMysqlExecutorFromPool}: a caller-supplied pool was built
  * before this factory ever saw it, so these defaults cannot be applied there. That path documents

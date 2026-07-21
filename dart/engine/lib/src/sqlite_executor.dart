@@ -71,9 +71,15 @@ class SqliteExecutor implements DbExecutor {
       // `select` serves both shapes: a mutation simply yields no rows, and its affected count comes
       // from the connection's `updatedRows`.
       final result = statement.select(prepared.params);
-      final rows = [
-        for (final row in result) normalizeRow(Map<String, Object?>.from(row)),
-      ];
+      // No column kinds, on purpose. SQLite has NO date/time type at all — a temporal value is
+      // stored as TEXT, INTEGER or REAL and the driver hands back exactly that, never a `DateTime`.
+      // There is therefore nothing for the normalizer to identify and nothing it could rewrite
+      // without guessing from a string's shape, which is the one thing it must never do: a `note`
+      // column holding "2024-04-01" is text a user wrote. Passing no kinds says that explicitly
+      // rather than leaving the question silently unanswered.
+      final rows = normalizeRows(
+        [for (final row in result) Map<String, Object?>.from(row)],
+      );
       return QueryResult(
         rows: rows,
         rowCount: rows.isNotEmpty ? rows.length : _database.updatedRows,

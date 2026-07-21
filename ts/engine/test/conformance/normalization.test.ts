@@ -4,6 +4,7 @@ import type { DbExecutor } from '../../src/index';
 import { createPostgresExecutor } from '../../src/postgres/index';
 import { createMysqlExecutor } from '../../src/mysql/index';
 import { createSqliteExecutor } from '../../src/sqlite/index';
+import { createMssqlExecutor } from '../../src/mssql/index';
 
 /**
  * Replays CORPUS C (normalization) against every implemented dialect.
@@ -21,13 +22,16 @@ type Case = {
   name: string;
   sql: Record<string, string | undefined>;
   params?: Tagged[];
+  dialects?: string[];
   expect: ResultSetGolden;
   overrides?: Record<string, Partial<ResultSetGolden> | undefined>;
 };
 
-// MSSQL is absent by design: the Dart port has no TDS driver and its leg is built last, so the
-// corpus is not yet replayed there by BOTH ports. Asserted below so the gap stays explicit.
-const IMPLEMENTED = ['postgres', 'mysql', 'sqlite'] as const;
+// All four. MSSQL was absent here through 0.15.0 on the grounds that the Dart port cannot replay it,
+// which was the wrong test: THIS port can, and leaving it out meant the one dialect the normalization
+// layer never touched was also the one no golden checked. Corpus D already draws the line correctly —
+// each port asserts the set IT can serve — and this now matches. Dart still replays three.
+const IMPLEMENTED = ['postgres', 'mysql', 'mssql', 'sqlite'] as const;
 
 const corpus = JSON.parse(
   readFileSync(
@@ -102,6 +106,13 @@ describe('corpus C — result normalization', () => {
     // the rationale in src/sqlite/index.ts). This corpus genuinely reads 2^53+1, which makes the
     // replay exactly the caller that decision anticipated: "pass intMode yourself and take the
     // BigInt consequences knowingly".
+    executors.mssql = createMssqlExecutor({
+      server: 'localhost',
+      database: 'sqleasy_ci',
+      user: 'sa',
+      password: 'SqlEasy_ci_1!',
+      options: { encrypt: true, trustServerCertificate: true },
+    });
     executors.sqlite = createSqliteExecutor({ url: ':memory:', intMode: 'bigint' });
     const seed = readFileSync(
       new URL('../../../../harness/seed/sqlite.sql', import.meta.url),
@@ -126,6 +137,9 @@ describe('corpus C — result normalization', () => {
 
   for (const testCase of corpus.cases) {
     for (const dialect of IMPLEMENTED) {
+      // A case may name the dialects it applies to — a DATE case cannot run on SQLite, which has no
+      // date type. Absent SQL says the same thing; both are honoured so neither can drift.
+      if (testCase.dialects && !testCase.dialects.includes(dialect)) continue;
       const sql = testCase.sql[dialect];
       if (!sql) continue;
 

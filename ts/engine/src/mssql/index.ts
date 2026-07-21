@@ -2,6 +2,7 @@
 // destructure. (pg/mysql2/@libsql expose named exports fine.)
 import mssql from 'mssql';
 import type { config as MssqlDriverConfig, IResult } from 'mssql';
+import { normalizeRows, type ColumnKinds, type TemporalKind } from '../normalize';
 import { trimExplainSql } from '../explain-body';
 import type {
   DbExecutor,
@@ -214,10 +215,59 @@ const coerceLossyNumerics = <T>(rows: T[], lossy: string[]): T[] => {
   });
 };
 
+/**
+ * T-SQL temporal declarations mapped to their canonical kind.
+ *
+ * `datetimeoffset` is the only one that carries a zone, so it is the only INSTANT. `datetime`,
+ * `datetime2` and `smalldatetime` are wall clocks — the harness seed uses `DATETIME2` precisely
+ * because T-SQL's `TIMESTAMP` is a rowversion and not a time at all. `date` has no time component.
+ *
+ * `time` is deliberately absent: `tedious` hands it back as a `Date` on 1970-01-01, and there is no
+ * canonical form for a time-of-day in this contract yet. Leaving it unmapped means the raw `Date`
+ * passes through untouched, which is the honest answer — inventing a date to print alongside it
+ * would be exactly the fabrication this layer exists to stop.
+ */
+const MSSQL_TEMPORAL_DECLARATIONS: Readonly<Record<string, TemporalKind>> = {
+  datetimeoffset: 'instant',
+  datetime: 'naive',
+  datetime2: 'naive',
+  smalldatetime: 'naive',
+  date: 'date',
+};
+
+/**
+ * The temporal kind of each column, from the same `recordset.columns` metadata the numeric coercion
+ * reads. Empty when the driver reported no columns — in which case nothing is rewritten, rather than
+ * guessed at.
+ */
+const temporalKinds = (result: IResult<unknown>): ColumnKinds => {
+  const columns = (
+    result.recordset as unknown as
+      { columns?: Record<string, { type?: { declaration?: string } }> } | undefined
+  )?.columns;
+  if (!columns) return new Map();
+  return new Map(
+    Object.entries(columns).flatMap(([name, meta]) => {
+      const kind = MSSQL_TEMPORAL_DECLARATIONS[meta?.type?.declaration?.toLowerCase() ?? ''];
+      return kind ? [[name, kind] as const] : [];
+    }),
+  );
+};
+
+/**
+ * MSSQL was the ONE leg this layer never touched, so it alone kept handing back `Date` objects while
+ * the other three returned canonical strings — through the same {@link DbExecutor} interface. That
+ * made "the same row reads identically on every dialect" false for a quarter of the product, and it
+ * pushed an `instanceof Date` branch onto every consumer forever. Closed 2026-07-21.
+ */
 const toResult = <T>(result: IResult<unknown>): QueryResult<T> => ({
-  rows: coerceLossyNumerics(
-    (result.recordset ?? []) as unknown as T[],
-    lossyNumericColumns(result),
+  rows: normalizeRows(
+    coerceLossyNumerics((result.recordset ?? []) as unknown as T[], lossyNumericColumns(result)),
+    temporalKinds(result),
+    // UTC, because `tedious` reads a zone-less value as UTC where `pg` and `mysql2` read it as local.
+    // Taking the local half here shifted every DATETIME2 by the reader's offset and moved a DATE onto
+    // the wrong day — see the measurement on `DateComponents` in ../normalize.ts.
+    'utc',
   ),
   rowCount: result.recordset ? result.recordset.length : (result.rowsAffected?.[0] ?? 0),
 });

@@ -1,11 +1,11 @@
 {
-  "version": "0.1.0",
+  "version": "0.16.0",
   "cases": [
     {
       "name": "every canonical type in one row",
       "note": "The whole contract in a single row: an int id, an exact decimal string, a 64-bit integer past 2^53, an ISO-8601 timestamp with no zone, and text.",
       "sql": {
-        "mssql": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = @p1",
+        "mssql": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = @p0",
         "mysql": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = ?",
         "postgres": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = $1",
         "sqlite": "SELECT id, total, big_ref, placed_at, note FROM orders WHERE id = ?"
@@ -49,7 +49,7 @@
       "name": "a NULL is a present column holding null",
       "note": "Absent and null are different answers. A driver that drops the key reports 'no such column' where the database said 'no value'.",
       "sql": {
-        "mssql": "SELECT big_ref, note FROM orders WHERE id = @p1",
+        "mssql": "SELECT big_ref, note FROM orders WHERE id = @p0",
         "mysql": "SELECT big_ref, note FROM orders WHERE id = ?",
         "postgres": "SELECT big_ref, note FROM orders WHERE id = $1",
         "sqlite": "SELECT big_ref, note FROM orders WHERE id = ?"
@@ -79,7 +79,7 @@
       "name": "a BIGINT past 2^53 is exact",
       "note": "9007199254740993 is 2^53 + 1. Any port that routes a 64-bit integer through a double returns ...992 instead, silently. This is also why the corpus encodes ints as digit strings.",
       "sql": {
-        "mssql": "SELECT big_ref FROM orders WHERE id = @p1",
+        "mssql": "SELECT big_ref FROM orders WHERE id = @p0",
         "mysql": "SELECT big_ref FROM orders WHERE id = ?",
         "postgres": "SELECT big_ref FROM orders WHERE id = $1",
         "sqlite": "SELECT big_ref FROM orders WHERE id = ?"
@@ -349,6 +349,75 @@
             {
               "t": "int",
               "v": "3"
+            }
+          ]
+        ],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a zone-carrying column keeps its offset, normalized to UTC",
+      "note": "The bug this case exists to prevent (found 2026-07-21): normalization used to flatten EVERY Date into the zone-less form, so TIMESTAMPTZ '10:00+00' and '10:00-04' became two DIFFERENT naive strings and which ones you got depended on the reading machine's TZ. An instant identifies a point in time, so it must keep a designator; UTC specifically, because the driver hands over a Date that no longer remembers the offset it was written with. Both literals below name the SAME instant as the other row's, 4 hours apart in wall-clock terms.",
+      "sql": {
+        "mssql": "SELECT CAST('2024-04-01T10:00:00+00:00' AS DATETIMEOFFSET) AS a, CAST('2024-04-01T10:00:00-04:00' AS DATETIMEOFFSET) AS b",
+        "postgres": "SELECT TIMESTAMPTZ '2024-04-01 10:00:00+00' AS a, TIMESTAMPTZ '2024-04-01 10:00:00-04' AS b"
+      },
+      "dialects": ["postgres", "mssql"],
+      "expect": {
+        "columns": ["a", "b"],
+        "rows": [
+          [
+            {
+              "t": "string",
+              "v": "2024-04-01T10:00:00Z"
+            },
+            {
+              "t": "string",
+              "v": "2024-04-01T14:00:00Z"
+            }
+          ]
+        ],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a DATE is a date, with no invented midnight",
+      "note": "A date column has no time component, so appending T00:00:00 states a midnight it never held \u2014 and once written it is indistinguishable from a timestamp that genuinely landed on midnight. This also guards the off-by-a-DAY case: tedious reads a zone-less value as UTC where pg and mysql2 read it as local, so taking the wrong half of the Date moved this date to 2024-03-31 west of Greenwich. SQLite is excluded because it has no date type at all \u2014 the seed stores ISO text, which needs no normalization and would not exercise this.",
+      "sql": {
+        "mssql": "SELECT CAST('2024-04-01' AS DATE) AS d",
+        "mysql": "SELECT CAST('2024-04-01' AS DATE) AS d",
+        "postgres": "SELECT DATE '2024-04-01' AS d"
+      },
+      "dialects": ["postgres", "mysql", "mssql"],
+      "expect": {
+        "columns": ["d"],
+        "rows": [
+          [
+            {
+              "t": "string",
+              "v": "2024-04-01"
+            }
+          ]
+        ],
+        "rowCount": 1
+      }
+    },
+    {
+      "name": "a zone-less timestamp reads the same in every timezone",
+      "note": "Case 4 pins the FORM; this pins the INDEPENDENCE. Run the suite under TZ=America/New_York, TZ=Asia/Tokyo and TZ=UTC and this golden must not move. It caught tedious reading DATETIME2 as UTC while pg and mysql2 read as local, which shifted MSSQL by the reader's offset \u2014 green on a UTC CI box, wrong on a developer's laptop.",
+      "sql": {
+        "mssql": "SELECT CAST('2024-04-01T10:00:00' AS DATETIME2) AS t",
+        "mysql": "SELECT CAST('2024-04-01 10:00:00' AS DATETIME) AS t",
+        "postgres": "SELECT TIMESTAMP '2024-04-01 10:00:00' AS t"
+      },
+      "dialects": ["postgres", "mysql", "mssql"],
+      "expect": {
+        "columns": ["t"],
+        "rows": [
+          [
+            {
+              "t": "string",
+              "v": "2024-04-01T10:00:00"
             }
           ]
         ],

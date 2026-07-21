@@ -8,6 +8,60 @@ import 'package:mysql_client_plus/mysql_client_plus.dart' as my;
 import 'executor.dart';
 import 'normalize.dart';
 
+/// MySQL protocol column types for the temporal columns, from `mysql_com.h`. The driver reports the
+/// raw protocol byte on each column definition as `MySQLColumnType.intVal`.
+///
+/// `DATETIME` (12) is a wall clock with no zone — which is exactly why the harness seed uses DATETIME
+/// and not TIMESTAMP. `DATE` (10) and its legacy `NEWDATE` (14) have no time component.
+///
+/// ── WHY `TIMESTAMP` (7) IS `naive` AND NOT `instant` ──
+/// MySQL genuinely stores a `TIMESTAMP` as UTC, so on paper it is an instant. In practice the instant
+/// cannot survive the trip: the server converts it into the SESSION time zone and puts zone-less
+/// digits on the wire, and `mysql_client_plus` then `DateTime.parse`s those digits, producing a
+/// LOCAL-flagged value stamped with the READER's offset. The two zones are unrelated, so the
+/// resulting `DateTime` points at an arbitrary instant. Measured against the harness (session zone
+/// `SYSTEM` = UTC) on one stored `TIMESTAMP '2024-04-01 10:00:00'`, one process per zone:
+///
+///     wire digits          ->  "2024-04-01 10:00:00"    (the session's rendering, both runs)
+///     read as an instant   ->  "2024-04-01T14:00:00Z"   <- same row,
+///     TZ=Asia/Tokyo        ->  "2024-04-01T01:00:00Z"      two different instants
+///
+/// Calling that an instant would assert a point in time nobody stored — the precise failure this
+/// whole layer exists to prevent. Nothing caught it because the harness seed has NO `TIMESTAMP`
+/// column (`orders.placed_at` and `customers.created_at` are both `DATETIME`), so no corpus case
+/// reaches this row of the map.
+///
+/// `naive` reports the digits the session actually handed over and asserts NO zone, which is exactly
+/// true and — being read out of the half the driver wrote them into — independent of the reader's
+/// `TZ`. A caller who needs the instant must know the session zone, which is information this layer
+/// does not have and will not invent. The TypeScript port maps type 7 the same way, for the same
+/// measured reason.
+///
+/// `TIMESTAMP2`/`DATETIME2` (17/18) are deliberately absent: those are the binary-log-internal
+/// spellings and never appear in a result-set column definition. Mapping a type this driver cannot
+/// hand us would be a guess dressed as a catalog fact.
+const Map<int, TemporalKind> _temporalTypes = {
+  7: TemporalKind.naive,
+  10: TemporalKind.date,
+  12: TemporalKind.naive,
+  14: TemporalKind.date,
+};
+
+/// The temporal kind of each column the driver typed as temporal.
+///
+/// `IResultSet.cols` is the ONLY place the kind exists: `typedAssoc()` decodes DATE, DATETIME and
+/// TIMESTAMP into an indistinguishable `DateTime`, so by the time the row exists the difference is
+/// gone. A column whose protocol type is not in [_temporalTypes] is absent here, and its values are
+/// left exactly as the driver produced them.
+ColumnKinds _temporalKinds(my.IResultSet result) {
+  final kinds = <String, TemporalKind>{};
+  for (final column in result.cols) {
+    final kind = _temporalTypes[column.type.intVal];
+    if (kind != null) kinds[column.name] = kind;
+  }
+  return kinds;
+}
+
 /// Connection details for [MysqlExecutor.open].
 class MysqlConnectionOptions {
   const MysqlConnectionOptions({
@@ -141,9 +195,12 @@ class MysqlExecutor implements DbExecutor {
     final statement = await session.prepare(prepared.sql) as my.PreparedStmt;
     try {
       final result = await statement.execute(prepared.params);
-      final rows = [
-        for (final row in result.rows) normalizeRow(_decode(row)),
-      ];
+      // Normalization is COLUMN-driven: only a column the driver typed as temporal is rewritten,
+      // and it is rewritten into the form that column's type actually means.
+      final rows = normalizeRows(
+        [for (final row in result.rows) _decode(row)],
+        _temporalKinds(result),
+      );
       return QueryResult(
         rows: rows,
         rowCount: rows.isNotEmpty ? rows.length : result.affectedRows.toInt(),

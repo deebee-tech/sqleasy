@@ -80,8 +80,12 @@ void main() {
     final baseExpect = testCase['expect']! as Map<String, Object?>;
     final overrides =
         (testCase['overrides'] as Map?)?.cast<String, Object?>() ?? const {};
+    // A case may name the dialects it applies to — a DATE case cannot run on SQLite, which has no
+    // date type. Absent SQL says the same thing; both are honoured so neither can drift.
+    final allowed = (testCase['dialects'] as List?)?.cast<String>();
 
     for (final dialect in implemented) {
+      if (allowed != null && !allowed.contains(dialect)) continue;
       final sql = sqlByDialect[dialect] as String?;
       if (sql == null) continue; // the corpus does not define this case here
 

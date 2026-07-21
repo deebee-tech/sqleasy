@@ -6,10 +6,41 @@
  * back four different ways. Corpus C (`contract/corpora/normalization/corpus.json`) is the contract
  * this satisfies; the Dart port implements the same forms in `dart/engine/lib/src/normalize.dart`.
  *
- * It is deliberately CONSERVATIVE: it converts only what it can identify from the value's own type or
- * from the driver's column metadata. It never guesses from a string's shape — a `note` column holding
- * "2024-04-01" is text a user wrote, not a timestamp, and rewriting it would corrupt data to make a
- * table look tidy.
+ * It is deliberately CONSERVATIVE: it converts only what the DIALECT EXECUTOR has positively
+ * identified from the driver's own column metadata. It never guesses from a value's shape — a `note`
+ * column holding "2024-04-01" is text a user wrote, not a timestamp, and rewriting it would corrupt
+ * data to make a table look tidy.
+ *
+ * ── WHY NORMALIZATION IS COLUMN-DRIVEN, NOT VALUE-DRIVEN (fixed 2026-07-21) ──
+ * The first version rewrote every `Date` it saw into one zone-less form. That was wrong, and
+ * measurably so: three different column types arrive as an indistinguishable `Date`, and flattening
+ * them lost real information. Measured against the harness on an `America/New_York` machine:
+ *
+ *     TIMESTAMPTZ '2024-04-01 10:00:00+00'  ->  "2024-04-01T06:00:00"   <- WRONG: shifted into the
+ *     TIMESTAMPTZ '2024-04-01 10:00:00-04'  ->  "2024-04-01T10:00:00"      reader's local zone, the
+ *     DATE        '2024-04-01'              ->  "2024-04-01T00:00:00"      offset silently discarded
+ *
+ * Two distinct instants became two different naive strings, and which strings you got depended on
+ * the reading machine's `TZ`. That is the same silent-corruption class as the MySQL `TINYINT(1)`
+ * bug — the read succeeds and the digits are simply different.
+ *
+ * So a temporal value now carries its column's KIND, and each kind gets the canonical form that
+ * actually represents it. A `Date` whose kind the executor could not determine is LEFT ALONE:
+ * refusing to guess is the whole point, and handing back the driver's own object is the honest
+ * answer to "I do not know what this is".
+ *
+ * ── THE KNOWN BOUNDARY: CONTAINERS ──
+ * This normalizes SCALAR columns. A Postgres `timestamp[]` arrives as a real `Array` of `Date`s,
+ * which is not itself a `Date`, so the container passes through and the `Date`s inside stay exactly
+ * as the driver built them — measured, and the same on the Dart port:
+ *
+ *     SELECT ARRAY[TIMESTAMP '2024-04-01 10:00:00']   ->   [Date]  <- not canonicalized
+ *
+ * That is deliberate, not an oversight. Reaching inside a container would invent a canonical form
+ * for arrays and ranges that corpus C has never defined, on two ports at once, and the contract is
+ * the thing that decides these — not this module. The same applies to the types no driver reduces to
+ * a `Date` at all: Postgres `time`/`timetz`/`interval`, and T-SQL `time`. They have no canonical form
+ * yet and are passed through untouched rather than guessed at.
  */
 
 /** A timestamp whose sub-second part is all zeroes, so a whole second is written plainly. */
@@ -18,54 +49,178 @@ const ZERO_FRACTION = /\.0+$/;
 const pad = (value: number, width = 2): string => String(value).padStart(width, '0');
 
 /**
- * The canonical text for a temporal value: **ISO-8601, with NO timezone designator.**
+ * What a temporal column actually IS — which is what decides its canonical text.
  *
- * The columns this engine reads (`TIMESTAMP`, `DATETIME`, `DATETIME2`) carry no timezone, but every
- * driver here hands back a `Date`, which is an instant. `toISOString()` would then convert that
- * instant to UTC and append a `Z` — turning "10:00, no zone" into "14:00Z" on a machine in EDT, and
- * into something else again on a machine elsewhere. Both the shift and the `Z` assert something the
- * column never stored.
- *
- * The drivers build that `Date` by reading the stored wall clock in the LOCAL zone, so the local
- * components are exactly the digits the database holds. Those are what get written, which also makes
- * the result independent of the machine's `TZ`.
- *
- * A value that genuinely carries an offset belongs in a `TIMESTAMPTZ`-shaped column — a different
- * capability, with its own canonical form. It is not folded in here.
+ * Only the executor can know this, because it is a property of the COLUMN and every kind reaches
+ * JavaScript as the same `Date`. Each dialect maps its own catalog's types onto these three.
  */
-export function canonicalTimestamp(value: Date): string {
-  const date = `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
-  const time = `${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`;
-  const fraction = value.getMilliseconds() === 0 ? '' : `.${pad(value.getMilliseconds(), 3)}`;
-  return `${date}T${time}${fraction}`.replace(ZERO_FRACTION, '');
+export type TemporalKind =
+  /**
+   * A point in time that carries a zone or offset: `timestamptz`, `timestamp with time zone`,
+   * MySQL `TIMESTAMP` (stored UTC), `datetimeoffset`. An instant has no single local rendering, so
+   * writing one down with no designator asserts something false.
+   */
+  | 'instant'
+  /** A calendar date with no time component at all: `date`. */
+  | 'date'
+  /**
+   * A wall clock with no zone: `timestamp`, `datetime`, `datetime2`, `smalldatetime`. The digits the
+   * database holds are the whole truth; there is no instant to recover and none may be invented.
+   */
+  | 'naive';
+
+/** Column name -> what that column's temporal values are. Built by each dialect executor. */
+export type ColumnKinds = ReadonlyMap<string, TemporalKind>;
+
+/**
+ * Which half of a `Date` holds the digits the database actually stored — a DRIVER property, so the
+ * executor states it and this module never guesses.
+ *
+ * A zone-less column has no instant to represent, yet every driver must still produce a `Date`, so
+ * each one picks a zone to pretend the wall clock was in. `pg` and `mysql2` pick LOCAL, which puts
+ * the stored digits in `getHours()`. `tedious` picks UTC, which puts them in `getUTCHours()` and
+ * leaves the local getters shifted by the reader's offset. Measured, under two zones:
+ *
+ *     DATETIME2 '2024-04-01T10:00:00' read with LOCAL getters -> "2024-04-01T06:00:00"  (New_York)
+ *                                                             -> "2024-04-01T19:00:00"  (Tokyo)
+ *     DATE      '2024-04-01'          read with LOCAL getters -> "2024-03-31"  <- a day earlier
+ *
+ * Reading the matching half makes the answer the stored digits on every driver, and independent of
+ * the reading machine's `TZ` — which is the whole contract.
+ */
+export type DateComponents = 'local' | 'utc';
+
+/** The stored digits, read from whichever half of the `Date` the driver put them in. */
+function parts(
+  value: Date,
+  components: DateComponents,
+): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  ms: number;
+} {
+  return components === 'utc'
+    ? {
+        year: value.getUTCFullYear(),
+        month: value.getUTCMonth() + 1,
+        day: value.getUTCDate(),
+        hour: value.getUTCHours(),
+        minute: value.getUTCMinutes(),
+        second: value.getUTCSeconds(),
+        ms: value.getUTCMilliseconds(),
+      }
+    : {
+        year: value.getFullYear(),
+        month: value.getMonth() + 1,
+        day: value.getDate(),
+        hour: value.getHours(),
+        minute: value.getMinutes(),
+        second: value.getSeconds(),
+        ms: value.getMilliseconds(),
+      };
 }
 
 /**
- * Normalizes ONE driver value by its own JavaScript type.
+ * The canonical text for a ZONE-LESS temporal value: **ISO-8601, with NO timezone designator.**
  *
- * Only `Date` is rewritten here, because it is the one type whose identity is unambiguous AND whose
- * rendering disagrees across drivers. Numbers, bigints, strings (including the exact decimal strings
- * every dialect produces), booleans and nulls already agree and pass through untouched.
+ * `TIMESTAMP`, `DATETIME` and `DATETIME2` carry no zone, but every driver here hands back a `Date`,
+ * which is an instant. `toISOString()` would convert that instant to UTC and append a `Z` — turning
+ * "10:00, no zone" into "14:00Z" on a machine in EDT, and into something else again elsewhere. Both
+ * the shift and the `Z` assert something the column never stored.
  *
- * Values whose canonical form depends on the COLUMN rather than the value — a 64-bit integer that a
- * driver hands back as a string, indistinguishable from a decimal — are converted by the dialect
- * executor from its own column metadata, which is the only place that information exists.
+ * The stored digits are recovered by reading the half of the `Date` the driver put them in — see
+ * {@link DateComponents}. That is what gets written, which also makes the result independent of the
+ * reading machine's `TZ`.
  */
-export function normalizeValue(value: unknown): unknown {
-  return value instanceof Date ? canonicalTimestamp(value) : value;
+export function canonicalTimestamp(value: Date, components: DateComponents = 'local'): string {
+  const p = parts(value, components);
+  const fraction = p.ms === 0 ? '' : `.${pad(p.ms, 3)}`;
+  const time = `${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
+  return `${canonicalDate(value, components)}T${time}${fraction}`.replace(ZERO_FRACTION, '');
+}
+
+/**
+ * The canonical text for a DATE column: `YYYY-MM-DD`, and nothing more.
+ *
+ * A date has no time, so appending `T00:00:00` states a midnight the column never held — and once
+ * written it is indistinguishable from a timestamp that genuinely landed on midnight. Reads the same
+ * {@link DateComponents} half as {@link canonicalTimestamp}, and for the same reason — with a whole
+ * extra day at stake, since an offset applied to midnight lands on the previous date.
+ */
+export function canonicalDate(value: Date, components: DateComponents = 'local'): string {
+  const p = parts(value, components);
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+}
+
+/**
+ * The canonical text for an INSTANT: **ISO-8601 in UTC, with the `Z` designator.**
+ *
+ * The opposite call from {@link canonicalTimestamp}, for the opposite reason. This column genuinely
+ * identifies a point in time, so a rendering with no designator would DROP that meaning and leave a
+ * string that reads like a wall clock. UTC specifically, because the driver hands over a `Date` — an
+ * instant with no memory of the offset it was written with — so `Z` is the only designator that is
+ * true rather than invented.
+ */
+export function canonicalInstant(value: Date): string {
+  return value.toISOString().replace(/\.000Z$/, 'Z');
+}
+
+/**
+ * Normalizes ONE driver value, given what its column is.
+ *
+ * A `Date` with no known kind is returned UNTOUCHED. That is deliberate: this layer exists to stop
+ * the engine guessing, and an unidentified temporal is exactly the case where guessing produced
+ * corrupted data. Non-temporal values — numbers, bigints, strings (including the exact decimal
+ * strings every dialect produces), booleans, nulls — already agree across dialects and pass through.
+ */
+export function normalizeValue(
+  value: unknown,
+  kind?: TemporalKind,
+  components: DateComponents = 'local',
+): unknown {
+  if (!(value instanceof Date)) return value;
+  switch (kind) {
+    // An instant is absolute, so it is read the same way whatever the driver chose.
+    case 'instant':
+      return canonicalInstant(value);
+    case 'date':
+      return canonicalDate(value, components);
+    case 'naive':
+      return canonicalTimestamp(value, components);
+    default:
+      return value;
+  }
 }
 
 /** Normalizes every value in a result row, leaving keys and their order alone. */
-export function normalizeRow<T>(row: T): T {
+export function normalizeRow<T>(
+  row: T,
+  kinds?: ColumnKinds,
+  components: DateComponents = 'local',
+): T {
   if (row === null || typeof row !== 'object') return row;
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row as Record<string, unknown>)) {
-    out[key] = normalizeValue(value);
+    out[key] = normalizeValue(value, kinds?.get(key), components);
   }
   return out as T;
 }
 
-/** Normalizes every row in a result set. */
-export function normalizeRows<T>(rows: T[]): T[] {
-  return rows.map((row) => normalizeRow(row));
+/**
+ * Normalizes every row in a result set.
+ *
+ * With no `kinds` this leaves temporal values alone by construction — the correct behaviour for a
+ * driver that hands back strings rather than `Date`s (SQLite), and the safe behaviour for a query
+ * whose metadata the driver did not carry.
+ */
+export function normalizeRows<T>(
+  rows: T[],
+  kinds?: ColumnKinds,
+  components: DateComponents = 'local',
+): T[] {
+  return rows.map((row) => normalizeRow(row, kinds, components));
 }

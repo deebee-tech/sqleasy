@@ -1,5 +1,5 @@
 import { Pool, type PoolConfig } from 'pg';
-import { normalizeRows } from '../normalize';
+import { normalizeRows, type ColumnKinds, type TemporalKind } from '../normalize';
 import { explainBody } from '../explain-body';
 import type {
   DbExecutor,
@@ -43,16 +43,46 @@ export function parsePgPlan(rows: readonly unknown[]): ExplainEstimate {
 }
 
 // The slice of `pg`'s result the executor reads. `pg`'s QueryResult is structurally assignable.
-type PgResultLike = { rows: unknown[]; rowCount: number | null };
+// `fields` carries each column's type OID, which is the ONLY place the temporal kind exists — every
+// kind arrives in JavaScript as an indistinguishable `Date`.
+type PgResultLike = {
+  rows: unknown[];
+  rowCount: number | null;
+  fields?: { name: string; dataTypeID: number }[];
+};
+
+/**
+ * Postgres type OIDs for the temporal columns, from `pg_type`. These are stable catalog constants,
+ * not version-dependent.
+ *
+ * `timestamptz` (1184) is an INSTANT and must keep its designator; `timestamp` (1114) is a wall
+ * clock and must not gain one; `date` (1082) has no time at all. Flattening the three into one form
+ * is the bug this map exists to prevent — see the measurement in ../normalize.ts.
+ */
+const PG_TEMPORAL_OIDS: Readonly<Record<number, TemporalKind>> = {
+  1082: 'date',
+  1114: 'naive',
+  1184: 'instant',
+};
+
+/** The temporal kind of each column the driver reported one for. Empty when `fields` is absent. */
+const temporalKinds = (res: PgResultLike): ColumnKinds =>
+  new Map(
+    (res.fields ?? []).flatMap((field) => {
+      const kind = PG_TEMPORAL_OIDS[field.dataTypeID];
+      return kind ? [[field.name, kind] as const] : [];
+    }),
+  );
 
 const argsOf = (prepared: PreparedSql): unknown[] => (prepared.params ?? []) as unknown[];
 
 const toResult = <T>(res: PgResultLike): QueryResult<T> => ({
-  // Normalization is TYPE-driven only (Date -> canonical timestamp). Exact numerics are left exactly
-  // as the driver returned them: `pg` already hands back `bigint` and `numeric` as exact STRINGS,
-  // which is the representation this engine deliberately standardized on — see the rationale on
+  // Normalization is COLUMN-driven: only a column the driver typed as temporal is rewritten, and it
+  // is rewritten into the form that column's type actually means. Exact numerics are left exactly as
+  // the driver returned them: `pg` already hands back `bigint` and `numeric` as exact STRINGS, which
+  // is the representation this engine deliberately standardized on — see the rationale on
   // `losslessNumericDefaults` in ../mysql/index.ts.
-  rows: normalizeRows(res.rows) as T[],
+  rows: normalizeRows(res.rows, temporalKinds(res)) as T[],
   rowCount: res.rowCount ?? res.rows.length,
 });
 
