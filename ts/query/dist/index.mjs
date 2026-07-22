@@ -2238,62 +2238,110 @@ const collectPlainColumns = (groupByStates) => groupByStates.filter((state) => s
 	tableNameOrAlias: state.tableNameOrAlias ?? "",
 	columnName: state.columnName ?? ""
 }));
+/**
+* Emits the GROUP BY list, with EVERY grouping element the caller set.
+*
+* ── WHAT WAS WRONG (fixed 2026-07-22) ──
+* This used `groupByStates.find(...)` to locate the first ROLLUP/CUBE/GROUPING SETS and emitted only
+* that. Every other grouping element — plain columns, raws, a second modifier — was discarded with
+* no word, so the statement ran and grouped by something the caller never asked for:
+*
+*     groupByRollup(id) + groupByColumn(customer_id)  ->  GROUP BY ROLLUP ("o"."id")
+*     groupByColumn(customer_id) + groupByRollup(id)  ->  GROUP BY ROLLUP ("o"."id")
+*     groupByRollup(id) + groupByCube(customer_id)    ->  GROUP BY ROLLUP ("o"."id")
+*
+* Wrong results, no error, in either order. Found by the mechanical clause-pair sweep in
+* `scripts/check-silent-noops.mjs` rather than by anyone reading the code.
+*
+* ── THE TWO GRAMMARS (measured against the harness, 2026-07-22) ──
+* ROLLUP is an ELEMENT on Postgres and MSSQL, and a trailing SUFFIX on MySQL. They do not compose
+* the same way and cannot share an emission path:
+*
+*     Postgres 17  GROUP BY ROLLUP(a), b            OK      order is not significant
+*                  GROUP BY a, ROLLUP(b)            OK
+*                  GROUP BY ROLLUP(a), CUBE(b)      OK
+*     MSSQL 2022   GROUP BY ROLLUP(a), b            OK
+*     MySQL 8.4    GROUP BY a, b WITH ROLLUP        OK      one suffix, applies to the whole list
+*                  GROUP BY a, ROLLUP(b)            ERROR 1064 — no function form at all
+*
+* So MySQL takes at most ONE rollup and it goes at the end; the other two take any number of
+* elements in any order. SQLite has none of the three and refuses, as before.
+*/
 const defaultGroupBy = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.groupByStates.length === 0) return sqlHelper;
-	const modifier = state.groupByStates.find((groupByState) => groupByState.builderType === BuilderType.GroupByRollup || groupByState.builderType === BuilderType.GroupByCube || groupByState.builderType === BuilderType.GroupByGroupingSets);
+	const isModifier = (g) => g.builderType === BuilderType.GroupByRollup || g.builderType === BuilderType.GroupByCube || g.builderType === BuilderType.GroupByGroupingSets;
+	const modifiers = state.groupByStates.filter(isModifier);
 	const plainColumns = collectPlainColumns(state.groupByStates);
+	/** The columns a modifier groups over: its own set, or the statement's plain columns. */
+	const columnsFor = (g) => g.groupingSets && g.groupingSets.length === 1 ? g.groupingSets[0] : plainColumns;
+	const NAME = {
+		[BuilderType.GroupByRollup]: "ROLLUP",
+		[BuilderType.GroupByCube]: "CUBE",
+		[BuilderType.GroupByGroupingSets]: "GROUPING SETS"
+	};
+	for (const modifier of modifiers) {
+		const label = NAME[modifier.builderType] ?? "grouping";
+		if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, `SQLite has no ${label} — use groupByRaw`);
+		if (config.databaseType === DatabaseType.Mysql && label !== "ROLLUP") throw new ParserError(ParserArea.General, `MySQL has no ${label} — use groupByRollup or groupByRaw`);
+		if (modifier.builderType === BuilderType.GroupByGroupingSets) {
+			if ((modifier.groupingSets ?? []).length === 0) throw new ParserError(ParserArea.General, "GROUPING SETS requires at least one column set");
+		} else if (columnsFor(modifier).length === 0) throw new ParserError(ParserArea.General, `${label} requires at least one grouping column`);
+	}
+	if (config.databaseType === DatabaseType.Mysql && modifiers.length > 1) throw new ParserError(ParserArea.General, "MySQL spells ROLLUP as a single trailing WITH ROLLUP over the whole GROUP BY list, so it takes only one grouping modifier — two cannot both apply. Use groupByRaw if you need a shape MySQL cannot express directly.");
 	sqlHelper.addSqlSnippet("GROUP BY ");
-	if (!modifier) {
-		state.groupByStates.forEach((groupByState, i) => {
-			if (groupByState.builderType === BuilderType.GroupByRaw) {
-				sqlHelper.addSqlSnippet(groupByState.raw ?? "");
-				if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
-				return;
-			}
-			if (groupByState.builderType === BuilderType.GroupByColumn) {
-				emitGroupByColumnRef(sqlHelper, config, groupByState.tableNameOrAlias ?? "", groupByState.columnName ?? "");
-				if (i < state.groupByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+	const emitModifier = (g) => {
+		if (g.builderType === BuilderType.GroupByGroupingSets) {
+			const sets = g.groupingSets ?? [];
+			sqlHelper.addSqlSnippet("GROUPING SETS (");
+			sets.forEach((set, i) => {
+				sqlHelper.addSqlSnippet("(");
+				emitColumnList(sqlHelper, config, set);
+				sqlHelper.addSqlSnippet(")");
+				if (i < sets.length - 1) sqlHelper.addSqlSnippet(", ");
+			});
+			sqlHelper.addSqlSnippet(")");
+			return;
+		}
+		sqlHelper.addSqlSnippet(g.builderType === BuilderType.GroupByRollup ? "ROLLUP (" : "CUBE (");
+		emitColumnList(sqlHelper, config, columnsFor(g));
+		sqlHelper.addSqlSnippet(")");
+	};
+	if (config.databaseType === DatabaseType.Mysql) {
+		const rollup = modifiers[0];
+		const carriesOwnColumns = rollup?.groupingSets !== void 0 && rollup.groupingSets.length === 1;
+		const otherTerms = state.groupByStates.filter((g) => !isModifier(g));
+		if (carriesOwnColumns && otherTerms.length > 0) throw new ParserError(ParserArea.General, "MySQL cannot cross a ROLLUP with other grouping terms — its WITH ROLLUP applies to the whole GROUP BY list, so ROLLUP(a) alongside b has no MySQL spelling. Roll up the full list by passing every column to groupByRollup, or use groupByRaw.");
+		const terms = rollup ? columnsFor(rollup) : [];
+		const emitted = rollup && carriesOwnColumns ? terms.map((c) => ({
+			kind: "col",
+			col: c
+		})) : state.groupByStates.filter((g) => !isModifier(g)).map((g) => g.builderType === BuilderType.GroupByRaw ? {
+			kind: "raw",
+			raw: g.raw ?? ""
+		} : {
+			kind: "col",
+			col: {
+				tableNameOrAlias: g.tableNameOrAlias ?? "",
+				columnName: g.columnName ?? ""
 			}
 		});
+		emitted.forEach((term, i) => {
+			if (term.kind === "raw") sqlHelper.addSqlSnippet(term.raw);
+			else emitGroupByColumnRef(sqlHelper, config, term.col.tableNameOrAlias, term.col.columnName);
+			if (i < emitted.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		if (rollup) sqlHelper.addSqlSnippet(" WITH ROLLUP");
 		return sqlHelper;
 	}
-	if (modifier.builderType === BuilderType.GroupByRollup) {
-		const columns = modifier.groupingSets && modifier.groupingSets.length === 1 ? modifier.groupingSets[0] : plainColumns;
-		if (columns.length === 0) throw new ParserError(ParserArea.General, "ROLLUP requires at least one grouping column");
-		if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite has no ROLLUP — use groupByRaw");
-		if (config.databaseType === DatabaseType.Mysql) {
-			emitColumnList(sqlHelper, config, columns);
-			sqlHelper.addSqlSnippet(" WITH ROLLUP");
-			return sqlHelper;
-		}
-		sqlHelper.addSqlSnippet("ROLLUP (");
-		emitColumnList(sqlHelper, config, columns);
-		sqlHelper.addSqlSnippet(")");
-		return sqlHelper;
-	}
-	if (modifier.builderType === BuilderType.GroupByCube) {
-		const columns = modifier.groupingSets && modifier.groupingSets.length === 1 ? modifier.groupingSets[0] : plainColumns;
-		if (columns.length === 0) throw new ParserError(ParserArea.General, "CUBE requires at least one grouping column");
-		if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite has no CUBE — use groupByRaw");
-		if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.General, "MySQL has no CUBE — use groupByRollup/groupByGroupingSets or groupByRaw");
-		sqlHelper.addSqlSnippet("CUBE (");
-		emitColumnList(sqlHelper, config, columns);
-		sqlHelper.addSqlSnippet(")");
-		return sqlHelper;
-	}
-	const sets = modifier.groupingSets ?? [];
-	if (sets.length === 0) throw new ParserError(ParserArea.General, "GROUPING SETS requires at least one column set");
-	if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.General, "SQLite has no GROUPING SETS — use groupByRaw");
-	if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.General, "MySQL has no GROUPING SETS — use groupByRollup or groupByRaw");
-	sqlHelper.addSqlSnippet("GROUPING SETS (");
-	sets.forEach((set, setIndex) => {
-		sqlHelper.addSqlSnippet("(");
-		emitColumnList(sqlHelper, config, set);
-		sqlHelper.addSqlSnippet(")");
-		if (setIndex < sets.length - 1) sqlHelper.addSqlSnippet(", ");
+	const absorbed = modifiers.length > 0 && modifiers.every((m) => !(m.groupingSets && m.groupingSets.length === 1)) && plainColumns.length > 0;
+	const elements = state.groupByStates.filter((g) => isModifier(g) || !(absorbed && g.builderType === BuilderType.GroupByColumn));
+	elements.forEach((g, i) => {
+		if (isModifier(g)) emitModifier(g);
+		else if (g.builderType === BuilderType.GroupByRaw) sqlHelper.addSqlSnippet(g.raw ?? "");
+		else emitGroupByColumnRef(sqlHelper, config, g.tableNameOrAlias ?? "", g.columnName ?? "");
+		if (i < elements.length - 1) sqlHelper.addSqlSnippet(", ");
 	});
-	sqlHelper.addSqlSnippet(")");
 	return sqlHelper;
 };
 //#endregion
@@ -2548,6 +2596,8 @@ const defaultInsert = (state, config, mode, options) => {
 	if (!state.insertState) throw new ParserError(ParserArea.Insert, "No insert state provided");
 	const insertState = state.insertState;
 	if (insertState.raw) {
+		if (state.upsertState) throw new ParserError(ParserArea.Insert, "insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot reach the SQL. Put the conflict handling in the raw text, or build the insert with insertColumns/insertValues so the upsert has a statement to attach to.");
+		if (state.returningState && config.databaseType === DatabaseType.Mssql) throw new ParserError(ParserArea.Insert, "insertRaw replaces the whole INSERT statement, and T-SQL puts OUTPUT inside it — so an OUTPUT clause set alongside a raw insert cannot reach the SQL. Write the OUTPUT into the raw text, or build the insert with insertColumns/insertValues.");
 		sqlHelper.addSqlSnippet(insertState.raw);
 		return sqlHelper;
 	}

@@ -27,6 +27,33 @@ export const defaultInsert = (
   const insertState = state.insertState;
 
   if (insertState.raw) {
+    // `insertRaw` replaces the ENTIRE insert statement with the caller's text, so nothing else the
+    // builder holds can reach the output — it returns right here. Anything else that was set was
+    // therefore accepted and discarded, which the clause-pair sweep in
+    // `scripts/check-silent-noops.mjs` reports as a silent no-op. It is one: a caller who wrote an
+    // upsert alongside a raw insert got a plain insert and no warning.
+    //
+    // MSSQL's OUTPUT is included because `defaultInsert` is the only thing that emits it (inline,
+    // before VALUES) — the other three append RETURNING further out in `to-sql.ts`, where the raw
+    // text does not shadow it, so those keep working.
+    if (state.upsertState) {
+      throw new ParserError(
+        ParserArea.Insert,
+        'insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot ' +
+          'reach the SQL. Put the conflict handling in the raw text, or build the insert with ' +
+          'insertColumns/insertValues so the upsert has a statement to attach to.',
+      );
+    }
+
+    if (state.returningState && config.databaseType === DatabaseType.Mssql) {
+      throw new ParserError(
+        ParserArea.Insert,
+        'insertRaw replaces the whole INSERT statement, and T-SQL puts OUTPUT inside it — so an ' +
+          'OUTPUT clause set alongside a raw insert cannot reach the SQL. Write the OUTPUT into the ' +
+          'raw text, or build the insert with insertColumns/insertValues.',
+      );
+    }
+
     sqlHelper.addSqlSnippet(insertState.raw);
     return sqlHelper;
   }

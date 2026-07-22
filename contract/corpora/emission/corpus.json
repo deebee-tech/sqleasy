@@ -22705,7 +22705,7 @@
           "raw": "SELECT [o].[region] FROM [dbo].[orders] AS [o] GROUP BY CUBE ([o].[region], [o].[product]);"
         },
         "mysql": {
-          "throws": "General: MySQL has no CUBE — use groupByRollup/groupByGroupingSets or groupByRaw"
+          "throws": "General: MySQL has no CUBE — use groupByRollup or groupByRaw"
         },
         "postgres": {
           "prepared": {
@@ -26399,6 +26399,164 @@
             "params": []
           },
           "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"y\".\"id\" AS \"id\" FROM \"orders\" AS \"y\" WHERE \"y\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\"));"
+        }
+      }
+    },
+    {
+      "name": "a rollup and a plain column are both emitted, not one of them",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "groupByRollup",
+          "columns": [
+            {
+              "table": "o",
+              "column": "id"
+            }
+          ]
+        },
+        {
+          "op": "groupByColumn",
+          "table": "o",
+          "column": "customer_id"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[id] FROM [dbo].[orders] AS [o] GROUP BY ROLLUP ([o].[id]), [o].[customer_id];', N'';",
+            "params": []
+          },
+          "raw": "SELECT [o].[id] FROM [dbo].[orders] AS [o] GROUP BY ROLLUP ([o].[id]), [o].[customer_id];"
+        },
+        "mysql": {
+          "throws": "General: MySQL cannot cross a ROLLUP with other grouping terms — its WITH ROLLUP applies to the whole GROUP BY list, so ROLLUP(a) alongside b has no MySQL spelling. Roll up the full list by passing every column to groupByRollup, or use groupByRaw."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"id\"), \"o\".\"customer_id\";",
+            "params": []
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"id\"), \"o\".\"customer_id\";"
+        },
+        "sqlite": {
+          "throws": "General: SQLite has no ROLLUP — use groupByRaw"
+        }
+      }
+    },
+    {
+      "name": "a rollup and a cube are both emitted",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "groupByRollup",
+          "columns": [
+            {
+              "table": "o",
+              "column": "id"
+            }
+          ]
+        },
+        {
+          "op": "groupByCube",
+          "columns": [
+            {
+              "table": "o",
+              "column": "customer_id"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[id] FROM [dbo].[orders] AS [o] GROUP BY ROLLUP ([o].[id]), CUBE ([o].[customer_id]);', N'';",
+            "params": []
+          },
+          "raw": "SELECT [o].[id] FROM [dbo].[orders] AS [o] GROUP BY ROLLUP ([o].[id]), CUBE ([o].[customer_id]);"
+        },
+        "mysql": {
+          "throws": "General: MySQL has no CUBE — use groupByRollup or groupByRaw"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"id\"), CUBE (\"o\".\"customer_id\");",
+            "params": []
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY ROLLUP (\"o\".\"id\"), CUBE (\"o\".\"customer_id\");"
+        },
+        "sqlite": {
+          "throws": "General: SQLite has no ROLLUP — use groupByRaw"
+        }
+      }
+    },
+    {
+      "name": "an upsert alongside insertRaw is refused, not discarded",
+      "ops": [
+        {
+          "op": "insertInto",
+          "table": "orders"
+        },
+        {
+          "op": "insertColumns",
+          "columns": [
+            "customer_id"
+          ]
+        },
+        {
+          "op": "insertValues",
+          "rows": [
+            [
+              {
+                "t": "int",
+                "v": 1
+              }
+            ]
+          ]
+        },
+        {
+          "op": "insertRaw",
+          "sql": "SELECT 1"
+        },
+        {
+          "op": "onConflictDoNothing",
+          "columns": [
+            "customer_id"
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Insert: insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot reach the SQL. Put the conflict handling in the raw text, or build the insert with insertColumns/insertValues so the upsert has a statement to attach to."
+        },
+        "mysql": {
+          "throws": "Insert: insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot reach the SQL. Put the conflict handling in the raw text, or build the insert with insertColumns/insertValues so the upsert has a statement to attach to."
+        },
+        "postgres": {
+          "throws": "Insert: insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot reach the SQL. Put the conflict handling in the raw text, or build the insert with insertColumns/insertValues so the upsert has a statement to attach to."
+        },
+        "sqlite": {
+          "throws": "Insert: insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot reach the SQL. Put the conflict handling in the raw text, or build the insert with insertColumns/insertValues so the upsert has a statement to attach to."
         }
       }
     }
