@@ -22,6 +22,13 @@ type GenerateNotes = (
 
 const RNG = '@semantic-release/release-notes-generator';
 
+// The notes generator is no longer configured DIRECTLY: scripts/release/path-scoped.mjs wraps it so
+// each package's notes are built from its own commits. This test still targets the REAL generator
+// with the REAL config, because the failure it guards is preset version SKEW producing an empty body
+// — a property of the generator and its config, which the wrapper passes through untouched. The
+// wrapper's own filtering is exercised separately below, against real repository history.
+const SCOPED = '../../scripts/release/path-scoped.mjs';
+
 // Both specifiers go through a variable: neither release.config.mjs nor the plugin ships types,
 // and a literal import of either fails `tsc --noEmit` with TS7016. The point of this file is to
 // exercise the real config against the real plugin, so stubbing them out would defeat it.
@@ -30,9 +37,13 @@ const rngConfig = async (): Promise<Record<string, unknown>> => {
   const { default: releaseConfig } = (await import(configPath)) as {
     default: { plugins: PluginEntry[] };
   };
-  const entry = releaseConfig.plugins.find((p) => (Array.isArray(p) ? p[0] === RNG : p === RNG));
-  if (entry === undefined) throw new Error(`${RNG} is not configured`);
-  return Array.isArray(entry) ? entry[1] : {};
+  const entry = releaseConfig.plugins.find((p) =>
+    Array.isArray(p) ? p[0] === SCOPED || p[0] === RNG : p === SCOPED || p === RNG,
+  );
+  if (entry === undefined) throw new Error(`neither ${SCOPED} nor ${RNG} is configured`);
+  // The wrapper keeps a SEPARATE sub-config per delegate; the generator's is the one under test.
+  const cfg = Array.isArray(entry) ? entry[1] : {};
+  return (cfg.generateNotes as Record<string, unknown>) ?? cfg;
 };
 
 const commit = (hash: string, message: string) => ({

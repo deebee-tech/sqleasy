@@ -98,6 +98,12 @@ importers:
 
   .:
     devDependencies:
+      '@semantic-release/commit-analyzer':
+        specifier: 'catalog:'
+        version: 13.0.1(semantic-release@25.0.7(typescript@5.9.3))
+      '@semantic-release/release-notes-generator':
+        specifier: 'catalog:'
+        version: 14.1.1(semantic-release@25.0.7(typescript@5.9.3))
       cspell:
         specifier: 'catalog:'
         version: 10.0.1

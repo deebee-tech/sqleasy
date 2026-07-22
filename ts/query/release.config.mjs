@@ -27,17 +27,16 @@ export default {
     },
   ],
   plugins: [
+    // PATH-SCOPED. Replaces the bare commit-analyzer/release-notes-generator pair so this package's
+    // version and CHANGELOG are computed from ITS OWN commits — see scripts/release/path-scoped.mjs
+    // for the measurement that forced it.
     [
-      '@semantic-release/commit-analyzer',
+      '../../scripts/release/path-scoped.mjs',
       {
-        // Default Angular parser rejects `feat!:`; conventionalcommits supports it.
-        //
-        // ⚠ A body line that OPENS with `BREAKING CHANGE` is a footer, and the parser does not read
-        // English. v5.0.0 is a real, published, spurious major because a commit body contained the
-        // sentence "that removes the BREAKING CHANGE footer" — a commit ABOUT the footer became one.
-        // A version number cannot be taken back, so: when writing about the footer, never start a
-        // line with it. Say "the breaking-change footer" mid-sentence instead.
-        preset: 'conventionalcommits',
+        paths: ['ts/query', 'contract'],
+        analyzeCommits: { preset: 'conventionalcommits' },
+        // NO preset — see the note in the plugin and below.
+        generateNotes: {},
       },
     ],
     // NO `preset` here, deliberately. Pointing this at 'conventionalcommits' resolves the
@@ -47,7 +46,6 @@ export default {
     // bare header with no body from 2.0.1 onward, hiding 3.0.0's breaking changes completely.
     // Omitting it uses the writer's own version-locked angular preset, which parses `feat!:`
     // and `refactor!:` and renders the breaking body. tests/release-notes.test.ts pins this.
-    '@semantic-release/release-notes-generator',
     [
       '@semantic-release/changelog',
       {

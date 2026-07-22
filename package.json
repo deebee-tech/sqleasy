@@ -39,6 +39,8 @@
     "harness:down": "docker compose -f docker-compose.harness.yml down -v"
   },
   "devDependencies": {
+    "@semantic-release/commit-analyzer": "catalog:",
+    "@semantic-release/release-notes-generator": "catalog:",
     "cspell": "catalog:",
     "prettier": "catalog:",
     "turbo": "catalog:"

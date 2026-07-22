@@ -22,6 +22,11 @@ type GenerateNotes = (
 
 const RNG = '@semantic-release/release-notes-generator';
 
+// The generator is wrapped by scripts/release/path-scoped.mjs so notes are built from THIS package's
+// commits. The failure guarded here — preset skew emptying the body — belongs to the generator and
+// its own sub-config, which the wrapper forwards untouched.
+const SCOPED = '../../scripts/release/path-scoped.mjs';
+
 // Both specifiers go through a variable: neither release.config.mjs nor the plugin ships types,
 // and a literal import of either fails `tsc --noEmit` with TS7016. The point of this file is to
 // exercise the real config against the real plugin, so stubbing them out would defeat it.
@@ -30,9 +35,12 @@ const rngConfig = async (): Promise<Record<string, unknown>> => {
   const { default: releaseConfig } = (await import(configPath)) as {
     default: { plugins: PluginEntry[] };
   };
-  const entry = releaseConfig.plugins.find((p) => (Array.isArray(p) ? p[0] === RNG : p === RNG));
-  if (entry === undefined) throw new Error(`${RNG} is not configured`);
-  return Array.isArray(entry) ? entry[1] : {};
+  const entry = releaseConfig.plugins.find((p) =>
+    Array.isArray(p) ? p[0] === SCOPED || p[0] === RNG : p === SCOPED || p === RNG,
+  );
+  if (entry === undefined) throw new Error(`neither ${SCOPED} nor ${RNG} is configured`);
+  const cfg = Array.isArray(entry) ? entry[1] : {};
+  return (cfg.generateNotes as Record<string, unknown>) ?? cfg;
 };
 
 const commit = (hash: string, message: string) => ({
