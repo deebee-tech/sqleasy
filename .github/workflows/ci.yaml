@@ -18,12 +18,26 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'pnpm'
+      # The Dart SDK is REQUIRED here, not only in the language matrix below: `turbo run lint` spans
+      # the whole workspace, and both Dart packages implement `lint` as `dart analyze --fatal-infos`
+      # (dart/query additionally runs its view generator with --check). Without the SDK this job fails
+      # on `@sqleasy/dart-engine#lint` and takes every other task down with it, which is exactly what
+      # happened on the first run that ever reached CI.
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm turbo run typecheck lint
       # `format` is `prettier --write`, which rewrites files and always exits 0 — it could never fail
       # the build. `--check` is what actually gates.
       - run: pnpm run format:check
+      # The root script is `prettier --check .`, which does NOT see Dart. Each Dart package implements
+      # its own `format:check` as `dart format --set-exit-if-changed`, and without this line their
+      # formatting was gated by nothing but habit. Scoped to ./dart/* deliberately: the TS packages are
+      # already covered by the root run, and a package-level prettier does NOT read the root
+      # .prettierignore, so it would fail on the generated CHANGELOG.md the root correctly ignores.
+      - run: pnpm turbo run format:check --filter='./dart/*'
       - run: pnpm run spell
 
       # Every dependency must be `catalog:` or `workspace:` — no literal ranges anywhere.
@@ -75,9 +89,11 @@ jobs:
       # `double.infinity is int` true on the web. A port that gets this wrong emits DIFFERENT SQL on
       # Flutter web than on Flutter mobile, silently, and a single-platform run cannot see it. This has
       # already caught two real bugs in lib/src/values/sql_value.dart. Do not remove it.
+      # `--filter='./dart/*'` and not just dart-query: dart/engine's no-DB suite (its normalization and
+      # introspection unit tests) ran in NO job at all — Gate 3 covers only its harness-tagged lane.
       - name: Dart (VM + dart2js)
         if: matrix.lang == 'dart'
-        run: pnpm turbo run test --filter='@sqleasy/dart-query'
+        run: pnpm turbo run test --filter='./dart/*'
 
   # ── Gate 3: NORMALIZATION + INTROSPECTION conformance against the shared harness ──
   #
