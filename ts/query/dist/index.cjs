@@ -1592,8 +1592,64 @@ const emitMutationRowCap = (sqlHelper, state, config, mode) => {
 	}
 	if (state.limit > 0) sqlHelper.addSqlSnippet(` LIMIT ${state.limit}`);
 };
+/**
+* Rejects a row cap or ordering on an INSERT or MERGE that the engine cannot express.
+*
+* ── WHAT WAS WRONG (fixed 2026-07-22) ──
+* {@link assertMutationRowCapSupported} was wired into the Update and Delete branches only, so an
+* INSERT or MERGE still swallowed everything: `limit()`, `offset()` and `orderByColumn()` on an
+* INSERT builder vanished with no word, and `.top(n)` was dropped on both — even though T-SQL has a
+* real spelling for it. Measured against MSSQL 2022, each against its own baseline:
+*
+*     INSERT INTO orders (…) SELECT … FROM orders            3 rows   (baseline)
+*     INSERT TOP (1) INTO orders (…) SELECT … FROM orders    1 row    <- real, and it caps
+*     MERGE INTO customers …                                 1 row    (baseline)
+*     MERGE TOP (1) INTO customers …                         accepted <- real
+*
+* So `top(n)` is EMITTED on both. What no dialect has is a statement-level `LIMIT`/`OFFSET`/
+* `ORDER BY` on an INSERT or MERGE: in every grammar those belong to the SOURCE SELECT, which is
+* the `insertSelect` / `usingSelect` child builder. Setting them on the outer builder is a
+* different statement from the one the caller meant, so they are refused with that pointer rather
+* than quietly relocated.
+*/
+const assertInsertMergeRowCapSupported = (state, config, area) => {
+	const misplaced = state.limit > 0 ? "limit()" : state.offset !== void 0 ? "offset()" : state.orderByStates.length > 0 ? "orderByColumn()" : void 0;
+	if (misplaced !== void 0) {
+		const isMerge = area === ParserArea.Merge;
+		throw new ParserError(area, `${misplaced} has no statement-level form on ${isMerge ? "MERGE" : "INSERT"} in any dialect — it belongs to the source SELECT, so set it on the ${isMerge ? "usingSelect" : "insertSelect"}() builder.${config.databaseType === DatabaseType.Mssql ? " To cap the statement itself, use top(n)." : ""}`);
+	}
+};
+/**
+* The `TOP (n) ` prefix for a T-SQL INSERT or MERGE, or `''`.
+*
+* T-SQL puts it between the verb and `INTO`: `INSERT TOP (n) INTO t …`, `MERGE TOP (n) INTO t …`.
+* Both were measured against their own baseline and genuinely cap the statement.
+*/
+const mssqlStatementTop = (state, config) => mssqlMutationTop(state, config);
 //#endregion
 //#region src/parser/mutation-target.ts
+/**
+* Refuses FROM sources an UPDATE/DELETE would silently discard.
+*
+* A mutation renders exactly ONE target, taken from `updateTable`/`deleteFrom`. Any other
+* `fromStates` entry — a derived table from `fromWithBuilder`, a LATERAL from `fromLateral`, a raw
+* source — was simply not emitted: its whole SELECT, its WHERE and its limit went on the floor, and
+* any predicate the caller wrote against its alias survived into the WHERE, leaving a reference to
+* an alias that appears nowhere in the statement.
+*
+* The capability the caller wanted already exists, correctly, through `joinWithBuilder`. Measured:
+*
+*     DELETE FROM "orders" AS "o" USING (SELECT "id" FROM "orders" LIMIT 2) AS "cap" WHERE …   (PG)
+*     DELETE `o` FROM `orders` AS `o` INNER JOIN (SELECT `id` FROM `orders` LIMIT 2) AS `cap`  (MySQL)
+*
+* So this points there rather than growing a second way to spell the same thing.
+*/
+const assertNoDroppedFromSources = (state, area) => {
+	const lost = state.fromStates.filter((from, i) => i !== state.mutationTargetIndex && (from.subquery !== void 0 || from.raw !== void 0));
+	if (lost.length === 0) return;
+	const aliases = lost.map((from) => from.alias).filter((alias) => alias !== void 0 && alias !== "").join(", ");
+	throw new ParserError(area, `An UPDATE/DELETE renders one target table, so the derived or raw FROM source(s) ${aliases === "" ? "" : `(${aliases}) `}would be dropped without a word — their own WHERE and limit included, while predicates written against their alias survived and referenced nothing. Attach the source with joinWithBuilder/joinTable instead, which emits it as USING on Postgres and a multi-table form on MySQL.`);
+};
 /**
 * Resolves the table targeted by UPDATE or DELETE.
 *
@@ -1606,6 +1662,7 @@ const resolveMutationTarget = (state, area, missingMessage) => {
 	if (state.mutationTargetIndex !== void 0) {
 		const target = state.fromStates[state.mutationTargetIndex];
 		if (!target) throw new ParserError(area, missingMessage);
+		assertNoDroppedFromSources(state, area);
 		return target;
 	}
 	if (state.fromStates.length > 1) throw new ParserError(area, "Ambiguous UPDATE/DELETE target: call updateTable/deleteFrom after fromTable, or clearFrom first");
@@ -2425,6 +2482,7 @@ const defaultInsert = (state, config, mode, options) => {
 	if (state.upsertState && config.databaseType === DatabaseType.Mssql) throw new ParserError(ParserArea.Insert, "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly");
 	if (!insertState.tableName) throw new ParserError(ParserArea.Insert, "INSERT requires a table");
 	sqlHelper.addSqlSnippet("INSERT ");
+	sqlHelper.addSqlSnippet(mssqlStatementTop(state, config));
 	if (isMysqlInsertIgnore(state.upsertState, config)) sqlHelper.addSqlSnippet("IGNORE ");
 	sqlHelper.addSqlSnippet("INTO ");
 	if (insertState.owner && insertState.owner !== "") {
@@ -2622,7 +2680,9 @@ const defaultMerge = (state, config, mode, options) => {
 	if (!merge.using) throw new ParserError(ParserArea.Merge, "MERGE requires a USING source");
 	if (merge.onStates.length === 0) throw new ParserError(ParserArea.Merge, "MERGE requires an ON condition");
 	validateWhenCardinality(merge);
-	sqlHelper.addSqlSnippet("MERGE INTO ");
+	sqlHelper.addSqlSnippet("MERGE ");
+	sqlHelper.addSqlSnippet(mssqlStatementTop(state, config));
+	sqlHelper.addSqlSnippet("INTO ");
 	sqlHelper.addSqlSnippet(qi(merge.targetOwner !== void 0 && merge.targetOwner !== "" ? merge.targetOwner : config.defaultOwner, config));
 	sqlHelper.addSqlSnippet(".");
 	sqlHelper.addSqlSnippet(qi(merge.targetTable, config));
@@ -3231,6 +3291,7 @@ const defaultToSql = (state, config, mode, options) => {
 	if (state.upsertState && state.queryType !== QueryType.Insert) throw new ParserError(ParserArea.Insert, "Upsert (ON CONFLICT) requires INSERT");
 	if (state.callState && state.queryType !== QueryType.Call) throw new ParserError(ParserArea.Call, "Procedure/function call state requires queryType Call");
 	if (state.queryType === QueryType.Merge) {
+		assertInsertMergeRowCapSupported(state, config, ParserArea.Merge);
 		const merge = defaultMerge(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(merge.getSql(), merge.getValues());
 		return sqlHelper;
@@ -3244,6 +3305,7 @@ const defaultToSql = (state, config, mode, options) => {
 		return sqlHelper;
 	}
 	if (state.queryType === QueryType.Insert) {
+		assertInsertMergeRowCapSupported(state, config, ParserArea.Insert);
 		const insert = defaultInsert(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(insert.getSql(), insert.getValues());
 		if (state.returningState && config.databaseType !== DatabaseType.Mssql) emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Insert);

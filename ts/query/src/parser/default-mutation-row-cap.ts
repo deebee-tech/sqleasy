@@ -153,3 +153,64 @@ export const emitMutationRowCap = (
     sqlHelper.addSqlSnippet(` LIMIT ${state.limit}`);
   }
 };
+
+/**
+ * Rejects a row cap or ordering on an INSERT or MERGE that the engine cannot express.
+ *
+ * ── WHAT WAS WRONG (fixed 2026-07-22) ──
+ * {@link assertMutationRowCapSupported} was wired into the Update and Delete branches only, so an
+ * INSERT or MERGE still swallowed everything: `limit()`, `offset()` and `orderByColumn()` on an
+ * INSERT builder vanished with no word, and `.top(n)` was dropped on both — even though T-SQL has a
+ * real spelling for it. Measured against MSSQL 2022, each against its own baseline:
+ *
+ *     INSERT INTO orders (…) SELECT … FROM orders            3 rows   (baseline)
+ *     INSERT TOP (1) INTO orders (…) SELECT … FROM orders    1 row    <- real, and it caps
+ *     MERGE INTO customers …                                 1 row    (baseline)
+ *     MERGE TOP (1) INTO customers …                         accepted <- real
+ *
+ * So `top(n)` is EMITTED on both. What no dialect has is a statement-level `LIMIT`/`OFFSET`/
+ * `ORDER BY` on an INSERT or MERGE: in every grammar those belong to the SOURCE SELECT, which is
+ * the `insertSelect` / `usingSelect` child builder. Setting them on the outer builder is a
+ * different statement from the one the caller meant, so they are refused with that pointer rather
+ * than quietly relocated.
+ */
+export const assertInsertMergeRowCapSupported = (
+  state: QueryState,
+  config: Dialect,
+  area: ParserArea,
+): void => {
+  const misplaced =
+    state.limit > 0
+      ? 'limit()'
+      : state.offset !== undefined
+        ? 'offset()'
+        : state.orderByStates.length > 0
+          ? 'orderByColumn()'
+          : undefined;
+
+  if (misplaced !== undefined) {
+    const isMerge = area === ParserArea.Merge;
+    const child = isMerge ? 'usingSelect' : 'insertSelect';
+    const verb = isMerge ? 'MERGE' : 'INSERT';
+    // Only MSSQL has a statement-level cap to point at, so the extra sentence is conditional —
+    // and it is appended rather than interpolated, because `.trim()` on a concatenation only ever
+    // binds to its LAST operand and would leave the trailing space behind.
+    const extra =
+      config.databaseType === DatabaseType.Mssql ? ' To cap the statement itself, use top(n).' : '';
+
+    throw new ParserError(
+      area,
+      `${misplaced} has no statement-level form on ${verb} in any dialect — it belongs to the ` +
+        `source SELECT, so set it on the ${child}() builder.${extra}`,
+    );
+  }
+};
+
+/**
+ * The `TOP (n) ` prefix for a T-SQL INSERT or MERGE, or `''`.
+ *
+ * T-SQL puts it between the verb and `INTO`: `INSERT TOP (n) INTO t …`, `MERGE TOP (n) INTO t …`.
+ * Both were measured against their own baseline and genuinely cap the statement.
+ */
+export const mssqlStatementTop = (state: QueryState, config: Dialect): string =>
+  mssqlMutationTop(state, config);

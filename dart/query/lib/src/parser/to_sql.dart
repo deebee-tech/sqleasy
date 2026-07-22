@@ -139,6 +139,9 @@ SqlHelper defaultToSql(
   }
 
   if (state.queryType == QueryType.merge) {
+    // Before any SQL: a cap MERGE cannot express is refused, never dropped.
+    assertInsertMergeRowCapSupported(state, config, ParserArea.merge);
+
     // MERGE emits its own mandatory terminating semicolon and is never an inner statement.
     final merge = defaultMerge(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(merge.getSql(), merge.getValues());
@@ -166,6 +169,8 @@ SqlHelper defaultToSql(
   }
 
   if (state.queryType == QueryType.insert) {
+    assertInsertMergeRowCapSupported(state, config, ParserArea.insert);
+
     final insert = defaultInsert(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(insert.getSql(), insert.getValues());
 

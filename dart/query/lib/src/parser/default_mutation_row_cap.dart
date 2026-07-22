@@ -145,3 +145,52 @@ void emitMutationRowCap(
     sqlHelper.addSqlSnippet(' LIMIT ${state.limit}');
   }
 }
+
+/// Rejects a row cap or ordering on an INSERT or MERGE that the engine cannot express.
+///
+/// Mirrors the TypeScript port. [assertMutationRowCapSupported] was wired into the update and
+/// delete branches only, so an INSERT or MERGE still swallowed everything. Measured against MSSQL
+/// 2022, each against its own baseline:
+///
+///     INSERT INTO orders (...) SELECT ... FROM orders          3 rows   (baseline)
+///     INSERT TOP (1) INTO orders (...) SELECT ... FROM orders  1 row    <- real, and it caps
+///     MERGE INTO customers ...                                 1 row    (baseline)
+///     MERGE TOP (1) INTO customers ...                         accepted <- real
+///
+/// So `top(n)` is EMITTED on both. What no dialect has is a statement-level LIMIT/OFFSET/ORDER BY
+/// on an INSERT or MERGE — in every grammar those belong to the SOURCE SELECT, which is the
+/// `insertSelect` / `usingSelect` child builder.
+void assertInsertMergeRowCapSupported(
+  QueryState state,
+  Dialect config,
+  ParserArea area,
+) {
+  final misplaced = state.limit > 0
+      ? 'limit()'
+      : state.offset != null
+          ? 'offset()'
+          : state.orderByStates.isNotEmpty
+              ? 'orderByColumn()'
+              : null;
+
+  if (misplaced == null) return;
+
+  final isMerge = area == ParserArea.merge;
+  final child = isMerge ? 'usingSelect' : 'insertSelect';
+  final verb = isMerge ? 'MERGE' : 'INSERT';
+  final extra = config.databaseType == DatabaseType.mssql
+      ? ' To cap the statement itself, use top(n).'
+      : '';
+
+  throw ParserError(
+    area,
+    '$misplaced has no statement-level form on $verb in any dialect — it belongs to the source '
+    'SELECT, so set it on the $child() builder.$extra',
+  );
+}
+
+/// The `TOP (n) ` prefix for a T-SQL INSERT or MERGE, or `''`.
+///
+/// T-SQL puts it between the verb and `INTO`: `INSERT TOP (n) INTO t ...`, `MERGE TOP (n) INTO t`.
+String mssqlStatementTop(QueryState state, Dialect config) =>
+    mssqlMutationTop(state, config);

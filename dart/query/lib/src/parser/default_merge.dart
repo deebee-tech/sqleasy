@@ -4,6 +4,7 @@ import '../enums.dart';
 import '../errors/parser_error.dart';
 import '../identifier.dart';
 import '../sql_helper.dart';
+import 'default_mutation_row_cap.dart';
 import '../state.dart';
 import 'default_join.dart';
 import 'to_sql.dart';
@@ -215,7 +216,10 @@ SqlHelper defaultMerge(
   _validateWhenCardinality(merge);
 
   // MERGE [INTO] <target> [WITH (hint)] [AS alias] — the hint precedes the alias.
-  sqlHelper.addSqlSnippet('MERGE INTO ');
+  sqlHelper.addSqlSnippet('MERGE ');
+  // T-SQL: `MERGE TOP (n) INTO t ...` — between the verb and INTO.
+  sqlHelper.addSqlSnippet(mssqlStatementTop(state, config));
+  sqlHelper.addSqlSnippet('INTO ');
   final owner = (merge.targetOwner != null && merge.targetOwner!.isNotEmpty)
       ? merge.targetOwner
       : config.defaultOwner;

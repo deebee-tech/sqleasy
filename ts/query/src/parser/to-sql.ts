@@ -11,7 +11,11 @@ import type { QueryState } from '../state/query';
 import { defaultCall } from './default-call';
 import { defaultCte } from './default-cte';
 import { defaultDelete } from './default-delete';
-import { assertMutationRowCapSupported, emitMutationRowCap } from './default-mutation-row-cap';
+import {
+  assertInsertMergeRowCapSupported,
+  assertMutationRowCapSupported,
+  emitMutationRowCap,
+} from './default-mutation-row-cap';
 import { defaultFrom } from './default-from';
 import { defaultGroupBy } from './default-group-by';
 import { defaultHaving } from './default-having';
@@ -145,6 +149,9 @@ export const defaultToSql = (
   }
 
   if (state.queryType === QueryType.Merge) {
+    // Before any SQL: a cap MERGE cannot express is refused, never dropped.
+    assertInsertMergeRowCapSupported(state, config, ParserArea.Merge);
+
     // MERGE emits its own terminating semicolon (mandatory in T-SQL) and is never an inner
     // statement, so it returns straight from here.
     const merge = defaultMerge(state, config, mode, options);
@@ -177,6 +184,8 @@ export const defaultToSql = (
   }
 
   if (state.queryType === QueryType.Insert) {
+    assertInsertMergeRowCapSupported(state, config, ParserArea.Insert);
+
     const insert = defaultInsert(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(insert.getSql(), insert.getValues());
 

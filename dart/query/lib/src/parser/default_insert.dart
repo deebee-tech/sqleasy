@@ -3,6 +3,7 @@ import '../enums.dart';
 import '../errors/parser_error.dart';
 import '../identifier.dart';
 import '../sql_helper.dart';
+import 'default_mutation_row_cap.dart';
 import '../state.dart';
 import 'default_returning.dart';
 import 'default_upsert.dart';
@@ -44,6 +45,8 @@ SqlHelper defaultInsert(
   }
 
   sqlHelper.addSqlSnippet('INSERT ');
+  // T-SQL: `INSERT TOP (n) INTO t ...` — between the verb and INTO.
+  sqlHelper.addSqlSnippet(mssqlStatementTop(state, config));
 
   if (isMysqlInsertIgnore(state.upsertState, config)) {
     sqlHelper.addSqlSnippet('IGNORE ');

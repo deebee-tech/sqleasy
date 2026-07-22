@@ -5,6 +5,7 @@ import type { ParserMode } from '../enums/parser-mode';
 import { dialectDisplayName } from '../helpers/dialect-name';
 import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
+import { mssqlStatementTop } from './default-mutation-row-cap';
 import { SqlHelper } from '../helpers/sql';
 import type {
   MergeExpr,
@@ -284,7 +285,10 @@ export const defaultMerge = (
 
   // MERGE [INTO] <target> [WITH (hint)] [AS alias] — the hint precedes the alias. Emitting the
   // alias first (`AS target WITH (HOLDLOCK)`) is non-canonical and version-fragile.
-  sqlHelper.addSqlSnippet('MERGE INTO ');
+  sqlHelper.addSqlSnippet('MERGE ');
+  // T-SQL: `MERGE TOP (n) INTO t …` — between the verb and INTO. Measured: real and accepted.
+  sqlHelper.addSqlSnippet(mssqlStatementTop(state, config));
+  sqlHelper.addSqlSnippet('INTO ');
   sqlHelper.addSqlSnippet(
     qi(
       merge.targetOwner !== undefined && merge.targetOwner !== ''

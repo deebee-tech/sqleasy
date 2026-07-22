@@ -4,6 +4,7 @@ import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
 import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
+import { mssqlStatementTop } from './default-mutation-row-cap';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 import { emitMssqlOutputClause } from './default-returning';
@@ -55,6 +56,8 @@ export const defaultInsert = (
   }
 
   sqlHelper.addSqlSnippet('INSERT ');
+  // T-SQL: `INSERT TOP (n) INTO t …` — between the verb and INTO. Measured: caps the statement.
+  sqlHelper.addSqlSnippet(mssqlStatementTop(state, config));
 
   if (isMysqlInsertIgnore(state.upsertState, config)) {
     sqlHelper.addSqlSnippet('IGNORE ');

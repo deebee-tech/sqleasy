@@ -4,7 +4,7 @@
   "generatedFrom": {
     "corpus": "contract/corpora/emission/corpus.json",
     "corpusVersion": "1.0.0",
-    "corpusCases": 346,
+    "corpusCases": 349,
     "decisions": "contract/capabilities/decisions.json",
     "typedViewSurface": "dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)",
     "audit": "docs/audits/dialect-parity-2026-07-19.md",
@@ -475,7 +475,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
-            "casesThrowing": 2,
+            "casesThrowing": 3,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -486,7 +486,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
-            "casesThrowing": 3,
+            "casesThrowing": 4,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -497,7 +497,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
-            "casesThrowing": 3,
+            "casesThrowing": 4,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -508,7 +508,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 4,
-            "casesThrowing": 4,
+            "casesThrowing": 5,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -1242,8 +1242,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 197,
-            "casesThrowing": 56,
+            "casesEmitting": 198,
+            "casesThrowing": 58,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1254,7 +1254,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 196,
-            "casesThrowing": 50,
+            "casesThrowing": 53,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1265,7 +1265,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 208,
-            "casesThrowing": 40,
+            "casesThrowing": 43,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1276,7 +1276,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 176,
-            "casesThrowing": 71,
+            "casesThrowing": 74,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -1435,7 +1435,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
-            "casesThrowing": 0,
+            "casesThrowing": 1,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1446,7 +1446,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
-            "casesThrowing": 1,
+            "casesThrowing": 2,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1457,7 +1457,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
-            "casesThrowing": 1,
+            "casesThrowing": 2,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1468,7 +1468,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
-            "casesThrowing": 1,
+            "casesThrowing": 2,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -2490,8 +2490,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 13,
-            "casesThrowing": 11,
+            "casesEmitting": 14,
+            "casesThrowing": 12,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2502,7 +2502,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 12,
-            "casesThrowing": 12,
+            "casesThrowing": 14,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2513,7 +2513,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 20,
-            "casesThrowing": 4,
+            "casesThrowing": 6,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2524,7 +2524,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 20,
-            "casesThrowing": 4,
+            "casesThrowing": 6,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -2538,8 +2538,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 12,
-            "casesThrowing": 10,
+            "casesEmitting": 13,
+            "casesThrowing": 11,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2550,7 +2550,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 12,
-            "casesThrowing": 10,
+            "casesThrowing": 12,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2561,7 +2561,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 19,
-            "casesThrowing": 3,
+            "casesThrowing": 5,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2572,7 +2572,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 19,
-            "casesThrowing": 3,
+            "casesThrowing": 5,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -2682,8 +2682,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 1,
+            "casesEmitting": 2,
+            "casesThrowing": 2,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2694,7 +2694,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
-            "casesThrowing": 1,
+            "casesThrowing": 3,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2705,7 +2705,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
-            "casesThrowing": 1,
+            "casesThrowing": 3,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -2716,7 +2716,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
-            "casesThrowing": 1,
+            "casesThrowing": 3,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -3163,7 +3163,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
-            "casesThrowing": 13,
+            "casesThrowing": 14,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -3174,7 +3174,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 11,
-            "casesThrowing": 6,
+            "casesThrowing": 7,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -3185,7 +3185,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
-            "casesThrowing": 8,
+            "casesThrowing": 9,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -3196,7 +3196,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
-            "casesThrowing": 11,
+            "casesThrowing": 12,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -4554,8 +4554,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 66,
-            "casesThrowing": 8,
+            "casesEmitting": 67,
+            "casesThrowing": 10,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -4566,7 +4566,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 63,
-            "casesThrowing": 9,
+            "casesThrowing": 12,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -4577,7 +4577,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 66,
-            "casesThrowing": 6,
+            "casesThrowing": 9,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -4588,7 +4588,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 56,
-            "casesThrowing": 16,
+            "casesThrowing": 19,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -4986,7 +4986,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 10,
+            "casesEmitting": 11,
             "casesThrowing": 2,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -4998,7 +4998,7 @@
           "refusal": "MySQL has no TOP clause — use limit() instead",
           "evidence": {
             "casesEmitting": 0,
-            "casesThrowing": 8,
+            "casesThrowing": 9,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -5009,7 +5009,7 @@
           "refusal": "Postgres has no TOP clause — use limit() instead",
           "evidence": {
             "casesEmitting": 0,
-            "casesThrowing": 8,
+            "casesThrowing": 9,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -5020,7 +5020,7 @@
           "refusal": "SQLite has no TOP clause — use limit() instead",
           "evidence": {
             "casesEmitting": 0,
-            "casesThrowing": 8,
+            "casesThrowing": 9,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
@@ -5419,7 +5419,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 112,
-            "casesThrowing": 23,
+            "casesThrowing": 24,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -5430,7 +5430,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 113,
-            "casesThrowing": 18,
+            "casesThrowing": 19,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -5441,7 +5441,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 117,
-            "casesThrowing": 14,
+            "casesThrowing": 15,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -5452,7 +5452,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 101,
-            "casesThrowing": 28,
+            "casesThrowing": 29,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -6723,7 +6723,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 110,
-            "casesThrowing": 22,
+            "casesThrowing": 23,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -6734,7 +6734,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 104,
-            "casesThrowing": 24,
+            "casesThrowing": 25,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -6745,7 +6745,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 108,
-            "casesThrowing": 21,
+            "casesThrowing": 22,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -6756,7 +6756,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 97,
-            "casesThrowing": 31,
+            "casesThrowing": 32,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
@@ -8288,7 +8288,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 110,
-            "casesThrowing": 22,
+            "casesThrowing": 23,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -8299,7 +8299,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 104,
-            "casesThrowing": 24,
+            "casesThrowing": 25,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -8310,7 +8310,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 108,
-            "casesThrowing": 21,
+            "casesThrowing": 22,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -8321,7 +8321,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 97,
-            "casesThrowing": 31,
+            "casesThrowing": 32,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }

@@ -24972,6 +24972,159 @@
           "raw": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";"
         }
       }
+    },
+    {
+      "name": "mssql caps an insert select with top between the verb and into",
+      "ops": [
+        {
+          "op": "insertInto",
+          "table": "orders"
+        },
+        {
+          "op": "insertColumns",
+          "columns": [
+            "customer_id"
+          ]
+        },
+        {
+          "op": "insertSelect",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "customer_id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            }
+          ]
+        },
+        {
+          "op": "top",
+          "n": 1
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT TOP (1) INTO [dbo].[orders] ([customer_id]) SELECT [customer_id] FROM [dbo].[orders];', N'';",
+            "params": []
+          },
+          "raw": "INSERT TOP (1) INTO [dbo].[orders] ([customer_id]) SELECT [customer_id] FROM [dbo].[orders];"
+        },
+        "mysql": {
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
+        },
+        "postgres": {
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
+        }
+      }
+    },
+    {
+      "name": "limit on an insert builder is refused and points at the source select",
+      "ops": [
+        {
+          "op": "insertInto",
+          "table": "orders"
+        },
+        {
+          "op": "insertColumns",
+          "columns": [
+            "customer_id"
+          ]
+        },
+        {
+          "op": "insertSelect",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "customer_id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            }
+          ]
+        },
+        {
+          "op": "limit",
+          "n": 5
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Insert: limit() has no statement-level form on INSERT in any dialect — it belongs to the source SELECT, so set it on the insertSelect() builder. To cap the statement itself, use top(n)."
+        },
+        "mysql": {
+          "throws": "Insert: limit() has no statement-level form on INSERT in any dialect — it belongs to the source SELECT, so set it on the insertSelect() builder."
+        },
+        "postgres": {
+          "throws": "Insert: limit() has no statement-level form on INSERT in any dialect — it belongs to the source SELECT, so set it on the insertSelect() builder."
+        },
+        "sqlite": {
+          "throws": "Insert: limit() has no statement-level form on INSERT in any dialect — it belongs to the source SELECT, so set it on the insertSelect() builder."
+        }
+      }
+    },
+    {
+      "name": "a derived from source on a delete is refused rather than dropped",
+      "ops": [
+        {
+          "op": "deleteFrom",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "cap",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            }
+          ]
+        },
+        {
+          "op": "where",
+          "table": "o",
+          "column": "id",
+          "operator": "Equals",
+          "value": {
+            "t": "int",
+            "v": 1
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Delete: An UPDATE/DELETE renders one target table, so the derived or raw FROM source(s) (cap) would be dropped without a word — their own WHERE and limit included, while predicates written against their alias survived and referenced nothing. Attach the source with joinWithBuilder/joinTable instead, which emits it as USING on Postgres and a multi-table form on MySQL."
+        },
+        "mysql": {
+          "throws": "Delete: An UPDATE/DELETE renders one target table, so the derived or raw FROM source(s) (cap) would be dropped without a word — their own WHERE and limit included, while predicates written against their alias survived and referenced nothing. Attach the source with joinWithBuilder/joinTable instead, which emits it as USING on Postgres and a multi-table form on MySQL."
+        },
+        "postgres": {
+          "throws": "Delete: An UPDATE/DELETE renders one target table, so the derived or raw FROM source(s) (cap) would be dropped without a word — their own WHERE and limit included, while predicates written against their alias survived and referenced nothing. Attach the source with joinWithBuilder/joinTable instead, which emits it as USING on Postgres and a multi-table form on MySQL."
+        },
+        "sqlite": {
+          "throws": "Delete: An UPDATE/DELETE renders one target table, so the derived or raw FROM source(s) (cap) would be dropped without a word — their own WHERE and limit included, while predicates written against their alias survived and referenced nothing. Attach the source with joinWithBuilder/joinTable instead, which emits it as USING on Postgres and a multi-table form on MySQL."
+        }
+      }
     }
   ]
 }
