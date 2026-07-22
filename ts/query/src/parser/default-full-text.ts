@@ -63,21 +63,22 @@ export const emitFullTextPredicate = (
       return;
     }
 
-    sqlHelper.addSqlSnippet('to_tsvector(');
-    sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
-    sqlHelper.addSqlSnippet(', ');
-    sqlHelper.addSqlSnippet('concat(');
-    columns.forEach((col, i) => {
-      sqlHelper.addSqlSnippet(columnRef(config, col.tableNameOrAlias, col.columnName));
-      if (i < columns.length - 1) {
-        sqlHelper.addSqlSnippet(", ' ', ");
-      }
-    });
-    sqlHelper.addSqlSnippet(')) @@ ');
-    sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
-    sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
-    sqlHelper.addSqlSnippet(', ');
-    return;
+    // MULTI-COLUMN IS REFUSED, and Postgres was the last dialect where it was not.
+    //
+    // This used to fabricate the document with `concat(a, ' ', b)`. That IS an idiomatic Postgres
+    // expression, but it is the builder inventing the document rather than handing the columns to
+    // the engine — and the same call means something different everywhere else: MySQL requires ONE
+    // composite FULLTEXT index over exactly those columns and ranks across them, while MSSQL and
+    // SQLite refuse the multi-column form outright. One method, four meanings, one of them
+    // manufactured. It also had ZERO corpus coverage, which is how it survived unnoticed.
+    //
+    // A caller who genuinely wants a concatenated document can still say so explicitly with
+    // `whereMatchRaw`, where the synthesis is theirs and visible.
+    throw new ParserError(
+      area,
+      'Postgres full-text matches ONE tsvector — pass a single column, index a generated ' +
+        'tsvector column, or build the document yourself with whereMatchRaw',
+    );
   }
 
   if (config.databaseType === DatabaseType.Mysql) {

@@ -59,11 +59,14 @@ const Map<String, DialectViewPolicy> viewManifest = {
       'insertIgnore',
       'onDuplicateKeyUpdate',
       'onDuplicateKeyUpdateRaw',
+      // MSSQL keeps the APPLY spelling, so the Postgres/MySQL LATERAL aliases are hidden here.
+      'joinCrossLateral',
+      'joinLeftLateral',
     },
     aliases: {
       'updlock': 'forUpdate',
       'updlockNowait': 'forUpdateNowait',
-      'updlockSkipLocked': 'forUpdateSkipLocked',
+      'updlockReadpast': 'forUpdateSkipLocked',
     },
   ),
 
@@ -95,12 +98,19 @@ const Map<String, DialectViewPolicy> viewManifest = {
       'onConflictDoUpdateRaw',
       'updlock',
       'updlockNowait',
-      'updlockSkipLocked',
+      'updlockReadpast',
+      // MySQL spells the APPLY concept LATERAL, so the APPLY names are hidden and
+      // `joinCrossLateral`/`joinLeftLateral` are shown instead. `joinLateral` is a THIRD, different
+      // join (it takes its own ON condition) and stays present under its own name.
+      'joinCrossApply',
+      'joinOuterApply',
     },
     aliases: {
       'insertIgnore': 'onConflictDoNothing',
       'onDuplicateKeyUpdate': 'onConflictDoUpdate',
       'onDuplicateKeyUpdateRaw': 'onConflictDoUpdateRaw',
+      'joinCrossLateral': 'joinCrossApply',
+      'joinLeftLateral': 'joinOuterApply',
     },
   ),
 
@@ -117,10 +127,23 @@ const Map<String, DialectViewPolicy> viewManifest = {
       // `onConflict*`.
       'updlock',
       'updlockNowait',
-      'updlockSkipLocked',
+      // Carried verbatim from the TS AbsentOnPostgres union, which still names the pre-rename
+      // `updlockReadpast`; the surface-parity gate compares the two lists literally. Harmless
+      // here either way — every alias surface name (now `updlockReadpast`) is excluded from
+      // auto-discovery, so the MSSQL lock spellings never reach this view.
+      'updlockReadpast',
       'insertIgnore',
       'onDuplicateKeyUpdate',
       'onDuplicateKeyUpdateRaw',
+      // Postgres spells the APPLY concept LATERAL, so the APPLY names are hidden and
+      // `joinCrossLateral`/`joinLeftLateral` are shown instead. `joinLateral` is a THIRD, different
+      // join (it takes its own ON condition) and stays present under its own name.
+      'joinCrossApply',
+      'joinOuterApply',
+    },
+    aliases: {
+      'joinCrossLateral': 'joinCrossApply',
+      'joinLeftLateral': 'joinOuterApply',
     },
   ),
 
@@ -170,10 +193,15 @@ const Map<String, DialectViewPolicy> viewManifest = {
       // lacks row locking, so it never had `forUpdate*`.
       'updlock',
       'updlockNowait',
-      'updlockSkipLocked',
+      // Same as Postgres above: the pre-rename spelling, carried verbatim from TS's
+      // AbsentOnSqlite so the literal surface-parity comparison matches.
+      'updlockReadpast',
       'insertIgnore',
       'onDuplicateKeyUpdate',
       'onDuplicateKeyUpdateRaw',
+      // No LATERAL at all, so the Postgres/MySQL spellings are hidden alongside the APPLY names.
+      'joinCrossLateral',
+      'joinLeftLateral',
     },
   ),
 };

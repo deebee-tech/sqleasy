@@ -101,11 +101,11 @@ void main() {
   });
 
   group('Tier 3 — LATERAL / APPLY', () {
-    test('Postgres joinCrossApply maps to CROSS JOIN LATERAL', () {
+    test('Postgres joinCrossLateral maps to CROSS JOIN LATERAL', () {
       final b = PostgresQuery().newBuilder()
         ..selectAll()
         ..fromTable('orders', alias: 'o')
-        ..joinCrossApply('x', (sub) {
+        ..joinCrossLateral('x', (sub) {
           sub
             ..selectColumn('li', 'sku')
             ..fromTable('line_items', alias: 'li');

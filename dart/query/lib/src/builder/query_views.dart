@@ -312,7 +312,7 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
   MssqlQueryBuilder clearCall();
   MssqlQueryBuilder updlock();
   MssqlQueryBuilder updlockNowait();
-  MssqlQueryBuilder updlockSkipLocked();
+  MssqlQueryBuilder updlockReadpast();
 }
 
 /// The MysqlQueryBuilder view over the single QueryBuilder runtime class.
@@ -386,16 +386,6 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
   );
   MysqlQueryBuilder joinRaw(String rawJoin);
   MysqlQueryBuilder joinRaws(List<String> rawJoins);
-  MysqlQueryBuilder joinCrossApply(
-    String alias,
-    void Function(MysqlQueryBuilder builder) builder, [
-    void Function(JoinOnBuilder builder)? on,
-  ]);
-  MysqlQueryBuilder joinOuterApply(
-    String alias,
-    void Function(MysqlQueryBuilder builder) builder, [
-    void Function(JoinOnBuilder builder)? on,
-  ]);
   MysqlQueryBuilder joinLateral(
     String alias,
     void Function(MysqlQueryBuilder builder) builder,
@@ -617,6 +607,16 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
   MysqlQueryBuilder insertIgnore();
   MysqlQueryBuilder onDuplicateKeyUpdate(List<SetRef> updates);
   MysqlQueryBuilder onDuplicateKeyUpdateRaw(String raw);
+  MysqlQueryBuilder joinCrossLateral(
+    String alias,
+    void Function(MysqlQueryBuilder builder) builder, [
+    void Function(JoinOnBuilder builder)? on,
+  ]);
+  MysqlQueryBuilder joinLeftLateral(
+    String alias,
+    void Function(MysqlQueryBuilder builder) builder, [
+    void Function(JoinOnBuilder builder)? on,
+  ]);
 }
 
 /// The PostgresQueryBuilder view over the single QueryBuilder runtime class.
@@ -707,16 +707,6 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
   );
   PostgresQueryBuilder joinRaw(String rawJoin);
   PostgresQueryBuilder joinRaws(List<String> rawJoins);
-  PostgresQueryBuilder joinCrossApply(
-    String alias,
-    void Function(PostgresQueryBuilder builder) builder, [
-    void Function(JoinOnBuilder builder)? on,
-  ]);
-  PostgresQueryBuilder joinOuterApply(
-    String alias,
-    void Function(PostgresQueryBuilder builder) builder, [
-    void Function(JoinOnBuilder builder)? on,
-  ]);
   PostgresQueryBuilder joinLateral(
     String alias,
     void Function(PostgresQueryBuilder builder) builder,
@@ -964,6 +954,16 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     String? sqlType,
   ]);
   PostgresQueryBuilder clearCall();
+  PostgresQueryBuilder joinCrossLateral(
+    String alias,
+    void Function(PostgresQueryBuilder builder) builder, [
+    void Function(JoinOnBuilder builder)? on,
+  ]);
+  PostgresQueryBuilder joinLeftLateral(
+    String alias,
+    void Function(PostgresQueryBuilder builder) builder, [
+    void Function(JoinOnBuilder builder)? on,
+  ]);
 }
 
 /// The SqliteQueryBuilder view over the single QueryBuilder runtime class.

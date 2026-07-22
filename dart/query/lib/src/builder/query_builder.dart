@@ -551,6 +551,27 @@ class QueryBuilder
   ]) =>
       _joinApply(JoinType.outerApply, alias, builder, on);
 
+  /// Postgres / MySQL `CROSS JOIN LATERAL` — those engines' spelling of [joinCrossApply].
+  ///
+  /// NOT a synonym for [joinLateral], which is a third join taking its own ON condition. The three
+  /// are genuinely different — measured: `CROSS JOIN LATERAL … AS x`,
+  /// `LEFT JOIN LATERAL … ON TRUE`, and `JOIN LATERAL … ON <cond>` — so this renames one of them
+  /// per dialect rather than collapsing any two.
+  QueryBuilder joinCrossLateral(
+    String alias,
+    void Function(QueryBuilder builder) builder, [
+    void Function(JoinOnBuilder builder)? on,
+  ]) =>
+      joinCrossApply(alias, builder, on);
+
+  /// Postgres / MySQL `LEFT JOIN LATERAL … ON TRUE` — their spelling of [joinOuterApply].
+  QueryBuilder joinLeftLateral(
+    String alias,
+    void Function(QueryBuilder builder) builder, [
+    void Function(JoinOnBuilder builder)? on,
+  ]) =>
+      joinOuterApply(alias, builder, on);
+
   /// Postgres/MySQL `JOIN LATERAL (subquery) AS alias ON ...`. MSSQL/SQLite throw.
   QueryBuilder joinLateral(
     String alias,
@@ -1411,8 +1432,13 @@ class QueryBuilder
   /// [updlock], failing immediately on an already-locked row (`, NOWAIT`).
   QueryBuilder updlockNowait() => forUpdateNowait();
 
-  /// [updlock], skipping already-locked rows (`, READPAST`).
-  QueryBuilder updlockSkipLocked() => forUpdateSkipLocked();
+  /// MSSQL `WITH (UPDLOCK, ROWLOCK, READPAST)` — the T-SQL spelling of [forUpdateSkipLocked].
+  ///
+  /// Named for the hint that does the work. It was `updlockSkipLocked`, which was half-translated:
+  /// `updlock` is T-SQL while `SkipLocked` is Postgres/MySQL vocabulary, and the already-adjudicated
+  /// `RowLockWait.skipLocked` cell records MSSQL's own term as READPAST — so the op and the enum
+  /// contradicted each other. UPDLOCK + ROWLOCK + READPAST is Microsoft's documented queue idiom.
+  QueryBuilder updlockReadpast() => forUpdateSkipLocked();
 
   /// Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK,
   /// ROWLOCK)`).

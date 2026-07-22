@@ -99,11 +99,11 @@ describe('Tier 3 — MSSQL has no upsert', () => {
 });
 
 describe('Tier 3 — LATERAL / APPLY', () => {
-  it('Postgres joinCrossApply maps to CROSS JOIN LATERAL', () => {
+  it('Postgres joinCrossLateral maps to CROSS JOIN LATERAL', () => {
     const b = new PostgresQuery().newBuilder();
     b.selectAll()
       .fromTable('orders', 'o')
-      .joinCrossApply('x', (sub) => {
+      .joinCrossLateral('x', (sub) => {
         sub.selectColumn('li', 'sku', '').fromTable('line_items', 'li');
       });
     expect(b.parseRaw()).toContain('CROSS JOIN LATERAL');

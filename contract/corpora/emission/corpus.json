@@ -22106,6 +22106,57 @@
       }
     },
     {
+      "name": "full-text multi-column, where only MySQL genuinely has it",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "docs",
+          "alias": "d"
+        },
+        {
+          "op": "whereMatch",
+          "columns": [
+            {
+              "table": "d",
+              "column": "title"
+            },
+            {
+              "table": "d",
+              "column": "body"
+            }
+          ],
+          "query": "hello world",
+          "mode": "Natural"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL CONTAINS/FREETEXT accepts a single column — pass one column or use whereMatchRaw"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `docs` AS `d` WHERE MATCH (`d`.`title`, `d`.`body`) AGAINST (? IN NATURAL LANGUAGE MODE);",
+            "params": [
+              {
+                "t": "string",
+                "v": "hello world"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `docs` AS `d` WHERE MATCH (`d`.`title`, `d`.`body`) AGAINST (hello world IN NATURAL LANGUAGE MODE);"
+        },
+        "postgres": {
+          "throws": "Where: Postgres full-text matches ONE tsvector — pass a single column, index a generated tsvector column, or build the document yourself with whereMatchRaw"
+        },
+        "sqlite": {
+          "throws": "Where: SQLite FTS MATCH accepts a single FTS column — pass one column or use whereMatchRaw"
+        }
+      }
+    },
+    {
       "name": "mssql merge upsert do update",
       "note": "MSSQL upsert is MERGE; PG/SQLite ON CONFLICT; MySQL ON DUPLICATE KEY UPDATE.",
       "ops": [

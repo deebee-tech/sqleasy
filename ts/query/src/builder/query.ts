@@ -533,6 +533,27 @@ export class QueryBuilder {
     return this.#joinApply(JoinType.OuterApply, alias, builder, joinOnBuilder);
   };
 
+  /**
+   * Postgres / MySQL `CROSS JOIN LATERAL` — those engines' spelling of {@link joinCrossApply}.
+   *
+   * NOT a synonym for {@link joinLateral}, which is a third join taking its own ON condition. The
+   * three are genuinely different — measured: `CROSS JOIN LATERAL … AS x`,
+   * `LEFT JOIN LATERAL … ON TRUE`, and `JOIN LATERAL … ON <cond>` — so this renames one of them per
+   * dialect rather than collapsing any two.
+   */
+  public joinCrossLateral = (
+    alias: string,
+    builder: (builder: QueryBuilder) => void,
+    joinOnBuilder?: (joinOnBuilder: JoinOnBuilder) => void,
+  ): this => this.joinCrossApply(alias, builder, joinOnBuilder);
+
+  /** Postgres / MySQL `LEFT JOIN LATERAL … ON TRUE` — their spelling of {@link joinOuterApply}. */
+  public joinLeftLateral = (
+    alias: string,
+    builder: (builder: QueryBuilder) => void,
+    joinOnBuilder?: (joinOnBuilder: JoinOnBuilder) => void,
+  ): this => this.joinOuterApply(alias, builder, joinOnBuilder);
+
   /** Postgres/MySQL `JOIN LATERAL (subquery) AS alias ON ...`. MSSQL/SQLite throw. */
   public joinLateral = (
     alias: string,
@@ -2041,7 +2062,15 @@ export class QueryBuilder {
   public updlockNowait = (): this => this.forUpdateNowait();
 
   /** {@link updlock}, skipping already-locked rows (`, READPAST`). */
-  public updlockSkipLocked = (): this => this.forUpdateSkipLocked();
+  /**
+   * MSSQL `WITH (UPDLOCK, ROWLOCK, READPAST)` — the T-SQL spelling of {@link forUpdateSkipLocked}.
+   *
+   * Named for the hint that does the work. It was `updlockSkipLocked`, which was half-translated:
+   * `updlock` is T-SQL while `SkipLocked` is Postgres/MySQL vocabulary, and the already-adjudicated
+   * `RowLockWait.SkipLocked` cell records MSSQL's own term as READPAST — so the op and the enum
+   * contradicted each other. UPDLOCK + ROWLOCK + READPAST is Microsoft's documented queue idiom.
+   */
+  public updlockReadpast = (): this => this.forUpdateSkipLocked();
 
   /** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
   public forShare = (): this => {

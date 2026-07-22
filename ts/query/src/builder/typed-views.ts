@@ -109,7 +109,9 @@ type AbsentOnMssql =
   | 'forUpdateSkipLocked'
   | 'insertIgnore'
   | 'onDuplicateKeyUpdate'
-  | 'onDuplicateKeyUpdateRaw';
+  | 'onDuplicateKeyUpdateRaw'
+  | 'joinCrossLateral'
+  | 'joinLeftLateral';
 
 /**
  * MySQL cannot run these.
@@ -147,7 +149,9 @@ type AbsentOnMysql =
   | 'onConflictDoUpdateRaw'
   | 'updlock'
   | 'updlockNowait'
-  | 'updlockSkipLocked';
+  | 'updlockReadpast'
+  | 'joinCrossApply'
+  | 'joinOuterApply';
 
 /**
  * Postgres cannot run these.
@@ -166,10 +170,12 @@ type AbsentOnPostgres =
   // Engine-native renames belonging to other dialects: Postgres keeps `forUpdate*` and `onConflict*`.
   | 'updlock'
   | 'updlockNowait'
-  | 'updlockSkipLocked'
+  | 'updlockReadpast'
   | 'insertIgnore'
   | 'onDuplicateKeyUpdate'
-  | 'onDuplicateKeyUpdateRaw';
+  | 'onDuplicateKeyUpdateRaw'
+  | 'joinCrossApply'
+  | 'joinOuterApply';
 
 /**
  * SQLite cannot run these — the narrowest surface.
@@ -225,10 +231,12 @@ type AbsentOnSqlite =
   // row locking, so it never had `forUpdate*`.
   | 'updlock'
   | 'updlockNowait'
-  | 'updlockSkipLocked'
+  | 'updlockReadpast'
   | 'insertIgnore'
   | 'onDuplicateKeyUpdate'
-  | 'onDuplicateKeyUpdateRaw';
+  | 'onDuplicateKeyUpdateRaw'
+  | 'joinCrossLateral'
+  | 'joinLeftLateral';
 
 // Each view is an `interface extends`, not a `type` alias, because a view passes ITSELF as `Self`
 // (so builder-returning methods report the view type and chaining stays narrow) — and a `type` alias

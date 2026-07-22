@@ -70,7 +70,7 @@ describe('per-engine typed views', () => {
     // …and updlock* is what MSSQL exposes instead:
     void (() => mssql.updlock());
     void (() => mssql.updlockNowait());
-    void (() => mssql.updlockSkipLocked());
+    void (() => mssql.updlockReadpast());
     // updlock is MSSQL-only:
     // @ts-expect-error updlock is MSSQL-only
     void (() => postgres.updlock());

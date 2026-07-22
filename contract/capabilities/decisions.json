@@ -28,51 +28,51 @@
       }
     },
     "limitWithTies": {
-      "_why": "WITH TIES is real in MSSQL and Postgres and absent from MySQL and SQLite. The two that have it spell it differently \u2014 T-SQL `TOP (n) WITH TIES`, Postgres `FETCH FIRST n ROWS WITH TIES` \u2014 but both engines use the phrase WITH TIES, so the shared term is real rather than coined. Through 10.x MSSQL emitted `OFFSET 0 ROWS FETCH NEXT n ROWS WITH TIES`, which no T-SQL production allows: <offset_fetch> ends in a mandatory ONLY and TOP admits no offset. Fixed 2026-07-20 to render through TOP. NAME LEFT EMPTY DELIBERATELY: `limitWithTies` is SQLEasy's coinage, not either engine's term. The honest term is `withTies`, but renaming is an API decision that belongs with the typed per-engine surface, not with this behavioural fix.",
+      "_why": "WITH TIES \u2014 return the extra rows that tie with the last one under the ORDER BY. Genuinely native on both engines that have it, and NOT a synthesis on either: T-SQL spells it `SELECT TOP (n) WITH TIES`, which is part of TOP's own grammar, and Postgres 13+ spells it `FETCH FIRST n ROWS WITH TIES`. Different keywords, one capability, so the shared name stands. MySQL and SQLite have no equivalent at all \u2014 before the sweep MSSQL emitted an unparseable `OFFSET/FETCH ... WITH TIES` (ac9aeb4), which is why this looked like an emulation and was withheld from extraction.",
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
-      },
-      "postgres": {
-        "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "limitWithTies",
+        "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL does not support WITH TIES",
+        "refusal": "Limit: MySQL does not support WITH TIES",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "limitWithTies",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite does not support WITH TIES",
+        "refusal": "Limit: SQLite does not support WITH TIES",
         "adjudicated": true
       }
     },
     "joinOuterApply": {
-      "_why": "MSSQL OUTER APPLY is native and takes no ON clause. Postgres and MySQL express the same semantics as LEFT JOIN LATERAL, which is equally native \u2014 but a LEFT JOIN REQUIRES ON or USING, and an APPLY has no ON conditions by construction, so the emitted statement had no ON at all and neither engine could parse it. Closed with the documented `ON TRUE` idiom 2026-07-20. SQLite has neither LATERAL nor APPLY.\n\nNAMES LEFT EMPTY DELIBERATELY, and this op is the design's own worked example: `outerApply` is T-SQL vocabulary, yet the capability is genuinely native on three engines. Because all three cells read `native`, nothing about a per-engine type split would move it off the shared surface \u2014 a Postgres user would still hit the dot and see a T-SQL term. Only derived sharedness forces the question, by requiring someone to assert `outerApply` is a real term in Postgres and MySQL, which it is not. The rename belongs with the typed surface. See docs/capability-manifest-design.md.",
+      "_why": "Sandy's ruling 2026-07-22: engine-native names per dialect. T-SQL calls it APPLY; Postgres and MySQL call it LATERAL, so each view shows only its own term. Measured, and these are THREE different joins rather than two vocabularies for one \u2014 joinCrossApply emits CROSS JOIN LATERAL, joinOuterApply emits LEFT JOIN LATERAL ... ON TRUE, and the pre-existing joinLateral emits JOIN LATERAL ... ON <cond>. So joinCrossLateral/joinLeftLateral are surface aliases over the first two, and joinLateral is untouched; collapsing any of them would delete a capability rather than rename one. SQLite has neither vocabulary.",
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
-      },
-      "postgres": {
-        "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "joinOuterApply",
+        "adjudicated": true
       },
       "mysql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "joinLeftLateral",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "joinLeftLateral",
+        "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite does not support OUTER APPLY/LATERAL joins",
+        "refusal": "Join: SQLite does not support LATERAL joins",
         "adjudicated": true
       }
     },
@@ -101,26 +101,26 @@
       }
     },
     "joinCrossApply": {
-      "_why": "Same shape as joinOuterApply and unaffected by its bug: CROSS APPLY translates to CROSS JOIN LATERAL, and a CROSS JOIN never accepts an ON clause, so nothing was missing. Native on MSSQL, Postgres and MySQL; SQLite has neither. Names left empty for the same vocabulary reason as joinOuterApply.",
+      "_why": "Sandy's ruling 2026-07-22: engine-native names per dialect. T-SQL calls it APPLY; Postgres and MySQL call it LATERAL, so each view shows only its own term. Measured, and these are THREE different joins rather than two vocabularies for one \u2014 joinCrossApply emits CROSS JOIN LATERAL, joinOuterApply emits LEFT JOIN LATERAL ... ON TRUE, and the pre-existing joinLateral emits JOIN LATERAL ... ON <cond>. So joinCrossLateral/joinLeftLateral are surface aliases over the first two, and joinLateral is untouched; collapsing any of them would delete a capability rather than rename one. SQLite has neither vocabulary.",
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
-      },
-      "postgres": {
-        "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "joinCrossApply",
+        "adjudicated": true
       },
       "mysql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "joinCrossLateral",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "joinCrossLateral",
+        "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite does not support CROSS APPLY/LATERAL joins",
+        "refusal": "Join: SQLite does not support LATERAL joins",
         "adjudicated": true
       }
     },
@@ -404,27 +404,27 @@
       }
     },
     "fromTableWithOwner": {
-      "_why": "KIND SETTLED ON ALL FOUR; THE THREE NATIVE NAMES ARE PARKED, deliberately, and this op is the anchor of the whole *WithOwner rename.\n\n'Owner' is Sybase / pre-2005 T-SQL vocabulary. docs/capability-manifest-design.md:108 names it as exactly that ('~10 ops, emitting a schema qualifier') and :211 puts it on the rename list derived sharedness forces; scripts/build-capability-manifest.mjs:82 forces it unadjudicated for 'sweep-2026-07-20: Sybase-era vocabulary on the shared surface'. All three engines that accept it call the thing a SCHEMA today (MSSQL since 2005, Postgres CREATE SCHEMA/search_path, SQLite's own grammar production is literally schema-name), and on Postgres 'owner' names a DIFFERENT real concept \u2014 ALTER TABLE \u2026 OWNER TO <role>. Writing `fromTableWithOwner` into three cells would assert a term that is wrong on at least two of them; writing `fromTableWithSchema` is an API rename Sandy has not taken. Kind recorded, name left empty, per this file's own convention.\n\nMYSQL IS ADJUDICATED ABSENT, and this DISAGREES WITH THE TYPED VIEW ON PURPOSE. typed-views.ts:69-70 keeps the method on the MySQL view, reasoning that an empty owner is accepted so the method is usable \u2014 right about the TYPE (structural absence would misfire on the degenerate `fromTableWithOwner('', \u2026)` call, which is just fromTable). But the CAPABILITY the method names \u2014 namespace-qualify the table \u2014 is unreachable on MySQL: default-from.ts:40-42 throws for every argument that does anything, and the corpus pins the throw. decisions.json is documented as outranking the view surface, which is the mechanism for exactly this drift.\n\nThe refusal is over-strict as ENGINE fact, and that is a separate ticket: MySQL does accept `db_name.tbl_name` \u2014 its schema IS the database \u2014 so SQLEasy is hiding a real MySQL capability rather than approximating a missing one. That is branch 3 pointed the wrong way.\n\nTRAPS. An explicit empty owner is NOT the same as no owner: fromTable substitutes the dialect default ([dbo]., \"public\".) while fromTableWithOwner('') emits a bare `SELECT * FROM users AS u` on all four. And SQLite's qualifier is an ATTACHed database name (main, temp), not a schema, so the same portable 'sales' string addresses a different namespace there than on Postgres.",
+      "_why": "Owner (schema) qualification in the FROM clause. Sandy's ruling 2026-07-22: KEEP the WithOwner name rather than renaming the five-op family to WithSchema \u2014 it is what SQLEasy has always used, it is consistent across the family, and a vocabulary preference does not justify five breaking renames. All three supporting dialects therefore share one name, so sharedness derives. MySQL is absent because its 'schema' IS the database the connection already targets: there is no second namespace to qualify with, and the parser refuses a NON-EMPTY owner while leaving the method callable in its degenerate form.",
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "fromTableWithOwner",
+        "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL does not support table owners",
+        "refusal": "From: MySQL does not support table owners",
         "adjudicated": true
       },
       "postgres": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "fromTableWithOwner",
+        "adjudicated": true
       },
       "sqlite": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "fromTableWithOwner",
+        "adjudicated": true
       }
     },
     "joinTableWithOwner": {
@@ -455,27 +455,27 @@
       }
     },
     "updateTableWithOwner": {
-      "_why": "Same adjudication as fromTableWithOwner and it must move with it: kind settled on all four, the three native names parked as part of the *WithOwner rename sweep. Do not adjudicate this op's names in isolation from fromTableWithOwner, deleteFromWithOwner, insertIntoWithOwner and joinTableWithOwner.\n\nNative on MSSQL, Postgres and SQLite. default-update.ts:43 builds the two-part name and :55-58 writes it after UPDATE with `AS alias` (Postgres/SQLite); MSSQL takes the mssqlAliased path at :48-53 and :94-100, which is T-SQL's own and only aliasing form, not a synthesis. Nothing is emulated on any of the three.\n\nMYSQL IS ADJUDICATED ABSENT: default-update.ts:39-41 throws for every non-empty owner, and capabilities.json records casesEmitting 0 / casesThrowing 2 \u2014 MySQL has never emitted this op. Same deliberate disagreement with typed-views.ts:69-70 as fromTableWithOwner, for the same reason. The refusal is also stricter than the engine: ts/query/tests/mysql/update.test.ts:91-97 uses owner 'mydb' and expects a throw, yet `UPDATE mydb.users SET \u2026` is valid MySQL. SQLEasy declines because MySQL has no schema layer distinct from the database and conflating the two would be exactly the approximation this library refuses \u2014 defensible, but it is a hidden real capability, not a missing one.\n\nSemantics are not identical across the three natives: MSSQL and Postgres qualify a namespace inside one database, while SQLite's schema-name is an ATTACHed database file (tests/sqlite/update.test.ts:108-118 passes 'main'). That is another reason the shared name has to be decided once, for the whole family, rather than per op.\n\nThe SQLite throw counted in capabilities.json is the JOIN case (default-mutation-join.ts:31-44), not the owner.",
+      "_why": "Owner qualification on UPDATE \u2014 same family and same ruling as fromTableWithOwner; see its note. Measured native on MSSQL, Postgres and SQLite, refused on MySQL.",
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "updateTableWithOwner",
+        "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL does not support table owners",
+        "refusal": "Update: MySQL does not support table owners",
         "adjudicated": true
       },
       "postgres": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "updateTableWithOwner",
+        "adjudicated": true
       },
       "sqlite": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "updateTableWithOwner",
+        "adjudicated": true
       }
     },
     "forUpdateNowait": {
@@ -503,11 +503,11 @@
       }
     },
     "forUpdateSkipLocked": {
-      "_why": "Postgres and MySQL append ' SKIP LOCKED' to the same statement-level clause (default-row-lock.ts:37-39). MSSQL emits ' WITH (UPDLOCK, ROWLOCK, READPAST)' (default-row-lock.ts:104-109), and READPAST is genuinely native \u2014 a dedicated T-SQL table hint whose entire job is to skip rows locked by other transactions, and UPDLOCK+ROWLOCK+READPAST is Microsoft's own documented queue-table idiom. Branch 3 of the design, NOT a synthesis.\n\nMSSQL NAME LEFT EMPTY DELIBERATELY. The shipped method is `updlockSkipLocked` (query.ts:2037, typed-views.ts:150), which is HALF-translated: `updlock` is T-SQL, `SkipLocked` is Postgres/MySQL vocabulary. The already-settled enum cell RowLockWait.SkipLocked/mssql records MSSQL's own term as 'READPAST' (capabilities.json, adjudicated true), so the op cell and the enum cell would disagree on the wait half. If the typed surface is to speak T-SQL end to end the honest method name is `updlockReadpast`. That is an API rename Sandy has not taken, so the kind is recorded and the name is parked \u2014 same treatment as limitWithTies. Sharedness does not derive either way: MSSQL's name differs from the Postgres/MySQL `forUpdateSkipLocked` under both spellings.\n\nNote the asymmetry that makes this family confusing: skip-locked is native on MSSQL for the EXCLUSIVE lock and absent for the SHARED one, and the reason is the lock strength, not the wait mode.",
+      "_why": "Postgres and MySQL append ' SKIP LOCKED' to the statement-level locking clause. MSSQL reaches the same behaviour with the READPAST table hint (WITH (UPDLOCK, ROWLOCK, READPAST)) \u2014 native, and Microsoft's own documented queue-table idiom, not a synthesis. Sandy's ruling 2026-07-22: MSSQL's surface name is updlockReadpast, T-SQL end to end. It was updlockSkipLocked, which was half-translated and contradicted the already-adjudicated RowLockWait.SkipLocked cell recording MSSQL's own term as READPAST.",
       "mssql": {
         "kind": "native",
-        "name": "",
-        "adjudicated": false
+        "name": "updlockReadpast",
+        "adjudicated": true
       },
       "mysql": {
         "kind": "native",
@@ -674,11 +674,21 @@
       }
     },
     "fromTableFunction": {
-      "_why": "PARTIAL ADJUDICATION \u2014 mssql and postgres are DELIBERATELY OMITTED so they stay forced-unadjudicated. See below.\n\nMySQL has no user-callable FROM-clause table function at all (only the built-in JSON_TABLE), so default-from.ts:128-133 throws and names fromFunctionRaw as the escape hatch. Both sources agree: `fromTableFunction`/`fromTableFunctionWithOwner` are in AbsentOnMysql (typed-views.ts:136-137) AND the parser throws unconditionally. This is the fix for audit F4 (docs/audits/dialect-parity-2026-07-19.md:81), where MySQL previously emitted a call it cannot parse.\n\nSQLite is clean and is adjudicated native. Its defaultOwner is '' (dialects/sqlite/configuration.ts:14) so NO schema qualifier is injected, and default-from.ts:142-146 branches on DatabaseType.Sqlite to emit the function name UNQUOTED \u2014 `FROM json_each(?) AS \"j\"`, never `\"json_each\"(...)`. The dedicated corpus case 'from table function sqlite json_each' pins an executable prepared statement.\n\nMSSQL AND POSTGRES ARE NOT ADJUDICATED, and this is the reason: query.ts:329 stamps config.defaultOwner into the state even when the caller named no schema, while the method takes no owner argument and its doc comment at query.ts:323 promises `FROM fn(...) AS alias`. What is emitted is `FROM \"public\".\"fn\"(...)` on Postgres and `FROM [dbo].[fn](...)` on MSSQL. On Postgres that defeats search_path resolution and names a DIFFERENT function than the caller did \u2014 `fromTableFunction('x')` and `fromTableFunctionWithOwner('public','x')` are byte-identical, so there is NO way to reach an unqualified table function, and every set-returning function a Postgres user would actually name (generate_series, unnest, json_each, jsonb_array_elements, regexp_split_to_table) lives in pg_catalog and is therefore unreachable. The pinned golden `SELECT * FROM \"public\".\"generate_series\"(1, 3) AS \"g\";` is rejected by a live server (ERROR 42883), which is the audit's FALSE-CONFORMED class, not a caveat. MSSQL carries the same injection and the same defect for a system TVF. The CONSTRUCT is genuinely native on both and there is no emulation anywhere in this path \u2014 the emitter writes the engine's own FROM-clause function-call grammar directly \u2014 so `absent` would also be wrong. Adjudicate both as native under the name `fromTableFunction` only after the defaultOwner injection at query.ts:329 is fixed (or the op is deliberately redefined as the qualified form) and the re-minted goldens are accepted by a real server.",
+      "_why": "Table-valued / set-returning functions in FROM. Native on MSSQL, Postgres and SQLite (json_each and friends); MySQL has no table-valued functions. This cell was UNADJUDICABLE until 2026-07-22 because the builder injected the dialect's default OWNER into the function name, emitting \"public\".\"generate_series\"(...) and [dbo].[STRING_SPLIT](...), both of which a live server rejects \u2014 neither native nor absent is an honest label for a call that cannot run. With the injection removed the unqualified call resolves through search_path / the default schema and the cell is simply native.",
+      "mssql": {
+        "kind": "native",
+        "name": "fromTableFunction",
+        "adjudicated": true
+      },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL does not support table functions in FROM \u2014 use fromFunctionRaw",
+        "refusal": "From: MySQL does not support table-valued functions",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "fromTableFunction",
         "adjudicated": true
       },
       "sqlite": {
@@ -781,6 +791,75 @@
         "kind": "absent",
         "name": "",
         "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
+        "adjudicated": true
+      }
+    },
+    "whereMatch": {
+      "_why": "Full-text search, and the multi-column form is where the dialects genuinely part. MySQL is the ONLY one that supports it, and only via a single composite FULLTEXT index over exactly those columns. MSSQL and SQLite always refused it. Postgres used to fabricate the document with concat(a,' ',b) \u2014 idiomatic Postgres, but the BUILDER inventing a document rather than handing columns to the engine, which made one call mean four things with one of them manufactured. Sandy's ruling 2026-07-22: refuse it on Postgres too. whereMatchRaw remains the explicit escape hatch. Single-column matching is native on all four and is not affected; the per-dialect MODE differences live on the FullTextMode enum axis, already adjudicated.",
+      "mssql": {
+        "kind": "native",
+        "name": "whereMatch",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "whereMatch",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "whereMatch",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "whereMatch",
+        "adjudicated": true
+      }
+    },
+    "selectJsonExtract": {
+      "_why": "JSON path extraction. Native on all four, under four completely different spellings \u2014 Postgres jsonb_path_query_first, MySQL JSON_EXTRACT/JSON_UNQUOTE, MSSQL JSON_VALUE/JSON_QUERY, SQLite json_extract \u2014 so the shared SQLEasy name stands and the mode differences live on the JsonExtractMode enum axis. UNADJUDICABLE until 2026-07-22: the path was built with JSON.stringify, which quotes with \" and every dialect reads as a DELIMITED IDENTIFIER. Postgres additionally used `->>`, which takes a KEY rather than a JSONPath, so `$.email` matched nothing and the predicate silently returned NULL. Both fixed; the path is now one JSONPath on all four.",
+      "mssql": {
+        "kind": "native",
+        "name": "selectJsonExtract",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "selectJsonExtract",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "selectJsonExtract",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "selectJsonExtract",
+        "adjudicated": true
+      }
+    },
+    "whereJsonExtract": {
+      "_why": "JSON path extraction. Native on all four, under four completely different spellings \u2014 Postgres jsonb_path_query_first, MySQL JSON_EXTRACT/JSON_UNQUOTE, MSSQL JSON_VALUE/JSON_QUERY, SQLite json_extract \u2014 so the shared SQLEasy name stands and the mode differences live on the JsonExtractMode enum axis. UNADJUDICABLE until 2026-07-22: the path was built with JSON.stringify, which quotes with \" and every dialect reads as a DELIMITED IDENTIFIER. Postgres additionally used `->>`, which takes a KEY rather than a JSONPath, so `$.email` matched nothing and the predicate silently returned NULL. Both fixed; the path is now one JSONPath on all four.",
+      "mssql": {
+        "kind": "native",
+        "name": "whereJsonExtract",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "whereJsonExtract",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "whereJsonExtract",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "whereJsonExtract",
         "adjudicated": true
       }
     }

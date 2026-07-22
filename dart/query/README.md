@@ -357,10 +357,16 @@ builder
 
 ### LATERAL / APPLY and table functions
 
+Each engine shows its own spelling of the same join: Postgres/MySQL expose `joinCrossLateral()` and
+`joinLeftLateral()`, MSSQL exposes `joinCrossApply()` and `joinOuterApply()`, and SQLite has neither.
+`joinLateral()` is a THIRD, different join — it takes its own ON condition (`JOIN LATERAL (...) AS x
+ON <cond>`), where the two above emit `CROSS JOIN LATERAL (...) AS x` and
+`LEFT JOIN LATERAL (...) AS x ON TRUE`.
+
 ```dart
 builder
   ..fromTable('orders', alias: 'o')
-  ..joinCrossApply('x', (sub) => sub.selectAll().fromTable('line_items', alias: 'li'))
+  ..joinCrossLateral('x', (sub) => sub.selectAll().fromTable('line_items', alias: 'li'))
   ..fromTableFunction('generate_series', 'g', [1, 10]);
 ```
 

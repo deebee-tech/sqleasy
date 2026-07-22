@@ -86,6 +86,48 @@ for (const dialect of DIALECTS) {
   }
 }
 
+// ── A hidden name must be a REAL method ─────────────────────────────────────────────────────────
+//
+// Set equality alone is not enough, and this is not hypothetical: renaming `updlockSkipLocked` to
+// `updlockReadpast` updated the MSSQL rename list but left the stale name in AbsentOnPostgres and
+// AbsentOnSqlite. `Exclude<keyof QueryBuilder, AbsentOnPostgres>` then excluded NOTHING for that
+// entry, so an MSSQL-only lock spelling was reachable on the Postgres and SQLite views — while both
+// ports still declared identical strings and this gate stayed green.
+//
+// So every hidden name must correspond to a method that actually exists. A typo or a half-finished
+// rename hides nothing, and a set that hides nothing is indistinguishable from a correct one until
+// somebody calls the method.
+const BUILDERS = [
+  join(ROOT, 'ts', 'query', 'src', 'builder', 'query.ts'),
+  join(ROOT, 'ts', 'query', 'src', 'builder', 'window.ts'),
+  join(ROOT, 'ts', 'query', 'src', 'builder', 'merge.ts'),
+  join(ROOT, 'ts', 'query', 'src', 'builder', 'join-on.ts'),
+];
+const methods = new Set(
+  BUILDERS.flatMap((file) =>
+    [
+      ...stripComments(readFileSync(file, 'utf8')).matchAll(
+        /\bpublic\s+(?:readonly\s+)?(\w+)\s*=/g,
+      ),
+    ].map((m) => m[1]),
+  ),
+);
+
+const phantom = [];
+for (const dialect of DIALECTS) {
+  for (const name of ts[dialect]) {
+    if (!methods.has(name)) phantom.push(`${dialect}: ${name}`);
+  }
+}
+if (phantom.length) {
+  console.error(
+    'check-surface-parity: these names are hidden but are NOT methods on any builder, so they hide\n' +
+      'nothing — almost always a typo or a half-finished rename:\n  ' +
+      phantom.join('\n  '),
+  );
+  process.exit(1);
+}
+
 if (drift) {
   console.error(
     'check-surface-parity: the TS and Dart honest surfaces DIFFER —\n' + lines.join('\n'),

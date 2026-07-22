@@ -45,7 +45,7 @@ describe('MSSQL row locks reach every table reference', () => {
       .joinTable(JoinType.Inner, 'customers', 'c', (j) =>
         j.on('c', 'id', JoinOperator.Equals, 'o', 'customer_id'),
       )
-      .updlockSkipLocked();
+      .updlockReadpast();
     const sql = b.parseRaw();
     expect(sql.match(/READPAST/g)).toHaveLength(2);
   });

@@ -23,9 +23,9 @@ void main() {
       expect(locked((b) => b.updlockNowait()).parseRaw(), contains('NOWAIT'));
     });
 
-    test('updlockSkipLocked() adds READPAST', () {
-      expect(locked((b) => b.updlockSkipLocked()).parseRaw(),
-          contains('READPAST'));
+    test('updlockReadpast() adds READPAST', () {
+      expect(
+          locked((b) => b.updlockReadpast()).parseRaw(), contains('READPAST'));
     });
   });
 
