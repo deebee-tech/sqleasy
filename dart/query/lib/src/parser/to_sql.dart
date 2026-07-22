@@ -19,6 +19,7 @@ import 'default_having.dart';
 import 'default_insert.dart';
 import 'default_join.dart';
 import 'default_limit_offset.dart';
+import 'default_mutation_row_cap.dart';
 import 'default_mutation_join.dart';
 import 'default_order_by.dart';
 import 'default_returning.dart';
@@ -183,12 +184,16 @@ SqlHelper defaultToSql(
   }
 
   if (state.queryType == QueryType.update) {
+    // Before any SQL is produced: a row cap the engine cannot run is refused, never dropped.
+    assertMutationRowCapSupported(state, config, ParserArea.update);
+
     final update = defaultUpdate(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
 
     if (state.whereStates.isNotEmpty || state.joinStates.isNotEmpty) {
       _emitMutationWhere(sqlHelper, state, config, mode, options);
     }
+    emitMutationRowCap(sqlHelper, state, config, mode);
 
     if (state.returningState != null &&
         config.databaseType != DatabaseType.mssql) {
@@ -203,12 +208,16 @@ SqlHelper defaultToSql(
   }
 
   if (state.queryType == QueryType.delete) {
+    // Before any SQL is produced: a row cap the engine cannot run is refused, never dropped.
+    assertMutationRowCapSupported(state, config, ParserArea.delete);
+
     final del = defaultDelete(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
 
     if (state.whereStates.isNotEmpty || state.joinStates.isNotEmpty) {
       _emitMutationWhere(sqlHelper, state, config, mode, options);
     }
+    emitMutationRowCap(sqlHelper, state, config, mode);
 
     if (state.returningState != null &&
         config.databaseType != DatabaseType.mssql) {

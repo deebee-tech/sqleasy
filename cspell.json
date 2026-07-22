@@ -19,6 +19,7 @@
     "combinators",
     "cooldown",
     "ctes",
+    "ctid",
     "daterange",
     "datetimeoffset",
     "datetimes",

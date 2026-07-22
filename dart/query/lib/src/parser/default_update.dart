@@ -7,6 +7,7 @@ import '../state.dart';
 import 'default_join.dart';
 import 'default_mutation_join.dart';
 import 'default_returning.dart';
+import 'default_mutation_row_cap.dart';
 import 'mutation_target.dart';
 import 'to_sql.dart';
 
@@ -45,6 +46,8 @@ SqlHelper defaultUpdate(
       (alias.isNotEmpty || hasJoins);
 
   sqlHelper.addSqlSnippet('UPDATE ');
+  // T-SQL spells a mutation row cap `UPDATE TOP (n) tbl` — between the verb and the target.
+  sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
 
   if (mssqlAliased) {
     sqlHelper.addSqlSnippet(alias.isNotEmpty ? quote(alias) : qualified);

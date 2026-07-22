@@ -10,6 +10,7 @@ import type { QueryState } from '../state/query';
 import { defaultJoin } from './default-join';
 import { assertMutationJoinsSupported, renderPostgresMutationFrom } from './default-mutation-join';
 import { emitMssqlOutputClause } from './default-returning';
+import { mssqlMutationTop } from './default-mutation-row-cap';
 import { resolveMutationTarget } from './mutation-target';
 import type { ToSqlOptions } from './to-sql';
 
@@ -48,6 +49,8 @@ export const defaultUpdate = (
   const mssqlAliased = config.databaseType === DatabaseType.Mssql && (alias !== '' || hasJoins);
 
   sqlHelper.addSqlSnippet('UPDATE ');
+  // T-SQL spells a mutation row cap `UPDATE TOP (n) tbl` — between the verb and the target.
+  sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
 
   if (mssqlAliased) {
     sqlHelper.addSqlSnippet(alias !== '' ? quote(alias) : qualified);

@@ -7,6 +7,7 @@ import '../state.dart';
 import 'default_join.dart';
 import 'default_mutation_join.dart';
 import 'default_returning.dart';
+import 'default_mutation_row_cap.dart';
 import 'mutation_target.dart';
 import 'to_sql.dart';
 
@@ -42,6 +43,7 @@ SqlHelper defaultDelete(
 
   if (mssqlAliased) {
     sqlHelper.addSqlSnippet('DELETE ');
+    sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
     sqlHelper.addSqlSnippet(alias.isNotEmpty ? quote(alias) : qualified);
 
     if (state.returningState != null) {
@@ -67,6 +69,7 @@ SqlHelper defaultDelete(
 
   if (hasJoins && config.databaseType == DatabaseType.mysql) {
     sqlHelper.addSqlSnippet('DELETE ');
+    sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
     sqlHelper.addSqlSnippet(alias.isNotEmpty ? quote(alias) : qualified);
     sqlHelper.addSqlSnippet(' FROM ');
     sqlHelper.addSqlSnippet(qualified);
@@ -83,7 +86,10 @@ SqlHelper defaultDelete(
     return sqlHelper;
   }
 
-  sqlHelper.addSqlSnippet('DELETE FROM ');
+  // T-SQL spells a mutation row cap `DELETE TOP (n) FROM tbl` — between the verb and FROM.
+  sqlHelper.addSqlSnippet('DELETE ');
+  sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
+  sqlHelper.addSqlSnippet('FROM ');
   sqlHelper.addSqlSnippet(qualified);
 
   if (alias.isNotEmpty) {

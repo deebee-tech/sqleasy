@@ -1379,6 +1379,221 @@ const emitTrailingReturningClause = (sqlHelper, config, returningState, area) =>
 	emitColumnsOrRaw(sqlHelper, config, returningState, void 0, area);
 };
 //#endregion
+//#region src/parser/default-order-by.ts
+/**
+* Emits one `<column> [ASC|DESC] [NULLS FIRST|NULLS LAST]` sort term. Shared by the top-level
+* ORDER BY clause and a window's `OVER (... ORDER BY ...)` — both sort NULLs the same way.
+*
+* `NULLS FIRST`/`NULLS LAST` is native on Postgres and on SQLite 3.30+. MySQL and MSSQL have no
+* such syntax in any version, and a requested placement used to be synthesized there as a leading
+* `CASE WHEN col IS NULL THEN … END` sort key. That is refused now: it is an extra sort expression
+* the caller never wrote, and it is not merely cosmetic — an index that could have satisfied the
+* ORDER BY no longer can, so the engine sorts. Getting the right rows in the right order by a route
+* the caller cannot see is the thing this library does not do.
+*
+* {@link NullsOrder.None} is deliberately untouched. That is the dialect's own default placement,
+* and the dialects genuinely disagree (Postgres sorts NULLs last on ASC, the others first). Forcing
+* agreement there would mean a `CASE WHEN` on EVERY sort term in the library — the same defeat of
+* index-ordered scans, applied to queries that never asked about NULLs at all.
+*/
+const emitOrderByTerm = (sqlHelper, config, tableNameOrAlias, columnName, direction, nulls) => {
+	const columnSql = qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
+	const hasNativeNulls = config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite;
+	if (nulls !== NullsOrder.None && !hasNativeNulls) throw new ParserError(ParserArea.OrderBy, `${dialectDisplayName(config.databaseType)} has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it`);
+	sqlHelper.addSqlSnippet(columnSql);
+	if (direction === OrderByDirection.Ascending) sqlHelper.addSqlSnippet(" ASC");
+	else if (direction === OrderByDirection.Descending) sqlHelper.addSqlSnippet(" DESC");
+	if (nulls !== NullsOrder.None && hasNativeNulls) sqlHelper.addSqlSnippet(nulls === NullsOrder.First ? " NULLS FIRST" : " NULLS LAST");
+};
+const defaultOrderBy = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (state.orderByStates.length === 0) return sqlHelper;
+	sqlHelper.addSqlSnippet("ORDER BY ");
+	state.orderByStates.forEach((orderByState, i) => {
+		if (orderByState.builderType === BuilderType.OrderByRaw) {
+			sqlHelper.addSqlSnippet(orderByState.raw ?? "");
+			if (i < state.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+		if (orderByState.builderType === BuilderType.OrderByColumn) {
+			emitOrderByTerm(sqlHelper, config, orderByState.tableNameOrAlias, orderByState.columnName, orderByState.direction, orderByState.nulls);
+			if (i < state.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			return;
+		}
+	});
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-limit-offset.ts
+/**
+* Each grammar's idiom for "no upper bound, just skip n rows".
+*
+* MySQL and SQLite have no standalone OFFSET — it only parses as the tail of a LIMIT — so an offset
+* without a limit needs a sentinel limit in front of it or the statement is a syntax error (MySQL
+* 1064, SQLite `near "OFFSET"`). MySQL's documented idiom is the largest unsigned BIGINT, 2^64-1;
+* 2^64 is itself a syntax error. Postgres is deliberately absent: a bare OFFSET is valid there.
+*/
+const unboundedLimit = {
+	[DatabaseType.Mysql]: "18446744073709551615",
+	[DatabaseType.Sqlite]: "-1"
+};
+/**
+* True when the caller called `.top(n)` at all.
+*
+* Presence, not positivity: `.top(0)` still counts as "the caller asked for a TOP", which is what
+* both the MSSQL TOP/LIMIT conflict guard and the non-MSSQL refusal need — silently ignoring
+* `.top(0)` would be the same class of bug this release is removing. `.clearTop()` deletes the key,
+* so it reads false again afterwards.
+*/
+const hasExplicitTop = (state) => state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0;
+const defaultLimitOffset = (state, config, mode) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (state.limit === 0 && state.offset === 0) return sqlHelper;
+	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
+		if (state.limitWithTies) {
+			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.LimitOffset, "SQLite does not support WITH TIES");
+			if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.LimitOffset, "MySQL does not support WITH TIES");
+			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
+			if (state.offset > 0) {
+				sqlHelper.addSqlSnippet("OFFSET ");
+				sqlHelper.addSqlSnippet(state.offset.toString());
+				sqlHelper.addSqlSnippet(" ROWS ");
+			}
+			sqlHelper.addSqlSnippet("FETCH FIRST ");
+			sqlHelper.addSqlSnippet(state.limit.toString());
+			sqlHelper.addSqlSnippet(" ROWS WITH TIES");
+			return sqlHelper;
+		}
+		if (state.limit > 0) {
+			sqlHelper.addSqlSnippet("LIMIT ");
+			sqlHelper.addSqlSnippet(state.limit.toString());
+		} else if (state.offset > 0) {
+			const sentinel = unboundedLimit[config.databaseType];
+			if (sentinel !== void 0) {
+				sqlHelper.addSqlSnippet("LIMIT ");
+				sqlHelper.addSqlSnippet(sentinel);
+			}
+		}
+		if (state.offset > 0) {
+			if (state.limit > 0) sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippet(" OFFSET ");
+			sqlHelper.addSqlSnippet(state.offset.toString());
+		}
+	}
+	if (config.databaseType === DatabaseType.Mssql) {
+		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && (state.limit > 0 || state.offset > 0)) throw new ParserError(ParserArea.LimitOffset, "MSSQL should not use both TOP and LIMIT/OFFSET in the same query");
+		if (state.limitWithTies) {
+			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
+			if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset");
+		} else {
+			if (state.limit > 0 || state.offset > 0) {
+				sqlHelper.addSqlSnippet("OFFSET ");
+				sqlHelper.addSqlSnippet(state.offset.toString());
+				sqlHelper.addSqlSnippet(" ROWS");
+			}
+			if (state.limit > 0) {
+				sqlHelper.addSqlSnippet(" ");
+				sqlHelper.addSqlSnippet("FETCH NEXT ");
+				sqlHelper.addSqlSnippet(state.limit.toString());
+				sqlHelper.addSqlSnippet(" ROWS ONLY");
+			}
+		}
+	}
+	if (state.orderByStates.length === 0) {
+		if (state.limitWithTies) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using WITH TIES");
+		if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+		if (config.databaseType === DatabaseType.Mssql && state.limit > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap");
+	}
+	return sqlHelper;
+};
+//#endregion
+//#region src/parser/default-mutation-row-cap.ts
+/**
+* Row-capping and ordering on an UPDATE or DELETE — `UPDATE … ORDER BY … LIMIT n`, `DELETE TOP (n)`.
+*
+* ── WHAT WAS WRONG (fixed 2026-07-22) ──
+* `.limit()`, `.offset()`, `.top()` and `.orderByColumn()` were all reachable on a mutation and ALL
+* FOUR were silently dropped: the Update and Delete branches of `to-sql.ts` returned before the
+* ORDER BY and limit/offset blocks, and MSSQL's TOP was emitted only by the `beforeSelectColumns`
+* hook, which only `defaultSelect` calls. So `.limit(1000)` on a DELETE produced no clause, no
+* parameter and no error — the statement deleted the whole table. That is the silent-no-op class
+* the 2.0 rewrite exists to remove; it was closed for SELECT and left open for mutations.
+*
+* ── WHAT EACH ENGINE ACTUALLY DOES (measured against the harness, 2026-07-22) ──
+*
+*     MySQL 8.4     UPDATE/DELETE … ORDER BY … LIMIT n   accepted; ORDER BY alone also accepted
+*                   … LIMIT 1 OFFSET 1                   ERROR 1064 — no OFFSET on a mutation
+*                   multi-table UPDATE … LIMIT 1         ERROR 1221 "Incorrect usage of UPDATE and LIMIT"
+*     MSSQL 2022    UPDATE TOP (n) / DELETE TOP (n)      accepted
+*                   UPDATE TOP (1) … ORDER BY id         Msg 156 "Incorrect syntax near 'ORDER'"
+*     Postgres 17   UPDATE … LIMIT 1                     syntax error at or near "LIMIT"
+*     SQLite 3.51   UPDATE/DELETE … LIMIT 1              syntax error — the syntax needs
+*                                                        SQLITE_ENABLE_UPDATE_DELETE_LIMIT, which is
+*                                                        off in the shipped amalgamation
+*
+* Postgres's `ctid`/CTE workaround and SQLite's subquery rewrite are both emulation, so both dialects
+* refuse rather than approximate. The two that CAN do it keep their own spelling, which is what the
+* existing methods already are: `limit()` is MySQL's native word and `top()` is MSSQL's, and `top`
+* is already MSSQL-only in the typed views. So this needs no new method — only honest emission and
+* honest refusals.
+*/
+const NO_MUTATION_CAP = {
+	[DatabaseType.Postgres]: "Postgres has no row limit on UPDATE/DELETE — narrow the WHERE clause, or delete by a key set you selected first (the ctid/CTE rewrite is an emulation this library will not do for you)",
+	[DatabaseType.Sqlite]: "SQLite has no row limit on UPDATE/DELETE unless it was compiled with SQLITE_ENABLE_UPDATE_DELETE_LIMIT, which the shipped amalgamation is not — narrow the WHERE clause, or delete by a key set you selected first"
+};
+/**
+* Rejects every row-cap/ordering combination the target engine cannot run.
+*
+* Called from the Update and Delete branches BEFORE any SQL is produced, so a refused statement
+* never reaches a driver. See the measurement table above for where each rule comes from.
+*/
+const assertMutationRowCapSupported = (state, config, area) => {
+	const wantsTop = hasExplicitTop(state);
+	const wantsLimit = state.limit > 0;
+	const wantsOffset = state.offset > 0;
+	const wantsOrderBy = state.orderByStates.length > 0;
+	if (!wantsTop && !wantsLimit && !wantsOffset && !wantsOrderBy) return;
+	if (wantsOffset) throw new ParserError(area, "offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation");
+	if (config.databaseType === DatabaseType.Mssql) {
+		if (wantsLimit) throw new ParserError(area, "MSSQL caps a mutation with TOP, not LIMIT — use top(n). limit() is the SELECT-only OFFSET/FETCH form and T-SQL has no such clause on UPDATE/DELETE");
+		if (wantsOrderBy) throw new ParserError(area, "T-SQL takes no ORDER BY on an UPDATE/DELETE, so TOP (n) picks an arbitrary n rows — select the keys you want in the order you want, then mutate by those keys");
+		return;
+	}
+	if (config.databaseType === DatabaseType.Mysql) {
+		if ((wantsLimit || wantsOrderBy) && state.joinStates.length > 0) throw new ParserError(area, "MySQL takes no ORDER BY or LIMIT on a multi-table UPDATE/DELETE (ERROR 1221) — mutate one table at a time, or narrow the join");
+		return;
+	}
+	const refusal = NO_MUTATION_CAP[config.databaseType];
+	if (refusal !== void 0) throw new ParserError(area, refusal);
+};
+/**
+* The `TOP (n) ` prefix for a T-SQL mutation, or `''`.
+*
+* T-SQL's spelling is `UPDATE TOP (n) tbl` / `DELETE TOP (n) FROM tbl`, so this sits between the
+* verb and the target — unlike MySQL's trailing LIMIT. `WITH TIES` is deliberately not accepted
+* here: it requires an ORDER BY, which a T-SQL mutation cannot have.
+*/
+const mssqlMutationTop = (state, config) => {
+	if (config.databaseType !== DatabaseType.Mssql || !hasExplicitTop(state)) return "";
+	const top = Number(state.customState["top"]);
+	return top > 0 ? `TOP (${top}) ` : "";
+};
+/**
+* Emits MySQL's trailing `ORDER BY … LIMIT n` on a mutation.
+*
+* Runs after the WHERE clause, which is where MySQL's grammar puts it. Both parts are optional and
+* independent: `ORDER BY` alone is legal (measured), and so is `LIMIT` alone.
+*/
+const emitMutationRowCap = (sqlHelper, state, config, mode) => {
+	if (config.databaseType !== DatabaseType.Mysql) return;
+	if (state.orderByStates.length > 0) {
+		const orderBy = defaultOrderBy(state, config, mode);
+		sqlHelper.addSqlSnippet(" ");
+		sqlHelper.addSqlSnippetWithValues(orderBy.getSql(), orderBy.getValues());
+	}
+	if (state.limit > 0) sqlHelper.addSqlSnippet(` LIMIT ${state.limit}`);
+};
+//#endregion
 //#region src/parser/mutation-target.ts
 /**
 * Resolves the table targeted by UPDATE or DELETE.
@@ -1412,6 +1627,7 @@ const defaultDelete = (state, config, mode, options) => {
 	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
 	if (config.databaseType === DatabaseType.Mssql && (alias !== "" || hasJoins)) {
 		sqlHelper.addSqlSnippet("DELETE ");
+		sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
 		sqlHelper.addSqlSnippet(alias !== "" ? quote(alias) : qualified);
 		if (state.returningState) emitMssqlOutputClause(sqlHelper, config, state.returningState, "DELETED", ParserArea.Delete);
 		sqlHelper.addSqlSnippet(" FROM ");
@@ -1429,6 +1645,7 @@ const defaultDelete = (state, config, mode, options) => {
 	}
 	if (hasJoins && config.databaseType === DatabaseType.Mysql) {
 		sqlHelper.addSqlSnippet("DELETE ");
+		sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
 		sqlHelper.addSqlSnippet(alias !== "" ? quote(alias) : qualified);
 		sqlHelper.addSqlSnippet(" FROM ");
 		sqlHelper.addSqlSnippet(qualified);
@@ -1441,7 +1658,9 @@ const defaultDelete = (state, config, mode, options) => {
 		sqlHelper.addSqlSnippetWithValues(join.getSql(), join.getValues());
 		return sqlHelper;
 	}
-	sqlHelper.addSqlSnippet("DELETE FROM ");
+	sqlHelper.addSqlSnippet("DELETE ");
+	sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
+	sqlHelper.addSqlSnippet("FROM ");
 	sqlHelper.addSqlSnippet(qualified);
 	if (alias !== "") {
 		sqlHelper.addSqlSnippet(" AS ");
@@ -2415,134 +2634,6 @@ const defaultMerge = (state, config, mode, options) => {
 	return sqlHelper;
 };
 //#endregion
-//#region src/parser/default-limit-offset.ts
-/**
-* Each grammar's idiom for "no upper bound, just skip n rows".
-*
-* MySQL and SQLite have no standalone OFFSET — it only parses as the tail of a LIMIT — so an offset
-* without a limit needs a sentinel limit in front of it or the statement is a syntax error (MySQL
-* 1064, SQLite `near "OFFSET"`). MySQL's documented idiom is the largest unsigned BIGINT, 2^64-1;
-* 2^64 is itself a syntax error. Postgres is deliberately absent: a bare OFFSET is valid there.
-*/
-const unboundedLimit = {
-	[DatabaseType.Mysql]: "18446744073709551615",
-	[DatabaseType.Sqlite]: "-1"
-};
-/**
-* True when the caller called `.top(n)` at all.
-*
-* Presence, not positivity: `.top(0)` still counts as "the caller asked for a TOP", which is what
-* both the MSSQL TOP/LIMIT conflict guard and the non-MSSQL refusal need — silently ignoring
-* `.top(0)` would be the same class of bug this release is removing. `.clearTop()` deletes the key,
-* so it reads false again afterwards.
-*/
-const hasExplicitTop = (state) => state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0;
-const defaultLimitOffset = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.limit === 0 && state.offset === 0) return sqlHelper;
-	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
-		if (state.limitWithTies) {
-			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.LimitOffset, "SQLite does not support WITH TIES");
-			if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.LimitOffset, "MySQL does not support WITH TIES");
-			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
-			if (state.offset > 0) {
-				sqlHelper.addSqlSnippet("OFFSET ");
-				sqlHelper.addSqlSnippet(state.offset.toString());
-				sqlHelper.addSqlSnippet(" ROWS ");
-			}
-			sqlHelper.addSqlSnippet("FETCH FIRST ");
-			sqlHelper.addSqlSnippet(state.limit.toString());
-			sqlHelper.addSqlSnippet(" ROWS WITH TIES");
-			return sqlHelper;
-		}
-		if (state.limit > 0) {
-			sqlHelper.addSqlSnippet("LIMIT ");
-			sqlHelper.addSqlSnippet(state.limit.toString());
-		} else if (state.offset > 0) {
-			const sentinel = unboundedLimit[config.databaseType];
-			if (sentinel !== void 0) {
-				sqlHelper.addSqlSnippet("LIMIT ");
-				sqlHelper.addSqlSnippet(sentinel);
-			}
-		}
-		if (state.offset > 0) {
-			if (state.limit > 0) sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet(" OFFSET ");
-			sqlHelper.addSqlSnippet(state.offset.toString());
-		}
-	}
-	if (config.databaseType === DatabaseType.Mssql) {
-		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && (state.limit > 0 || state.offset > 0)) throw new ParserError(ParserArea.LimitOffset, "MSSQL should not use both TOP and LIMIT/OFFSET in the same query");
-		if (state.limitWithTies) {
-			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
-			if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset");
-		} else {
-			if (state.limit > 0 || state.offset > 0) {
-				sqlHelper.addSqlSnippet("OFFSET ");
-				sqlHelper.addSqlSnippet(state.offset.toString());
-				sqlHelper.addSqlSnippet(" ROWS");
-			}
-			if (state.limit > 0) {
-				sqlHelper.addSqlSnippet(" ");
-				sqlHelper.addSqlSnippet("FETCH NEXT ");
-				sqlHelper.addSqlSnippet(state.limit.toString());
-				sqlHelper.addSqlSnippet(" ROWS ONLY");
-			}
-		}
-	}
-	if (state.orderByStates.length === 0) {
-		if (state.limitWithTies) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using WITH TIES");
-		if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
-		if (config.databaseType === DatabaseType.Mssql && state.limit > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap");
-	}
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-order-by.ts
-/**
-* Emits one `<column> [ASC|DESC] [NULLS FIRST|NULLS LAST]` sort term. Shared by the top-level
-* ORDER BY clause and a window's `OVER (... ORDER BY ...)` — both sort NULLs the same way.
-*
-* `NULLS FIRST`/`NULLS LAST` is native on Postgres and on SQLite 3.30+. MySQL and MSSQL have no
-* such syntax in any version, and a requested placement used to be synthesized there as a leading
-* `CASE WHEN col IS NULL THEN … END` sort key. That is refused now: it is an extra sort expression
-* the caller never wrote, and it is not merely cosmetic — an index that could have satisfied the
-* ORDER BY no longer can, so the engine sorts. Getting the right rows in the right order by a route
-* the caller cannot see is the thing this library does not do.
-*
-* {@link NullsOrder.None} is deliberately untouched. That is the dialect's own default placement,
-* and the dialects genuinely disagree (Postgres sorts NULLs last on ASC, the others first). Forcing
-* agreement there would mean a `CASE WHEN` on EVERY sort term in the library — the same defeat of
-* index-ordered scans, applied to queries that never asked about NULLs at all.
-*/
-const emitOrderByTerm = (sqlHelper, config, tableNameOrAlias, columnName, direction, nulls) => {
-	const columnSql = qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
-	const hasNativeNulls = config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite;
-	if (nulls !== NullsOrder.None && !hasNativeNulls) throw new ParserError(ParserArea.OrderBy, `${dialectDisplayName(config.databaseType)} has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it`);
-	sqlHelper.addSqlSnippet(columnSql);
-	if (direction === OrderByDirection.Ascending) sqlHelper.addSqlSnippet(" ASC");
-	else if (direction === OrderByDirection.Descending) sqlHelper.addSqlSnippet(" DESC");
-	if (nulls !== NullsOrder.None && hasNativeNulls) sqlHelper.addSqlSnippet(nulls === NullsOrder.First ? " NULLS FIRST" : " NULLS LAST");
-};
-const defaultOrderBy = (state, config, mode) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.orderByStates.length === 0) return sqlHelper;
-	sqlHelper.addSqlSnippet("ORDER BY ");
-	state.orderByStates.forEach((orderByState, i) => {
-		if (orderByState.builderType === BuilderType.OrderByRaw) {
-			sqlHelper.addSqlSnippet(orderByState.raw ?? "");
-			if (i < state.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-		if (orderByState.builderType === BuilderType.OrderByColumn) {
-			emitOrderByTerm(sqlHelper, config, orderByState.tableNameOrAlias, orderByState.columnName, orderByState.direction, orderByState.nulls);
-			if (i < state.orderByStates.length - 1) sqlHelper.addSqlSnippet(", ");
-			return;
-		}
-	});
-	return sqlHelper;
-};
-//#endregion
 //#region src/enums/frame-bound-type.ts
 /**
 * One endpoint of a window function's frame clause (`ROWS`/`RANGE BETWEEN ... AND ...`).
@@ -2766,6 +2857,7 @@ const defaultUpdate = (state, config, mode, options) => {
 	const qualified = (owner !== "" ? quote(owner) + "." : "") + quote(fromState.tableName ?? "");
 	const mssqlAliased = config.databaseType === DatabaseType.Mssql && (alias !== "" || hasJoins);
 	sqlHelper.addSqlSnippet("UPDATE ");
+	sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
 	if (mssqlAliased) sqlHelper.addSqlSnippet(alias !== "" ? quote(alias) : qualified);
 	else {
 		sqlHelper.addSqlSnippet(qualified);
@@ -3058,17 +3150,21 @@ const defaultToSql = (state, config, mode, options) => {
 		return sqlHelper;
 	}
 	if (state.queryType === QueryType.Update) {
+		assertMutationRowCapSupported(state, config, ParserArea.Update);
 		const update = defaultUpdate(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
 		emitMutationWhere(sqlHelper, state, config, mode, options);
+		emitMutationRowCap(sqlHelper, state, config, mode);
 		if (state.returningState && config.databaseType !== DatabaseType.Mssql) emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Update);
 		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 		return sqlHelper;
 	}
 	if (state.queryType === QueryType.Delete) {
+		assertMutationRowCapSupported(state, config, ParserArea.Delete);
 		const del = defaultDelete(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
 		emitMutationWhere(sqlHelper, state, config, mode, options);
+		emitMutationRowCap(sqlHelper, state, config, mode);
 		if (state.returningState && config.databaseType !== DatabaseType.Mssql) emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Delete);
 		if (!state.isInnerStatement) sqlHelper.addSqlSnippet(";");
 		return sqlHelper;

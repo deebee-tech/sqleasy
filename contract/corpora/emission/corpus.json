@@ -15521,7 +15521,7 @@
       }
     },
     {
-      "name": "update with an owner on mysql throws; other dialects render the join and still discard order by and limit on update",
+      "name": "update with an owner and a join refuses a row cap on every dialect — mysql on the owner, the rest on order by or limit",
       "note": "Two behaviours in one statement. (1) MySQL rejects `updateTableWithOwner` with `Update: MySQL does not support table owners` — thrown before the join is even considered. (2) On dialects that accept the owner, the join IS now rendered (MSSQL: `FROM ... JOIN ... ON`; Postgres: `FROM <table> WHERE <translated ON predicate> AND <where>`; SQLite: throws, since it has no multi-table UPDATE syntax at all). `orderByColumn` and `limit` on this builder still produce nothing — no error, no SQL — since ORDER BY/LIMIT on UPDATE remain out of scope.",
       "ops": [
         {
@@ -15579,37 +15579,16 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [o] SET [total] = @p0 FROM [sales].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] = @p1 WHERE [o].[id] = @p2;', N'@p0 float, @p1 tinyint, @p2 tinyint', @p0 = 9.5, @p1 = 7, @p2 = 1;",
-            "params": []
-          },
-          "raw": "UPDATE [o] SET [total] = 9.5 FROM [sales].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] = 7 WHERE [o].[id] = 1;"
+          "throws": "Update: MSSQL caps a mutation with TOP, not LIMIT — use top(n). limit() is the SELECT-only OFFSET/FETCH form and T-SQL has no such clause on UPDATE/DELETE"
         },
         "mysql": {
-          "throws": "Update: MySQL does not support table owners"
+          "throws": "Update: MySQL takes no ORDER BY or LIMIT on a multi-table UPDATE/DELETE (ERROR 1221) — mutate one table at a time, or narrow the join"
         },
         "postgres": {
-          "prepared": {
-            "sql": "UPDATE \"sales\".\"orders\" AS \"o\" SET \"total\" = $1 FROM \"public\".\"customers\" AS \"c\" WHERE \"c\".\"tier\" = $2 AND \"o\".\"id\" = $3;",
-            "params": [
-              {
-                "t": "num",
-                "v": 9.5
-              },
-              {
-                "t": "num",
-                "v": 7
-              },
-              {
-                "t": "num",
-                "v": 1
-              }
-            ]
-          },
-          "raw": "UPDATE \"sales\".\"orders\" AS \"o\" SET \"total\" = 9.5 FROM \"public\".\"customers\" AS \"c\" WHERE \"c\".\"tier\" = 7 AND \"o\".\"id\" = 1;"
+          "throws": "Update: Postgres has no row limit on UPDATE/DELETE — narrow the WHERE clause, or delete by a key set you selected first (the ctid/CTE rewrite is an emulation this library will not do for you)"
         },
         "sqlite": {
-          "throws": "Update: SQLite does not support joins in UPDATE/DELETE; rewrite the join as a correlated subquery"
+          "throws": "Update: SQLite has no row limit on UPDATE/DELETE unless it was compiled with SQLITE_ENABLE_UPDATE_DELETE_LIMIT, which the shipped amalgamation is not — narrow the WHERE clause, or delete by a key set you selected first"
         }
       }
     },
@@ -24132,6 +24111,208 @@
             ]
           },
           "raw": "SELECT * FROM \"orders\" WHERE \"total\" IN (1, 2);"
+        }
+      }
+    },
+    {
+      "name": "mysql caps a delete with a trailing limit",
+      "ops": [
+        {
+          "op": "deleteFrom",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "where",
+          "table": "",
+          "column": "total",
+          "operator": "Equals",
+          "value": {
+            "t": "int",
+            "v": 1
+          }
+        },
+        {
+          "op": "limit",
+          "n": 10
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Delete: MSSQL caps a mutation with TOP, not LIMIT — use top(n). limit() is the SELECT-only OFFSET/FETCH form and T-SQL has no such clause on UPDATE/DELETE"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "DELETE FROM `orders` WHERE `total` = ? LIMIT 10;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "DELETE FROM `orders` WHERE `total` = 1 LIMIT 10;"
+        },
+        "postgres": {
+          "throws": "Delete: Postgres has no row limit on UPDATE/DELETE — narrow the WHERE clause, or delete by a key set you selected first (the ctid/CTE rewrite is an emulation this library will not do for you)"
+        },
+        "sqlite": {
+          "throws": "Delete: SQLite has no row limit on UPDATE/DELETE unless it was compiled with SQLITE_ENABLE_UPDATE_DELETE_LIMIT, which the shipped amalgamation is not — narrow the WHERE clause, or delete by a key set you selected first"
+        }
+      }
+    },
+    {
+      "name": "mysql orders and caps an update with a trailing order by and limit",
+      "ops": [
+        {
+          "op": "updateTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "set",
+          "column": "note",
+          "value": {
+            "t": "string",
+            "v": "x"
+          }
+        },
+        {
+          "op": "orderByColumn",
+          "table": "",
+          "column": "id",
+          "direction": "Ascending"
+        },
+        {
+          "op": "limit",
+          "n": 10
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Update: MSSQL caps a mutation with TOP, not LIMIT — use top(n). limit() is the SELECT-only OFFSET/FETCH form and T-SQL has no such clause on UPDATE/DELETE"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "UPDATE `orders` SET `note` = ? ORDER BY `id` ASC LIMIT 10;",
+            "params": [
+              {
+                "t": "string",
+                "v": "x"
+              }
+            ]
+          },
+          "raw": "UPDATE `orders` SET `note` = x ORDER BY `id` ASC LIMIT 10;"
+        },
+        "postgres": {
+          "throws": "Update: Postgres has no row limit on UPDATE/DELETE — narrow the WHERE clause, or delete by a key set you selected first (the ctid/CTE rewrite is an emulation this library will not do for you)"
+        },
+        "sqlite": {
+          "throws": "Update: SQLite has no row limit on UPDATE/DELETE unless it was compiled with SQLITE_ENABLE_UPDATE_DELETE_LIMIT, which the shipped amalgamation is not — narrow the WHERE clause, or delete by a key set you selected first"
+        }
+      }
+    },
+    {
+      "name": "mssql caps an update with top between the verb and the target",
+      "ops": [
+        {
+          "op": "updateTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "set",
+          "column": "note",
+          "value": {
+            "t": "string",
+            "v": "x"
+          }
+        },
+        {
+          "op": "top",
+          "n": 3
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE TOP (3) [dbo].[orders] SET [note] = @p0;', N'@p0 nvarchar(max)', @p0 = N'x';",
+            "params": []
+          },
+          "raw": "UPDATE TOP (3) [dbo].[orders] SET [note] = x;"
+        },
+        "mysql": {
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
+        },
+        "postgres": {
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
+        }
+      }
+    },
+    {
+      "name": "mssql caps a delete with top between the verb and from",
+      "ops": [
+        {
+          "op": "deleteFrom",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "top",
+          "n": 3
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE TOP (3) FROM [dbo].[orders];', N'';",
+            "params": []
+          },
+          "raw": "DELETE TOP (3) FROM [dbo].[orders];"
+        },
+        "mysql": {
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
+        },
+        "postgres": {
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
+        }
+      }
+    },
+    {
+      "name": "offset on a mutation is refused on every dialect",
+      "ops": [
+        {
+          "op": "deleteFrom",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "limit",
+          "n": 1
+        },
+        {
+          "op": "offset",
+          "n": 1
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Delete: offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation"
+        },
+        "mysql": {
+          "throws": "Delete: offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation"
+        },
+        "postgres": {
+          "throws": "Delete: offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation"
+        },
+        "sqlite": {
+          "throws": "Delete: offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation"
         }
       }
     }

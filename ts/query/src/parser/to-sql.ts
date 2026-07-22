@@ -11,6 +11,7 @@ import type { QueryState } from '../state/query';
 import { defaultCall } from './default-call';
 import { defaultCte } from './default-cte';
 import { defaultDelete } from './default-delete';
+import { assertMutationRowCapSupported, emitMutationRowCap } from './default-mutation-row-cap';
 import { defaultFrom } from './default-from';
 import { defaultGroupBy } from './default-group-by';
 import { defaultHaving } from './default-having';
@@ -192,10 +193,14 @@ export const defaultToSql = (
   }
 
   if (state.queryType === QueryType.Update) {
+    // Before any SQL is produced: a row cap the engine cannot run is refused, never dropped.
+    assertMutationRowCapSupported(state, config, ParserArea.Update);
+
     const update = defaultUpdate(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(update.getSql(), update.getValues());
 
     emitMutationWhere(sqlHelper, state, config, mode, options);
+    emitMutationRowCap(sqlHelper, state, config, mode);
 
     if (state.returningState && config.databaseType !== DatabaseType.Mssql) {
       emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Update);
@@ -208,10 +213,13 @@ export const defaultToSql = (
   }
 
   if (state.queryType === QueryType.Delete) {
+    assertMutationRowCapSupported(state, config, ParserArea.Delete);
+
     const del = defaultDelete(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(del.getSql(), del.getValues());
 
     emitMutationWhere(sqlHelper, state, config, mode, options);
+    emitMutationRowCap(sqlHelper, state, config, mode);
 
     if (state.returningState && config.databaseType !== DatabaseType.Mssql) {
       emitTrailingReturningClause(sqlHelper, config, state.returningState, ParserArea.Delete);

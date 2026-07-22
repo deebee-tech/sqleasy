@@ -9,6 +9,7 @@ import type { QueryState } from '../state/query';
 import { defaultJoin } from './default-join';
 import { assertMutationJoinsSupported, renderPostgresMutationFrom } from './default-mutation-join';
 import { emitMssqlOutputClause } from './default-returning';
+import { mssqlMutationTop } from './default-mutation-row-cap';
 import { resolveMutationTarget } from './mutation-target';
 import type { ToSqlOptions } from './to-sql';
 
@@ -45,6 +46,7 @@ export const defaultDelete = (
 
   if (mssqlAliased) {
     sqlHelper.addSqlSnippet('DELETE ');
+    sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
     sqlHelper.addSqlSnippet(alias !== '' ? quote(alias) : qualified);
 
     if (state.returningState) {
@@ -70,6 +72,7 @@ export const defaultDelete = (
   // MySQL's multi-table DELETE names the target(s) right after DELETE, then joins the rest in FROM.
   if (hasJoins && config.databaseType === DatabaseType.Mysql) {
     sqlHelper.addSqlSnippet('DELETE ');
+    sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
     sqlHelper.addSqlSnippet(alias !== '' ? quote(alias) : qualified);
     sqlHelper.addSqlSnippet(' FROM ');
     sqlHelper.addSqlSnippet(qualified);
@@ -86,7 +89,10 @@ export const defaultDelete = (
     return sqlHelper;
   }
 
-  sqlHelper.addSqlSnippet('DELETE FROM ');
+  // T-SQL spells a mutation row cap `DELETE TOP (n) FROM tbl` — between the verb and FROM.
+  sqlHelper.addSqlSnippet('DELETE ');
+  sqlHelper.addSqlSnippet(mssqlMutationTop(state, config));
+  sqlHelper.addSqlSnippet('FROM ');
   sqlHelper.addSqlSnippet(qualified);
 
   if (alias !== '') {
