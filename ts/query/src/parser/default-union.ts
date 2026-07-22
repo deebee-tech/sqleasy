@@ -40,17 +40,27 @@ const branchIsScoped = (branch: QueryState): boolean =>
  *
  *     Postgres 17   … UNION ALL (SELECT … ORDER BY id LIMIT 3)   accepted
  *     MySQL 8.4     … UNION ALL (SELECT … ORDER BY id LIMIT 3)   accepted
- *     MSSQL 2022    … UNION ALL (SELECT … )                      Msg 156 — no parenthesized operand
- *                   SELECT … ORDER BY id UNION ALL SELECT …      Msg 156 — ORDER BY only on the last
- *                   SELECT … OFFSET 0 ROWS FETCH NEXT 3 … UNION  Msg 156
+ *     MSSQL 2022    … UNION ALL (SELECT id FROM t)               accepted — parens are FINE
+ *                   … UNION ALL (SELECT TOP (2) id FROM t)       accepted
+ *                   … UNION ALL (SELECT … ORDER BY id)           Msg 156
+ *                   … UNION ALL (SELECT … OFFSET 0 ROWS FETCH …) Msg 156
  *                   SELECT TOP (3) … UNION ALL SELECT …          accepted — the operand IS capped
- *     SQLite 3.51   … UNION ALL (SELECT … LIMIT 3)               near "(": syntax error
+ *     SQLite 3.51   … UNION ALL (SELECT id FROM t)               near "(": syntax error
  *                   SELECT … LIMIT 3 UNION ALL SELECT …          "LIMIT clause should come after
  *                                                                 UNION ALL not before"
  *
- * So two dialects can express this and two cannot. The rewrite that would fake it on SQLite and
- * MSSQL — hoisting the branch into a derived table or CTE — is emulation, and the caller can write
- * that themselves with `fromWithBuilder`/`cte` if that is what they meant. So they refuse and say so.
+ * The two engines fail for DIFFERENT reasons, and an earlier version of this comment got MSSQL
+ * wrong — it claimed T-SQL rejects a parenthesized operand, which is false and was measured false.
+ * The first probe used `(SELECT TOP (3) … ORDER BY id)`, so the Msg 156 it produced was about the
+ * ORDER BY, not the parentheses; testing the parentheses on their own accepts. SQLite is the only
+ * one that rejects the parentheses themselves.
+ *
+ * MSSQL still cannot scope a branch row cap, but because T-SQL allows no ORDER BY inside a
+ * set-operation operand at all — and `limit()` on MSSQL renders as OFFSET/FETCH, which REQUIRES an
+ * ORDER BY. Its one real branch cap is `top(n)`, which needs neither. So the refusals below stand;
+ * only the reason given for MSSQL had to be corrected. Hoisting the branch into a derived table or
+ * CTE would fake it on both, and that is emulation — the caller can write it with
+ * `fromWithBuilder`/`cte` if that is what they meant.
  */
 const assertBranchScopeSupported = (branch: QueryState, config: Dialect): void => {
   if (!branchIsScoped(branch)) return;
@@ -66,8 +76,9 @@ const assertBranchScopeSupported = (branch: QueryState, config: Dialect): void =
 
   const remedy =
     config.databaseType === DatabaseType.Mssql
-      ? 'T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with ' +
-        'top(n) instead, or lift it into a CTE and select from that'
+      ? 'T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form ' +
+        'requires one — cap the branch with top(n), which needs neither, or lift it into a CTE and ' +
+        'select from that'
       : 'SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the ' +
         'branch into a CTE or a derived table and select from that';
 

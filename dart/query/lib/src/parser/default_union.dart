@@ -30,10 +30,17 @@ bool _branchIsScoped(QueryState branch) =>
 ///
 ///     Postgres 17   ... UNION ALL (SELECT ... ORDER BY id LIMIT 3)   accepted
 ///     MySQL 8.4     ... UNION ALL (SELECT ... ORDER BY id LIMIT 3)   accepted
-///     MSSQL 2022    parenthesized operand / per-operand ORDER BY     Msg 156
+///     MSSQL 2022    ... UNION ALL (SELECT id FROM t)                 accepted — parens are FINE
+///                   ... UNION ALL (SELECT ... ORDER BY id)           Msg 156
 ///                   SELECT TOP (3) ... UNION ALL SELECT ...          accepted
 ///     SQLite 3.51   parenthesized operand                            near "(": syntax error
 ///                   LIMIT before the set operator                    "should come after UNION ALL"
+///
+/// The two failing engines fail for DIFFERENT reasons. An earlier version of this comment claimed
+/// T-SQL rejects a parenthesized operand; that is false and was measured false. MSSQL still cannot
+/// scope a branch row cap, but because T-SQL allows no ORDER BY inside a set-operation operand, and
+/// `limit()` on MSSQL renders as OFFSET/FETCH, which REQUIRES one. Its real branch cap is `top(n)`,
+/// which needs neither. SQLite is the only engine that rejects the parentheses themselves.
 void _assertBranchScopeSupported(QueryState branch, Dialect config) {
   if (!_branchIsScoped(branch)) return;
 
@@ -53,8 +60,9 @@ void _assertBranchScopeSupported(QueryState branch, Dialect config) {
   final name = dialectDisplayName(config.databaseType);
 
   final remedy = config.databaseType == DatabaseType.mssql
-      ? 'T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with '
-          'top(n) instead, or lift it into a CTE and select from that'
+      ? 'T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form '
+          'requires one — cap the branch with top(n), which needs neither, or lift it into a CTE '
+          'and select from that'
       : 'SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the '
           'branch into a CTE or a derived table and select from that';
 

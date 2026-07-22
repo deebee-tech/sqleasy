@@ -24347,7 +24347,7 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "LimitOffset: MSSQL cannot scope LIMIT to one branch of a set operation. T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+          "throws": "LimitOffset: MSSQL cannot scope LIMIT to one branch of a set operation. T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form requires one — cap the branch with top(n), which needs neither, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
         },
         "mysql": {
           "prepared": {
@@ -24405,7 +24405,7 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "OrderBy: MSSQL cannot scope ORDER BY to one branch of a set operation. T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+          "throws": "OrderBy: MSSQL cannot scope ORDER BY to one branch of a set operation. T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form requires one — cap the branch with top(n), which needs neither, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
         },
         "mysql": {
           "prepared": {
@@ -24461,7 +24461,7 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "LimitOffset: MSSQL cannot scope LIMIT to one branch of a set operation. T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+          "throws": "LimitOffset: MSSQL cannot scope LIMIT to one branch of a set operation. T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form requires one — cap the branch with top(n), which needs neither, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
         },
         "mysql": {
           "prepared": {
