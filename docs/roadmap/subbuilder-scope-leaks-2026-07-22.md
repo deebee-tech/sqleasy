@@ -1,7 +1,8 @@
 # SQLEasy — sub-builder clause-scope leaks
 
-**Status:** the **14 silent leaks are FIXED** on `beta` (unreleased). The **31 invalid-SQL leaks
-remain open** — see §2 for why that split is the one that matters.
+**Status:** **ALL 45 ARE FIXED** on `beta` (unreleased) — the 14 silent ones and the 31
+invalid-SQL ones. Verified by direct reproduction: 16/16 and 21/21, each check paired with a
+"still works" control so a refusal that over-reached would show up as a failure.
 
 **Companion to** [`capability-gaps-2026-07-22.md`](capability-gaps-2026-07-22.md). That file is
 missing _capabilities_; this one is **defects** — places where a clause set on a CHILD builder
@@ -39,7 +40,9 @@ three claims** — two from the original sweep and one from the fix itself:
 The through-line: **vary exactly one thing.** Every remaining floor and refusal reason in this
 document should be re-measured that way before it is built on.
 
-## 2. Triage — read this before picking anything up
+## 2. Triage — how the work was ordered
+
+_Kept for the record; everything below is now done._
 
 The headline count is 45. These are the counts that actually matter:
 
