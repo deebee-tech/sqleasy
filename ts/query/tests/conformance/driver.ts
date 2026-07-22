@@ -98,7 +98,25 @@ export const encodeOutputValue = (value: unknown): OutputValue => {
 };
 
 const val = (op: Op, key = 'value'): unknown => toValue(op[key] as InputValue);
-const str = (op: Op, key: string): string => op[key] as string;
+/**
+ * A REQUIRED string field of a corpus op.
+ *
+ * Throws when absent, for the same reason `enumOf` does: `pnpm goldens` freezes whatever this
+ * driver emits, so a mistyped key would silently mint a golden built from `undefined` and pin it as
+ * the contract. That is not hypothetical — `hintMssqlOption` was written with key `sql` instead of
+ * `option`, and only the Dart driver's null check caught it. Use `opt()` for genuinely optional
+ * fields, which is what the empty-string sentinels are.
+ */
+const str = (op: Op, key: string): string => {
+  const value = op[key];
+  if (typeof value !== 'string') {
+    throw new Error(
+      `corpus op "${String(op.op)}" is missing required string field "${key}"` +
+        (value === undefined ? '' : ` (got ${JSON.stringify(value)})`),
+    );
+  }
+  return value;
+};
 /** The corpus models "no alias" / "no owner" as absent; the TS API spells that as `''`. */
 const opt = (op: Op, key: string): string => (op[key] as string | undefined) ?? '';
 const ops = (op: Op, key = 'ops'): Op[] => (op[key] as Op[]) ?? [];

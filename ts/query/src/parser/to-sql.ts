@@ -140,6 +140,29 @@ export const defaultToSql = (
     throw new ParserError(ParserArea.General, 'FOR UPDATE/FOR SHARE requires a SELECT query');
   }
 
+  // A row lock cannot span a set operation, and the engines disagree about HOW it fails — which is
+  // exactly what made this dangerous. Measured:
+  //
+  //   Postgres 17  SELECT … UNION ALL SELECT … FOR UPDATE
+  //                  ERROR: FOR UPDATE is not allowed with UNION/INTERSECT/EXCEPT
+  //   MySQL 8.4    same statement                    ACCEPTED — the trailing FOR UPDATE binds to
+  //                                                  ONE operand, leaving the other's rows unlocked
+  //   MSSQL 2022   emitted as a table hint, which lands on the FIRST operand only:
+  //                  SELECT * FROM [t] WITH (UPDLOCK, ROWLOCK) UNION ALL SELECT * FROM [t]
+  //
+  // So one engine refuses loudly and two quietly lock a subset — a lock that covers half the rows
+  // you asked for is worse than no lock, because the caller believes they hold it. SQLite already
+  // refuses row locking outright, further down. Lock each operand's own statement instead, or lock
+  // the base table before the union.
+  if (state.rowLock && state.unionStates.length > 0) {
+    throw new ParserError(
+      ParserArea.General,
+      'A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL ' +
+        'silently lock only one operand, leaving the rest of the rows you asked for unlocked. ' +
+        'Lock the operands individually, or lock the base rows before combining them.',
+    );
+  }
+
   if (state.upsertState && state.queryType !== QueryType.Insert) {
     throw new ParserError(ParserArea.Insert, 'Upsert (ON CONFLICT) requires INSERT');
   }

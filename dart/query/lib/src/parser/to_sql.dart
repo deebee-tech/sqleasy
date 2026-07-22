@@ -128,6 +128,25 @@ SqlHelper defaultToSql(
         ParserArea.general, 'FOR UPDATE/FOR SHARE requires a SELECT query');
   }
 
+  // A row lock cannot span a set operation, and the engines disagree about HOW it fails, which is
+  // what made this dangerous. Measured:
+  //
+  //   Postgres 17  SELECT ... UNION ALL SELECT ... FOR UPDATE
+  //                  ERROR: FOR UPDATE is not allowed with UNION/INTERSECT/EXCEPT
+  //   MySQL 8.4    same statement                  ACCEPTED — binds to ONE operand
+  //   MSSQL 2022   the table hint lands on the FIRST operand only
+  //
+  // A lock covering half the rows you asked for is worse than no lock, because the caller believes
+  // they hold it. SQLite refuses row locking outright, further down.
+  if (state.rowLock != null && state.unionStates.isNotEmpty) {
+    throw ParserError(
+      ParserArea.general,
+      'A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL '
+      'silently lock only one operand, leaving the rest of the rows you asked for unlocked. '
+      'Lock the operands individually, or lock the base rows before combining them.',
+    );
+  }
+
   if (state.upsertState != null && state.queryType != QueryType.insert) {
     throw ParserError(
         ParserArea.insert, 'Upsert (ON CONFLICT) requires INSERT');

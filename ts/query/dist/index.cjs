@@ -975,8 +975,11 @@ const emitTrailingHints = (sqlHelper, state, config) => {
 const validateHints = (state, config, area) => {
 	const hints = state.hintStates ?? [];
 	if (hints.length === 0) return;
-	for (const hint of hints) if (hint.kind === HintKind.UseIndex || hint.kind === HintKind.ForceIndex) {
-		if (config.databaseType !== DatabaseType.Mysql) throw new ParserError(area, "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere");
+	for (const hint of hints) {
+		if (hint.kind === HintKind.UseIndex || hint.kind === HintKind.ForceIndex) {
+			if (config.databaseType !== DatabaseType.Mysql) throw new ParserError(area, "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere");
+		}
+		if (hint.kind === HintKind.MssqlOption && state.isInnerStatement) throw new ParserError(area, "OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs.");
 	}
 };
 //#endregion
@@ -3288,6 +3291,7 @@ const defaultToSql = (state, config, mode, options) => {
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
 	}
 	if (state.rowLock && state.queryType !== QueryType.Select) throw new ParserError(ParserArea.General, "FOR UPDATE/FOR SHARE requires a SELECT query");
+	if (state.rowLock && state.unionStates.length > 0) throw new ParserError(ParserArea.General, "A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them.");
 	if (state.upsertState && state.queryType !== QueryType.Insert) throw new ParserError(ParserArea.Insert, "Upsert (ON CONFLICT) requires INSERT");
 	if (state.callState && state.queryType !== QueryType.Call) throw new ParserError(ParserArea.Call, "Procedure/function call state requires queryType Call");
 	if (state.queryType === QueryType.Merge) {

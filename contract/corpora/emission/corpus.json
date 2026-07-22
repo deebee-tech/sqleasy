@@ -25125,6 +25125,143 @@
           "throws": "Delete: An UPDATE/DELETE renders one target table, so the derived or raw FROM source(s) (cap) would be dropped without a word — their own WHERE and limit included, while predicates written against their alias survived and referenced nothing. Attach the source with joinWithBuilder/joinTable instead, which emits it as USING on Postgres and a multi-table form on MySQL."
         }
       }
+    },
+    {
+      "name": "mssql option on a set operation branch is refused as statement level",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectAll"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "hintMssqlOption",
+              "option": "MAXDOP 1"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        },
+        "mysql": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        },
+        "postgres": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        },
+        "sqlite": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        }
+      }
+    },
+    {
+      "name": "mssql option on a cte body is refused as statement level",
+      "ops": [
+        {
+          "op": "cte",
+          "name": "c",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "hintMssqlOption",
+              "option": "MAXDOP 1"
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromRaw",
+          "sql": "c"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        },
+        "mysql": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        },
+        "postgres": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        },
+        "sqlite": {
+          "throws": "General: OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. Set hintMssqlOption on the outermost builder, where it applies to the statement it actually governs."
+        }
+      }
+    },
+    {
+      "name": "a row lock cannot cover a set operation",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectAll"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            }
+          ]
+        },
+        {
+          "op": "forUpdate"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them."
+        },
+        "mysql": {
+          "throws": "General: A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them."
+        },
+        "postgres": {
+          "throws": "General: A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them."
+        },
+        "sqlite": {
+          "throws": "General: A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them."
+        }
+      }
     }
   ]
 }

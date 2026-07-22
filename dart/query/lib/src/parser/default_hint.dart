@@ -93,5 +93,28 @@ void validateHints(QueryState state, Dialect config, ParserArea area) {
         );
       }
     }
+
+    // T-SQL's OPTION is STATEMENT-level: exactly once, at the very end of the whole statement.
+    // Measured against MSSQL 2022, isolating the position:
+    //
+    //   SELECT id FROM orders OPTION (MAXDOP 1);                                accepted
+    //   WITH c AS (SELECT id FROM orders) SELECT id FROM c OPTION (MAXDOP 1);   accepted
+    //   SELECT ... UNION ALL SELECT ... OPTION (MAXDOP 1);                      accepted
+    //   WITH c AS (SELECT id FROM orders OPTION (MAXDOP 1)) SELECT id FROM c;   Msg 156
+    //   SELECT ... OPTION (MAXDOP 1) UNION ALL SELECT ...;                      Msg 156
+    //   SELECT ... OPTION (MAXDOP 1) OPTION (MAXDOP 2);                         Msg 156
+    //
+    // Set on a CHILD builder it either failed to compile or — worse — silently became
+    // statement-wide when the child happened to be textually last, hinting operands the caller
+    // never named. A child is not the statement, so it cannot carry a statement-level clause.
+    if (hint.kind == HintKind.mssqlOption && state.isInnerStatement) {
+      throw ParserError(
+        area,
+        'OPTION is a statement-level clause in T-SQL — exactly once, at the very end of the whole '
+        'statement — so it cannot be set on a CTE body, a set-operation branch or a subquery. '
+        'Set hintMssqlOption on the outermost builder, where it applies to the statement it '
+        'actually governs.',
+      );
+    }
   }
 }
