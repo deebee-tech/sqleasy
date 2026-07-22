@@ -159,6 +159,10 @@ class WhereState {
 
   /// Full-text column list for [BuilderType.whereFullText].
   List<FullTextColumnRef>? fullTextColumns;
+
+  /// The multi-column LEFT side of a row-value comparison — additive; the single-column path is
+  /// untouched. `values` holds one tuple (comparison) or a list of tuples (IN).
+  List<GroupByColumnRef>? rowColumns;
 }
 
 class HavingState {

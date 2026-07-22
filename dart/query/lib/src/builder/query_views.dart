@@ -124,6 +124,15 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     Object? from,
     Object? to,
   );
+  MssqlQueryBuilder whereRowValue(
+    List<GroupByRef> columns,
+    WhereOperator operator,
+    List<Object?> values,
+  );
+  MssqlQueryBuilder whereRowValueIn(
+    List<GroupByRef> columns,
+    List<List<Object?>> tuples,
+  );
   MssqlQueryBuilder whereInValues(
     String table,
     String column,
@@ -424,6 +433,15 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     String column,
     Object? from,
     Object? to,
+  );
+  MysqlQueryBuilder whereRowValue(
+    List<GroupByRef> columns,
+    WhereOperator operator,
+    List<Object?> values,
+  );
+  MysqlQueryBuilder whereRowValueIn(
+    List<GroupByRef> columns,
+    List<List<Object?>> tuples,
   );
   MysqlQueryBuilder whereInValues(
     String table,
@@ -760,6 +778,15 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     String column,
     Object? from,
     Object? to,
+  );
+  PostgresQueryBuilder whereRowValue(
+    List<GroupByRef> columns,
+    WhereOperator operator,
+    List<Object?> values,
+  );
+  PostgresQueryBuilder whereRowValueIn(
+    List<GroupByRef> columns,
+    List<List<Object?>> tuples,
   );
   PostgresQueryBuilder whereInValues(
     String table,
@@ -1107,6 +1134,15 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     String column,
     Object? from,
     Object? to,
+  );
+  SqliteQueryBuilder whereRowValue(
+    List<GroupByRef> columns,
+    WhereOperator operator,
+    List<Object?> values,
+  );
+  SqliteQueryBuilder whereRowValueIn(
+    List<GroupByRef> columns,
+    List<List<Object?>> tuples,
   );
   SqliteQueryBuilder whereInValues(
     String table,

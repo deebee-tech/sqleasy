@@ -572,6 +572,10 @@ declare const BuilderType: {
   readonly CteRaw: "CteRaw";
   /** WHERE predicate (standard comparison or helper). */
   readonly Where: "Where";
+  /** `(a, b) > (?, ?)` — a row-value comparison against a single tuple. */
+  readonly WhereRowValue: "WhereRowValue";
+  /** `(a, b) IN ((?,?), (?,?))` — a row-value IN over a list of tuples. */
+  readonly WhereRowValueIn: "WhereRowValueIn";
   /** WHERE column BETWEEN low AND high. */
   readonly WhereBetween: "WhereBetween";
   /** Opens a parenthesized WHERE group. */
@@ -720,6 +724,18 @@ type WhereState = {
   fullTextMode?: FullTextMode;
   /** Columns searched by a full-text predicate. */
   fullTextColumns?: FullTextColumnRef[];
+  /**
+   * The multi-column LEFT side of a row-value comparison — `(a, b) > (?, ?)` / `(a, b) IN (…)`.
+   *
+   * Additive: the single-column path keeps using `columnName`/`tableNameOrAlias`, untouched. A
+   * row-value predicate uses this list instead, and `values` holds either one tuple (for a scalar
+   * comparison) or a list of tuples (for IN). MSSQL has no row constructor in a comparison and is
+   * refused — the OR-chain expansion is the emulation this library does not do.
+   */
+  rowColumns?: {
+    tableNameOrAlias: string;
+    columnName: string;
+  }[];
 };
 /** Creates a {@link WhereState} with default field values. */
 declare const createWhereState: () => WhereState;
@@ -1905,6 +1921,27 @@ declare class QueryBuilder {
   whereExists: (builder: (builder: QueryBuilder) => void) => this;
   whereGroup(builder: (builder: QueryBuilder) => void): this;
   whereInWithBuilder: (tableNameOrAlias: string, columnName: string, builder: (builder: QueryBuilder) => void) => this;
+  /**
+   * A row-value comparison: `(a, b) > (?, ?)`. The keyset-pagination predicate and the composite-key
+   * lookup — the only formulation of a keyset page that stays correct across ties and uses the
+   * composite index. Refused on MSSQL, which has no row constructor in a comparison; the OR-chain
+   * rewrite is an emulation this library does not do.
+   *
+   * `columns` is the tuple on the left; `values` is one value per column.
+   */
+  whereRowValue: (columns: {
+    tableNameOrAlias: string;
+    columnName: string;
+  }[], whereOperator: WhereOperator, values: unknown[]) => this;
+  /**
+   * A row-value `IN`: `(a, b) IN ((?,?), (?,?))`. The composite-key membership test. `tuples` is a
+   * list of value-tuples, each matching the shape of `columns`. Refused on MSSQL for the same reason
+   * as {@link whereRowValue}.
+   */
+  whereRowValueIn: (columns: {
+    tableNameOrAlias: string;
+    columnName: string;
+  }[], tuples: unknown[][]) => this;
   whereInValues: (tableNameOrAlias: string, columnName: string, values: any[]) => this;
   /**
    * @param tableNameOrAlias - Unused: `NOT EXISTS (subquery)` never references the outer column.

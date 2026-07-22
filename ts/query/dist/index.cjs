@@ -105,6 +105,10 @@ const BuilderType = {
 	CteRaw: "CteRaw",
 	/** WHERE predicate (standard comparison or helper). */
 	Where: "Where",
+	/** `(a, b) > (?, ?)` — a row-value comparison against a single tuple. */
+	WhereRowValue: "WhereRowValue",
+	/** `(a, b) IN ((?,?), (?,?))` — a row-value IN over a list of tuples. */
+	WhereRowValueIn: "WhereRowValueIn",
 	/** WHERE column BETWEEN low AND high. */
 	WhereBetween: "WhereBetween",
 	/** Opens a parenthesized WHERE group. */
@@ -144,6 +148,95 @@ const BuilderType = {
 	/** HAVING full-text search predicate. */
 	HavingFullText: "HavingFullText"
 };
+//#endregion
+//#region src/enums/where-operator.ts
+/**
+* Comparison operators for WHERE and HAVING predicates.
+*/
+const WhereOperator = {
+	/** Equality (=). */
+	Equals: "Equals",
+	/** Inequality (<> or !=). */
+	NotEquals: "NotEquals",
+	/** Strictly greater than (>). */
+	GreaterThan: "GreaterThan",
+	/** Greater than or equal (>=). */
+	GreaterThanOrEquals: "GreaterThanOrEquals",
+	/** Strictly less than (<). */
+	LessThan: "LessThan",
+	/** Less than or equal (<=). */
+	LessThanOrEquals: "LessThanOrEquals",
+	/** No operator specified. */
+	None: "None",
+	/** Pattern match (LIKE) — the bound value carries any `%`/`_` wildcards. */
+	Like: "Like",
+	/** Negated pattern match (NOT LIKE). */
+	NotLike: "NotLike",
+	/**
+	* Literal substring match — `LIKE %value% ESCAPE …` with the LIKE metacharacters (`%`, `_`, and
+	* MSSQL's `[`) in the bound value ESCAPED, so a search for `50%` matches the literal string, not
+	* "anything starting 50". The value is the raw text to find; the wildcards are added here. Unlike
+	* {@link Like}, the caller does NOT supply wildcards.
+	*/
+	Contains: "Contains",
+	/** Negated literal substring match (`NOT LIKE %value%`, escaped) — see {@link Contains}. */
+	NotContains: "NotContains",
+	/** Literal prefix match (`LIKE value% ESCAPE …`, escaped) — see {@link Contains}. */
+	StartsWith: "StartsWith",
+	/** Literal suffix match (`LIKE %value ESCAPE …`, escaped) — see {@link Contains}. */
+	EndsWith: "EndsWith",
+	/**
+	* Case-insensitive pattern match. Native `ILIKE` on Postgres; on MySQL, SQLite, and MSSQL
+	* (none of which have `ILIKE`) it is rewritten to `LOWER(col) LIKE LOWER(?)`.
+	*/
+	Ilike: "Ilike",
+	/** Negated case-insensitive pattern match — see {@link WhereOperator.Ilike}. */
+	NotIlike: "NotIlike",
+	/**
+	* Regular-expression match. Native `~` on Postgres and `REGEXP` on MySQL (where case sensitivity is
+	* collation-driven — the default utf8mb4 collation is case-insensitive). SQLite (`REGEXP` needs an
+	* app-registered function) and MSSQL (no regex engine before SQL Server 2025) have no built-in
+	* operator and THROW. The bound value is the pattern.
+	*/
+	Regex: "Regex",
+	/** Negated regular-expression match — see {@link Regex}. */
+	NotRegex: "NotRegex",
+	/** Case-insensitive regular-expression match. Native `~*` on Postgres; on MySQL it is the same as
+	* {@link Regex} (case sensitivity is collation-driven, not operator-driven). SQLite/MSSQL throw. */
+	Iregex: "Iregex",
+	/** Negated case-insensitive regular-expression match — see {@link Iregex}. */
+	NotIregex: "NotIregex",
+	/**
+	* Null-safe inequality: true unless both sides are equal, treating two `NULL`s as equal
+	* (unlike `<>`, which is `NULL` — never true — whenever either side is `NULL`). Native `IS
+	* DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL (no native
+	* operator) rewrites to `(col <> value OR col IS NULL)`, or `col IS NOT NULL` for a NULL value.
+	*/
+	IsDistinctFrom: "IsDistinctFrom",
+	/**
+	* Null-safe equality: true when both sides are equal OR both are `NULL` (unlike `=`, which is
+	* `NULL` whenever either side is `NULL`). Native `IS NOT DISTINCT FROM` on Postgres/SQLite;
+	* MySQL rewrites to its native `<=>` operator; MSSQL (no native operator) rewrites to `col =
+	* value`, or `col IS NULL` for a NULL value — sound because the compared value is always a bound literal.
+	*/
+	IsNotDistinctFrom: "IsNotDistinctFrom"
+};
+//#endregion
+//#region src/state/where.ts
+/** Creates a {@link WhereState} with default field values. */
+const createWhereState = () => ({
+	builderType: BuilderType.None,
+	tableNameOrAlias: void 0,
+	columnName: void 0,
+	whereOperator: WhereOperator.None,
+	raw: void 0,
+	subquery: void 0,
+	values: [],
+	jsonPath: void 0,
+	jsonExtractMode: void 0,
+	fullTextMode: void 0,
+	fullTextColumns: void 0
+});
 //#endregion
 //#region src/enums/call-kind.ts
 /**
@@ -379,79 +472,6 @@ const UpsertAction = {
 	DoNothing: "DoNothing",
 	/** Conflicting rows are updated (PG/SQLite `DO UPDATE SET`, MySQL `ON DUPLICATE KEY UPDATE`). */
 	DoUpdate: "DoUpdate"
-};
-//#endregion
-//#region src/enums/where-operator.ts
-/**
-* Comparison operators for WHERE and HAVING predicates.
-*/
-const WhereOperator = {
-	/** Equality (=). */
-	Equals: "Equals",
-	/** Inequality (<> or !=). */
-	NotEquals: "NotEquals",
-	/** Strictly greater than (>). */
-	GreaterThan: "GreaterThan",
-	/** Greater than or equal (>=). */
-	GreaterThanOrEquals: "GreaterThanOrEquals",
-	/** Strictly less than (<). */
-	LessThan: "LessThan",
-	/** Less than or equal (<=). */
-	LessThanOrEquals: "LessThanOrEquals",
-	/** No operator specified. */
-	None: "None",
-	/** Pattern match (LIKE) — the bound value carries any `%`/`_` wildcards. */
-	Like: "Like",
-	/** Negated pattern match (NOT LIKE). */
-	NotLike: "NotLike",
-	/**
-	* Literal substring match — `LIKE %value% ESCAPE …` with the LIKE metacharacters (`%`, `_`, and
-	* MSSQL's `[`) in the bound value ESCAPED, so a search for `50%` matches the literal string, not
-	* "anything starting 50". The value is the raw text to find; the wildcards are added here. Unlike
-	* {@link Like}, the caller does NOT supply wildcards.
-	*/
-	Contains: "Contains",
-	/** Negated literal substring match (`NOT LIKE %value%`, escaped) — see {@link Contains}. */
-	NotContains: "NotContains",
-	/** Literal prefix match (`LIKE value% ESCAPE …`, escaped) — see {@link Contains}. */
-	StartsWith: "StartsWith",
-	/** Literal suffix match (`LIKE %value ESCAPE …`, escaped) — see {@link Contains}. */
-	EndsWith: "EndsWith",
-	/**
-	* Case-insensitive pattern match. Native `ILIKE` on Postgres; on MySQL, SQLite, and MSSQL
-	* (none of which have `ILIKE`) it is rewritten to `LOWER(col) LIKE LOWER(?)`.
-	*/
-	Ilike: "Ilike",
-	/** Negated case-insensitive pattern match — see {@link WhereOperator.Ilike}. */
-	NotIlike: "NotIlike",
-	/**
-	* Regular-expression match. Native `~` on Postgres and `REGEXP` on MySQL (where case sensitivity is
-	* collation-driven — the default utf8mb4 collation is case-insensitive). SQLite (`REGEXP` needs an
-	* app-registered function) and MSSQL (no regex engine before SQL Server 2025) have no built-in
-	* operator and THROW. The bound value is the pattern.
-	*/
-	Regex: "Regex",
-	/** Negated regular-expression match — see {@link Regex}. */
-	NotRegex: "NotRegex",
-	/** Case-insensitive regular-expression match. Native `~*` on Postgres; on MySQL it is the same as
-	* {@link Regex} (case sensitivity is collation-driven, not operator-driven). SQLite/MSSQL throw. */
-	Iregex: "Iregex",
-	/** Negated case-insensitive regular-expression match — see {@link Iregex}. */
-	NotIregex: "NotIregex",
-	/**
-	* Null-safe inequality: true unless both sides are equal, treating two `NULL`s as equal
-	* (unlike `<>`, which is `NULL` — never true — whenever either side is `NULL`). Native `IS
-	* DISTINCT FROM` on Postgres/SQLite; MySQL rewrites to `NOT (a <=> b)`; MSSQL (no native
-	* operator) rewrites to `(col <> value OR col IS NULL)`, or `col IS NOT NULL` for a NULL value.
-	*/
-	IsDistinctFrom: "IsDistinctFrom",
-	/**
-	* Null-safe equality: true when both sides are equal OR both are `NULL` (unlike `=`, which is
-	* `NULL` whenever either side is `NULL`). Native `IS NOT DISTINCT FROM` on Postgres/SQLite;
-	* MySQL rewrites to its native `<=>` operator; MSSQL (no native operator) rewrites to `col =
-	* value`, or `col IS NULL` for a NULL value — sound because the compared value is always a bound literal.
-	*/
-	IsNotDistinctFrom: "IsNotDistinctFrom"
 };
 //#endregion
 //#region src/helpers/parser-error.ts
@@ -3294,6 +3314,88 @@ const defaultUpdate = (state, config, mode, options) => {
 	return sqlHelper;
 };
 //#endregion
+//#region src/parser/default-row-value.ts
+/**
+* Row-value comparison: `(a, b) > (?, ?)` and `(a, b) IN ((?,?), (?,?))`.
+*
+* The keyset-pagination predicate and the composite-key lookup. `(created_at, id) < (?, ?)` is the
+* only formulation of a keyset page that stays correct across ties and lets the engine use the
+* composite index that satisfies the ORDER BY — its absence is why deep pagination otherwise falls
+* back to OFFSET.
+*
+* ── WHERE IT WORKS (measured against the harness, 2026-07-22) ──
+*
+*     (a, b) > (?, ?)            Postgres  MySQL  SQLite 3.15+   accepted
+*     (a, b) IN ((?,?), (?,?))   Postgres  MySQL  SQLite         accepted
+*     (a, b) = (?, ?)            Postgres  MySQL  SQLite         accepted
+*     any of the above                                MSSQL      Msg — no row constructor
+*
+* T-SQL has no row constructor in a comparison in any version, and the OR-chain rewrite
+* (`a > ? OR (a = ? AND b > ?)`) is exactly the emulation this library refuses to synthesize: it
+* changes the plan, the parameter count, and the NULL semantics. So MSSQL refuses and says why.
+*/
+const MSSQL_REFUSAL = "MSSQL has no row-value constructor in a comparison — `(a, b) > (?, ?)` and `(a, b) IN (…)` are not T-SQL in any version. The equivalent OR-chain (a > ? OR (a = ? AND b > ?)) is an emulation this library will not synthesize for you: it changes the query plan and the NULL handling. Write that predicate yourself with whereRaw/whereGroup if you need it on SQL Server.";
+const emitTuple = (sqlHelper, config, columns) => {
+	sqlHelper.addSqlSnippet("(");
+	columns.forEach((c, i) => {
+		sqlHelper.addSqlSnippet(qualifiedColumn(c.tableNameOrAlias, c.columnName, config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+};
+/** `(a, b) <op> (?, ?)` — one tuple on each side. `values` is the single right-hand tuple. */
+const emitRowValueComparison = (sqlHelper, config, cur, area) => {
+	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, MSSQL_REFUSAL);
+	const columns = cur.rowColumns ?? [];
+	const rhs = cur.values[0] ?? [];
+	if (columns.length < 2) throw new ParserError(area, "A row-value comparison needs at least two columns");
+	if (rhs.length !== columns.length) throw new ParserError(area, `A row-value comparison needs one value per column — got ${columns.length} columns and ${rhs.length} values`);
+	emitTuple(sqlHelper, config, columns);
+	sqlHelper.addSqlSnippet(` ${rowValueOperatorSql(cur.whereOperator, area)} `);
+	sqlHelper.addSqlSnippet("(");
+	rhs.forEach((value, i) => {
+		sqlHelper.addDynamicValue(value);
+		if (i < rhs.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+};
+/** `(a, b) IN ((?,?), (?,?))`. `values` is the list of tuples. */
+const emitRowValueIn = (sqlHelper, config, cur, area) => {
+	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, MSSQL_REFUSAL);
+	const columns = cur.rowColumns ?? [];
+	const tuples = cur.values;
+	if (columns.length < 2) throw new ParserError(area, "A row-value IN needs at least two columns");
+	if (tuples.length === 0) throw new ParserError(area, "A row-value IN needs at least one tuple");
+	for (const tuple of tuples) if (!Array.isArray(tuple) || tuple.length !== columns.length) throw new ParserError(area, `Every tuple in a row-value IN must have ${columns.length} values to match the columns`);
+	emitTuple(sqlHelper, config, columns);
+	sqlHelper.addSqlSnippet(" IN (");
+	tuples.forEach((tuple, ti) => {
+		sqlHelper.addSqlSnippet("(");
+		tuple.forEach((value, vi) => {
+			sqlHelper.addDynamicValue(value);
+			if (vi < tuple.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		sqlHelper.addSqlSnippet(")");
+		if (ti < tuples.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+};
+/**
+* The SQL text for a row-value comparison operator. Only the ordered comparisons and equality make
+* sense on a tuple — LIKE, IS NULL, BETWEEN and friends do not compose with a row constructor.
+*/
+const rowValueOperatorSql = (op, area) => {
+	switch (op) {
+		case WhereOperator.Equals: return "=";
+		case WhereOperator.NotEquals: return "<>";
+		case WhereOperator.GreaterThan: return ">";
+		case WhereOperator.GreaterThanOrEquals: return ">=";
+		case WhereOperator.LessThan: return "<";
+		case WhereOperator.LessThanOrEquals: return "<=";
+		default: throw new ParserError(area, "A row-value comparison takes only =, <>, <, <=, > or >= — LIKE, IS NULL and BETWEEN have no meaning on a tuple. Use a single-column predicate for those.");
+	}
+};
+//#endregion
 //#region src/parser/default-where.ts
 const WHERE_PREDICATE_TYPES = /* @__PURE__ */ new Set([
 	BuilderType.Where,
@@ -3365,6 +3467,16 @@ const defaultWhere = (state, config, mode, options) => {
 			if (inner.startsWith("WHERE ")) inner = inner.slice(6);
 			if (inner.trim() === "") throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
 			sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereRowValue) {
+			emitRowValueComparison(sqlHelper, config, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereRowValueIn) {
+			emitRowValueIn(sqlHelper, config, cur, ParserArea.Where);
 			spaceAfter();
 			continue;
 		}
@@ -5040,6 +5152,41 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
+	/**
+	* A row-value comparison: `(a, b) > (?, ?)`. The keyset-pagination predicate and the composite-key
+	* lookup — the only formulation of a keyset page that stays correct across ties and uses the
+	* composite index. Refused on MSSQL, which has no row constructor in a comparison; the OR-chain
+	* rewrite is an emulation this library does not do.
+	*
+	* `columns` is the tuple on the left; `values` is one value per column.
+	*/
+	whereRowValue = (columns, whereOperator, values) => {
+		this.#combinatorTarget = "where";
+		this.#state.whereStates.push({
+			...createWhereState(),
+			builderType: BuilderType.WhereRowValue,
+			whereOperator,
+			rowColumns: [...columns],
+			values: [[...values]]
+		});
+		return this;
+	};
+	/**
+	* A row-value `IN`: `(a, b) IN ((?,?), (?,?))`. The composite-key membership test. `tuples` is a
+	* list of value-tuples, each matching the shape of `columns`. Refused on MSSQL for the same reason
+	* as {@link whereRowValue}.
+	*/
+	whereRowValueIn = (columns, tuples) => {
+		this.#combinatorTarget = "where";
+		this.#state.whereStates.push({
+			...createWhereState(),
+			builderType: BuilderType.WhereRowValueIn,
+			whereOperator: WhereOperator.None,
+			rowColumns: [...columns],
+			values: tuples.map((t) => [...t])
+		});
+		return this;
+	};
 	whereInValues = (tableNameOrAlias, columnName, values) => {
 		this.#combinatorTarget = "where";
 		values = [...values];
@@ -6566,22 +6713,6 @@ const createUpsertState = () => ({
 	conflictColumns: [],
 	updateColumns: [],
 	updateRaw: void 0
-});
-//#endregion
-//#region src/state/where.ts
-/** Creates a {@link WhereState} with default field values. */
-const createWhereState = () => ({
-	builderType: BuilderType.None,
-	tableNameOrAlias: void 0,
-	columnName: void 0,
-	whereOperator: WhereOperator.None,
-	raw: void 0,
-	subquery: void 0,
-	values: [],
-	jsonPath: void 0,
-	jsonExtractMode: void 0,
-	fullTextMode: void 0,
-	fullTextColumns: void 0
 });
 //#endregion
 //#region src/expression/scalar.ts

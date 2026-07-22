@@ -37,6 +37,15 @@ export type WhereState = {
   fullTextMode?: FullTextMode;
   /** Columns searched by a full-text predicate. */
   fullTextColumns?: FullTextColumnRef[];
+  /**
+   * The multi-column LEFT side of a row-value comparison — `(a, b) > (?, ?)` / `(a, b) IN (…)`.
+   *
+   * Additive: the single-column path keeps using `columnName`/`tableNameOrAlias`, untouched. A
+   * row-value predicate uses this list instead, and `values` holds either one tuple (for a scalar
+   * comparison) or a list of tuples (for IN). MSSQL has no row constructor in a comparison and is
+   * refused — the OR-chain expansion is the emulation this library does not do.
+   */
+  rowColumns?: { tableNameOrAlias: string; columnName: string }[];
 };
 
 /** Creates a {@link WhereState} with default field values. */

@@ -649,6 +649,39 @@ class QueryBuilder
     return this;
   }
 
+  /// A row-value comparison: `(a, b) > (?, ?)`. The keyset-pagination predicate and the
+  /// composite-key lookup. Refused on MSSQL, which has no row constructor in a comparison.
+  QueryBuilder whereRowValue(
+    List<GroupByRef> columns,
+    WhereOperator operator,
+    List<Object?> values,
+  ) {
+    _combinatorTarget = 'where';
+    _state.whereStates.add(WhereState()
+      ..builderType = BuilderType.whereRowValue
+      ..whereOperator = operator
+      ..rowColumns = [
+        for (final c in columns) GroupByColumnRef(c.table, c.column),
+      ]
+      ..values = [List.of(values)]);
+    return this;
+  }
+
+  /// A row-value `IN`: `(a, b) IN ((?,?), (?,?))`. Refused on MSSQL for the same reason.
+  QueryBuilder whereRowValueIn(
+    List<GroupByRef> columns,
+    List<List<Object?>> tuples,
+  ) {
+    _combinatorTarget = 'where';
+    _state.whereStates.add(WhereState()
+      ..builderType = BuilderType.whereRowValueIn
+      ..rowColumns = [
+        for (final c in columns) GroupByColumnRef(c.table, c.column),
+      ]
+      ..values = tuples.map((t) => List<Object?>.of(t)).toList());
+    return this;
+  }
+
   QueryBuilder whereInValues(
       String table, String column, List<Object?> values) {
     _combinatorTarget = 'where';

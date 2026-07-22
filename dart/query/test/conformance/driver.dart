@@ -363,6 +363,29 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
       case 'whereBetween':
         b.whereBetween(_str(op, 'table'), _str(op, 'column'), _val(op, 'from'),
             _val(op, 'to'));
+      case 'whereRowValue':
+        b.whereRowValue(
+          [
+            for (final c in _ops(op, 'columns'))
+              (table: _str(c, 'table'), column: _str(c, 'column')),
+          ],
+          WhereOperator.fromWire(_str(op, 'operator')),
+          _values(op, 'values'),
+        );
+      case 'whereRowValueIn':
+        b.whereRowValueIn(
+          [
+            for (final c in _ops(op, 'columns'))
+              (table: _str(c, 'table'), column: _str(c, 'column')),
+          ],
+          [
+            for (final t in (op['tuples'] as List))
+              [
+                for (final v in (t as List))
+                  decodeInputValue(v as Map<String, Object?>)
+              ],
+          ],
+        );
       case 'whereInValues':
         b.whereInValues(
             _str(op, 'table'), _str(op, 'column'), _values(op, 'values'));

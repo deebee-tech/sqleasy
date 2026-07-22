@@ -4,7 +4,7 @@
   "generatedFrom": {
     "corpus": "contract/corpora/emission/corpus.json",
     "corpusVersion": "1.0.0",
-    "corpusCases": 378,
+    "corpusCases": 381,
     "decisions": "contract/capabilities/decisions.json",
     "typedViewSurface": "dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)",
     "audit": "docs/audits/dialect-parity-2026-07-19.md",
@@ -17,21 +17,21 @@
     "sqlite"
   ],
   "summary": {
-    "ops": 131,
+    "ops": 133,
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 24,
     "opCells": {
-      "native": 446,
+      "native": 452,
       "absent": 78,
-      "unadjudicated": 0
+      "unadjudicated": 2
     },
     "enumCells": {
       "native": 268,
       "absent": 52,
       "unadjudicated": 0
     },
-    "adjudicated": 844,
-    "namesAssigned": 714
+    "adjudicated": 850,
+    "namesAssigned": 720
   },
   "ops": {
     "and": {
@@ -1243,7 +1243,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 209,
-            "casesThrowing": 74,
+            "casesThrowing": 77,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1253,7 +1253,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 209,
+            "casesEmitting": 212,
             "casesThrowing": 67,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -1264,7 +1264,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 226,
+            "casesEmitting": 229,
             "casesThrowing": 52,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -1275,7 +1275,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 191,
+            "casesEmitting": 194,
             "casesThrowing": 86,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -4651,7 +4651,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 75,
-            "casesThrowing": 20,
+            "casesThrowing": 23,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -4661,7 +4661,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 72,
+            "casesEmitting": 75,
             "casesThrowing": 21,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -4672,7 +4672,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 80,
+            "casesEmitting": 83,
             "casesThrowing": 13,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -4683,7 +4683,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 67,
+            "casesEmitting": 70,
             "casesThrowing": 26,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -6321,6 +6321,102 @@
           }
         }
       }
+    },
+    "whereRowValue": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "unadjudicated",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 2,
+            "note": "presence on the mssql view is a CONDITIONAL refusal — every corpus case throws and none emits, so it cannot be native; needs a human decision"
+          }
+        },
+        "mysql": {
+          "name": "whereRowValue",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "postgres": {
+          "name": "whereRowValue",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "sqlite": {
+          "name": "whereRowValue",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        }
+      }
+    },
+    "whereRowValueIn": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "unadjudicated",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "presence on the mssql view is a CONDITIONAL refusal — every corpus case throws and none emits, so it cannot be native; needs a human decision"
+          }
+        },
+        "mysql": {
+          "name": "whereRowValueIn",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "postgres": {
+          "name": "whereRowValueIn",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "sqlite": {
+          "name": "whereRowValueIn",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        }
+      }
     }
   },
   "enums": {
@@ -6809,7 +6905,8 @@
         "on",
         "onValue",
         "where",
-        "whereJsonExtract"
+        "whereJsonExtract",
+        "whereRowValue"
       ],
       "cells": {
         "mssql": {
@@ -6819,7 +6916,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 109,
-            "casesThrowing": 28,
+            "casesThrowing": 29,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -6829,7 +6926,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 105,
+            "casesEmitting": 106,
             "casesThrowing": 28,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6840,7 +6937,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 109,
+            "casesEmitting": 110,
             "casesThrowing": 25,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6851,7 +6948,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 99,
+            "casesEmitting": 100,
             "casesThrowing": 34,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6866,7 +6963,8 @@
         "havingAggregate",
         "on",
         "onValue",
-        "where"
+        "where",
+        "whereRowValue"
       ],
       "cells": {
         "mssql": {
@@ -6876,7 +6974,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 29,
-            "casesThrowing": 2,
+            "casesThrowing": 3,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -6886,7 +6984,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 29,
+            "casesEmitting": 30,
             "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6897,7 +6995,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 29,
+            "casesEmitting": 30,
             "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6908,7 +7006,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 28,
+            "casesEmitting": 29,
             "casesThrowing": 2,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8375,7 +8473,8 @@
         "on",
         "onValue",
         "where",
-        "whereJsonExtract"
+        "whereJsonExtract",
+        "whereRowValue"
       ],
       "cells": {
         "mssql": {
@@ -8385,7 +8484,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 109,
-            "casesThrowing": 28,
+            "casesThrowing": 29,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -8395,7 +8494,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 105,
+            "casesEmitting": 106,
             "casesThrowing": 28,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8406,7 +8505,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 109,
+            "casesEmitting": 110,
             "casesThrowing": 25,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8417,7 +8516,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 99,
+            "casesEmitting": 100,
             "casesThrowing": 34,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8432,7 +8531,8 @@
         "havingAggregate",
         "on",
         "onValue",
-        "where"
+        "where",
+        "whereRowValue"
       ],
       "cells": {
         "mssql": {
@@ -8442,7 +8542,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 29,
-            "casesThrowing": 2,
+            "casesThrowing": 3,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -8452,7 +8552,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 29,
+            "casesEmitting": 30,
             "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8463,7 +8563,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 29,
+            "casesEmitting": 30,
             "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8474,7 +8574,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 28,
+            "casesEmitting": 29,
             "casesThrowing": 2,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }

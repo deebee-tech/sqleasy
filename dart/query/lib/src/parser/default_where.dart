@@ -5,6 +5,7 @@ import '../identifier.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 import 'comparison_operator.dart';
+import 'default_row_value.dart';
 import 'default_json_predicate.dart';
 import 'to_sql.dart';
 
@@ -157,6 +158,18 @@ SqlHelper defaultWhere(
         throw ParserError(ParserArea.where, 'WHERE group cannot be empty');
       }
       sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+      spaceAfter();
+      continue;
+    }
+
+    if (cur.builderType == BuilderType.whereRowValue) {
+      emitRowValueComparison(sqlHelper, config, cur, ParserArea.where);
+      spaceAfter();
+      continue;
+    }
+
+    if (cur.builderType == BuilderType.whereRowValueIn) {
+      emitRowValueIn(sqlHelper, config, cur, ParserArea.where);
       spaceAfter();
       continue;
     }

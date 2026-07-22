@@ -428,6 +428,8 @@ enum BuilderType {
   cteBuilder,
   cteRaw,
   where,
+  whereRowValue,
+  whereRowValueIn,
   whereBetween,
   whereGroupBegin,
   whereGroupBuilder,

@@ -4,6 +4,7 @@ import { FullTextMode } from '../enums/full-text-mode';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
 import { qualifiedColumn } from '../helpers/identifier';
+import { emitRowValueComparison, emitRowValueIn } from './default-row-value';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
@@ -159,6 +160,18 @@ export const defaultWhere = (
         throw new ParserError(ParserArea.Where, 'WHERE group cannot be empty');
       }
       sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+      spaceAfter();
+      continue;
+    }
+
+    if (cur.builderType === BuilderType.WhereRowValue) {
+      emitRowValueComparison(sqlHelper, config, cur, ParserArea.Where);
+      spaceAfter();
+      continue;
+    }
+
+    if (cur.builderType === BuilderType.WhereRowValueIn) {
+      emitRowValueIn(sqlHelper, config, cur, ParserArea.Where);
       spaceAfter();
       continue;
     }

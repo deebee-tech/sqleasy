@@ -26862,6 +26862,320 @@
           "throws": "Select: COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count."
         }
       }
+    },
+    {
+      "name": "a row value comparison is a tuple on each side, refused on mssql",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "whereRowValue",
+          "columns": [
+            {
+              "table": "o",
+              "column": "customer_id"
+            },
+            {
+              "table": "o",
+              "column": "id"
+            }
+          ],
+          "operator": "GreaterThan",
+          "values": [
+            {
+              "t": "int",
+              "v": 1
+            },
+            {
+              "t": "int",
+              "v": 1
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL has no row-value constructor in a comparison — `(a, b) > (?, ?)` and `(a, b) IN (…)` are not T-SQL in any version. The equivalent OR-chain (a > ? OR (a = ? AND b > ?)) is an emulation this library will not synthesize for you: it changes the query plan and the NULL handling. Write that predicate yourself with whereRaw/whereGroup if you need it on SQL Server."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `o`.`id` FROM `orders` AS `o` WHERE (`o`.`customer_id`, `o`.`id`) > (?, ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT `o`.`id` FROM `orders` AS `o` WHERE (`o`.`customer_id`, `o`.`id`) > (1, 1);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") > ($1, $2);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") > (1, 1);"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") > (?, ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") > (1, 1);"
+        }
+      }
+    },
+    {
+      "name": "a row value equality",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "whereRowValue",
+          "columns": [
+            {
+              "table": "o",
+              "column": "customer_id"
+            },
+            {
+              "table": "o",
+              "column": "id"
+            }
+          ],
+          "operator": "Equals",
+          "values": [
+            {
+              "t": "int",
+              "v": 1
+            },
+            {
+              "t": "int",
+              "v": 1
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL has no row-value constructor in a comparison — `(a, b) > (?, ?)` and `(a, b) IN (…)` are not T-SQL in any version. The equivalent OR-chain (a > ? OR (a = ? AND b > ?)) is an emulation this library will not synthesize for you: it changes the query plan and the NULL handling. Write that predicate yourself with whereRaw/whereGroup if you need it on SQL Server."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `o`.`id` FROM `orders` AS `o` WHERE (`o`.`customer_id`, `o`.`id`) = (?, ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT `o`.`id` FROM `orders` AS `o` WHERE (`o`.`customer_id`, `o`.`id`) = (1, 1);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") = ($1, $2);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") = (1, 1);"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") = (?, ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") = (1, 1);"
+        }
+      }
+    },
+    {
+      "name": "a row value in over a list of tuples",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "whereRowValueIn",
+          "columns": [
+            {
+              "table": "o",
+              "column": "customer_id"
+            },
+            {
+              "table": "o",
+              "column": "id"
+            }
+          ],
+          "tuples": [
+            [
+              {
+                "t": "int",
+                "v": 1
+              },
+              {
+                "t": "int",
+                "v": 1
+              }
+            ],
+            [
+              {
+                "t": "int",
+                "v": 2
+              },
+              {
+                "t": "int",
+                "v": 2
+              }
+            ]
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Where: MSSQL has no row-value constructor in a comparison — `(a, b) > (?, ?)` and `(a, b) IN (…)` are not T-SQL in any version. The equivalent OR-chain (a > ? OR (a = ? AND b > ?)) is an emulation this library will not synthesize for you: it changes the query plan and the NULL handling. Write that predicate yourself with whereRaw/whereGroup if you need it on SQL Server."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `o`.`id` FROM `orders` AS `o` WHERE (`o`.`customer_id`, `o`.`id`) IN ((?, ?), (?, ?));",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
+          },
+          "raw": "SELECT `o`.`id` FROM `orders` AS `o` WHERE (`o`.`customer_id`, `o`.`id`) IN ((1, 1), (2, 2));"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") IN (($1, $2), ($3, $4));",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") IN ((1, 1), (2, 2));"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") IN ((?, ?), (?, ?));",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") IN ((1, 1), (2, 2));"
+        }
+      }
     }
   ]
 }

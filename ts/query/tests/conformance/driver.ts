@@ -507,6 +507,25 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'whereBetween':
         b.whereBetween(str(op, 'table'), str(op, 'column'), val(op, 'from'), val(op, 'to'));
         break;
+      case 'whereRowValue':
+        b.whereRowValue(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+          enumOf(op, 'operator', WhereOperator),
+          list<InputValue>(op, 'values').map(toValue),
+        );
+        break;
+      case 'whereRowValueIn':
+        b.whereRowValueIn(
+          list<{ table: string; column: string }>(op, 'columns').map((c) => ({
+            tableNameOrAlias: c.table,
+            columnName: c.column,
+          })),
+          list<InputValue[]>(op, 'tuples').map((t) => t.map(toValue)),
+        );
+        break;
       case 'whereInValues':
         b.whereInValues(
           str(op, 'table'),

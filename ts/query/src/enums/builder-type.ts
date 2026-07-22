@@ -103,6 +103,10 @@ export const BuilderType = {
   CteRaw: 'CteRaw',
   /** WHERE predicate (standard comparison or helper). */
   Where: 'Where',
+  /** `(a, b) > (?, ?)` — a row-value comparison against a single tuple. */
+  WhereRowValue: 'WhereRowValue',
+  /** `(a, b) IN ((?,?), (?,?))` — a row-value IN over a list of tuples. */
+  WhereRowValueIn: 'WhereRowValueIn',
   /** WHERE column BETWEEN low AND high. */
   WhereBetween: 'WhereBetween',
   /** Opens a parenthesized WHERE group. */

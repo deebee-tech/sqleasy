@@ -1,5 +1,6 @@
 import type { Dialect } from '../configuration/configuration';
 import type { AggregateFunction } from '../enums/aggregate-function';
+import { createWhereState } from '../state/where';
 import { BuilderType } from '../enums/builder-type';
 import { CallKind } from '../enums/call-kind';
 import { CallParamDirection } from '../enums/call-param-direction';
@@ -1063,6 +1064,50 @@ export class QueryBuilder {
       values: [],
     });
 
+    return this;
+  };
+
+  /**
+   * A row-value comparison: `(a, b) > (?, ?)`. The keyset-pagination predicate and the composite-key
+   * lookup — the only formulation of a keyset page that stays correct across ties and uses the
+   * composite index. Refused on MSSQL, which has no row constructor in a comparison; the OR-chain
+   * rewrite is an emulation this library does not do.
+   *
+   * `columns` is the tuple on the left; `values` is one value per column.
+   */
+  public whereRowValue = (
+    columns: { tableNameOrAlias: string; columnName: string }[],
+    whereOperator: WhereOperator,
+    values: unknown[],
+  ): this => {
+    this.#combinatorTarget = 'where';
+    this.#state.whereStates.push({
+      ...createWhereState(),
+      builderType: BuilderType.WhereRowValue,
+      whereOperator,
+      rowColumns: [...columns],
+      values: [[...values]],
+    });
+    return this;
+  };
+
+  /**
+   * A row-value `IN`: `(a, b) IN ((?,?), (?,?))`. The composite-key membership test. `tuples` is a
+   * list of value-tuples, each matching the shape of `columns`. Refused on MSSQL for the same reason
+   * as {@link whereRowValue}.
+   */
+  public whereRowValueIn = (
+    columns: { tableNameOrAlias: string; columnName: string }[],
+    tuples: unknown[][],
+  ): this => {
+    this.#combinatorTarget = 'where';
+    this.#state.whereStates.push({
+      ...createWhereState(),
+      builderType: BuilderType.WhereRowValueIn,
+      whereOperator: WhereOperator.None,
+      rowColumns: [...columns],
+      values: tuples.map((t) => [...t]),
+    });
     return this;
   };
 

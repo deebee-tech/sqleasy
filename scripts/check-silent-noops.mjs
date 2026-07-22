@@ -152,6 +152,22 @@ const CASES = {
   whereNull: { base: 'select', apply: (b) => b.whereNull('o', 'note') },
   whereNotNull: { base: 'select', apply: (b) => b.whereNotNull('o', 'note') },
   whereInValues: { base: 'select', apply: (b) => b.whereInValues('o', 'id', [1, 2]) },
+  whereRowValue: {
+    base: 'select',
+    apply: (b) =>
+      b.whereRowValue([col('o', 'id'), col('o', 'customer_id')], WhereOperator.GreaterThan, [1, 1]),
+  },
+  whereRowValueIn: {
+    base: 'select',
+    apply: (b) =>
+      b.whereRowValueIn(
+        [col('o', 'id'), col('o', 'customer_id')],
+        [
+          [1, 1],
+          [2, 2],
+        ],
+      ),
+  },
   whereNotInValues: { base: 'select', apply: (b) => b.whereNotInValues('o', 'id', [1, 2]) },
   whereRaw: { base: 'select', apply: (b) => b.whereRaw('1 = 1') },
   whereRaws: { base: 'select', apply: (b) => b.whereRaws(['1 = 1']) },
