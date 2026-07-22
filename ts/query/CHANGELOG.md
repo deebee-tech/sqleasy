@@ -1,3 +1,5 @@
+# [12.0.0](https://github.com/deebee-tech/sqleasy/compare/v11.0.0...v12.0.0) (2026-07-22)
+
 # [11.0.0](https://github.com/deebee-tech/sqleasy/compare/v10.1.0...v11.0.0) (2026-07-22)
 
 
