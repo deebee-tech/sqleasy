@@ -41,7 +41,20 @@ export const defaultFrom = (
         throw new ParserError(ParserArea.From, 'MySQL does not support table owners');
       }
 
-      if (fromState.owner !== '') {
+      // A name that matches a CTE declared on THIS statement is the CTE, not a table, and a CTE
+      // lives in no schema — qualifying it sends the engine looking for a real relation:
+      //
+      //     WITH c AS (…) SELECT id FROM public.c   ->  PG:    relation "public.c" does not exist
+      //     WITH c AS (…) SELECT id FROM dbo.c      ->  MSSQL: Msg 208, invalid object name
+      //     WITH c AS (…) SELECT id FROM c          ->  both:  resolves to the CTE
+      //
+      // The owner here is usually the dialect DEFAULT (`public`/`dbo`), which `fromTable` stamps on
+      // without being asked, so referencing your own CTE by name was broken unless you happened to
+      // route around it with `fromRaw`. Suppressing the owner for a declared CTE name is not a
+      // guess: the name is declared in the same state, three lines up in the same statement.
+      const namesADeclaredCte = state.cteStates.some((cte) => cte.name === fromState.tableName);
+
+      if (fromState.owner !== '' && !namesADeclaredCte) {
         sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
         sqlHelper.addSqlSnippet('.');
       }

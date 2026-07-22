@@ -131,6 +131,38 @@ export const defaultToSql = (
   // this library does not do. Validating here, before the queryType dispatch, closes that.
   validateHints(state, config, ParserArea.General);
 
+  // A sub-builder is a SELECT. Building an INSERT/UPDATE/DELETE/CALL inside one of the child
+  // callbacks used to inline that statement verbatim wherever the child goes — inside a derived
+  // table's parentheses, after an INSERT's column list, inside MERGE's USING — producing a
+  // statement no engine parses. Measured, isolating the POSITION:
+  //
+  //     PG     WITH c AS (DELETE FROM orders WHERE id=99 RETURNING id) SELECT id FROM c   legal
+  //            WITH c AS (DELETE FROM orders WHERE id=99)              SELECT 1           legal
+  //            SELECT * FROM (DELETE FROM orders WHERE id=99 RETURNING id) x    syntax error at "FROM"
+  //     MySQL  WITH c AS (DELETE …) SELECT 1                                    ERROR 1064
+  //     MSSQL  WITH c AS (DELETE …) SELECT 1                                    Msg 156
+  //     SQLite WITH c AS (DELETE … RETURNING id) SELECT id FROM c        near "DELETE": syntax error
+  //
+  // So exactly one position on exactly one dialect allows it — a Postgres CTE body — and RETURNING
+  // is NOT what makes it legal, which is why the check is on the position rather than the clause.
+  if (state.isInnerStatement && state.queryType !== QueryType.Select) {
+    const postgresDataModifyingCte =
+      state.isCteBody === true && config.databaseType === DatabaseType.Postgres;
+
+    if (!postgresDataModifyingCte) {
+      throw new ParserError(
+        ParserArea.General,
+        `A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child ` +
+          `callback would be spliced in wherever that child is inlined, which no engine parses. ` +
+          `${
+            config.databaseType === DatabaseType.Postgres
+              ? 'Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant.'
+              : `${dialectDisplayName(config.databaseType)} has no data-modifying CTE either — run the mutation as its own statement.`
+          }`,
+      );
+    }
+  }
+
   if (state.cteStates.length > 0) {
     const cte = defaultCte(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());

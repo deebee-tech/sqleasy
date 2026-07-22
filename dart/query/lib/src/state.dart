@@ -39,6 +39,13 @@ class QueryState {
   /// Stored procedure/function call state; null for non-Call queries.
   CallState? callState;
   bool isInnerStatement = false;
+
+  /// True when this inner statement is a CTE BODY specifically.
+  ///
+  /// Position matters: Postgres allows a data-modifying CTE (`WITH c AS (DELETE …) SELECT …`,
+  /// measured legal with AND without RETURNING) but allows no mutation in a derived table.
+  /// [isInnerStatement] alone cannot tell those apart.
+  bool isCteBody = false;
   int limit = 0;
 
   /// Rows to skip. `null` means the caller never asked; `0` means they asked for zero, which is NOT

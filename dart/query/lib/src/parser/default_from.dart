@@ -43,7 +43,16 @@ SqlHelper defaultFrom(
             ParserArea.from, 'MySQL does not support table owners');
       }
 
-      if (hasOwner) {
+      // A name that matches a CTE declared on THIS statement is the CTE, not a table, and a CTE
+      // lives in no schema — qualifying it sends the engine looking for a real relation:
+      //
+      //     WITH c AS (…) SELECT id FROM public.c   ->  PG:    relation "public.c" does not exist
+      //     WITH c AS (…) SELECT id FROM dbo.c      ->  MSSQL: Msg 208, invalid object name
+      //     WITH c AS (…) SELECT id FROM c          ->  both:  resolves to the CTE
+      final namesADeclaredCte =
+          state.cteStates.any((cte) => cte.name == fromState.tableName);
+
+      if (hasOwner && !namesADeclaredCte) {
         sqlHelper.addSqlSnippet(
             quoteIdentifier(fromState.owner, config.identifierDelimiters));
         sqlHelper.addSqlSnippet('.');

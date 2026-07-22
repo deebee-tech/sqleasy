@@ -118,6 +118,32 @@ SqlHelper defaultToSql(
   // this library does not do. Validating here, before the queryType dispatch, closes that.
   validateHints(state, config, ParserArea.general);
 
+  // A sub-builder is a SELECT. Building an INSERT/UPDATE/DELETE/CALL inside a child callback used
+  // to inline that statement verbatim wherever the child goes. Measured, isolating the POSITION:
+  //
+  //     PG     WITH c AS (DELETE … RETURNING id) SELECT id FROM c              legal
+  //            WITH c AS (DELETE …)              SELECT 1                      legal
+  //            SELECT * FROM (DELETE … RETURNING id) x            syntax error at "FROM"
+  //     MySQL  WITH c AS (DELETE …) SELECT 1                      ERROR 1064
+  //     MSSQL  WITH c AS (DELETE …) SELECT 1                      Msg 156
+  //     SQLite WITH c AS (DELETE … RETURNING id) SELECT id FROM c near "DELETE": syntax error
+  //
+  // Exactly one position on exactly one dialect allows it — a Postgres CTE body — and RETURNING is
+  // NOT what makes it legal, which is why the check is on the position.
+  if (state.isInnerStatement && state.queryType != QueryType.select) {
+    final postgresDataModifyingCte =
+        state.isCteBody && config.databaseType == DatabaseType.postgres;
+
+    if (!postgresDataModifyingCte) {
+      throw ParserError(
+        ParserArea.general,
+        'A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child '
+        'callback would be spliced in wherever that child is inlined, which no engine parses. '
+        '${config.databaseType == DatabaseType.postgres ? 'Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant.' : '${dialectDisplayName(config.databaseType)} has no data-modifying CTE either — run the mutation as its own statement.'}',
+      );
+    }
+  }
+
   if (state.cteStates.isNotEmpty) {
     final cte = defaultCte(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());

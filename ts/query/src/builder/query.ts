@@ -574,6 +574,31 @@ export class QueryBuilder {
     builder(child);
     child.state().isInnerStatement = true;
 
+    // CROSS APPLY / OUTER APPLY / CROSS JOIN LATERAL have NO `ON` slot in the grammar, and passing
+    // one emitted a bare trailing `ON` the engine rejects. Isolated on the harness:
+    //
+    //     MSSQL   … CROSS APPLY (SELECT 1 AS k) x ON x.k=1   Msg 156
+    //             … CROSS APPLY (SELECT 1 AS k) x            3 rows
+    //             … OUTER APPLY (SELECT 1 AS k) x ON x.k=1   Msg 156
+    //             … OUTER APPLY (SELECT 1 AS k) x            3 rows
+    //     PG      … CROSS JOIN LATERAL (SELECT 1 AS k) x ON x.k=1   syntax error at or near "ON"
+    //             … LEFT  JOIN LATERAL (SELECT 1 AS k) x            syntax error at or near ";"
+    //             … LEFT  JOIN LATERAL (SELECT 1 AS k) x ON TRUE    accepted
+    //
+    // The `ON TRUE` that `joinLeftLateral` already synthesizes is exactly what PG's LEFT form
+    // requires, so the emission was right — only an explicit predicate had nowhere to go. It does
+    // not need one: an APPLY/LATERAL subquery is correlated by construction, so the predicate
+    // belongs in its own WHERE, where every dialect accepts it. `joinLateral` (an INNER JOIN
+    // LATERAL) is the one form with a real ON slot and still requires its builder.
+    if (joinOnBuilder && joinType !== JoinType.Lateral) {
+      throw new ParserError(
+        ParserArea.Join,
+        'CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is ' +
+          'already correlated, so put the predicate in its own where() instead. Only joinLateral ' +
+          '(INNER JOIN LATERAL) has an ON slot.',
+      );
+    }
+
     const joinOnBuilderInstance = new JoinOnBuilder(this.#config);
     if (joinOnBuilder) {
       joinOnBuilder(joinOnBuilderInstance);
@@ -1881,6 +1906,7 @@ export class QueryBuilder {
     const child = this.#child();
     builder(child);
     child.state().isInnerStatement = true;
+    child.state().isCteBody = true;
 
     this.#state.cteStates.push({
       builderType: BuilderType.CteBuilder,
@@ -1903,6 +1929,7 @@ export class QueryBuilder {
     const child = this.#child();
     builder(child);
     child.state().isInnerStatement = true;
+    child.state().isCteBody = true;
 
     this.#state.cteStates.push({
       builderType: BuilderType.CteBuilder,

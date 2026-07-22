@@ -1748,7 +1748,8 @@ const defaultFrom = (state, config, mode, options) => {
 		}
 		if (fromState.builderType === BuilderType.FromTable) {
 			if (fromState.owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
-			if (fromState.owner !== "") {
+			const namesADeclaredCte = state.cteStates.some((cte) => cte.name === fromState.tableName);
+			if (fromState.owner !== "" && !namesADeclaredCte) {
 				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
 				sqlHelper.addSqlSnippet(".");
 			}
@@ -3286,6 +3287,9 @@ const defaultToSql = (state, config, mode, options) => {
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
 	if (config.databaseType !== DatabaseType.Mssql && hasExplicitTop(state)) throw new ParserError(ParserArea.LimitOffset, `${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead`);
 	validateHints(state, config, ParserArea.General);
+	if (state.isInnerStatement && state.queryType !== QueryType.Select) {
+		if (!(state.isCteBody === true && config.databaseType === DatabaseType.Postgres)) throw new ParserError(ParserArea.General, `A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. ${config.databaseType === DatabaseType.Postgres ? "Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant." : `${dialectDisplayName(config.databaseType)} has no data-modifying CTE either — run the mutation as its own statement.`}`);
+	}
 	if (state.cteStates.length > 0) {
 		const cte = defaultCte(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
@@ -4451,6 +4455,7 @@ var QueryBuilder = class QueryBuilder {
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
+		if (joinOnBuilder && joinType !== JoinType.Lateral) throw new ParserError(ParserArea.Join, "CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is already correlated, so put the predicate in its own where() instead. Only joinLateral (INNER JOIN LATERAL) has an ON slot.");
 		const joinOnBuilderInstance = new JoinOnBuilder(this.#config);
 		if (joinOnBuilder) joinOnBuilder(joinOnBuilderInstance);
 		this.#state.joinStates.push({
@@ -5450,6 +5455,7 @@ var QueryBuilder = class QueryBuilder {
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
+		child.state().isCteBody = true;
 		this.#state.cteStates.push({
 			builderType: BuilderType.CteBuilder,
 			name,
@@ -5465,6 +5471,7 @@ var QueryBuilder = class QueryBuilder {
 		const child = this.#child();
 		builder(child);
 		child.state().isInnerStatement = true;
+		child.state().isCteBody = true;
 		this.#state.cteStates.push({
 			builderType: BuilderType.CteBuilder,
 			name,

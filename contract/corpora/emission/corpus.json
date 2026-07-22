@@ -9875,7 +9875,7 @@
       }
     },
     {
-      "name": "cte referenced with fromTable is schema qualified",
+      "name": "cte referenced with fromTable is NOT schema qualified, so it resolves to the cte",
       "note": "A trap, pinned deliberately. `fromTable` always applies the dialect's default owner, so referencing a CTE that way emits `[dbo].[active_users]` on MSSQL and \"public\".\"active_users\" on Postgres — which does not resolve to the CTE. MySQL and SQLite have no default owner and come out fine. The dialect-neutral way to reference a CTE is fromRaw. A port must reproduce the qualification, not silently special-case CTE names.",
       "ops": [
         {
@@ -9924,10 +9924,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM [dbo].[active_users] AS [au] WHERE [au].[id] > @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'active', @p1 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM [active_users] AS [au] WHERE [au].[id] > @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'active', @p1 = 0;",
             "params": []
           },
-          "raw": "WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = active) SELECT * FROM [dbo].[active_users] AS [au] WHERE [au].[id] > 0;"
+          "raw": "WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = active) SELECT * FROM [active_users] AS [au] WHERE [au].[id] > 0;"
         },
         "mysql": {
           "prepared": {
@@ -9947,7 +9947,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "WITH \"active_users\" AS (SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"status\" = $1) SELECT * FROM \"public\".\"active_users\" AS \"au\" WHERE \"au\".\"id\" > $2;",
+            "sql": "WITH \"active_users\" AS (SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"status\" = $1) SELECT * FROM \"active_users\" AS \"au\" WHERE \"au\".\"id\" > $2;",
             "params": [
               {
                 "t": "string",
@@ -9959,7 +9959,7 @@
               }
             ]
           },
-          "raw": "WITH \"active_users\" AS (SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"status\" = active) SELECT * FROM \"public\".\"active_users\" AS \"au\" WHERE \"au\".\"id\" > 0;"
+          "raw": "WITH \"active_users\" AS (SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"status\" = active) SELECT * FROM \"active_users\" AS \"au\" WHERE \"au\".\"id\" > 0;"
         },
         "sqlite": {
           "prepared": {
@@ -19761,10 +19761,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [recent] ([id], [total]) AS (SELECT [o].[id], [o].[total] FROM [dbo].[orders] AS [o]) SELECT * FROM [dbo].[recent] AS [r];', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [recent] ([id], [total]) AS (SELECT [o].[id], [o].[total] FROM [dbo].[orders] AS [o]) SELECT * FROM [recent] AS [r];', N'';",
             "params": []
           },
-          "raw": "WITH [recent] ([id], [total]) AS (SELECT [o].[id], [o].[total] FROM [dbo].[orders] AS [o]) SELECT * FROM [dbo].[recent] AS [r];"
+          "raw": "WITH [recent] ([id], [total]) AS (SELECT [o].[id], [o].[total] FROM [dbo].[orders] AS [o]) SELECT * FROM [recent] AS [r];"
         },
         "mysql": {
           "prepared": {
@@ -19775,10 +19775,10 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "WITH \"recent\" (\"id\", \"total\") AS (SELECT \"o\".\"id\", \"o\".\"total\" FROM \"public\".\"orders\" AS \"o\") SELECT * FROM \"public\".\"recent\" AS \"r\";",
+            "sql": "WITH \"recent\" (\"id\", \"total\") AS (SELECT \"o\".\"id\", \"o\".\"total\" FROM \"public\".\"orders\" AS \"o\") SELECT * FROM \"recent\" AS \"r\";",
             "params": []
           },
-          "raw": "WITH \"recent\" (\"id\", \"total\") AS (SELECT \"o\".\"id\", \"o\".\"total\" FROM \"public\".\"orders\" AS \"o\") SELECT * FROM \"public\".\"recent\" AS \"r\";"
+          "raw": "WITH \"recent\" (\"id\", \"total\") AS (SELECT \"o\".\"id\", \"o\".\"total\" FROM \"public\".\"orders\" AS \"o\") SELECT * FROM \"recent\" AS \"r\";"
         },
         "sqlite": {
           "prepared": {
@@ -19880,10 +19880,10 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = @p0 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [dbo].[org_chart] AS [oc];', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = @p0 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [org_chart] AS [oc];', N'@p0 tinyint', @p0 = 1;",
             "params": []
           },
-          "raw": "WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = 1 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [dbo].[org_chart] AS [oc];"
+          "raw": "WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = 1 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [org_chart] AS [oc];"
         },
         "mysql": {
           "prepared": {
@@ -19899,7 +19899,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "WITH RECURSIVE \"org_chart\" (\"id\", \"manager_id\") AS (SELECT \"e\".\"id\", \"e\".\"manager_id\" FROM \"public\".\"employees\" AS \"e\" WHERE \"e\".\"id\" = $1 UNION ALL SELECT \"e2\".\"id\", \"e2\".\"manager_id\" FROM \"public\".\"employees\" AS \"e2\" INNER JOIN \"public\".\"org_chart\" AS \"oc\" ON \"e2\".\"manager_id\" = \"oc\".\"id\") SELECT * FROM \"public\".\"org_chart\" AS \"oc\";",
+            "sql": "WITH RECURSIVE \"org_chart\" (\"id\", \"manager_id\") AS (SELECT \"e\".\"id\", \"e\".\"manager_id\" FROM \"public\".\"employees\" AS \"e\" WHERE \"e\".\"id\" = $1 UNION ALL SELECT \"e2\".\"id\", \"e2\".\"manager_id\" FROM \"public\".\"employees\" AS \"e2\" INNER JOIN \"public\".\"org_chart\" AS \"oc\" ON \"e2\".\"manager_id\" = \"oc\".\"id\") SELECT * FROM \"org_chart\" AS \"oc\";",
             "params": [
               {
                 "t": "num",
@@ -19907,7 +19907,7 @@
               }
             ]
           },
-          "raw": "WITH RECURSIVE \"org_chart\" (\"id\", \"manager_id\") AS (SELECT \"e\".\"id\", \"e\".\"manager_id\" FROM \"public\".\"employees\" AS \"e\" WHERE \"e\".\"id\" = 1 UNION ALL SELECT \"e2\".\"id\", \"e2\".\"manager_id\" FROM \"public\".\"employees\" AS \"e2\" INNER JOIN \"public\".\"org_chart\" AS \"oc\" ON \"e2\".\"manager_id\" = \"oc\".\"id\") SELECT * FROM \"public\".\"org_chart\" AS \"oc\";"
+          "raw": "WITH RECURSIVE \"org_chart\" (\"id\", \"manager_id\") AS (SELECT \"e\".\"id\", \"e\".\"manager_id\" FROM \"public\".\"employees\" AS \"e\" WHERE \"e\".\"id\" = 1 UNION ALL SELECT \"e2\".\"id\", \"e2\".\"manager_id\" FROM \"public\".\"employees\" AS \"e2\" INNER JOIN \"public\".\"org_chart\" AS \"oc\" ON \"e2\".\"manager_id\" = \"oc\".\"id\") SELECT * FROM \"org_chart\" AS \"oc\";"
         },
         "sqlite": {
           "prepared": {
@@ -25380,6 +25380,109 @@
         },
         "sqlite": {
           "throws": "LimitOffset: ORDER BY is required when using OFFSET"
+        }
+      }
+    },
+    {
+      "name": "an apply or lateral join refuses an on clause the grammar has no slot for",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "joinCrossApply",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            }
+          ],
+          "on": [
+            {
+              "op": "on",
+              "aliasLeft": "x",
+              "columnLeft": "id",
+              "operator": "Equals",
+              "aliasRight": "o",
+              "columnRight": "id"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Join: CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is already correlated, so put the predicate in its own where() instead. Only joinLateral (INNER JOIN LATERAL) has an ON slot."
+        },
+        "mysql": {
+          "throws": "Join: CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is already correlated, so put the predicate in its own where() instead. Only joinLateral (INNER JOIN LATERAL) has an ON slot."
+        },
+        "postgres": {
+          "throws": "Join: CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is already correlated, so put the predicate in its own where() instead. Only joinLateral (INNER JOIN LATERAL) has an ON slot."
+        },
+        "sqlite": {
+          "throws": "Join: CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is already correlated, so put the predicate in its own where() instead. Only joinLateral (INNER JOIN LATERAL) has an ON slot."
+        }
+      }
+    },
+    {
+      "name": "a mutation built inside a derived table is refused, not spliced in",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "insertInto",
+              "table": "orders"
+            },
+            {
+              "op": "insertColumns",
+              "columns": [
+                "id"
+              ]
+            },
+            {
+              "op": "insertValues",
+              "rows": [
+                [
+                  {
+                    "t": "int",
+                    "v": 1
+                  }
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. MSSQL has no data-modifying CTE either — run the mutation as its own statement."
+        },
+        "mysql": {
+          "throws": "General: A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. MySQL has no data-modifying CTE either — run the mutation as its own statement."
+        },
+        "postgres": {
+          "throws": "General: A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant."
+        },
+        "sqlite": {
+          "throws": "General: A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. SQLite has no data-modifying CTE either — run the mutation as its own statement."
         }
       }
     }

@@ -524,6 +524,28 @@ class QueryBuilder
     builder(child);
     child.state.isInnerStatement = true;
 
+    // CROSS APPLY / OUTER APPLY / CROSS JOIN LATERAL have NO `ON` slot, and passing one emitted a
+    // bare trailing ON the engine rejects. Isolated on the harness:
+    //
+    //     MSSQL  … CROSS APPLY (SELECT 1 AS k) x ON x.k=1   Msg 156
+    //            … OUTER APPLY (SELECT 1 AS k) x ON x.k=1   Msg 156
+    //            … OUTER APPLY (SELECT 1 AS k) x            3 rows
+    //     PG     … CROSS JOIN LATERAL (…) x ON x.k=1        syntax error at or near "ON"
+    //            … LEFT  JOIN LATERAL (…) x                 syntax error at or near ";"
+    //            … LEFT  JOIN LATERAL (…) x ON TRUE         accepted
+    //
+    // The `ON TRUE` joinLeftLateral already synthesizes is what PG's LEFT form requires, so only an
+    // explicit predicate had nowhere to go — and it needs none: an APPLY/LATERAL subquery is
+    // correlated by construction, so the predicate belongs in its own WHERE.
+    if (on != null && joinType != JoinType.lateral) {
+      throw ParserError(
+        ParserArea.join,
+        'CROSS APPLY, OUTER APPLY and CROSS/LEFT JOIN LATERAL take no ON clause — the subquery is '
+        'already correlated, so put the predicate in its own where() instead. Only joinLateral '
+        '(INNER JOIN LATERAL) has an ON slot.',
+      );
+    }
+
     final joinOnBuilder = JoinOnBuilder(_config);
     on?.call(joinOnBuilder);
 
@@ -1302,6 +1324,7 @@ class QueryBuilder
     final child = _child();
     builder(child);
     child.state.isInnerStatement = true;
+    child.state.isCteBody = true;
 
     _state.cteStates.add(CteState()
       ..builderType = BuilderType.cteBuilder

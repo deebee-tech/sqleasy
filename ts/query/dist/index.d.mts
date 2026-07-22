@@ -1291,6 +1291,15 @@ type QueryState = {
   callState: CallState | undefined;
   /** True when this state represents a nested subquery, not the outer query. */
   isInnerStatement: boolean;
+  /**
+   * True when this inner statement is a CTE BODY specifically.
+   *
+   * Position matters: Postgres allows a data-modifying CTE (`WITH c AS (DELETE … ) SELECT …`,
+   * measured legal with AND without RETURNING), but allows no mutation in a derived table
+   * (`SELECT * FROM (DELETE …) x` is a syntax error there too). `isInnerStatement` alone cannot
+   * tell those apart, so the CTE body says so.
+   */
+  isCteBody?: boolean;
   /** Maximum row count. `0` is unreachable — `limit()` refuses a non-positive value. */
   limit: number;
   /** When true, emit `WITH TIES` alongside the row limit (dialect-specific). */
