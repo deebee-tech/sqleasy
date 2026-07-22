@@ -66,15 +66,18 @@ jobs:
       # Verify the WHOLE graph before releasing any single package. In a contract-first monorepo a
       # change to one package can invalidate another's conformance, so a green package in isolation
       # is not evidence the family still agrees.
-      # PUB_TOKEN must be DEFINED, even though nothing here publishes to pub.dev. This job carries
-      # `id-token: write` for JSR, which makes `setup-dart` save a pub.dev OIDC credential — and every
-      # subsequent `dart pub get` then fails with "Saved credential ... requires environment variable
-      # named PUB_TOKEN but not defined" (exit 65). The Quality job is unaffected only because it has
-      # no id-token permission. An empty value satisfies the lookup; resolving public packages needs
-      # no auth.
+      # Drop the pub.dev credential `setup-dart` saves. This job carries `id-token: write` for JSR,
+      # which makes the action register a pub.dev OIDC credential; every later `dart pub get` then
+      # fails with "Saved credential ... requires environment variable named PUB_TOKEN but not
+      # defined" (exit 65). The Quality job runs the identical commands and is unaffected only because
+      # it has no id-token permission.
+      #
+      # Setting PUB_TOKEN to an empty string does NOT work — Dart treats empty as undefined. Removing
+      # the credential is also the honest fix: nothing in this workflow publishes to pub.dev, and
+      # resolving public packages needs no auth at all, so feeding it a placeholder token would just
+      # send a bogus Authorization header.
+      - run: dart pub token remove --all || true
       - run: pnpm turbo run typecheck lint test build
-        env:
-          PUB_TOKEN: ''
       - run: pnpm run check:deps && pnpm run check:parity && pnpm run check:contract
 
       - name: Release
