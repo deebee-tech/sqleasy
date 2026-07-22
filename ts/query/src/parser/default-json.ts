@@ -2,14 +2,12 @@ import type { Dialect } from '../configuration/configuration';
 import { DatabaseType } from '../enums/database-type';
 import { JsonExtractMode } from '../enums/json-extract-mode';
 import type { ParserArea } from '../enums/parser-area';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper, sqlStringLiteral } from '../helpers/sql';
 
 const columnRef = (config: Dialect, tableNameOrAlias: string, columnName: string): string =>
-  quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) +
-  '.' +
-  quoteIdentifier(columnName, config.identifierDelimiters);
+  qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 
 /**
  * Emits a dialect-specific JSON path extraction expression for `column` at `path`.

@@ -2,7 +2,7 @@ import type { Dialect } from '../configuration/configuration';
 import { DatabaseType } from '../enums/database-type';
 import { FullTextMode } from '../enums/full-text-mode';
 import type { ParserArea } from '../enums/parser-area';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper, sqlStringLiteral } from '../helpers/sql';
 
@@ -12,9 +12,7 @@ export type FullTextColumnRef = {
 };
 
 const columnRef = (config: Dialect, tableNameOrAlias: string, columnName: string): string =>
-  quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) +
-  '.' +
-  quoteIdentifier(columnName, config.identifierDelimiters);
+  qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 
 /**
  * Emits a dialect-specific full-text predicate for one or more columns and a bound query term.

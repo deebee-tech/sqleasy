@@ -5,9 +5,8 @@ import '../identifier.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 
-String _columnRef(Dialect config, FullTextColumnRef column) =>
-    '${quoteIdentifier(column.tableNameOrAlias, config.identifierDelimiters)}.'
-    '${quoteIdentifier(column.columnName, config.identifierDelimiters)}';
+String _columnRef(Dialect config, FullTextColumnRef column) => qualifiedColumn(
+    column.tableNameOrAlias, column.columnName, config.identifierDelimiters);
 
 /// Emits a dialect-specific full-text predicate for [columns] and a bound query term.
 /// The query value is appended by the caller via [SqlHelper.addDynamicValue].

@@ -299,11 +299,8 @@ SqlHelper _renderJoinOnPredicate(
     }
 
     if (on.joinOnOperator == JoinOnOperator.on) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 
       sqlHelper.addSqlSnippet(' ');
 
@@ -311,22 +308,16 @@ SqlHelper _renderJoinOnPredicate(
 
       sqlHelper.addSqlSnippet(' ');
 
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.aliasRight, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.columnRight, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          on.aliasRight, on.columnRight, config.identifierDelimiters));
 
       spaceAfter();
       continue;
     }
 
     if (on.joinOnOperator == JoinOnOperator.value) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 
       sqlHelper.addSqlSnippet(' ');
 
@@ -342,11 +333,8 @@ SqlHelper _renderJoinOnPredicate(
 
     if (on.joinOnOperator == JoinOnOperator.inValues ||
         on.joinOnOperator == JoinOnOperator.notInValues) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 
       sqlHelper.addSqlSnippet(on.joinOnOperator == JoinOnOperator.notInValues
           ? ' NOT IN ('
@@ -369,11 +357,8 @@ SqlHelper _renderJoinOnPredicate(
 
     if (on.joinOnOperator == JoinOnOperator.between ||
         on.joinOnOperator == JoinOnOperator.notBetween) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 
       sqlHelper.addSqlSnippet(on.joinOnOperator == JoinOnOperator.notBetween
           ? ' NOT BETWEEN '

@@ -41,11 +41,8 @@ SqlHelper defaultSelect(
     for (var i = 0; i < distinctOnColumns.length; i++) {
       final column = distinctOnColumns[i];
       sqlHelper.addSqlSnippet(
-        quoteIdentifier(column.tableNameOrAlias, config.identifierDelimiters),
-      );
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-        quoteIdentifier(column.columnName, config.identifierDelimiters),
+        qualifiedColumn(column.tableNameOrAlias, column.columnName,
+            config.identifierDelimiters),
       );
 
       if (i < distinctOnColumns.length - 1) {
@@ -80,12 +77,8 @@ SqlHelper defaultSelect(
 
     if (selectState.builderType == BuilderType.selectColumn) {
       sqlHelper.addSqlSnippet(
-        quoteIdentifier(
-            selectState.tableNameOrAlias, config.identifierDelimiters),
-      );
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-        quoteIdentifier(selectState.columnName, config.identifierDelimiters),
+        qualifiedColumn(selectState.tableNameOrAlias, selectState.columnName,
+            config.identifierDelimiters),
       );
 
       if ((selectState.alias ?? '').isNotEmpty) {

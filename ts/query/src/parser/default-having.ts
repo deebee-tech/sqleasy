@@ -3,7 +3,7 @@ import { BuilderType } from '../enums/builder-type';
 import { FullTextMode } from '../enums/full-text-mode';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { HavingState } from '../state/having';
@@ -175,10 +175,11 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.Having) {
-      const columnSql =
-        quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters) +
-        '.' +
-        quoteIdentifier(cur.columnName, config.identifierDelimiters);
+      const columnSql = qualifiedColumn(
+        cur.tableNameOrAlias,
+        cur.columnName,
+        config.identifierDelimiters,
+      );
 
       emitComparisonPredicate(
         sqlHelper,
@@ -193,9 +194,9 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.HavingBetween) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' ');
       sqlHelper.addSqlSnippet('BETWEEN ');
       sqlHelper.addDynamicValue(cur.values[0]);
@@ -215,9 +216,9 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.HavingInBuilder) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' IN (');
       const subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
@@ -232,9 +233,9 @@ export const defaultHaving = (
         throw new ParserError(ParserArea.Having, 'IN requires at least one value');
       }
 
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' IN (');
 
       for (let j = 0; j < cur.values.length; j++) {
@@ -259,9 +260,9 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.HavingNotInBuilder) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' NOT IN (');
       const subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
@@ -276,9 +277,9 @@ export const defaultHaving = (
         throw new ParserError(ParserArea.Having, 'NOT IN requires at least one value');
       }
 
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' NOT IN (');
 
       for (let j = 0; j < cur.values.length; j++) {
@@ -294,18 +295,18 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.HavingNotNull) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' IS NOT NULL');
       spaceAfter();
       continue;
     }
 
     if (cur.builderType === BuilderType.HavingNull) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
+      );
       sqlHelper.addSqlSnippet(' IS NULL');
       spaceAfter();
       continue;

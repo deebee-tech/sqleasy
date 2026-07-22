@@ -46,8 +46,8 @@ SqlHelper defaultWindow(
         sqlHelper.addSqlSnippet(partition.raw!);
       } else {
         sqlHelper.addSqlSnippet(
-          '${quoteIdentifier(partition.tableNameOrAlias, config.identifierDelimiters)}.'
-          '${quoteIdentifier(partition.columnName, config.identifierDelimiters)}',
+          qualifiedColumn(partition.tableNameOrAlias, partition.columnName,
+              config.identifierDelimiters),
         );
       }
       if (i < windowState.partitionByStates.length - 1) {

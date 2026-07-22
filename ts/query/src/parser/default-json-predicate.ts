@@ -3,7 +3,7 @@ import { DatabaseType } from '../enums/database-type';
 import { FullTextMode } from '../enums/full-text-mode';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
@@ -118,9 +118,9 @@ export const emitGroupByColumnRef = (
   tableNameOrAlias: string,
   columnName: string,
 ): void => {
-  sqlHelper.addSqlSnippet(quoteIdentifier(tableNameOrAlias, config.identifierDelimiters));
-  sqlHelper.addSqlSnippet('.');
-  sqlHelper.addSqlSnippet(quoteIdentifier(columnName, config.identifierDelimiters));
+  sqlHelper.addSqlSnippet(
+    qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters),
+  );
 };
 
 export const defaultJson = (_state: QueryState, _config: Dialect, mode: ParserMode): SqlHelper =>

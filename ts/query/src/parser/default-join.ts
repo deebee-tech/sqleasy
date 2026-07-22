@@ -6,7 +6,7 @@ import { JoinOperator } from '../enums/join-operator';
 import { JoinType } from '../enums/join-type';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn, quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { JoinOnState } from '../state/join-on';
@@ -299,9 +299,9 @@ const renderJoinOnPredicate = (
     }
 
     if (on.joinOnOperator === JoinOnOperator.On) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters),
+      );
 
       sqlHelper.addSqlSnippet(' ');
 
@@ -334,18 +334,18 @@ const renderJoinOnPredicate = (
 
       sqlHelper.addSqlSnippet(' ');
 
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasRight, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnRight, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(on.aliasRight, on.columnRight, config.identifierDelimiters),
+      );
 
       spaceAfter();
       continue;
     }
 
     if (on.joinOnOperator === JoinOnOperator.Value) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters),
+      );
 
       sqlHelper.addSqlSnippet(' ');
 
@@ -388,9 +388,9 @@ const renderJoinOnPredicate = (
       on.joinOnOperator === JoinOnOperator.InValues ||
       on.joinOnOperator === JoinOnOperator.NotInValues
     ) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters),
+      );
 
       sqlHelper.addSqlSnippet(
         on.joinOnOperator === JoinOnOperator.NotInValues ? ' NOT IN (' : ' IN (',
@@ -415,9 +415,9 @@ const renderJoinOnPredicate = (
       on.joinOnOperator === JoinOnOperator.Between ||
       on.joinOnOperator === JoinOnOperator.NotBetween
     ) {
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters),
+      );
 
       sqlHelper.addSqlSnippet(
         on.joinOnOperator === JoinOnOperator.NotBetween ? ' NOT BETWEEN ' : ' BETWEEN ',

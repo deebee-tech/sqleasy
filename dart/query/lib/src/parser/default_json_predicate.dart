@@ -122,9 +122,6 @@ void emitGroupByColumnRef(
   String tableNameOrAlias,
   String columnName,
 ) {
-  sqlHelper.addSqlSnippet(
-      quoteIdentifier(tableNameOrAlias, config.identifierDelimiters));
-  sqlHelper.addSqlSnippet('.');
-  sqlHelper
-      .addSqlSnippet(quoteIdentifier(columnName, config.identifierDelimiters));
+  sqlHelper.addSqlSnippet(qualifiedColumn(
+      tableNameOrAlias, columnName, config.identifierDelimiters));
 }

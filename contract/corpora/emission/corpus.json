@@ -23679,6 +23679,461 @@
           "throws": "Merge: SQLite has no MERGE statement — it is native T-SQL only"
         }
       }
+    },
+    {
+      "name": "unqualified column in where emits no table prefix",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "where",
+          "table": "",
+          "column": "total",
+          "operator": "Equals",
+          "value": {
+            "t": "int",
+            "v": 1
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] WHERE [total] = 1;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` WHERE `total` = ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `orders` WHERE `total` = 1;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" WHERE \"total\" = $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" WHERE \"total\" = 1;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" WHERE \"total\" = ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"orders\" WHERE \"total\" = 1;"
+        }
+      }
+    },
+    {
+      "name": "unqualified column in order by emits no table prefix",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "orderByColumn",
+          "table": "",
+          "column": "total",
+          "direction": "Descending"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] ORDER BY [total] DESC;', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] ORDER BY [total] DESC;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` ORDER BY `total` DESC;",
+            "params": []
+          },
+          "raw": "SELECT * FROM `orders` ORDER BY `total` DESC;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" ORDER BY \"total\" DESC;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" ORDER BY \"total\" DESC;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" ORDER BY \"total\" DESC;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"orders\" ORDER BY \"total\" DESC;"
+        }
+      }
+    },
+    {
+      "name": "unqualified column in select emits no table prefix",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "total",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [total] FROM [dbo].[orders];', N'';",
+            "params": []
+          },
+          "raw": "SELECT [total] FROM [dbo].[orders];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `total` FROM `orders`;",
+            "params": []
+          },
+          "raw": "SELECT `total` FROM `orders`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"total\" FROM \"public\".\"orders\";",
+            "params": []
+          },
+          "raw": "SELECT \"total\" FROM \"public\".\"orders\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"total\" FROM \"orders\";",
+            "params": []
+          },
+          "raw": "SELECT \"total\" FROM \"orders\";"
+        }
+      }
+    },
+    {
+      "name": "unqualified column in group by and having emits no table prefix",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "total",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "groupByColumn",
+          "table": "",
+          "column": "total"
+        },
+        {
+          "op": "having",
+          "table": "",
+          "column": "total",
+          "operator": "GreaterThan",
+          "value": {
+            "t": "int",
+            "v": 1
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [total] FROM [dbo].[orders] GROUP BY [total] HAVING [total] > @p0;', N'@p0 tinyint', @p0 = 1;",
+            "params": []
+          },
+          "raw": "SELECT [total] FROM [dbo].[orders] GROUP BY [total] HAVING [total] > 1;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `total` FROM `orders` GROUP BY `total` HAVING `total` > ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT `total` FROM `orders` GROUP BY `total` HAVING `total` > 1;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"total\" FROM \"public\".\"orders\" GROUP BY \"total\" HAVING \"total\" > $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"total\" FROM \"public\".\"orders\" GROUP BY \"total\" HAVING \"total\" > 1;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"total\" FROM \"orders\" GROUP BY \"total\" HAVING \"total\" > ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"total\" FROM \"orders\" GROUP BY \"total\" HAVING \"total\" > 1;"
+        }
+      }
+    },
+    {
+      "name": "unqualified column in where between emits no table prefix",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "whereBetween",
+          "table": "",
+          "column": "total",
+          "from": {
+            "t": "int",
+            "v": 1
+          },
+          "to": {
+            "t": "int",
+            "v": 9
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] BETWEEN @p0 AND @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 9;",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] WHERE [total] BETWEEN 1 AND 9;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` WHERE `total` BETWEEN ? AND ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 9
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `orders` WHERE `total` BETWEEN 1 AND 9;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" WHERE \"total\" BETWEEN $1 AND $2;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 9
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" WHERE \"total\" BETWEEN 1 AND 9;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" WHERE \"total\" BETWEEN ? AND ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 9
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"orders\" WHERE \"total\" BETWEEN 1 AND 9;"
+        }
+      }
+    },
+    {
+      "name": "unqualified column in where null emits no table prefix",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "whereNull",
+          "table": "",
+          "column": "note"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [note] IS NULL;', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] WHERE [note] IS NULL;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` WHERE `note` IS NULL;",
+            "params": []
+          },
+          "raw": "SELECT * FROM `orders` WHERE `note` IS NULL;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" WHERE \"note\" IS NULL;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" WHERE \"note\" IS NULL;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" WHERE \"note\" IS NULL;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"orders\" WHERE \"note\" IS NULL;"
+        }
+      }
+    },
+    {
+      "name": "unqualified column in where in values emits no table prefix",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "whereInValues",
+          "table": "",
+          "column": "total",
+          "values": [
+            {
+              "t": "int",
+              "v": 1
+            },
+            {
+              "t": "int",
+              "v": 2
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] IN (@p0, @p1);', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 2;",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] WHERE [total] IN (1, 2);"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` WHERE `total` IN (?, ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `orders` WHERE `total` IN (1, 2);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" WHERE \"total\" IN ($1, $2);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" WHERE \"total\" IN (1, 2);"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" WHERE \"total\" IN (?, ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"orders\" WHERE \"total\" IN (1, 2);"
+        }
+      }
     }
   ]
 }

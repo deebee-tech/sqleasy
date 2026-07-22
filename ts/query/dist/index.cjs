@@ -665,6 +665,29 @@ function quoteIdentifier(name, delimiters) {
 	const escaped = id.split(delimiters.end).join(delimiters.end + delimiters.end);
 	return delimiters.begin + escaped + delimiters.end;
 }
+/**
+* A column reference, qualified by its table or alias only when there IS one.
+*
+* An empty alias means "unqualified" — the convention `fromTable(name, '')` has always used, and
+* the one the emission corpus pins ("from table without an alias"). Every other clause used to
+* concatenate `quoteIdentifier(alias) + '.' + quoteIdentifier(column)` unconditionally, so the same
+* empty string that correctly suppressed `AS ""` in FROM produced a zero-length delimited
+* identifier everywhere else. Measured against the harness on the shipped 11.0.0:
+*
+*     WHERE ""."id" = $1   ->  Postgres: ERROR: zero-length delimited identifier
+*     WHERE ""."id" = ?    ->  SQLite:   SQLITE_ERROR: no such column: .id
+*     WHERE ``.`id` = ?    ->  MySQL:    ACCEPTED — returns the row
+*
+* MySQL accepting it is what makes this worse than a plain syntax error: the same builder output
+* runs on one dialect and is rejected by the others, which is precisely the portability trap this
+* library exists to make impossible. Routing every qualified reference through here is what keeps
+* the FROM clause's convention true in all of them.
+*/
+function qualifiedColumn(tableNameOrAlias, columnName, delimiters) {
+	const column = quoteIdentifier(columnName, delimiters);
+	if (tableNameOrAlias === void 0 || tableNameOrAlias === "") return column;
+	return quoteIdentifier(tableNameOrAlias, delimiters) + "." + column;
+}
 //#endregion
 //#region src/parser/default-call.ts
 const AREA = ParserArea.Call;
@@ -1144,9 +1167,7 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.On) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
 			switch (on.joinOperator) {
 				case JoinOperator.Equals:
@@ -1175,16 +1196,12 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 					break;
 			}
 			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasRight, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnRight, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasRight, on.columnRight, config.identifierDelimiters));
 			spaceAfter();
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.Value) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
 			switch (on.joinOperator) {
 				case JoinOperator.Equals:
@@ -1218,9 +1235,7 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.InValues || on.joinOnOperator === JoinOnOperator.NotInValues) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(on.joinOnOperator === JoinOnOperator.NotInValues ? " NOT IN (" : " IN (");
 			const values = on.valuesRight ?? [];
 			values.forEach((value, valueIndex) => {
@@ -1232,9 +1247,7 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.Between || on.joinOnOperator === JoinOnOperator.NotBetween) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.aliasLeft, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(on.joinOnOperator === JoinOnOperator.NotBetween ? " NOT BETWEEN " : " BETWEEN ");
 			const [lower, upper] = on.valuesRight ?? [];
 			sqlHelper.addDynamicValue(lower);
@@ -1658,7 +1671,7 @@ const emitComparisonPredicate = (sqlHelper, config, columnSql, whereOperator, va
 };
 //#endregion
 //#region src/parser/default-full-text.ts
-const columnRef$2 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+const columnRef$2 = (config, tableNameOrAlias, columnName) => qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 /**
 * Emits a dialect-specific full-text predicate for one or more columns and a bound query term.
 * The query value is appended by the caller via {@link SqlHelper.addDynamicValue}.
@@ -1691,19 +1704,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 			sqlHelper.addSqlSnippet(", ");
 			return;
 		}
-		sqlHelper.addSqlSnippet("to_tsvector(");
-		sqlHelper.addSqlSnippet(sqlStringLiteral("english"));
-		sqlHelper.addSqlSnippet(", ");
-		sqlHelper.addSqlSnippet("concat(");
-		columns.forEach((col, i) => {
-			sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
-			if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ' ', ");
-		});
-		sqlHelper.addSqlSnippet(")) @@ ");
-		sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
-		sqlHelper.addSqlSnippet(sqlStringLiteral("english"));
-		sqlHelper.addSqlSnippet(", ");
-		return;
+		throw new ParserError(area, "Postgres full-text matches ONE tsvector — pass a single column, index a generated tsvector column, or build the document yourself with whereMatchRaw");
 	}
 	if (config.databaseType === DatabaseType.Mysql) {
 		if (mode === FullTextMode.Phrase) throw new ParserError(area, "MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw");
@@ -1756,7 +1757,7 @@ const emitFullTextValueSuffix = (sqlHelper, config, mode) => {
 };
 //#endregion
 //#region src/parser/default-json.ts
-const columnRef$1 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+const columnRef$1 = (config, tableNameOrAlias, columnName) => qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 /**
 * Emits a dialect-specific JSON path extraction expression for `column` at `path`.
 * `path` is a single Postgres key segment (`'email'`) or a JSON path (`'$.email'`) on other dialects.
@@ -1863,9 +1864,7 @@ const emitFullTextMatchPredicate = (sqlHelper, config, columns, mode, value, are
 };
 /** Emits one GROUP BY column reference. */
 const emitGroupByColumnRef = (sqlHelper, config, tableNameOrAlias, columnName) => {
-	sqlHelper.addSqlSnippet(quoteIdentifier(tableNameOrAlias, config.identifierDelimiters));
-	sqlHelper.addSqlSnippet(".");
-	sqlHelper.addSqlSnippet(quoteIdentifier(columnName, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters));
 };
 //#endregion
 //#region src/parser/default-group-by.ts
@@ -2021,14 +2020,12 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.Having) {
-			emitComparisonPredicate(sqlHelper, config, quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Having);
+			emitComparisonPredicate(sqlHelper, config, qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Having);
 			spaceAfter();
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingBetween) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet("BETWEEN ");
 			sqlHelper.addDynamicValue(cur.values[0]);
@@ -2046,9 +2043,7 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingInBuilder) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
@@ -2058,9 +2053,7 @@ const defaultHaving = (state, config, mode, options) => {
 		}
 		if (cur.builderType === BuilderType.HavingInValues) {
 			if (cur.values.length === 0) throw new ParserError(ParserArea.Having, "IN requires at least one value");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			for (let j = 0; j < cur.values.length; j++) {
 				sqlHelper.addDynamicValue(cur.values[j]);
@@ -2079,9 +2072,7 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingNotInBuilder) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
@@ -2091,9 +2082,7 @@ const defaultHaving = (state, config, mode, options) => {
 		}
 		if (cur.builderType === BuilderType.HavingNotInValues) {
 			if (cur.values.length === 0) throw new ParserError(ParserArea.Having, "NOT IN requires at least one value");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			for (let j = 0; j < cur.values.length; j++) {
 				sqlHelper.addDynamicValue(cur.values[j]);
@@ -2104,17 +2093,13 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingNotNull) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IS NOT NULL");
 			spaceAfter();
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingNull) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IS NULL");
 			spaceAfter();
 			continue;
@@ -2531,7 +2516,7 @@ const defaultLimitOffset = (state, config, mode) => {
 * index-ordered scans, applied to queries that never asked about NULLs at all.
 */
 const emitOrderByTerm = (sqlHelper, config, tableNameOrAlias, columnName, direction, nulls) => {
-	const columnSql = quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
+	const columnSql = qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 	const hasNativeNulls = config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite;
 	if (nulls !== NullsOrder.None && !hasNativeNulls) throw new ParserError(ParserArea.OrderBy, `${dialectDisplayName(config.databaseType)} has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it`);
 	sqlHelper.addSqlSnippet(columnSql);
@@ -2628,7 +2613,7 @@ const defaultWindow = (windowState, config, mode) => {
 		sqlHelper.addSqlSnippet("PARTITION BY ");
 		windowState.partitionByStates.forEach((partition, i) => {
 			if (partition.raw !== void 0) sqlHelper.addSqlSnippet(partition.raw);
-			else sqlHelper.addSqlSnippet(quoteIdentifier(partition.tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(partition.columnName, config.identifierDelimiters));
+			else sqlHelper.addSqlSnippet(qualifiedColumn(partition.tableNameOrAlias, partition.columnName, config.identifierDelimiters));
 			if (i < windowState.partitionByStates.length - 1) sqlHelper.addSqlSnippet(", ");
 		});
 		needsSpace = true;
@@ -2671,9 +2656,7 @@ const defaultSelect = (state, config, mode, options) => {
 		if (state.distinct) throw new ParserError(ParserArea.Select, "Cannot combine distinct() with distinctOn()");
 		sqlHelper.addSqlSnippet("DISTINCT ON (");
 		state.distinctOnColumns.forEach((column, i) => {
-			sqlHelper.addSqlSnippet(quoteIdentifier(column.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(column.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(column.tableNameOrAlias, column.columnName, config.identifierDelimiters));
 			if (i < state.distinctOnColumns.length - 1) sqlHelper.addSqlSnippet(", ");
 		});
 		sqlHelper.addSqlSnippet(") ");
@@ -2691,9 +2674,7 @@ const defaultSelect = (state, config, mode, options) => {
 			continue;
 		}
 		if (selectState.builderType === BuilderType.SelectColumn) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(selectState.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(selectState.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(selectState.tableNameOrAlias, selectState.columnName, config.identifierDelimiters));
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
@@ -2906,14 +2887,12 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.Where) {
-			emitComparisonPredicate(sqlHelper, config, quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Where);
+			emitComparisonPredicate(sqlHelper, config, qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Where);
 			spaceAfter();
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereBetween) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet("BETWEEN ");
 			sqlHelper.addDynamicValue(cur.values[0]);
@@ -2931,9 +2910,7 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereInBuilder) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
@@ -2943,9 +2920,7 @@ const defaultWhere = (state, config, mode, options) => {
 		}
 		if (cur.builderType === BuilderType.WhereInValues) {
 			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "IN requires at least one value");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			for (let j = 0; j < cur.values.length; j++) {
 				sqlHelper.addDynamicValue(cur.values[j]);
@@ -2964,9 +2939,7 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereNotInBuilder) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
@@ -2976,9 +2949,7 @@ const defaultWhere = (state, config, mode, options) => {
 		}
 		if (cur.builderType === BuilderType.WhereNotInValues) {
 			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "NOT IN requires at least one value");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			for (let j = 0; j < cur.values.length; j++) {
 				sqlHelper.addDynamicValue(cur.values[j]);
@@ -2989,17 +2960,13 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereNotNull) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IS NOT NULL");
 			spaceAfter();
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereNull) {
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(".");
-			sqlHelper.addSqlSnippet(quoteIdentifier(cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IS NULL");
 			spaceAfter();
 			continue;
@@ -4201,6 +4168,17 @@ var QueryBuilder = class QueryBuilder {
 	joinOuterApply = (alias, builder, joinOnBuilder) => {
 		return this.#joinApply(JoinType.OuterApply, alias, builder, joinOnBuilder);
 	};
+	/**
+	* Postgres / MySQL `CROSS JOIN LATERAL` — those engines' spelling of {@link joinCrossApply}.
+	*
+	* NOT a synonym for {@link joinLateral}, which is a third join taking its own ON condition. The
+	* three are genuinely different — measured: `CROSS JOIN LATERAL … AS x`,
+	* `LEFT JOIN LATERAL … ON TRUE`, and `JOIN LATERAL … ON <cond>` — so this renames one of them per
+	* dialect rather than collapsing any two.
+	*/
+	joinCrossLateral = (alias, builder, joinOnBuilder) => this.joinCrossApply(alias, builder, joinOnBuilder);
+	/** Postgres / MySQL `LEFT JOIN LATERAL … ON TRUE` — their spelling of {@link joinOuterApply}. */
+	joinLeftLateral = (alias, builder, joinOnBuilder) => this.joinOuterApply(alias, builder, joinOnBuilder);
 	/** Postgres/MySQL `JOIN LATERAL (subquery) AS alias ON ...`. MSSQL/SQLite throw. */
 	joinLateral = (alias, builder, joinOnBuilder) => {
 		return this.#joinApply(JoinType.Lateral, alias, builder, joinOnBuilder);
@@ -5358,7 +5336,15 @@ var QueryBuilder = class QueryBuilder {
 	/** {@link updlock}, failing immediately on an already-locked row (`, NOWAIT`). */
 	updlockNowait = () => this.forUpdateNowait();
 	/** {@link updlock}, skipping already-locked rows (`, READPAST`). */
-	updlockSkipLocked = () => this.forUpdateSkipLocked();
+	/**
+	* MSSQL `WITH (UPDLOCK, ROWLOCK, READPAST)` — the T-SQL spelling of {@link forUpdateSkipLocked}.
+	*
+	* Named for the hint that does the work. It was `updlockSkipLocked`, which was half-translated:
+	* `updlock` is T-SQL while `SkipLocked` is Postgres/MySQL vocabulary, and the already-adjudicated
+	* `RowLockWait.SkipLocked` cell records MSSQL's own term as READPAST — so the op and the enum
+	* contradicted each other. UPDLOCK + ROWLOCK + READPAST is Microsoft's documented queue idiom.
+	*/
+	updlockReadpast = () => this.forUpdateSkipLocked();
 	/** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
 	forShare = () => {
 		this.#state.rowLock = {
@@ -6165,6 +6151,7 @@ exports.parseMultiRaw = parseMultiRaw;
 exports.parsePrepared = parsePrepared;
 exports.parseRaw = parseRaw;
 exports.postgresConfiguration = postgresConfiguration;
+exports.qualifiedColumn = qualifiedColumn;
 exports.quoteIdentifier = quoteIdentifier;
 exports.raw = raw;
 exports.source = source;

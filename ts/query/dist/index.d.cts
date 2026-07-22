@@ -1480,7 +1480,7 @@ type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBu
  * (default-insert). `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres-only (default-select).
  */
-type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw';
+type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossLateral' | 'joinLeftLateral';
 /**
  * MySQL cannot run these.
  *
@@ -1492,7 +1492,7 @@ type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fro
  * in FROM (default-from). `procParamNamed` — no named parameters in CALL (default-call).
  * `returning`/`returningRaw`/`clearReturning` — no RETURNING clause (default-returning).
  */
-type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinctOn' | 'clearDistinctOn' | 'limitWithTies' | 'clearLimitWithTies' | 'groupByCube' | 'groupByGroupingSets' | 'fromTableFunction' | 'fromTableFunctionWithOwner' | 'procParamNamed' | 'returning' | 'returningRaw' | 'clearReturning' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'updlock' | 'updlockNowait' | 'updlockSkipLocked';
+type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinctOn' | 'clearDistinctOn' | 'limitWithTies' | 'clearLimitWithTies' | 'groupByCube' | 'groupByGroupingSets' | 'fromTableFunction' | 'fromTableFunctionWithOwner' | 'procParamNamed' | 'returning' | 'returningRaw' | 'clearReturning' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'joinCrossApply' | 'joinOuterApply';
 /**
  * Postgres cannot run these.
  *
@@ -1500,7 +1500,7 @@ type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinc
  * T-SQL `OPTION (...)`. `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * Everything else Postgres does; it is the widest surface, and `distinctOn` is its own.
  */
-type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex' | 'updlock' | 'updlockNowait' | 'updlockSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw';
+type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossApply' | 'joinOuterApply';
 /**
  * SQLite cannot run these — the narrowest surface.
  *
@@ -1513,7 +1513,7 @@ type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hint
  * `limitWithTies`/`clearLimitWithTies` — no WITH TIES. `merge`, `top`/`clearTop` — T-SQL only.
  * `distinctOn`/`clearDistinctOn` — Postgres-only.
  */
-type AbsentOnSqlite = 'callProcedure' | 'callProcedureWithOwner' | 'callFunction' | 'callFunctionWithOwner' | 'clearCall' | 'procParam' | 'procParams' | 'procParamNamed' | 'procParamInOut' | 'procParamOut' | 'procParamRaw' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'clearRowLock' | 'fromLateral' | 'joinLateral' | 'joinCrossApply' | 'joinOuterApply' | 'groupByRollup' | 'groupByCube' | 'groupByGroupingSets' | 'whereJsonContains' | 'havingJsonContains' | 'hintUseIndex' | 'hintForceIndex' | 'hintMssqlOption' | 'limitWithTies' | 'clearLimitWithTies' | 'merge' | 'top' | 'clearTop' | 'distinctOn' | 'clearDistinctOn' | 'updlock' | 'updlockNowait' | 'updlockSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw';
+type AbsentOnSqlite = 'callProcedure' | 'callProcedureWithOwner' | 'callFunction' | 'callFunctionWithOwner' | 'clearCall' | 'procParam' | 'procParams' | 'procParamNamed' | 'procParamInOut' | 'procParamOut' | 'procParamRaw' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'clearRowLock' | 'fromLateral' | 'joinLateral' | 'joinCrossApply' | 'joinOuterApply' | 'groupByRollup' | 'groupByCube' | 'groupByGroupingSets' | 'whereJsonContains' | 'havingJsonContains' | 'hintUseIndex' | 'hintForceIndex' | 'hintMssqlOption' | 'limitWithTies' | 'clearLimitWithTies' | 'merge' | 'top' | 'clearTop' | 'distinctOn' | 'clearDistinctOn' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossLateral' | 'joinLeftLateral';
 /** The MSSQL builder view — every method except {@link AbsentOnMssql}. */
 interface MssqlQueryBuilder extends BuilderView<Exclude<keyof QueryBuilder, AbsentOnMssql>, MssqlQueryBuilder> {}
 /** The Postgres builder view — every method except {@link AbsentOnPostgres}. */
@@ -1741,6 +1741,17 @@ declare class QueryBuilder {
   joinCrossApply: (alias: string, builder: (builder: QueryBuilder) => void, joinOnBuilder?: (joinOnBuilder: JoinOnBuilder) => void) => this;
   /** MSSQL `OUTER APPLY` / Postgres+MySQL `LEFT JOIN LATERAL`. SQLite throws. */
   joinOuterApply: (alias: string, builder: (builder: QueryBuilder) => void, joinOnBuilder?: (joinOnBuilder: JoinOnBuilder) => void) => this;
+  /**
+   * Postgres / MySQL `CROSS JOIN LATERAL` — those engines' spelling of {@link joinCrossApply}.
+   *
+   * NOT a synonym for {@link joinLateral}, which is a third join taking its own ON condition. The
+   * three are genuinely different — measured: `CROSS JOIN LATERAL … AS x`,
+   * `LEFT JOIN LATERAL … ON TRUE`, and `JOIN LATERAL … ON <cond>` — so this renames one of them per
+   * dialect rather than collapsing any two.
+   */
+  joinCrossLateral: (alias: string, builder: (builder: QueryBuilder) => void, joinOnBuilder?: (joinOnBuilder: JoinOnBuilder) => void) => this;
+  /** Postgres / MySQL `LEFT JOIN LATERAL … ON TRUE` — their spelling of {@link joinOuterApply}. */
+  joinLeftLateral: (alias: string, builder: (builder: QueryBuilder) => void, joinOnBuilder?: (joinOnBuilder: JoinOnBuilder) => void) => this;
   /** Postgres/MySQL `JOIN LATERAL (subquery) AS alias ON ...`. MSSQL/SQLite throw. */
   joinLateral: (alias: string, builder: (builder: QueryBuilder) => void, joinOnBuilder: (joinOnBuilder: JoinOnBuilder) => void) => this;
   limit: (limit: number) => this;
@@ -1959,7 +1970,15 @@ declare class QueryBuilder {
   /** {@link updlock}, failing immediately on an already-locked row (`, NOWAIT`). */
   updlockNowait: () => this;
   /** {@link updlock}, skipping already-locked rows (`, READPAST`). */
-  updlockSkipLocked: () => this;
+  /**
+   * MSSQL `WITH (UPDLOCK, ROWLOCK, READPAST)` — the T-SQL spelling of {@link forUpdateSkipLocked}.
+   *
+   * Named for the hint that does the work. It was `updlockSkipLocked`, which was half-translated:
+   * `updlock` is T-SQL while `SkipLocked` is Postgres/MySQL vocabulary, and the already-adjudicated
+   * `RowLockWait.SkipLocked` cell records MSSQL's own term as READPAST — so the op and the enum
+   * contradicted each other. UPDLOCK + ROWLOCK + READPAST is Microsoft's documented queue idiom.
+   */
+  updlockReadpast: () => this;
   /** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
   forShare: () => this;
   /** {@link forShare}, failing immediately instead of waiting on an already-locked row. */
@@ -2118,6 +2137,25 @@ type ParserArea = (typeof ParserArea)[keyof typeof ParserArea];
  * inject SQL. A NUL byte can silently truncate the identifier in some drivers, so it is rejected.
  */
 declare function quoteIdentifier(name: string | undefined, delimiters: ConfigurationDelimiters): string;
+/**
+ * A column reference, qualified by its table or alias only when there IS one.
+ *
+ * An empty alias means "unqualified" — the convention `fromTable(name, '')` has always used, and
+ * the one the emission corpus pins ("from table without an alias"). Every other clause used to
+ * concatenate `quoteIdentifier(alias) + '.' + quoteIdentifier(column)` unconditionally, so the same
+ * empty string that correctly suppressed `AS ""` in FROM produced a zero-length delimited
+ * identifier everywhere else. Measured against the harness on the shipped 11.0.0:
+ *
+ *     WHERE ""."id" = $1   ->  Postgres: ERROR: zero-length delimited identifier
+ *     WHERE ""."id" = ?    ->  SQLite:   SQLITE_ERROR: no such column: .id
+ *     WHERE ``.`id` = ?    ->  MySQL:    ACCEPTED — returns the row
+ *
+ * MySQL accepting it is what makes this worse than a plain syntax error: the same builder output
+ * runs on one dialect and is rejected by the others, which is precisely the portability trap this
+ * library exists to make impossible. Routing every qualified reference through here is what keeps
+ * the FROM clause's convention true in all of them.
+ */
+declare function qualifiedColumn(tableNameOrAlias: string | undefined, columnName: string | undefined, delimiters: ConfigurationDelimiters): string;
 //#endregion
 //#region src/helpers/parser-error.d.ts
 /** Error thrown when SQL parsing fails; {@link ParserError.name} is `QueryParserError`. */
@@ -2243,5 +2281,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.cts.map

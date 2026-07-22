@@ -5,8 +5,7 @@ import '../identifier.dart';
 import '../sql_helper.dart';
 
 String _columnRef(Dialect config, String tableNameOrAlias, String columnName) =>
-    '${quoteIdentifier(tableNameOrAlias, config.identifierDelimiters)}.'
-    '${quoteIdentifier(columnName, config.identifierDelimiters)}';
+    qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 
 /// Emits a dialect-specific JSON path extraction expression for [columnName] at [path].
 void emitJsonExtractExpression(

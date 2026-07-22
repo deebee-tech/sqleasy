@@ -104,6 +104,37 @@ const opt = (op: Op, key: string): string => (op[key] as string | undefined) ?? 
 const ops = (op: Op, key = 'ops'): Op[] => (op[key] as Op[]) ?? [];
 const list = <T>(op: Op, key: string): T[] => (op[key] as T[]) ?? [];
 
+/**
+ * Coerce an enum-valued op field, REJECTING anything the enum does not declare.
+ *
+ * The corpus is the contract, and `pnpm goldens` freezes whatever this driver emits — so a typo in
+ * a wire value would mint a golden and pin it forever. That is not hypothetical: `"direction":
+ * "Desc"` (the enum spells it `Descending`) was cast straight through, silently produced an
+ * ORDER BY with no direction at all, and was written into the corpus as if intended. The Dart
+ * driver rejected it, which is the only reason it surfaced. Checking here means the mint fails
+ * loudly on the language that DOES the minting.
+ */
+const enumOf = <T extends Record<string, string>>(
+  op: Op,
+  key: string,
+  values: T,
+  fallback?: T[keyof T],
+): T[keyof T] => {
+  const raw = op[key];
+  if (raw === undefined || raw === null) {
+    if (fallback !== undefined) return fallback;
+    throw new Error(`corpus op "${String(op.op)}" is missing required enum field "${key}"`);
+  }
+  const allowed = Object.values(values) as string[];
+  if (!allowed.includes(raw as string)) {
+    throw new Error(
+      `corpus op "${String(op.op)}" field "${key}" has unknown value ${JSON.stringify(raw)} — ` +
+        `expected one of ${allowed.join(', ')}`,
+    );
+  }
+  return raw as T[keyof T];
+};
+
 const applyJoinOn = (b: JoinOnBuilder, onOps: Op[]): void => {
   for (const op of onOps) {
     switch (op.op) {
@@ -162,8 +193,8 @@ const applyWindow = (w: WindowBuilder, windowOps: Op[]): void => {
         w.orderByColumn(
           str(op, 'table'),
           str(op, 'column'),
-          (op.direction as OrderByDirection | undefined) ?? OrderByDirection.None,
-          (op.nulls as NullsOrder | undefined) ?? NullsOrder.None,
+          enumOf(op, 'direction', OrderByDirection, OrderByDirection.None),
+          enumOf(op, 'nulls', NullsOrder, NullsOrder.None),
         );
         break;
       case 'orderByRaw':
@@ -171,10 +202,10 @@ const applyWindow = (w: WindowBuilder, windowOps: Op[]): void => {
         break;
       case 'frame':
         w.frame(
-          op.unit as FrameUnit,
-          op.startType as FrameBoundType,
+          enumOf(op, 'unit', FrameUnit),
+          enumOf(op, 'startType', FrameBoundType),
           op.startOffset as number | undefined,
-          op.endType as FrameBoundType | undefined,
+          op.endType === undefined ? undefined : enumOf(op, 'endType', FrameBoundType),
           op.endOffset as number | undefined,
         );
         break;
@@ -326,7 +357,7 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           str(op, 'table'),
           str(op, 'column'),
           str(op, 'path'),
-          (op.mode as JsonExtractMode | undefined) ?? JsonExtractMode.Text,
+          enumOf(op, 'mode', JsonExtractMode, JsonExtractMode.Text),
           opt(op, 'alias'),
         );
         break;
@@ -390,13 +421,13 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
 
       // ---- JOIN ----
       case 'joinTable':
-        b.joinTable(op.joinType as JoinType, str(op, 'table'), str(op, 'alias'), (j) =>
+        b.joinTable(enumOf(op, 'joinType', JoinType), str(op, 'table'), str(op, 'alias'), (j) =>
           applyJoinOn(j, ops(op, 'on')),
         );
         break;
       case 'joinTableWithOwner':
         b.joinTableWithOwner(
-          op.joinType as JoinType,
+          enumOf(op, 'joinType', JoinType),
           str(op, 'owner'),
           str(op, 'table'),
           str(op, 'alias'),
@@ -405,7 +436,7 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         break;
       case 'joinWithBuilder':
         b.joinWithBuilder(
-          op.joinType as JoinType,
+          enumOf(op, 'joinType', JoinType),
           str(op, 'alias'),
           (sub) => apply(sub, ops(op)),
           (j) => applyJoinOn(j, ops(op, 'on')),
@@ -438,7 +469,12 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
 
       // ---- WHERE ----
       case 'where':
-        b.where(str(op, 'table'), str(op, 'column'), op.operator as WhereOperator, val(op));
+        b.where(
+          str(op, 'table'),
+          str(op, 'column'),
+          enumOf(op, 'operator', WhereOperator),
+          val(op),
+        );
         break;
       case 'whereBetween':
         b.whereBetween(str(op, 'table'), str(op, 'column'), val(op, 'from'), val(op, 'to'));
@@ -494,8 +530,8 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           str(op, 'table'),
           str(op, 'column'),
           str(op, 'path'),
-          op.mode as JsonExtractMode,
-          op.operator as WhereOperator,
+          enumOf(op, 'mode', JsonExtractMode),
+          enumOf(op, 'operator', WhereOperator),
           val(op),
         );
         break;
@@ -509,7 +545,7 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
             columnName: c.column,
           })),
           str(op, 'query'),
-          (op.mode as FullTextMode | undefined) ?? FullTextMode.Natural,
+          enumOf(op, 'mode', FullTextMode, FullTextMode.Natural),
         );
         break;
       case 'whereMatchRaw':
@@ -556,7 +592,12 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         );
         break;
       case 'having':
-        b.having(str(op, 'table'), str(op, 'column'), op.operator as WhereOperator, val(op));
+        b.having(
+          str(op, 'table'),
+          str(op, 'column'),
+          enumOf(op, 'operator', WhereOperator),
+          val(op),
+        );
         break;
       case 'havingRaw':
         b.havingRaw(str(op, 'sql'));
@@ -604,8 +645,8 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           str(op, 'table'),
           str(op, 'column'),
           str(op, 'path'),
-          op.mode as JsonExtractMode,
-          op.operator as WhereOperator,
+          enumOf(op, 'mode', JsonExtractMode),
+          enumOf(op, 'operator', WhereOperator),
           val(op),
         );
         break;
@@ -619,7 +660,7 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
             columnName: c.column,
           })),
           str(op, 'query'),
-          (op.mode as FullTextMode | undefined) ?? FullTextMode.Natural,
+          enumOf(op, 'mode', FullTextMode, FullTextMode.Natural),
         );
         break;
 
@@ -628,8 +669,8 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         b.orderByColumn(
           str(op, 'table'),
           str(op, 'column'),
-          (op.direction as OrderByDirection | undefined) ?? OrderByDirection.None,
-          (op.nulls as NullsOrder | undefined) ?? NullsOrder.None,
+          enumOf(op, 'direction', OrderByDirection, OrderByDirection.None),
+          enumOf(op, 'nulls', NullsOrder, NullsOrder.None),
         );
         break;
       case 'orderByRaw':
@@ -756,13 +797,16 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
         b.callProcedureWithOwner(str(op, 'owner'), str(op, 'name'));
         break;
       case 'callFunction':
-        b.callFunction(str(op, 'name'), op.returnIntent as CallReturnIntent | undefined);
+        b.callFunction(
+          str(op, 'name'),
+          op.returnIntent === undefined ? undefined : enumOf(op, 'returnIntent', CallReturnIntent),
+        );
         break;
       case 'callFunctionWithOwner':
         b.callFunctionWithOwner(
           str(op, 'owner'),
           str(op, 'name'),
-          op.returnIntent as CallReturnIntent | undefined,
+          op.returnIntent === undefined ? undefined : enumOf(op, 'returnIntent', CallReturnIntent),
         );
         break;
       case 'procParam':

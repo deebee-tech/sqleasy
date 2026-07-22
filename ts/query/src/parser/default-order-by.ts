@@ -6,7 +6,7 @@ import { OrderByDirection } from '../enums/order-by-direction';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
 import { dialectDisplayName } from '../helpers/dialect-name';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
@@ -35,10 +35,7 @@ export const emitOrderByTerm = (
   direction: OrderByDirection,
   nulls: NullsOrder,
 ): void => {
-  const columnSql =
-    quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) +
-    '.' +
-    quoteIdentifier(columnName, config.identifierDelimiters);
+  const columnSql = qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 
   const hasNativeNulls =
     config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite;

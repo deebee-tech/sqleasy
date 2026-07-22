@@ -4,7 +4,7 @@ import { DatabaseType } from '../enums/database-type';
 import { JsonExtractMode } from '../enums/json-extract-mode';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn, quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
@@ -42,10 +42,8 @@ export const defaultSelect = (
     sqlHelper.addSqlSnippet('DISTINCT ON (');
     state.distinctOnColumns.forEach((column, i) => {
       sqlHelper.addSqlSnippet(
-        quoteIdentifier(column.tableNameOrAlias, config.identifierDelimiters),
+        qualifiedColumn(column.tableNameOrAlias, column.columnName, config.identifierDelimiters),
       );
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(column.columnName, config.identifierDelimiters));
 
       if (i < state.distinctOnColumns!.length - 1) {
         sqlHelper.addSqlSnippet(', ');
@@ -81,10 +79,12 @@ export const defaultSelect = (
 
     if (selectState.builderType === BuilderType.SelectColumn) {
       sqlHelper.addSqlSnippet(
-        quoteIdentifier(selectState.tableNameOrAlias, config.identifierDelimiters),
+        qualifiedColumn(
+          selectState.tableNameOrAlias,
+          selectState.columnName,
+          config.identifierDelimiters,
+        ),
       );
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(quoteIdentifier(selectState.columnName, config.identifierDelimiters));
 
       if (selectState.alias !== '') {
         sqlHelper.addSqlSnippet(' AS ');

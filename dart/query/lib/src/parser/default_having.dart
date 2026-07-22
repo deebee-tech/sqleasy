@@ -172,9 +172,8 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.having) {
-      final columnSql =
-          '${quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters)}.'
-          '${quoteIdentifier(cur.columnName, config.identifierDelimiters)}';
+      final columnSql = qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters);
 
       final value = cur.values.isNotEmpty ? cur.values[0] : null;
 
@@ -185,11 +184,8 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingBetween) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' ');
       sqlHelper.addSqlSnippet('BETWEEN ');
       sqlHelper.addDynamicValue(cur.values[0]);
@@ -210,11 +206,8 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingInBuilder) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IN (');
       final subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(
@@ -230,11 +223,8 @@ SqlHelper defaultHaving(
         throw ParserError(ParserArea.having, 'IN requires at least one value');
       }
 
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IN (');
 
       for (var j = 0; j < cur.values.length; j++) {
@@ -260,11 +250,8 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingNotInBuilder) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' NOT IN (');
       final subHelper = defaultToSql(cur.subquery, config, mode, options);
       sqlHelper.addSqlSnippetWithValues(
@@ -281,11 +268,8 @@ SqlHelper defaultHaving(
             ParserArea.having, 'NOT IN requires at least one value');
       }
 
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' NOT IN (');
 
       for (var j = 0; j < cur.values.length; j++) {
@@ -301,22 +285,16 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingNotNull) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IS NOT NULL');
       spaceAfter();
       continue;
     }
 
     if (cur.builderType == BuilderType.havingNull) {
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.tableNameOrAlias, config.identifierDelimiters));
-      sqlHelper.addSqlSnippet('.');
-      sqlHelper.addSqlSnippet(
-          quoteIdentifier(cur.columnName, config.identifierDelimiters));
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IS NULL');
       spaceAfter();
       continue;

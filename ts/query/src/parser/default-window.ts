@@ -4,7 +4,7 @@ import { DatabaseType } from '../enums/database-type';
 import { FrameUnit } from '../enums/frame-unit';
 import { ParserArea } from '../enums/parser-area';
 import type { ParserMode } from '../enums/parser-mode';
-import { quoteIdentifier } from '../helpers/identifier';
+import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper } from '../helpers/sql';
 import { emitOrderByTerm } from './default-order-by';
@@ -64,9 +64,11 @@ export const defaultWindow = (
         sqlHelper.addSqlSnippet(partition.raw);
       } else {
         sqlHelper.addSqlSnippet(
-          quoteIdentifier(partition.tableNameOrAlias, config.identifierDelimiters) +
-            '.' +
-            quoteIdentifier(partition.columnName, config.identifierDelimiters),
+          qualifiedColumn(
+            partition.tableNameOrAlias,
+            partition.columnName,
+            config.identifierDelimiters,
+          ),
         );
       }
       if (i < windowState.partitionByStates.length - 1) {

@@ -16,9 +16,8 @@ void emitOrderByTerm(
   OrderByDirection direction,
   NullsOrder nulls,
 ) {
-  final columnSql =
-      '${quoteIdentifier(tableNameOrAlias, config.identifierDelimiters)}.'
-      '${quoteIdentifier(columnName, config.identifierDelimiters)}';
+  final columnSql = qualifiedColumn(
+      tableNameOrAlias, columnName, config.identifierDelimiters);
 
   final hasNativeNulls = config.databaseType == DatabaseType.postgres ||
       config.databaseType == DatabaseType.sqlite;
