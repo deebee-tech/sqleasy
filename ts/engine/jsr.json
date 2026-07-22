@@ -10,7 +10,18 @@
     "./mssql": "./src/mssql/index.ts",
     "./introspection": "./src/introspection/index.ts"
   },
+  "imports": {
+    "@libsql/client": "npm:@libsql/client@^0.17.4",
+    "mssql": "npm:mssql@^12.7.0",
+    "mysql2": "npm:mysql2@^3.23.0",
+    "pg": "npm:pg@^8.22.0"
+  },
   "publish": {
-    "include": ["./src/**/*", "./README.md", "./CHANGELOG.md", "./LICENSE"]
+    "include": [
+      "./src/**/*",
+      "./README.md",
+      "./CHANGELOG.md",
+      "./LICENSE"
+    ]
   }
 }

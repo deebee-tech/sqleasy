@@ -34,21 +34,6 @@ jobs:
           node-version: 'lts/*'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      # jsr/Deno builds its module graph from node_modules. A release that reaches JSR through
-      # semantic-release resolves it fine, while this workflow has failed with "Module not found" on a
-      # bare npm import — so print the actual on-disk state rather than reasoning about it again.
-      - name: Diagnose module resolution
-        working-directory: ${{ inputs.package }}
-        run: |
-          echo "--- node_modules present? ---"
-          ls -d node_modules 2>/dev/null || echo "NO node_modules in $(pwd)"
-          echo "--- scoped dirs ---"
-          ls node_modules 2>/dev/null | head -20 || true
-          echo "--- can node resolve the failing import? ---"
-          node -e "console.log(require.resolve('@libsql/client'))" || echo "UNRESOLVABLE"
-          echo "--- what does pnpm think? ---"
-          pnpm why @libsql/client --depth 0 2>&1 | head -12 || true
-
       - name: Publish to JSR
         working-directory: ${{ inputs.package }}
         run: pnpm dlx jsr publish
