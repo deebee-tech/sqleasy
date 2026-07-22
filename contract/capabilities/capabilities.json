@@ -4,7 +4,7 @@
   "generatedFrom": {
     "corpus": "contract/corpora/emission/corpus.json",
     "corpusVersion": "1.0.0",
-    "corpusCases": 384,
+    "corpusCases": 389,
     "decisions": "contract/capabilities/decisions.json",
     "typedViewSurface": "dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)",
     "audit": "docs/audits/dialect-parity-2026-07-19.md",
@@ -17,12 +17,12 @@
     "sqlite"
   ],
   "summary": {
-    "ops": 133,
+    "ops": 135,
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 24,
     "opCells": {
-      "native": 452,
-      "absent": 78,
+      "native": 457,
+      "absent": 81,
       "unadjudicated": 2
     },
     "enumCells": {
@@ -30,8 +30,8 @@
       "absent": 52,
       "unadjudicated": 0
     },
-    "adjudicated": 850,
-    "namesAssigned": 720
+    "adjudicated": 858,
+    "namesAssigned": 725
   },
   "ops": {
     "and": {
@@ -1242,8 +1242,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 209,
-            "casesThrowing": 80,
+            "casesEmitting": 211,
+            "casesThrowing": 83,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1253,8 +1253,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 212,
-            "casesThrowing": 70,
+            "casesEmitting": 214,
+            "casesThrowing": 73,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1264,8 +1264,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 232,
-            "casesThrowing": 52,
+            "casesEmitting": 235,
+            "casesThrowing": 54,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1275,7 +1275,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 197,
+            "casesEmitting": 202,
             "casesThrowing": 86,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -4738,6 +4738,54 @@
         }
       }
     },
+    "selectGroupConcat": {
+      "cells": {
+        "mssql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 2,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "mysql": {
+          "name": "selectGroupConcat",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 2,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "sqlite": {
+          "name": "selectGroupConcat",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        }
+      }
+    },
     "selectJsonExtract": {
       "cells": {
         "mssql": {
@@ -4876,6 +4924,54 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        }
+      }
+    },
+    "selectStringAgg": {
+      "cells": {
+        "mssql": {
+          "name": "selectStringAgg",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 1,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 3,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "postgres": {
+          "name": "selectStringAgg",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 3,
+            "casesThrowing": 0,
+            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+          }
+        },
+        "sqlite": {
+          "name": "selectStringAgg",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 3,
             "casesThrowing": 0,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }

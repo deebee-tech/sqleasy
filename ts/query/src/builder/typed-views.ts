@@ -87,6 +87,8 @@ export type BuilderView<Keys extends keyof QueryBuilder, Self> = {
  * `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres-only (default-select).
  */
 type AbsentOnMssql =
+  // GROUP_CONCAT is MySQL/SQLite's spelling; MSSQL's is stringAgg.
+  | 'selectGroupConcat'
   | 'forShare'
   | 'forShareNowait'
   | 'forShareSkipLocked'
@@ -125,6 +127,8 @@ type AbsentOnMssql =
  * `returning`/`returningRaw`/`clearReturning` — no RETURNING clause (default-returning).
  */
 type AbsentOnMysql =
+  // string_agg is the other three's spelling; MySQL's is groupConcat.
+  | 'selectStringAgg'
   | 'top'
   | 'clearTop'
   | 'merge'
@@ -161,6 +165,8 @@ type AbsentOnMysql =
  * Everything else Postgres does; it is the widest surface, and `distinctOn` is its own.
  */
 type AbsentOnPostgres =
+  // GROUP_CONCAT is MySQL/SQLite's spelling; Postgres's is stringAgg.
+  | 'selectGroupConcat'
   | 'top'
   | 'clearTop'
   | 'merge'

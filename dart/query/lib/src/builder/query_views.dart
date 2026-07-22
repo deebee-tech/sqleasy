@@ -204,6 +204,14 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  MssqlQueryBuilder selectStringAgg(
+    String table,
+    String column,
+    Object? separator,
+    String alias, {
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
   MssqlQueryBuilder havingAggregate(
     AggregateFunction aggregate,
     String table,
@@ -519,6 +527,15 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  MysqlQueryBuilder selectGroupConcat(
+    String table,
+    String column,
+    String alias, {
+    Object? separator,
+    bool hasSeparator = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
   MysqlQueryBuilder havingAggregate(
     AggregateFunction aggregate,
     String table,
@@ -868,6 +885,14 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  PostgresQueryBuilder selectStringAgg(
+    String table,
+    String column,
+    Object? separator,
+    String alias, {
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
   PostgresQueryBuilder havingAggregate(
     AggregateFunction aggregate,
     String table,
@@ -1218,6 +1243,23 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  SqliteQueryBuilder selectStringAgg(
+    String table,
+    String column,
+    Object? separator,
+    String alias, {
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
+  SqliteQueryBuilder selectGroupConcat(
+    String table,
+    String column,
+    String alias, {
+    Object? separator,
+    bool hasSeparator = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
   SqliteQueryBuilder havingAggregate(
     AggregateFunction aggregate,
     String table,

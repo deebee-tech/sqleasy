@@ -104,6 +104,14 @@ class SelectState {
   /// predicate. Postgres/SQLite only — MySQL/MSSQL refuse, and the refusal must be ours because
   /// FILTER parses as a column alias there.
   QueryState? aggregateFilter;
+
+  /// Ordered string aggregation — string_agg / GROUP_CONCAT. `stringAggFunction` is 'string_agg' or
+  /// 'group_concat'; the emitter refuses the name on dialects that lack it.
+  String? stringAggFunction;
+  Object? stringAggSeparator;
+  bool stringAggHasSeparator = false;
+  bool stringAggDistinct = false;
+  List<StringAggOrderKey> stringAggOrderBy = const [];
 }
 
 class FromState {
@@ -212,6 +220,13 @@ class GroupByState {
 }
 
 /// One column reference in a GROUP BY ROLLUP/CUBE/GROUPING SETS list.
+class StringAggOrderKey {
+  StringAggOrderKey(this.tableNameOrAlias, this.columnName, this.direction);
+  final String tableNameOrAlias;
+  final String columnName;
+  final OrderByDirection direction;
+}
+
 class GroupByColumnRef {
   GroupByColumnRef(this.tableNameOrAlias, this.columnName);
 

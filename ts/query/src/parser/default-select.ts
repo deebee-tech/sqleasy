@@ -10,6 +10,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { QueryState } from '../state/query';
 import { defaultWindow } from './default-window';
 import { emitAggregateCall } from './default-aggregate';
+import { emitStringAggregation } from './default-string-agg';
 import { emitJsonExtractExpression } from './default-json';
 import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
@@ -126,6 +127,30 @@ export const defaultSelect = (
       const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 
       sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
+
+      if (selectState.alias !== '') {
+        sqlHelper.addSqlSnippet(' AS ');
+        sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+      }
+
+      if (i < state.selectStates.length - 1) {
+        sqlHelper.addSqlSnippet(', ');
+      }
+
+      continue;
+    }
+
+    if (selectState.builderType === BuilderType.SelectStringAgg) {
+      emitStringAggregation(
+        sqlHelper,
+        config,
+        {
+          tableNameOrAlias: selectState.tableNameOrAlias ?? '',
+          columnName: selectState.columnName ?? '',
+        },
+        selectState.stringAgg!,
+        ParserArea.Select,
+      );
 
       if (selectState.alias !== '') {
         sqlHelper.addSqlSnippet(' AS ');

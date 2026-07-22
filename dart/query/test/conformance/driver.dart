@@ -255,6 +255,33 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
       case 'selectWindow':
         b.selectWindow(_str(op, 'fn'), (w) => _applyWindow(w, _ops(op, 'over')),
             alias: _optStr(op, 'alias'));
+      case 'selectStringAgg':
+        b.selectStringAgg(
+          _str(op, 'table'),
+          _str(op, 'column'),
+          _val(op, 'separator'),
+          _str(op, 'alias'),
+          distinct: op['distinct'] == true,
+          orderBy: [
+            for (final o in _ops(op, 'orderBy'))
+              StringAggOrderKey(_str(o, 'table'), _str(o, 'column'),
+                  OrderByDirection.fromWire(_str(o, 'direction'))),
+          ],
+        );
+      case 'selectGroupConcat':
+        b.selectGroupConcat(
+          _str(op, 'table'),
+          _str(op, 'column'),
+          _str(op, 'alias'),
+          separator: op['separator'] == null ? null : _val(op, 'separator'),
+          hasSeparator: op['separator'] != null,
+          distinct: op['distinct'] == true,
+          orderBy: [
+            for (final o in _ops(op, 'orderBy'))
+              StringAggOrderKey(_str(o, 'table'), _str(o, 'column'),
+                  OrderByDirection.fromWire(_str(o, 'direction'))),
+          ],
+        );
       case 'selectAggregate':
         b.selectAggregate(
           AggregateFunction.fromWire(_str(op, 'aggregate')),

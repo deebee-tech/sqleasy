@@ -554,6 +554,8 @@ declare const BuilderType: {
   readonly SelectJsonExtract: "SelectJsonExtract";
   /** `COUNT(x)` / `SUM(x)` / … in the SELECT list. */
   readonly SelectAggregate: "SelectAggregate";
+  /** `string_agg(x, sep ORDER BY y)` / `GROUP_CONCAT(x …)` — ordered string aggregation. */
+  readonly SelectStringAgg: "SelectStringAgg";
   /** UPDATE SET column assignment. */
   readonly UpdateColumn: "UpdateColumn";
   /** UPDATE fragment as raw SQL. */
@@ -1226,6 +1228,25 @@ type SelectState = {
    * silently mis-aliased column rather than an error.
    */
   aggregateFilter?: QueryState;
+  /**
+   * Ordered string aggregation — `string_agg` / `GROUP_CONCAT` / `STRING_AGG … WITHIN GROUP`.
+   *
+   * `functionName` is the caller's chosen engine-native spelling; the emitter refuses it on the
+   * dialects that lack that name. The three grammars diverge (separator position, ORDER BY inside
+   * the parens vs WITHIN GROUP, whether the separator is mandatory), so this carries the parts and
+   * the emitter assembles them per dialect.
+   */
+  stringAgg?: {
+    functionName: 'string_agg' | 'group_concat';
+    separator?: unknown;
+    hasSeparator: boolean;
+    distinct: boolean;
+    orderBy: {
+      tableNameOrAlias: string;
+      columnName: string;
+      direction: OrderByDirection;
+    }[];
+  };
 };
 /** Creates a {@link SelectState} with default field values. */
 declare const createSelectState: () => SelectState;
@@ -1587,7 +1608,7 @@ type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBu
  * (default-insert). `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres-only (default-select).
  */
-type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossLateral' | 'joinLeftLateral';
+type AbsentOnMssql = 'selectGroupConcat' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossLateral' | 'joinLeftLateral';
 /**
  * MySQL cannot run these.
  *
@@ -1599,7 +1620,7 @@ type AbsentOnMssql = 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fro
  * in FROM (default-from). `procParamNamed` — no named parameters in CALL (default-call).
  * `returning`/`returningRaw`/`clearReturning` — no RETURNING clause (default-returning).
  */
-type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinctOn' | 'clearDistinctOn' | 'limitWithTies' | 'clearLimitWithTies' | 'groupByCube' | 'groupByGroupingSets' | 'fromTableFunction' | 'fromTableFunctionWithOwner' | 'procParamNamed' | 'returning' | 'returningRaw' | 'clearReturning' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'joinCrossApply' | 'joinOuterApply';
+type AbsentOnMysql = 'selectStringAgg' | 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinctOn' | 'clearDistinctOn' | 'limitWithTies' | 'clearLimitWithTies' | 'groupByCube' | 'groupByGroupingSets' | 'fromTableFunction' | 'fromTableFunctionWithOwner' | 'procParamNamed' | 'returning' | 'returningRaw' | 'clearReturning' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'joinCrossApply' | 'joinOuterApply';
 /**
  * Postgres cannot run these.
  *
@@ -1607,7 +1628,7 @@ type AbsentOnMysql = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'distinc
  * T-SQL `OPTION (...)`. `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * Everything else Postgres does; it is the widest surface, and `distinctOn` is its own.
  */
-type AbsentOnPostgres = 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossApply' | 'joinOuterApply';
+type AbsentOnPostgres = 'selectGroupConcat' | 'top' | 'clearTop' | 'merge' | 'hintMssqlOption' | 'hintUseIndex' | 'hintForceIndex' | 'updlock' | 'updlockNowait' | 'updlockReadpast' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossApply' | 'joinOuterApply';
 /**
  * SQLite cannot run these — the narrowest surface.
  *
@@ -2005,6 +2026,33 @@ declare class QueryBuilder {
     columnName: string;
   }[][]) => this;
   having: (tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: any) => this;
+  /**
+   * `string_agg(x, sep ORDER BY y)` — ordered string aggregation. Postgres, SQLite and MSSQL (whose
+   * ordering renders as `WITHIN GROUP`). Hidden on MySQL, whose engine-native name is `groupConcat`.
+   * The separator is mandatory here, because Postgres and MSSQL have no one-argument form.
+   */
+  selectStringAgg: (tableNameOrAlias: string, columnName: string, separator: unknown, alias: string, options?: {
+    distinct?: boolean;
+    orderBy?: {
+      tableNameOrAlias: string;
+      columnName: string;
+      direction: OrderByDirection;
+    }[];
+  }) => this;
+  /**
+   * `GROUP_CONCAT(x ORDER BY y SEPARATOR sep)` — MySQL and SQLite. The separator is OPTIONAL (the
+   * engines default to `','`); omit it by leaving `separator` undefined. Hidden on Postgres and
+   * MSSQL, whose engine-native name is `stringAgg`.
+   */
+  selectGroupConcat: (tableNameOrAlias: string, columnName: string, alias: string, options?: {
+    separator?: unknown;
+    distinct?: boolean;
+    orderBy?: {
+      tableNameOrAlias: string;
+      columnName: string;
+      direction: OrderByDirection;
+    }[];
+  }) => this;
   /**
    * `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
    * `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.

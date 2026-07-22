@@ -1462,6 +1462,93 @@ export class QueryBuilder {
   };
 
   /**
+   * `string_agg(x, sep ORDER BY y)` — ordered string aggregation. Postgres, SQLite and MSSQL (whose
+   * ordering renders as `WITHIN GROUP`). Hidden on MySQL, whose engine-native name is `groupConcat`.
+   * The separator is mandatory here, because Postgres and MSSQL have no one-argument form.
+   */
+  public selectStringAgg = (
+    tableNameOrAlias: string,
+    columnName: string,
+    separator: unknown,
+    alias: string,
+    options: {
+      distinct?: boolean;
+      orderBy?: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+    } = {},
+  ): this => {
+    return this.#pushStringAgg(
+      'string_agg',
+      tableNameOrAlias,
+      columnName,
+      true,
+      separator,
+      alias,
+      options,
+    );
+  };
+
+  /**
+   * `GROUP_CONCAT(x ORDER BY y SEPARATOR sep)` — MySQL and SQLite. The separator is OPTIONAL (the
+   * engines default to `','`); omit it by leaving `separator` undefined. Hidden on Postgres and
+   * MSSQL, whose engine-native name is `stringAgg`.
+   */
+  public selectGroupConcat = (
+    tableNameOrAlias: string,
+    columnName: string,
+    alias: string,
+    options: {
+      separator?: unknown;
+      distinct?: boolean;
+      orderBy?: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+    } = {},
+  ): this => {
+    const { separator, ...rest } = options;
+    return this.#pushStringAgg(
+      'group_concat',
+      tableNameOrAlias,
+      columnName,
+      separator !== undefined,
+      separator,
+      alias,
+      rest,
+    );
+  };
+
+  #pushStringAgg = (
+    functionName: 'string_agg' | 'group_concat',
+    tableNameOrAlias: string,
+    columnName: string,
+    hasSeparator: boolean,
+    separator: unknown,
+    alias: string,
+    options: {
+      distinct?: boolean;
+      orderBy?: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+    },
+  ): this => {
+    this.#markSelectQuery();
+    this.#state.selectStates.push({
+      builderType: BuilderType.SelectStringAgg,
+      tableNameOrAlias,
+      columnName,
+      alias,
+      raw: undefined,
+      subquery: undefined,
+      window: undefined,
+      jsonPath: undefined,
+      jsonExtractMode: undefined,
+      stringAgg: {
+        functionName,
+        separator,
+        hasSeparator,
+        distinct: options.distinct === true,
+        orderBy: (options.orderBy ?? []).map((o) => ({ ...o })),
+      },
+    });
+    return this;
+  };
+
+  /**
    * `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
    * `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
    */

@@ -27383,6 +27383,275 @@
           "raw": "SELECT \"o\".\"customer_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) FILTER (WHERE \"o\".\"total\" > 1) > 0;"
         }
       }
+    },
+    {
+      "name": "string agg orders inside the parens on postgres and sqlite, within group on mssql",
+      "ops": [
+        {
+          "op": "selectStringAgg",
+          "table": "o",
+          "column": "note",
+          "separator": {
+            "t": "string",
+            "v": "|"
+          },
+          "alias": "g",
+          "orderBy": [
+            {
+              "table": "o",
+              "column": "id",
+              "direction": "Ascending"
+            }
+          ]
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT STRING_AGG([o].[note], @p0) WITHIN GROUP (ORDER BY [o].[id] ASC) AS [g] FROM [dbo].[orders] AS [o];', N'@p0 nvarchar(max)', @p0 = N'|';",
+            "params": []
+          },
+          "raw": "SELECT STRING_AGG([o].[note], |) WITHIN GROUP (ORDER BY [o].[id] ASC) AS [g] FROM [dbo].[orders] AS [o];"
+        },
+        "mysql": {
+          "throws": "Select: MySQL has no string_agg — use groupConcat, its engine-native name"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT string_agg(\"o\".\"note\", $1 ORDER BY \"o\".\"id\" ASC) AS \"g\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": "|"
+              }
+            ]
+          },
+          "raw": "SELECT string_agg(\"o\".\"note\", | ORDER BY \"o\".\"id\" ASC) AS \"g\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT string_agg(\"o\".\"note\", ? ORDER BY \"o\".\"id\" ASC) AS \"g\" FROM \"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": "|"
+              }
+            ]
+          },
+          "raw": "SELECT string_agg(\"o\".\"note\", | ORDER BY \"o\".\"id\" ASC) AS \"g\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "string agg requires a separator and refuses group concat's name",
+      "ops": [
+        {
+          "op": "selectStringAgg",
+          "table": "o",
+          "column": "note",
+          "separator": {
+            "t": "string",
+            "v": ", "
+          },
+          "alias": "g"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT STRING_AGG([o].[note], @p0) AS [g] FROM [dbo].[orders] AS [o];', N'@p0 nvarchar(max)', @p0 = N', ';",
+            "params": []
+          },
+          "raw": "SELECT STRING_AGG([o].[note], , ) AS [g] FROM [dbo].[orders] AS [o];"
+        },
+        "mysql": {
+          "throws": "Select: MySQL has no string_agg — use groupConcat, its engine-native name"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT string_agg(\"o\".\"note\", $1) AS \"g\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": ", "
+              }
+            ]
+          },
+          "raw": "SELECT string_agg(\"o\".\"note\", , ) AS \"g\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT string_agg(\"o\".\"note\", ?) AS \"g\" FROM \"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": ", "
+              }
+            ]
+          },
+          "raw": "SELECT string_agg(\"o\".\"note\", , ) AS \"g\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "group concat puts order by before separator on mysql",
+      "ops": [
+        {
+          "op": "selectGroupConcat",
+          "table": "o",
+          "column": "note",
+          "separator": {
+            "t": "string",
+            "v": "|"
+          },
+          "alias": "g",
+          "orderBy": [
+            {
+              "table": "o",
+              "column": "id",
+              "direction": "Descending"
+            }
+          ]
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no GROUP_CONCAT — use stringAgg, its engine-native name."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT GROUP_CONCAT(`o`.`note` ORDER BY `o`.`id` DESC SEPARATOR ?) AS `g` FROM `orders` AS `o`;",
+            "params": [
+              {
+                "t": "string",
+                "v": "|"
+              }
+            ]
+          },
+          "raw": "SELECT GROUP_CONCAT(`o`.`note` ORDER BY `o`.`id` DESC SEPARATOR |) AS `g` FROM `orders` AS `o`;"
+        },
+        "postgres": {
+          "throws": "Select: Postgres has no GROUP_CONCAT — use stringAgg, its engine-native name."
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT group_concat(\"o\".\"note\", ? ORDER BY \"o\".\"id\" DESC) AS \"g\" FROM \"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": "|"
+              }
+            ]
+          },
+          "raw": "SELECT group_concat(\"o\".\"note\", | ORDER BY \"o\".\"id\" DESC) AS \"g\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "group concat separator is optional on sqlite",
+      "ops": [
+        {
+          "op": "selectGroupConcat",
+          "table": "o",
+          "column": "note",
+          "alias": "g"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no GROUP_CONCAT — use stringAgg, its engine-native name."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT GROUP_CONCAT(`o`.`note`) AS `g` FROM `orders` AS `o`;",
+            "params": []
+          },
+          "raw": "SELECT GROUP_CONCAT(`o`.`note`) AS `g` FROM `orders` AS `o`;"
+        },
+        "postgres": {
+          "throws": "Select: Postgres has no GROUP_CONCAT — use stringAgg, its engine-native name."
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT group_concat(\"o\".\"note\") AS \"g\" FROM \"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT group_concat(\"o\".\"note\") AS \"g\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "mssql string agg refuses distinct — the only engine without it here",
+      "ops": [
+        {
+          "op": "selectStringAgg",
+          "table": "o",
+          "column": "note",
+          "separator": {
+            "t": "string",
+            "v": "|"
+          },
+          "alias": "g",
+          "distinct": true
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL STRING_AGG has no DISTINCT — it is the only engine of the four without it here. De-duplicate in a subquery first, or use a different engine for this query."
+        },
+        "mysql": {
+          "throws": "Select: MySQL has no string_agg — use groupConcat, its engine-native name"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT string_agg(DISTINCT \"o\".\"note\", $1) AS \"g\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": "|"
+              }
+            ]
+          },
+          "raw": "SELECT string_agg(DISTINCT \"o\".\"note\", |) AS \"g\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT string_agg(DISTINCT \"o\".\"note\", ?) AS \"g\" FROM \"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "string",
+                "v": "|"
+              }
+            ]
+          },
+          "raw": "SELECT string_agg(DISTINCT \"o\".\"note\", |) AS \"g\" FROM \"orders\" AS \"o\";"
+        }
+      }
     }
   ]
 }

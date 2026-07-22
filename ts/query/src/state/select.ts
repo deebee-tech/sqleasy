@@ -1,5 +1,6 @@
 import { BuilderType } from '../enums/builder-type';
 import type { AggregateFunction } from '../enums/aggregate-function';
+import type { OrderByDirection } from '../enums/order-by-direction';
 import { JsonExtractMode } from '../enums/json-extract-mode';
 import type { QueryState } from './query';
 import type { WindowState } from './window';
@@ -45,6 +46,21 @@ export type SelectState = {
    * silently mis-aliased column rather than an error.
    */
   aggregateFilter?: QueryState;
+  /**
+   * Ordered string aggregation — `string_agg` / `GROUP_CONCAT` / `STRING_AGG … WITHIN GROUP`.
+   *
+   * `functionName` is the caller's chosen engine-native spelling; the emitter refuses it on the
+   * dialects that lack that name. The three grammars diverge (separator position, ORDER BY inside
+   * the parens vs WITHIN GROUP, whether the separator is mandatory), so this carries the parts and
+   * the emitter assembles them per dialect.
+   */
+  stringAgg?: {
+    functionName: 'string_agg' | 'group_concat';
+    separator?: unknown;
+    hasSeparator: boolean;
+    distinct: boolean;
+    orderBy: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+  };
 };
 
 /** Creates a {@link SelectState} with default field values. */

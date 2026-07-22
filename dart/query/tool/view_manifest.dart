@@ -36,6 +36,8 @@ const Map<String, DialectViewPolicy> viewManifest = {
   // (T-SQL uses the separate MERGE statement), no MySQL index hints, no Postgres DISTINCT ON.
   'mssql': DialectViewPolicy(
     absent: {
+      // GROUP_CONCAT is MySQL/SQLite's spelling; MSSQL's is stringAgg.
+      'selectGroupConcat',
       'forShare',
       'forShareNowait',
       'forShareSkipLocked',
@@ -74,6 +76,8 @@ const Map<String, DialectViewPolicy> viewManifest = {
   // CUBE/GROUPING SETS (only ROLLUP), no table functions in FROM, no named CALL params, no RETURNING.
   'mysql': DialectViewPolicy(
     absent: {
+      // string_agg is the other three's spelling; MySQL's is groupConcat.
+      'selectStringAgg',
       'top',
       'clearTop',
       'merge',
@@ -117,6 +121,8 @@ const Map<String, DialectViewPolicy> viewManifest = {
   // Postgres — the widest surface. Lacks only TOP/MERGE/OPTION (T-SQL) and the MySQL index hints.
   'postgres': DialectViewPolicy(
     absent: {
+      // GROUP_CONCAT is MySQL/SQLite's spelling; Postgres's is stringAgg.
+      'selectGroupConcat',
       'top',
       'clearTop',
       'merge',

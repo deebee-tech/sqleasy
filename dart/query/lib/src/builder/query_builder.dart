@@ -976,6 +976,59 @@ class QueryBuilder
     return this;
   }
 
+  /// `string_agg(x, sep ORDER BY y)` — Postgres, SQLite and MSSQL (ordering renders as WITHIN
+  /// GROUP). Hidden on MySQL, whose name is groupConcat. Separator mandatory (no one-arg form).
+  QueryBuilder selectStringAgg(
+    String table,
+    String column,
+    Object? separator,
+    String alias, {
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  }) {
+    return _pushStringAgg(
+        'string_agg', table, column, true, separator, alias, distinct, orderBy);
+  }
+
+  /// `GROUP_CONCAT(x ORDER BY y SEPARATOR sep)` — MySQL and SQLite. Separator OPTIONAL (defaults to
+  /// ','). Hidden on Postgres and MSSQL, whose name is stringAgg.
+  QueryBuilder selectGroupConcat(
+    String table,
+    String column,
+    String alias, {
+    Object? separator,
+    bool hasSeparator = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  }) {
+    return _pushStringAgg('group_concat', table, column, hasSeparator,
+        separator, alias, distinct, orderBy);
+  }
+
+  QueryBuilder _pushStringAgg(
+    String functionName,
+    String table,
+    String column,
+    bool hasSeparator,
+    Object? separator,
+    String alias,
+    bool distinct,
+    List<StringAggOrderKey> orderBy,
+  ) {
+    _markSelectQuery();
+    _state.selectStates.add(SelectState()
+      ..builderType = BuilderType.selectStringAgg
+      ..tableNameOrAlias = table
+      ..columnName = column
+      ..alias = alias
+      ..stringAggFunction = functionName
+      ..stringAggSeparator = separator
+      ..stringAggHasSeparator = hasSeparator
+      ..stringAggDistinct = distinct
+      ..stringAggOrderBy = List.of(orderBy));
+    return this;
+  }
+
   /// `HAVING COUNT(x) > n` — the canonical HAVING, previously reachable only through havingRaw.
   QueryBuilder havingAggregate(
     AggregateFunction aggregate,

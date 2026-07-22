@@ -85,6 +85,8 @@ export const BuilderType = {
   SelectJsonExtract: 'SelectJsonExtract',
   /** `COUNT(x)` / `SUM(x)` / … in the SELECT list. */
   SelectAggregate: 'SelectAggregate',
+  /** `string_agg(x, sep ORDER BY y)` / `GROUP_CONCAT(x …)` — ordered string aggregation. */
+  SelectStringAgg: 'SelectStringAgg',
   /** UPDATE SET column assignment. */
   UpdateColumn: 'UpdateColumn',
   /** UPDATE fragment as raw SQL. */

@@ -86,6 +86,8 @@ const BuilderType = {
 	SelectJsonExtract: "SelectJsonExtract",
 	/** `COUNT(x)` / `SUM(x)` / … in the SELECT list. */
 	SelectAggregate: "SelectAggregate",
+	/** `string_agg(x, sep ORDER BY y)` / `GROUP_CONCAT(x …)` — ordered string aggregation. */
+	SelectStringAgg: "SelectStringAgg",
 	/** UPDATE SET column assignment. */
 	UpdateColumn: "UpdateColumn",
 	/** UPDATE fragment as raw SQL. */
@@ -3345,6 +3347,79 @@ const defaultWindow = (windowState, config, mode) => {
 	return sqlHelper;
 };
 //#endregion
+//#region src/parser/default-string-agg.ts
+const emitOrderKeys = (sqlHelper, config, keys) => {
+	keys.forEach((key, i) => {
+		emitOrderByTerm(sqlHelper, config, key.tableNameOrAlias, key.columnName, key.direction, NullsOrder.None);
+		if (i < keys.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+};
+const emitStringAggregation = (sqlHelper, config, expr, state, area) => {
+	const column = qualifiedColumn(expr.tableNameOrAlias, expr.columnName, config.identifierDelimiters);
+	const db = config.databaseType;
+	if (state.functionName === "string_agg") {
+		if (db === DatabaseType.Mysql) throw new ParserError(area, "MySQL has no string_agg — use groupConcat, its engine-native name");
+		if (!state.hasSeparator) throw new ParserError(area, `${db === DatabaseType.Mssql ? "MSSQL" : "Postgres"} string_agg requires a separator — there is no one-argument form. Pass the separator you want between values.`);
+		if (db === DatabaseType.Mssql) {
+			if (state.distinct) throw new ParserError(area, "MSSQL STRING_AGG has no DISTINCT — it is the only engine of the four without it here. De-duplicate in a subquery first, or use a different engine for this query.");
+			sqlHelper.addSqlSnippet("STRING_AGG(");
+			sqlHelper.addSqlSnippet(column);
+			sqlHelper.addSqlSnippet(", ");
+			sqlHelper.addDynamicValue(state.separator);
+			sqlHelper.addSqlSnippet(")");
+			if (state.orderBy.length > 0) {
+				sqlHelper.addSqlSnippet(" WITHIN GROUP (ORDER BY ");
+				emitOrderKeys(sqlHelper, config, state.orderBy);
+				sqlHelper.addSqlSnippet(")");
+			}
+			return;
+		}
+		sqlHelper.addSqlSnippet("string_agg(");
+		if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
+		sqlHelper.addSqlSnippet(column);
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addDynamicValue(state.separator);
+		if (state.orderBy.length > 0) {
+			if (db === DatabaseType.Postgres && state.distinct) {
+				if (state.orderBy.find((k) => k.tableNameOrAlias !== expr.tableNameOrAlias || k.columnName !== expr.columnName) !== void 0 || state.orderBy.length > 1) throw new ParserError(area, "Postgres string_agg(DISTINCT …) can only ORDER BY the aggregated expression itself — a different sort key is rejected by the engine. Drop DISTINCT, or sort by the same column.");
+			}
+			sqlHelper.addSqlSnippet(" ORDER BY ");
+			emitOrderKeys(sqlHelper, config, state.orderBy);
+		}
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	if (db === DatabaseType.Postgres || db === DatabaseType.Mssql) throw new ParserError(area, `${db === DatabaseType.Postgres ? "Postgres" : "MSSQL"} has no GROUP_CONCAT — use stringAgg, its engine-native name.`);
+	if (db === DatabaseType.Mysql) {
+		sqlHelper.addSqlSnippet("GROUP_CONCAT(");
+		if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
+		sqlHelper.addSqlSnippet(column);
+		if (state.orderBy.length > 0) {
+			sqlHelper.addSqlSnippet(" ORDER BY ");
+			emitOrderKeys(sqlHelper, config, state.orderBy);
+		}
+		if (state.hasSeparator) {
+			sqlHelper.addSqlSnippet(" SEPARATOR ");
+			sqlHelper.addDynamicValue(state.separator);
+		}
+		sqlHelper.addSqlSnippet(")");
+		return;
+	}
+	if (state.distinct && state.hasSeparator) throw new ParserError(area, "SQLite group_concat(DISTINCT …) takes only one argument, so it cannot carry a custom separator — the result uses the default ','. Drop the separator, or drop DISTINCT.");
+	sqlHelper.addSqlSnippet("group_concat(");
+	if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
+	sqlHelper.addSqlSnippet(column);
+	if (state.hasSeparator) {
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addDynamicValue(state.separator);
+	}
+	if (state.orderBy.length > 0) {
+		sqlHelper.addSqlSnippet(" ORDER BY ");
+		emitOrderKeys(sqlHelper, config, state.orderBy);
+	}
+	sqlHelper.addSqlSnippet(")");
+};
+//#endregion
 //#region src/parser/default-select.ts
 const defaultSelect = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
@@ -3400,6 +3475,18 @@ const defaultSelect = (state, config, mode, options) => {
 		if (selectState.builderType === BuilderType.SelectBuilder) {
 			const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
+			if (selectState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+			}
+			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			continue;
+		}
+		if (selectState.builderType === BuilderType.SelectStringAgg) {
+			emitStringAggregation(sqlHelper, config, {
+				tableNameOrAlias: selectState.tableNameOrAlias ?? "",
+				columnName: selectState.columnName ?? ""
+			}, selectState.stringAgg, ParserArea.Select);
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
@@ -5499,6 +5586,45 @@ var QueryBuilder = class QueryBuilder {
 			raw: void 0,
 			subquery: void 0,
 			values: [value]
+		});
+		return this;
+	};
+	/**
+	* `string_agg(x, sep ORDER BY y)` — ordered string aggregation. Postgres, SQLite and MSSQL (whose
+	* ordering renders as `WITHIN GROUP`). Hidden on MySQL, whose engine-native name is `groupConcat`.
+	* The separator is mandatory here, because Postgres and MSSQL have no one-argument form.
+	*/
+	selectStringAgg = (tableNameOrAlias, columnName, separator, alias, options = {}) => {
+		return this.#pushStringAgg("string_agg", tableNameOrAlias, columnName, true, separator, alias, options);
+	};
+	/**
+	* `GROUP_CONCAT(x ORDER BY y SEPARATOR sep)` — MySQL and SQLite. The separator is OPTIONAL (the
+	* engines default to `','`); omit it by leaving `separator` undefined. Hidden on Postgres and
+	* MSSQL, whose engine-native name is `stringAgg`.
+	*/
+	selectGroupConcat = (tableNameOrAlias, columnName, alias, options = {}) => {
+		const { separator, ...rest } = options;
+		return this.#pushStringAgg("group_concat", tableNameOrAlias, columnName, separator !== void 0, separator, alias, rest);
+	};
+	#pushStringAgg = (functionName, tableNameOrAlias, columnName, hasSeparator, separator, alias, options) => {
+		this.#markSelectQuery();
+		this.#state.selectStates.push({
+			builderType: BuilderType.SelectStringAgg,
+			tableNameOrAlias,
+			columnName,
+			alias,
+			raw: void 0,
+			subquery: void 0,
+			window: void 0,
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			stringAgg: {
+				functionName,
+				separator,
+				hasSeparator,
+				distinct: options.distinct === true,
+				orderBy: (options.orderBy ?? []).map((o) => ({ ...o }))
+			}
 		});
 		return this;
 	};

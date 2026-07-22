@@ -418,6 +418,7 @@ enum BuilderType {
   selectRaw,
   selectJsonExtract,
   selectAggregate,
+  selectStringAgg,
   selectWindow,
   updateColumn,
   updateRaw,
