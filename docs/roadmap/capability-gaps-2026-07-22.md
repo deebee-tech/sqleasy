@@ -1,7 +1,7 @@
 # SQLEasy capability roadmap
 
 **Status:** open. Written 2026-07-22, against SQLEasy 12.0.0 / contract 0.24.0.
-**How to use this:** every entry is written to be startable cold. Pick one, read its paragraph in
+**How to use this:** every entry is written so it can be picked up cold. Pick one, read its paragraph in
 §3, check §5 for whether something else has to land first, and go. Nothing here is sequenced —
 except the four dependency clusters in §5, which genuinely are.
 
@@ -13,7 +13,7 @@ pass whose job was to REFUTE it — "reachable via a raw hatch", "already emitte
 capability". 46 survived. The ones that were killed are listed in §4 so nobody re-sweeps them.
 
 This is a _capability_ list. It is not a bug list. Two defects the sweep surfaced were live silent
-failures in the shipped 11.0.0 and were fixed before 12.0.0 rather than roadmapped:
+failures in the shipped 11.0.0 and were fixed before 12.0.0 rather than deferred to this list:
 
 - **An empty alias emitted a zero-length delimited identifier** in every clause except FROM
   (`WHERE ""."id"`). Postgres and SQLite rejected it; **MySQL accepted it and returned rows**.
