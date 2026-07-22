@@ -138,6 +138,27 @@ SqlHelper defaultToSql(
   //
   // A lock covering half the rows you asked for is worse than no lock, because the caller believes
   // they hold it. SQLite refuses row locking outright, further down.
+  // On MySQL a trailing FOR UPDATE does not reach rows behind a DERIVED TABLE. Proven by a
+  // two-session test with both controls (innodb_lock_wait_timeout=3 / lock_timeout=3s):
+  //
+  //                                        MySQL 8.4     Postgres 17
+  //     control — no lock holder           not blocked   not blocked
+  //     holder: plain table FOR UPDATE     BLOCKED       BLOCKED
+  //     holder: derived table FOR UPDATE   NOT BLOCKED   BLOCKED
+  //
+  // The identical builder chain takes a real lock on Postgres and NO lock on MySQL, with no error
+  // either way — the caller proceeds believing rows are held while another session updates them.
+  if (config.databaseType == DatabaseType.mysql &&
+      state.rowLock != null &&
+      state.fromStates.any((from) => from.subquery != null)) {
+    throw ParserError(
+      ParserArea.general,
+      "MySQL's FOR UPDATE/FOR SHARE does not reach rows behind a derived table — they are read "
+      'completely unlocked, with no error, while Postgres locks them. Lock the base table in its '
+      'own statement, or join the table directly instead of wrapping it in a subquery.',
+    );
+  }
+
   if (state.rowLock != null && state.unionStates.isNotEmpty) {
     throw ParserError(
       ParserArea.general,

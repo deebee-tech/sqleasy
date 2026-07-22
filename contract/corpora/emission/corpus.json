@@ -25262,6 +25262,52 @@
           "throws": "General: A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them."
         }
       }
+    },
+    {
+      "name": "mysql refuses a row lock over a derived table, which postgres genuinely takes",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            }
+          ]
+        },
+        {
+          "op": "forUpdate"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: MSSQL cannot lock a derived table — a locking hint attaches to a table reference only"
+        },
+        "mysql": {
+          "throws": "General: MySQL's FOR UPDATE/FOR SHARE does not reach rows behind a derived table — they are read completely unlocked, with no error, while Postgres locks them. Lock the base table in its own statement, or join the table directly instead of wrapping it in a subquery."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\") AS \"x\" FOR UPDATE;",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\") AS \"x\" FOR UPDATE;"
+        },
+        "sqlite": {
+          "throws": "General: SQLite does not support row locking (FOR UPDATE/FOR SHARE)"
+        }
+      }
     }
   ]
 }

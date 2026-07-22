@@ -3291,6 +3291,7 @@ const defaultToSql = (state, config, mode, options) => {
 	}
 	if (state.rowLock && state.queryType !== QueryType.Select) throw new ParserError(ParserArea.General, "FOR UPDATE/FOR SHARE requires a SELECT query");
 	if (state.rowLock && state.unionStates.length > 0) throw new ParserError(ParserArea.General, "A row lock cannot cover a set operation — Postgres rejects it outright, and MySQL and MSSQL silently lock only one operand, leaving the rest of the rows you asked for unlocked. Lock the operands individually, or lock the base rows before combining them.");
+	if (config.databaseType === DatabaseType.Mysql && state.rowLock && state.fromStates.some((from) => from.subquery !== void 0)) throw new ParserError(ParserArea.General, "MySQL's FOR UPDATE/FOR SHARE does not reach rows behind a derived table — they are read completely unlocked, with no error, while Postgres locks them. Lock the base table in its own statement, or join the table directly instead of wrapping it in a subquery.");
 	if (state.upsertState && state.queryType !== QueryType.Insert) throw new ParserError(ParserArea.Insert, "Upsert (ON CONFLICT) requires INSERT");
 	if (state.callState && state.queryType !== QueryType.Call) throw new ParserError(ParserArea.Call, "Procedure/function call state requires queryType Call");
 	if (state.queryType === QueryType.Merge) {

@@ -163,6 +163,32 @@ export const defaultToSql = (
     );
   }
 
+  // On MySQL a trailing FOR UPDATE does not reach rows behind a DERIVED TABLE. Proven by a
+  // two-session test with both controls, `innodb_lock_wait_timeout=3` / `lock_timeout=3s`:
+  //
+  //                                        MySQL 8.4     Postgres 17
+  //     control — no lock holder           not blocked   not blocked
+  //     holder: plain table FOR UPDATE     BLOCKED       BLOCKED
+  //     holder: derived table FOR UPDATE   NOT BLOCKED   BLOCKED
+  //
+  // So the identical builder chain takes a real lock on Postgres and NO lock on MySQL, with no
+  // error either way — the caller proceeds believing rows are held while another session updates
+  // them underneath. Postgres keeps the capability; MySQL refuses rather than hand back a lock that
+  // was never taken. (A first attempt at this measurement was invalid — a lock holder from the
+  // previous probe was still sleeping in the background — which is why the controls are part of the record.)
+  if (
+    config.databaseType === DatabaseType.Mysql &&
+    state.rowLock &&
+    state.fromStates.some((from) => from.subquery !== undefined)
+  ) {
+    throw new ParserError(
+      ParserArea.General,
+      "MySQL's FOR UPDATE/FOR SHARE does not reach rows behind a derived table — they are read " +
+        'completely unlocked, with no error, while Postgres locks them. Lock the base table in its ' +
+        'own statement, or join the table directly instead of wrapping it in a subquery.',
+    );
+  }
+
   if (state.upsertState && state.queryType !== QueryType.Insert) {
     throw new ParserError(ParserArea.Insert, 'Upsert (ON CONFLICT) requires INSERT');
   }
