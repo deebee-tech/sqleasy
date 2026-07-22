@@ -57,6 +57,38 @@ type Dialect = {
   transactionDelimiters: ConfigurationDelimiters;
 };
 //#endregion
+//#region src/enums/aggregate-function.d.ts
+/**
+ * The five aggregate functions every dialect spells identically.
+ *
+ * This is a CALL NODE, not an expression AST. The operand is one column or `*`, with an optional
+ * DISTINCT — nothing nests inside it, and nothing composes with it. That boundary is the ruling
+ * this surface was built under: SQLEasy models clauses, and `COUNT(x)` is the one function shape
+ * common enough that expressing it only through `selectRaw` was costing more than the node costs.
+ * `CASE`, `CAST`, `COALESCE` and the scalar-function surface stay out, deliberately.
+ *
+ * All five are identical text on Postgres, MySQL, SQLite and MSSQL, so there is no engine-native
+ * naming split here — measured, along with `DISTINCT` inside each.
+ */
+declare const AggregateFunction: {
+  /** `COUNT(x)` — the only one that also accepts `*`. */
+  readonly Count: "Count";
+  readonly Sum: "Sum";
+  readonly Avg: "Avg";
+  readonly Min: "Min";
+  readonly Max: "Max";
+};
+/** One of the {@link AggregateFunction} values. */
+type AggregateFunction = (typeof AggregateFunction)[keyof typeof AggregateFunction];
+/**
+ * The operand that means "every row" rather than a column.
+ *
+ * Spelled as the SQL itself spells it. Only `COUNT` accepts it — `SUM(*)` and `MIN(*)` are
+ * "function sum() does not exist" on Postgres, not a parse error, so the refusal has to be ours.
+ * It is never quoted: `"*"` is a column literally named `*`.
+ */
+declare const AGGREGATE_STAR = "*";
+//#endregion
 //#region src/enums/call-return-intent.d.ts
 /**
  * What a {@link QueryBuilder.callFunction} call is expected to return, which decides whether
@@ -466,6 +498,8 @@ declare const BuilderType: {
   readonly Having: "Having";
   /** HAVING clause using raw SQL. */
   readonly HavingRaw: "HavingRaw";
+  /** `HAVING COUNT(x) > n` — the canonical HAVING, previously havingRaw-only. */
+  readonly HavingAggregate: "HavingAggregate";
   /** HAVING column BETWEEN low AND high. */
   readonly HavingBetween: "HavingBetween";
   /** Opens a parenthesized HAVING group. */
@@ -518,6 +552,8 @@ declare const BuilderType: {
   readonly SelectWindow: "SelectWindow";
   /** SELECT list JSON path extraction. */
   readonly SelectJsonExtract: "SelectJsonExtract";
+  /** `COUNT(x)` / `SUM(x)` / … in the SELECT list. */
+  readonly SelectAggregate: "SelectAggregate";
   /** UPDATE SET column assignment. */
   readonly UpdateColumn: "UpdateColumn";
   /** UPDATE fragment as raw SQL. */
@@ -712,6 +748,13 @@ type HavingState = {
   jsonExtractMode?: JsonExtractMode;
   fullTextMode?: FullTextMode;
   fullTextColumns?: FullTextColumnRef[];
+  /**
+   * The aggregate on the LEFT of a `HAVING COUNT(x) > n` comparison — the canonical HAVING, which
+   * was reachable only through `havingRaw` before the call node existed.
+   */
+  aggregate?: AggregateFunction;
+  /** `HAVING COUNT(DISTINCT x) > n`. */
+  aggregateDistinct?: boolean;
 };
 /** Creates a {@link HavingState} with default field values. */
 declare const createHavingState: () => HavingState;
@@ -1146,6 +1189,13 @@ type SelectState = {
   jsonPath?: string;
   /** Text vs JSON-object extraction for a `SelectJsonExtract` item. */
   jsonExtractMode?: JsonExtractMode;
+  /**
+   * The aggregate applied to this select item, when it is one. A call node with a single operand —
+   * `columnName`, or `*` — and nothing nested inside it.
+   */
+  aggregate?: AggregateFunction;
+  /** `COUNT(DISTINCT x)`. Refused with `*`, which every engine rejects. */
+  aggregateDistinct?: boolean;
 };
 /** Creates a {@link SelectState} with default field values. */
 declare const createSelectState: () => SelectState;
@@ -1830,6 +1880,17 @@ declare class QueryBuilder {
   /**
    * Dialect-aware JSON path extraction in the SELECT list (`->`/`->>`/`JSON_EXTRACT`/`JSON_VALUE`).
    */
+  /**
+   * `COUNT(x)`, `SUM(x)`, `AVG(x)`, `MIN(x)`, `MAX(x)` in the SELECT list, optionally over DISTINCT.
+   *
+   * Pass `'*'` as the column for `COUNT(*)` — only COUNT has a star form; `SUM(*)` is refused
+   * because Postgres answers "function sum() does not exist" rather than a parse error, so nothing
+   * downstream would catch it. `COUNT(DISTINCT *)` is refused for the same class of reason: every
+   * dialect rejects it, and dropping the DISTINCT silently would answer a different question.
+   *
+   * This is a call node with one operand, not an expression AST — see default-aggregate.ts.
+   */
+  selectAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, alias: string, distinct?: boolean) => this;
   selectJsonExtract: (tableNameOrAlias: string, columnName: string, path: string, mode?: JsonExtractMode, alias?: string) => this;
   state: () => QueryState;
   where: (tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: any) => this;
@@ -1893,6 +1954,11 @@ declare class QueryBuilder {
     columnName: string;
   }[][]) => this;
   having: (tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: any) => this;
+  /**
+   * `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
+   * `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
+   */
+  havingAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: unknown, distinct?: boolean) => this;
   havingRaw: (rawHaving: string) => this;
   havingRaws: (rawHavings: string[]) => this;
   havingJsonExtract: (tableNameOrAlias: string, columnName: string, path: string, mode: JsonExtractMode, whereOperator: WhereOperator, value: any) => this;
@@ -2314,5 +2380,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { AGGREGATE_STAR, AggregateFunction, BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.mts.map

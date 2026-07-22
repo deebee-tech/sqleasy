@@ -26559,6 +26559,309 @@
           "throws": "Insert: insertRaw replaces the whole INSERT statement, so an upsert clause set alongside it cannot reach the SQL. Put the conflict handling in the raw text, or build the insert with insertColumns/insertValues so the upsert has a statement to attach to."
         }
       }
+    },
+    {
+      "name": "count star is emitted bare, never as a quoted column",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Count",
+          "table": "",
+          "column": "*",
+          "alias": "n"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT COUNT(*) AS [n] FROM [dbo].[orders] AS [o];', N'';",
+            "params": []
+          },
+          "raw": "SELECT COUNT(*) AS [n] FROM [dbo].[orders] AS [o];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT COUNT(*) AS `n` FROM `orders` AS `o`;",
+            "params": []
+          },
+          "raw": "SELECT COUNT(*) AS `n` FROM `orders` AS `o`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT COUNT(*) AS \"n\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT COUNT(*) AS \"n\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT COUNT(*) AS \"n\" FROM \"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT COUNT(*) AS \"n\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "count distinct over a column",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Count",
+          "table": "o",
+          "column": "total",
+          "alias": "n",
+          "distinct": true
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT COUNT(DISTINCT [o].[total]) AS [n] FROM [dbo].[orders] AS [o];', N'';",
+            "params": []
+          },
+          "raw": "SELECT COUNT(DISTINCT [o].[total]) AS [n] FROM [dbo].[orders] AS [o];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT COUNT(DISTINCT `o`.`total`) AS `n` FROM `orders` AS `o`;",
+            "params": []
+          },
+          "raw": "SELECT COUNT(DISTINCT `o`.`total`) AS `n` FROM `orders` AS `o`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT COUNT(DISTINCT \"o\".\"total\") AS \"n\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT COUNT(DISTINCT \"o\".\"total\") AS \"n\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT COUNT(DISTINCT \"o\".\"total\") AS \"n\" FROM \"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT COUNT(DISTINCT \"o\".\"total\") AS \"n\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "sum avg min and max over a column",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Sum",
+          "table": "o",
+          "column": "total",
+          "alias": "s"
+        },
+        {
+          "op": "selectAggregate",
+          "aggregate": "Avg",
+          "table": "o",
+          "column": "total",
+          "alias": "a"
+        },
+        {
+          "op": "selectAggregate",
+          "aggregate": "Min",
+          "table": "o",
+          "column": "total",
+          "alias": "mn"
+        },
+        {
+          "op": "selectAggregate",
+          "aggregate": "Max",
+          "table": "o",
+          "column": "total",
+          "alias": "mx"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT SUM([o].[total]) AS [s], AVG([o].[total]) AS [a], MIN([o].[total]) AS [mn], MAX([o].[total]) AS [mx] FROM [dbo].[orders] AS [o];', N'';",
+            "params": []
+          },
+          "raw": "SELECT SUM([o].[total]) AS [s], AVG([o].[total]) AS [a], MIN([o].[total]) AS [mn], MAX([o].[total]) AS [mx] FROM [dbo].[orders] AS [o];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT SUM(`o`.`total`) AS `s`, AVG(`o`.`total`) AS `a`, MIN(`o`.`total`) AS `mn`, MAX(`o`.`total`) AS `mx` FROM `orders` AS `o`;",
+            "params": []
+          },
+          "raw": "SELECT SUM(`o`.`total`) AS `s`, AVG(`o`.`total`) AS `a`, MIN(`o`.`total`) AS `mn`, MAX(`o`.`total`) AS `mx` FROM `orders` AS `o`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT SUM(\"o\".\"total\") AS \"s\", AVG(\"o\".\"total\") AS \"a\", MIN(\"o\".\"total\") AS \"mn\", MAX(\"o\".\"total\") AS \"mx\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT SUM(\"o\".\"total\") AS \"s\", AVG(\"o\".\"total\") AS \"a\", MIN(\"o\".\"total\") AS \"mn\", MAX(\"o\".\"total\") AS \"mx\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT SUM(\"o\".\"total\") AS \"s\", AVG(\"o\".\"total\") AS \"a\", MIN(\"o\".\"total\") AS \"mn\", MAX(\"o\".\"total\") AS \"mx\" FROM \"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT SUM(\"o\".\"total\") AS \"s\", AVG(\"o\".\"total\") AS \"a\", MIN(\"o\".\"total\") AS \"mn\", MAX(\"o\".\"total\") AS \"mx\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "having count star greater than a value — the canonical having",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "customer_id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "groupByColumn",
+          "table": "o",
+          "column": "customer_id"
+        },
+        {
+          "op": "havingAggregate",
+          "aggregate": "Count",
+          "table": "",
+          "column": "*",
+          "operator": "GreaterThan",
+          "value": {
+            "t": "int",
+            "v": 1
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING COUNT(*) > @p0;', N'@p0 tinyint', @p0 = 1;",
+            "params": []
+          },
+          "raw": "SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING COUNT(*) > 1;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `o`.`customer_id` FROM `orders` AS `o` GROUP BY `o`.`customer_id` HAVING COUNT(*) > ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT `o`.`customer_id` FROM `orders` AS `o` GROUP BY `o`.`customer_id` HAVING COUNT(*) > 1;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"customer_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) > $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"customer_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) > 1;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"customer_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) > ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"customer_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) > 1;"
+        }
+      }
+    },
+    {
+      "name": "sum of star is refused — only count takes the star",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Sum",
+          "table": "",
+          "column": "*",
+          "alias": "s"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: SUM(*) is not a function any dialect has — only COUNT takes the star. Aggregate a column instead, or use count if you meant \"how many rows\"."
+        },
+        "mysql": {
+          "throws": "Select: SUM(*) is not a function any dialect has — only COUNT takes the star. Aggregate a column instead, or use count if you meant \"how many rows\"."
+        },
+        "postgres": {
+          "throws": "Select: SUM(*) is not a function any dialect has — only COUNT takes the star. Aggregate a column instead, or use count if you meant \"how many rows\"."
+        },
+        "sqlite": {
+          "throws": "Select: SUM(*) is not a function any dialect has — only COUNT takes the star. Aggregate a column instead, or use count if you meant \"how many rows\"."
+        }
+      }
+    },
+    {
+      "name": "count distinct star is refused by every dialect",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Count",
+          "table": "",
+          "column": "*",
+          "alias": "n",
+          "distinct": true
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count."
+        },
+        "mysql": {
+          "throws": "Select: COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count."
+        },
+        "postgres": {
+          "throws": "Select: COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count."
+        },
+        "sqlite": {
+          "throws": "Select: COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count."
+        }
+      }
     }
   ]
 }

@@ -125,6 +125,29 @@ enum UpsertAction {
 }
 
 /// JSON path extraction mode for `selectJsonExtract` / `whereJsonExtract` / `havingJsonExtract`.
+/// The five aggregate functions every dialect spells identically.
+///
+/// A CALL NODE, not an expression AST: one function, one operand, an optional DISTINCT. Nothing
+/// nests inside it. Measured identical on Postgres 17, MySQL 8.4, SQLite 3.51 and MSSQL 2022,
+/// including DISTINCT — so there is no engine-native naming split here.
+enum AggregateFunction {
+  count('Count'),
+  sum('Sum'),
+  avg('Avg'),
+  min('Min'),
+  max('Max');
+
+  const AggregateFunction(this.wire);
+
+  final String wire;
+
+  static AggregateFunction fromWire(String wire) =>
+      values.firstWhere((v) => v.wire == wire);
+}
+
+/// The operand meaning "every row". Only COUNT accepts it, and it is never quoted.
+const String aggregateStar = '*';
+
 enum JsonExtractMode {
   text('Text'),
   object('Object');
@@ -365,6 +388,7 @@ enum BuilderType {
   groupByGroupingSets,
   having,
   havingRaw,
+  havingAggregate,
   havingBetween,
   havingGroupBegin,
   havingGroupBuilder,
@@ -393,6 +417,7 @@ enum BuilderType {
   selectColumn,
   selectRaw,
   selectJsonExtract,
+  selectAggregate,
   selectWindow,
   updateColumn,
   updateRaw,

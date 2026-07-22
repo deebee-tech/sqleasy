@@ -35,6 +35,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const q = require(join(root, 'ts/query/dist/index.cjs'));
 
 const {
+  AggregateFunction,
   JoinType,
   JoinOperator,
   WhereOperator,
@@ -96,6 +97,10 @@ const CASES = {
   selectJsonExtract: {
     base: 'select',
     apply: (b) => b.selectJsonExtract('o', 'note', '$.x', JsonExtractMode.Text, 'k'),
+  },
+  selectAggregate: {
+    base: 'select',
+    apply: (b) => b.selectAggregate(AggregateFunction.Count, '', '*', 'n'),
   },
   selectWindow: {
     base: 'select',
@@ -193,6 +198,10 @@ const CASES = {
   havingInValues: { base: 'selectGrouped', apply: (b) => b.havingInValues('o', 'id', [1]) },
   havingNotInValues: { base: 'selectGrouped', apply: (b) => b.havingNotInValues('o', 'id', [1]) },
   havingRaw: { base: 'selectGrouped', apply: (b) => b.havingRaw('COUNT(*) > 1') },
+  havingAggregate: {
+    base: 'selectGrouped',
+    apply: (b) => b.havingAggregate(AggregateFunction.Count, '', '*', WhereOperator.GreaterThan, 1),
+  },
   havingRaws: { base: 'selectGrouped', apply: (b) => b.havingRaws(['COUNT(*) > 1']) },
   havingGroup: {
     base: 'selectGrouped',

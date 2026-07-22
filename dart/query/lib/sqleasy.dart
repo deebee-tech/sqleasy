@@ -53,6 +53,7 @@ export 'src/enums.dart'
         RowLockMode,
         RowLockWait,
         UpsertAction,
+        AggregateFunction,
         JsonExtractMode,
         FullTextMode,
         CallKind,

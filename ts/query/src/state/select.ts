@@ -1,4 +1,5 @@
 import { BuilderType } from '../enums/builder-type';
+import type { AggregateFunction } from '../enums/aggregate-function';
 import { JsonExtractMode } from '../enums/json-extract-mode';
 import type { QueryState } from './query';
 import type { WindowState } from './window';
@@ -30,6 +31,13 @@ export type SelectState = {
   jsonPath?: string;
   /** Text vs JSON-object extraction for a `SelectJsonExtract` item. */
   jsonExtractMode?: JsonExtractMode;
+  /**
+   * The aggregate applied to this select item, when it is one. A call node with a single operand —
+   * `columnName`, or `*` — and nothing nested inside it.
+   */
+  aggregate?: AggregateFunction;
+  /** `COUNT(DISTINCT x)`. Refused with `*`, which every engine rejects. */
+  aggregateDistinct?: boolean;
 };
 
 /** Creates a {@link SelectState} with default field values. */

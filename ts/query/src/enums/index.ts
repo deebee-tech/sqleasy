@@ -7,6 +7,7 @@ export * from './frame-bound-type';
 export * from './frame-unit';
 export * from './full-text-mode';
 export * from './hint-kind';
+export * from './aggregate-function';
 export * from './json-extract-mode';
 export * from './join-on-operator';
 export * from './join-operator';

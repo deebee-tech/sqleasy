@@ -31,6 +31,8 @@ const BuilderType = {
 	Having: "Having",
 	/** HAVING clause using raw SQL. */
 	HavingRaw: "HavingRaw",
+	/** `HAVING COUNT(x) > n` — the canonical HAVING, previously havingRaw-only. */
+	HavingAggregate: "HavingAggregate",
 	/** HAVING column BETWEEN low AND high. */
 	HavingBetween: "HavingBetween",
 	/** Opens a parenthesized HAVING group. */
@@ -83,6 +85,8 @@ const BuilderType = {
 	SelectWindow: "SelectWindow",
 	/** SELECT list JSON path extraction. */
 	SelectJsonExtract: "SelectJsonExtract",
+	/** `COUNT(x)` / `SUM(x)` / … in the SELECT list. */
+	SelectAggregate: "SelectAggregate",
 	/** UPDATE SET column assignment. */
 	UpdateColumn: "UpdateColumn",
 	/** UPDATE fragment as raw SQL. */
@@ -2346,6 +2350,83 @@ const defaultGroupBy = (state, config, mode) => {
 	return sqlHelper;
 };
 //#endregion
+//#region src/enums/aggregate-function.ts
+/**
+* The five aggregate functions every dialect spells identically.
+*
+* This is a CALL NODE, not an expression AST. The operand is one column or `*`, with an optional
+* DISTINCT — nothing nests inside it, and nothing composes with it. That boundary is the ruling
+* this surface was built under: SQLEasy models clauses, and `COUNT(x)` is the one function shape
+* common enough that expressing it only through `selectRaw` was costing more than the node costs.
+* `CASE`, `CAST`, `COALESCE` and the scalar-function surface stay out, deliberately.
+*
+* All five are identical text on Postgres, MySQL, SQLite and MSSQL, so there is no engine-native
+* naming split here — measured, along with `DISTINCT` inside each.
+*/
+const AggregateFunction = {
+	/** `COUNT(x)` — the only one that also accepts `*`. */
+	Count: "Count",
+	Sum: "Sum",
+	Avg: "Avg",
+	Min: "Min",
+	Max: "Max"
+};
+/**
+* The operand that means "every row" rather than a column.
+*
+* Spelled as the SQL itself spells it. Only `COUNT` accepts it — `SUM(*)` and `MIN(*)` are
+* "function sum() does not exist" on Postgres, not a parse error, so the refusal has to be ours.
+* It is never quoted: `"*"` is a column literally named `*`.
+*/
+const AGGREGATE_STAR = "*";
+//#endregion
+//#region src/parser/default-aggregate.ts
+/**
+* The five aggregate calls, rendered.
+*
+* ── WHAT THIS IS, AND THE LINE IT DOES NOT CROSS ──
+* A CALL NODE: one function, one operand, an optional DISTINCT. Nothing nests inside it and nothing
+* composes with it. SQLEasy models clauses rather than expressions, and that stays true — `CASE`,
+* `CAST`, `COALESCE` and a general scalar-function surface remain out. What changed is only that
+* `COUNT(x)` turned out to be common enough that reaching it exclusively through `selectRaw` cost
+* more than the node does: `HAVING COUNT(*) > 5`, the canonical HAVING, was `havingRaw` only.
+*
+* ── WHY THERE IS NO DIALECT SPLIT HERE ──
+* All five are identical text on all four engines, including DISTINCT inside them. Measured:
+*
+*     COUNT(*) · COUNT(col) · COUNT(DISTINCT col) · SUM(DISTINCT col) · AVG/MIN/MAX
+*       Postgres 17, MySQL 8.4, SQLite 3.51, MSSQL 2022 — all accepted
+*     COUNT(DISTINCT *)
+*       rejected by all four (SQLite: `near "*": syntax error`)
+*
+* So this is one of the genuinely shared capabilities, and gets one shared spelling. The
+* engine-native-name rule applies where the engines differ, and here they do not.
+*/
+const SQL_NAME = {
+	[AggregateFunction.Count]: "COUNT",
+	[AggregateFunction.Sum]: "SUM",
+	[AggregateFunction.Avg]: "AVG",
+	[AggregateFunction.Min]: "MIN",
+	[AggregateFunction.Max]: "MAX"
+};
+/**
+* Renders `FN(`, `FN(DISTINCT `, the operand, and `)`.
+*
+* The star is emitted bare. Quoting it would produce `"*"`, which is a column literally named `*` —
+* a different query that happens to parse.
+*/
+const emitAggregateCall = (sqlHelper, config, aggregate, tableNameOrAlias, columnName, distinct, area) => {
+	const isStar = columnName === "*";
+	if (isStar && aggregate !== AggregateFunction.Count) throw new ParserError(area, `${SQL_NAME[aggregate]}(*) is not a function any dialect has — only COUNT takes the star. Aggregate a column instead, or use count if you meant "how many rows".`);
+	if (isStar && distinct) throw new ParserError(area, "COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count.");
+	if (!isStar && columnName === "") throw new ParserError(area, `${SQL_NAME[aggregate]} requires a column, or '*' for count`);
+	sqlHelper.addSqlSnippet(SQL_NAME[aggregate]);
+	sqlHelper.addSqlSnippet("(");
+	if (distinct) sqlHelper.addSqlSnippet("DISTINCT ");
+	sqlHelper.addSqlSnippet(isStar ? "*" : qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(")");
+};
+//#endregion
 //#region src/parser/default-having.ts
 /**
 * HAVING mirrors WHERE's predicate set exactly (BETWEEN, IN, NULL checks, EXISTS, groups) —
@@ -2425,6 +2506,13 @@ const defaultHaving = (state, config, mode, options) => {
 			if (inner.startsWith("HAVING ")) inner = inner.slice(7);
 			if (inner.trim() === "") throw new ParserError(ParserArea.Having, "HAVING group cannot be empty");
 			sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.HavingAggregate) {
+			const scratch = new SqlHelper(mode);
+			emitAggregateCall(scratch, config, cur.aggregate, cur.tableNameOrAlias ?? "", cur.columnName ?? "", cur.aggregateDistinct === true, ParserArea.Having);
+			emitComparisonPredicate(sqlHelper, config, scratch.getSql(), cur.whereOperator, cur.values[0], ParserArea.Having);
 			spaceAfter();
 			continue;
 		}
@@ -2989,6 +3077,15 @@ const defaultSelect = (state, config, mode, options) => {
 		if (selectState.builderType === BuilderType.SelectBuilder) {
 			const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
+			if (selectState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+			}
+			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			continue;
+		}
+		if (selectState.builderType === BuilderType.SelectAggregate) {
+			emitAggregateCall(sqlHelper, config, selectState.aggregate, selectState.tableNameOrAlias ?? "", selectState.columnName ?? "", selectState.aggregateDistinct === true, ParserArea.Select);
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
@@ -4783,6 +4880,33 @@ var QueryBuilder = class QueryBuilder {
 	/**
 	* Dialect-aware JSON path extraction in the SELECT list (`->`/`->>`/`JSON_EXTRACT`/`JSON_VALUE`).
 	*/
+	/**
+	* `COUNT(x)`, `SUM(x)`, `AVG(x)`, `MIN(x)`, `MAX(x)` in the SELECT list, optionally over DISTINCT.
+	*
+	* Pass `'*'` as the column for `COUNT(*)` — only COUNT has a star form; `SUM(*)` is refused
+	* because Postgres answers "function sum() does not exist" rather than a parse error, so nothing
+	* downstream would catch it. `COUNT(DISTINCT *)` is refused for the same class of reason: every
+	* dialect rejects it, and dropping the DISTINCT silently would answer a different question.
+	*
+	* This is a call node with one operand, not an expression AST — see default-aggregate.ts.
+	*/
+	selectAggregate = (aggregate, tableNameOrAlias, columnName, alias, distinct = false) => {
+		this.#markSelectQuery();
+		this.#state.selectStates.push({
+			builderType: BuilderType.SelectAggregate,
+			tableNameOrAlias,
+			columnName,
+			alias,
+			raw: void 0,
+			subquery: void 0,
+			window: void 0,
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			aggregate,
+			aggregateDistinct: distinct
+		});
+		return this;
+	};
 	selectJsonExtract = (tableNameOrAlias, columnName, path, mode = JsonExtractMode.Text, alias = "") => {
 		this.#markSelectQuery();
 		this.#state.selectStates.push({
@@ -5177,6 +5301,25 @@ var QueryBuilder = class QueryBuilder {
 			raw: void 0,
 			subquery: void 0,
 			values: [value]
+		});
+		return this;
+	};
+	/**
+	* `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
+	* `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
+	*/
+	havingAggregate = (aggregate, tableNameOrAlias, columnName, whereOperator, value, distinct = false) => {
+		this.#combinatorTarget = "having";
+		this.#state.havingStates.push({
+			builderType: BuilderType.HavingAggregate,
+			tableNameOrAlias,
+			columnName,
+			whereOperator,
+			raw: void 0,
+			subquery: void 0,
+			values: [value],
+			aggregate,
+			aggregateDistinct: distinct
 		});
 		return this;
 	};
@@ -6512,6 +6655,8 @@ const Fn = {
 	}
 };
 //#endregion
+exports.AGGREGATE_STAR = AGGREGATE_STAR;
+exports.AggregateFunction = AggregateFunction;
 exports.BuilderType = BuilderType;
 exports.CallKind = CallKind;
 exports.CallParamDirection = CallParamDirection;

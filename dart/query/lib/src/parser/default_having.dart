@@ -5,6 +5,7 @@ import '../identifier.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 import 'comparison_operator.dart';
+import 'default_aggregate.dart';
 import 'default_json_predicate.dart';
 import 'to_sql.dart';
 
@@ -167,6 +168,30 @@ SqlHelper defaultHaving(
         throw ParserError(ParserArea.having, 'HAVING group cannot be empty');
       }
       sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+      spaceAfter();
+      continue;
+    }
+
+    if (cur.builderType == BuilderType.havingAggregate) {
+      final scratch = SqlHelper(mode);
+      emitAggregateCall(
+        scratch,
+        config,
+        cur.aggregate!,
+        cur.tableNameOrAlias ?? '',
+        cur.columnName ?? '',
+        cur.aggregateDistinct,
+        ParserArea.having,
+      );
+
+      emitComparisonPredicate(
+        sqlHelper,
+        config,
+        scratch.getSql(),
+        cur.whereOperator,
+        cur.values.isNotEmpty ? cur.values[0] : null,
+        ParserArea.having,
+      );
       spaceAfter();
       continue;
     }

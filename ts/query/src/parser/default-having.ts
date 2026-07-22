@@ -9,6 +9,7 @@ import { SqlHelper } from '../helpers/sql';
 import type { HavingState } from '../state/having';
 import type { QueryState } from '../state/query';
 import { emitComparisonPredicate } from './comparison-operator';
+import { emitAggregateCall } from './default-aggregate';
 import {
   emitFullTextMatchPredicate,
   emitJsonContainsPredicate,
@@ -171,6 +172,30 @@ export const defaultHaving = (
         throw new ParserError(ParserArea.Having, 'HAVING group cannot be empty');
       }
       sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+      spaceAfter();
+      continue;
+    }
+
+    if (cur.builderType === BuilderType.HavingAggregate) {
+      const scratch = new SqlHelper(mode);
+      emitAggregateCall(
+        scratch,
+        config,
+        cur.aggregate!,
+        cur.tableNameOrAlias ?? '',
+        cur.columnName ?? '',
+        cur.aggregateDistinct === true,
+        ParserArea.Having,
+      );
+
+      emitComparisonPredicate(
+        sqlHelper,
+        config,
+        scratch.getSql(),
+        cur.whereOperator,
+        cur.values[0],
+        ParserArea.Having,
+      );
       spaceAfter();
       continue;
     }

@@ -93,6 +93,12 @@ class SelectState {
 
   /// The `OVER (...)` clause for a [BuilderType.selectWindow] item.
   WindowState? window;
+
+  /// The aggregate applied to this select item, when it is one. One operand, nothing nested.
+  AggregateFunction? aggregate;
+
+  /// `COUNT(DISTINCT x)`. Refused with `*`, which every engine rejects.
+  bool aggregateDistinct = false;
 }
 
 class FromState {
@@ -173,6 +179,12 @@ class HavingState {
 
   /// Full-text column list for [BuilderType.havingFullText].
   List<FullTextColumnRef>? fullTextColumns;
+
+  /// The aggregate on the LEFT of a `HAVING COUNT(x) > n` comparison.
+  AggregateFunction? aggregate;
+
+  /// `HAVING COUNT(DISTINCT x) > n`.
+  bool aggregateDistinct = false;
 }
 
 class GroupByState {

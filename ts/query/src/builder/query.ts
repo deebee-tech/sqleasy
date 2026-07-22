@@ -1,4 +1,5 @@
 import type { Dialect } from '../configuration/configuration';
+import type { AggregateFunction } from '../enums/aggregate-function';
 import { BuilderType } from '../enums/builder-type';
 import { CallKind } from '../enums/call-kind';
 import { CallParamDirection } from '../enums/call-param-direction';
@@ -850,6 +851,40 @@ export class QueryBuilder {
   /**
    * Dialect-aware JSON path extraction in the SELECT list (`->`/`->>`/`JSON_EXTRACT`/`JSON_VALUE`).
    */
+  /**
+   * `COUNT(x)`, `SUM(x)`, `AVG(x)`, `MIN(x)`, `MAX(x)` in the SELECT list, optionally over DISTINCT.
+   *
+   * Pass `'*'` as the column for `COUNT(*)` — only COUNT has a star form; `SUM(*)` is refused
+   * because Postgres answers "function sum() does not exist" rather than a parse error, so nothing
+   * downstream would catch it. `COUNT(DISTINCT *)` is refused for the same class of reason: every
+   * dialect rejects it, and dropping the DISTINCT silently would answer a different question.
+   *
+   * This is a call node with one operand, not an expression AST — see default-aggregate.ts.
+   */
+  public selectAggregate = (
+    aggregate: AggregateFunction,
+    tableNameOrAlias: string,
+    columnName: string,
+    alias: string,
+    distinct = false,
+  ): this => {
+    this.#markSelectQuery();
+    this.#state.selectStates.push({
+      builderType: BuilderType.SelectAggregate,
+      tableNameOrAlias,
+      columnName,
+      alias,
+      raw: undefined,
+      subquery: undefined,
+      window: undefined,
+      jsonPath: undefined,
+      jsonExtractMode: undefined,
+      aggregate,
+      aggregateDistinct: distinct,
+    });
+    return this;
+  };
+
   public selectJsonExtract = (
     tableNameOrAlias: string,
     columnName: string,
@@ -1358,6 +1393,33 @@ export class QueryBuilder {
       values: [value],
     });
 
+    return this;
+  };
+
+  /**
+   * `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
+   * `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
+   */
+  public havingAggregate = (
+    aggregate: AggregateFunction,
+    tableNameOrAlias: string,
+    columnName: string,
+    whereOperator: WhereOperator,
+    value: unknown,
+    distinct = false,
+  ): this => {
+    this.#combinatorTarget = 'having';
+    this.#state.havingStates.push({
+      builderType: BuilderType.HavingAggregate,
+      tableNameOrAlias,
+      columnName,
+      whereOperator,
+      raw: undefined,
+      subquery: undefined,
+      values: [value],
+      aggregate,
+      aggregateDistinct: distinct,
+    });
     return this;
   };
 

@@ -1,3 +1,4 @@
+import type { AggregateFunction } from '../enums/aggregate-function';
 import { BuilderType } from '../enums/builder-type';
 import { FullTextMode } from '../enums/full-text-mode';
 import { JsonExtractMode } from '../enums/json-extract-mode';
@@ -28,6 +29,13 @@ export type HavingState = {
   jsonExtractMode?: JsonExtractMode;
   fullTextMode?: FullTextMode;
   fullTextColumns?: FullTextColumnRef[];
+  /**
+   * The aggregate on the LEFT of a `HAVING COUNT(x) > n` comparison — the canonical HAVING, which
+   * was reachable only through `havingRaw` before the call node existed.
+   */
+  aggregate?: AggregateFunction;
+  /** `HAVING COUNT(DISTINCT x) > n`. */
+  aggregateDistinct?: boolean;
 };
 
 /** Creates a {@link HavingState} with default field values. */

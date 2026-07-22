@@ -342,6 +342,26 @@ class QueryBuilder
     return this;
   }
 
+  /// `COUNT(x)`, `SUM(x)`, `AVG(x)`, `MIN(x)`, `MAX(x)` in the SELECT list, optionally over
+  /// DISTINCT. Pass `'*'` as the column for `COUNT(*)` — only COUNT has a star form.
+  QueryBuilder selectAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column, {
+    String? alias,
+    bool distinct = false,
+  }) {
+    _markSelectQuery();
+    _state.selectStates.add(SelectState()
+      ..builderType = BuilderType.selectAggregate
+      ..tableNameOrAlias = table
+      ..columnName = column
+      ..alias = alias
+      ..aggregate = aggregate
+      ..aggregateDistinct = distinct);
+    return this;
+  }
+
   // ---- FROM ----------------------------------------------------------------------------------
 
   QueryBuilder fromTable(String table, {String? alias, String? owner}) {
@@ -908,6 +928,27 @@ class QueryBuilder
       ..columnName = column
       ..whereOperator = operator
       ..values = [value]);
+    return this;
+  }
+
+  /// `HAVING COUNT(x) > n` — the canonical HAVING, previously reachable only through havingRaw.
+  QueryBuilder havingAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column,
+    WhereOperator operator,
+    Object? value, {
+    bool distinct = false,
+  }) {
+    _combinatorTarget = 'having';
+    _state.havingStates.add(HavingState()
+      ..builderType = BuilderType.havingAggregate
+      ..tableNameOrAlias = table
+      ..columnName = column
+      ..whereOperator = operator
+      ..values = [value]
+      ..aggregate = aggregate
+      ..aggregateDistinct = distinct);
     return this;
   }
 

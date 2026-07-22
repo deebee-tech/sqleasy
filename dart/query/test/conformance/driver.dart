@@ -255,6 +255,14 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
       case 'selectWindow':
         b.selectWindow(_str(op, 'fn'), (w) => _applyWindow(w, _ops(op, 'over')),
             alias: _optStr(op, 'alias'));
+      case 'selectAggregate':
+        b.selectAggregate(
+          AggregateFunction.fromWire(_str(op, 'aggregate')),
+          _str(op, 'table'),
+          _str(op, 'column'),
+          alias: _optStr(op, 'alias'),
+          distinct: op['distinct'] == true,
+        );
       case 'selectJsonExtract':
         b.selectJsonExtract(
           _str(op, 'table'),
@@ -440,6 +448,15 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
       case 'having':
         b.having(_str(op, 'table'), _str(op, 'column'),
             WhereOperator.fromWire(_str(op, 'operator')), _val(op));
+      case 'havingAggregate':
+        b.havingAggregate(
+          AggregateFunction.fromWire(_str(op, 'aggregate')),
+          _str(op, 'table'),
+          _str(op, 'column'),
+          WhereOperator.fromWire(_str(op, 'operator')),
+          _val(op),
+          distinct: op['distinct'] == true,
+        );
       case 'havingRaw':
         b.havingRaw(_str(op, 'sql'));
       case 'havingBetween':

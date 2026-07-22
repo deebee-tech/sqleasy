@@ -29,6 +29,8 @@ export const BuilderType = {
   Having: 'Having',
   /** HAVING clause using raw SQL. */
   HavingRaw: 'HavingRaw',
+  /** `HAVING COUNT(x) > n` — the canonical HAVING, previously havingRaw-only. */
+  HavingAggregate: 'HavingAggregate',
   /** HAVING column BETWEEN low AND high. */
   HavingBetween: 'HavingBetween',
   /** Opens a parenthesized HAVING group. */
@@ -81,6 +83,8 @@ export const BuilderType = {
   SelectWindow: 'SelectWindow',
   /** SELECT list JSON path extraction. */
   SelectJsonExtract: 'SelectJsonExtract',
+  /** `COUNT(x)` / `SUM(x)` / … in the SELECT list. */
+  SelectAggregate: 'SelectAggregate',
   /** UPDATE SET column assignment. */
   UpdateColumn: 'UpdateColumn',
   /** UPDATE fragment as raw SQL. */

@@ -59,6 +59,13 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     JsonExtractMode mode, {
     String? alias,
   });
+  MssqlQueryBuilder selectAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column, {
+    String? alias,
+    bool distinct = false,
+  });
   MssqlQueryBuilder fromTable(String table, {String? alias, String? owner});
   MssqlQueryBuilder fromTables(List<TableRef> tables);
   MssqlQueryBuilder fromRaw(String rawFrom);
@@ -187,6 +194,14 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  MssqlQueryBuilder havingAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column,
+    WhereOperator operator,
+    Object? value, {
+    bool distinct = false,
+  });
   MssqlQueryBuilder havingRaw(String rawHaving);
   MssqlQueryBuilder havingRaws(List<String> rawHavings);
   MssqlQueryBuilder havingJsonExtract(
@@ -357,6 +372,13 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     JsonExtractMode mode, {
     String? alias,
   });
+  MysqlQueryBuilder selectAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column, {
+    String? alias,
+    bool distinct = false,
+  });
   MysqlQueryBuilder fromTable(String table, {String? alias, String? owner});
   MysqlQueryBuilder fromTables(List<TableRef> tables);
   MysqlQueryBuilder fromRaw(String rawFrom);
@@ -476,6 +498,14 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  MysqlQueryBuilder havingAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column,
+    WhereOperator operator,
+    Object? value, {
+    bool distinct = false,
+  });
   MysqlQueryBuilder havingRaw(String rawHaving);
   MysqlQueryBuilder havingRaws(List<String> rawHavings);
   MysqlQueryBuilder havingJsonExtract(
@@ -667,6 +697,13 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     JsonExtractMode mode, {
     String? alias,
   });
+  PostgresQueryBuilder selectAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column, {
+    String? alias,
+    bool distinct = false,
+  });
   PostgresQueryBuilder fromTable(String table, {String? alias, String? owner});
   PostgresQueryBuilder fromTables(List<TableRef> tables);
   PostgresQueryBuilder fromRaw(String rawFrom);
@@ -799,6 +836,14 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  PostgresQueryBuilder havingAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column,
+    WhereOperator operator,
+    Object? value, {
+    bool distinct = false,
+  });
   PostgresQueryBuilder havingRaw(String rawHaving);
   PostgresQueryBuilder havingRaws(List<String> rawHavings);
   PostgresQueryBuilder havingJsonExtract(
@@ -1008,6 +1053,13 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     JsonExtractMode mode, {
     String? alias,
   });
+  SqliteQueryBuilder selectAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column, {
+    String? alias,
+    bool distinct = false,
+  });
   SqliteQueryBuilder fromTable(String table, {String? alias, String? owner});
   SqliteQueryBuilder fromTables(List<TableRef> tables);
   SqliteQueryBuilder fromRaw(String rawFrom);
@@ -1123,6 +1175,14 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value,
   );
+  SqliteQueryBuilder havingAggregate(
+    AggregateFunction aggregate,
+    String table,
+    String column,
+    WhereOperator operator,
+    Object? value, {
+    bool distinct = false,
+  });
   SqliteQueryBuilder havingRaw(String rawHaving);
   SqliteQueryBuilder havingRaws(List<String> rawHavings);
   SqliteQueryBuilder havingJsonExtract(

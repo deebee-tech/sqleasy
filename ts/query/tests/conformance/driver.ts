@@ -1,3 +1,4 @@
+import { AggregateFunction } from '../../src/enums/aggregate-function';
 import {
   CallReturnIntent,
   FrameBoundType,
@@ -370,6 +371,15 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'selectWindow':
         b.selectWindow(str(op, 'fn'), (w) => applyWindow(w, ops(op, 'over')), opt(op, 'alias'));
         break;
+      case 'selectAggregate':
+        b.selectAggregate(
+          enumOf(op, 'aggregate', AggregateFunction),
+          str(op, 'table'),
+          str(op, 'column'),
+          opt(op, 'alias'),
+          op.distinct === true,
+        );
+        break;
       case 'selectJsonExtract':
         b.selectJsonExtract(
           str(op, 'table'),
@@ -615,6 +625,16 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           str(op, 'column'),
           enumOf(op, 'operator', WhereOperator),
           val(op),
+        );
+        break;
+      case 'havingAggregate':
+        b.havingAggregate(
+          enumOf(op, 'aggregate', AggregateFunction),
+          str(op, 'table'),
+          str(op, 'column'),
+          enumOf(op, 'operator', WhereOperator),
+          val(op),
+          op.distinct === true,
         );
         break;
       case 'havingRaw':
