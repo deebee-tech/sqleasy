@@ -26070,6 +26070,337 @@
           "raw": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = 1 UNION ALL SELECT DISTINCT t.n + 1 FROM t WHERE t.n < 3) SELECT \"n\" FROM t;"
         }
       }
+    },
+    {
+      "name": "a cte referenced from inside a predicate subquery is not owner qualified",
+      "ops": [
+        {
+          "op": "cte",
+          "name": "d",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "x",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": "x"
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": "id"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "whereInWithBuilder",
+          "table": "o",
+          "column": "id",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "z",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "d",
+              "alias": "z"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT [o].[id] AS [id] FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [z].[id] AS [id] FROM [d] AS [z]);', N'';",
+            "params": []
+          },
+          "raw": "WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT [o].[id] AS [id] FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [z].[id] AS [id] FROM [d] AS [z]);"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT `o`.`id` AS `id` FROM `orders` AS `o` WHERE `o`.`id` IN (SELECT `z`.`id` AS `id` FROM `d` AS `z`);",
+            "params": []
+          },
+          "raw": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT `o`.`id` AS `id` FROM `orders` AS `o` WHERE `o`.`id` IN (SELECT `z`.`id` AS `id` FROM `d` AS `z`);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\");",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\");"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\");",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\");"
+        }
+      }
+    },
+    {
+      "name": "a cte referenced from inside a derived table is not owner qualified",
+      "ops": [
+        {
+          "op": "cte",
+          "name": "d",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "x",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": "x"
+            }
+          ]
+        },
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "q",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "z",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "d",
+              "alias": "z"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT * FROM (SELECT [z].[id] AS [id] FROM [d] AS [z]) AS [q];', N'';",
+            "params": []
+          },
+          "raw": "WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT * FROM (SELECT [z].[id] AS [id] FROM [d] AS [z]) AS [q];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT * FROM (SELECT `z`.`id` AS `id` FROM `d` AS `z`) AS `q`;",
+            "params": []
+          },
+          "raw": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT * FROM (SELECT `z`.`id` AS `id` FROM `d` AS `z`) AS `q`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT * FROM (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\") AS \"q\";",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT * FROM (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\") AS \"q\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT * FROM (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\") AS \"q\";",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT * FROM (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\") AS \"q\";"
+        }
+      }
+    },
+    {
+      "name": "a cte referenced from inside a set operation branch is not owner qualified",
+      "ops": [
+        {
+          "op": "cte",
+          "name": "d",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "x",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": "x"
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": "id"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "z",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "d",
+              "alias": "z"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT [o].[id] AS [id] FROM [dbo].[orders] AS [o] UNION ALL SELECT [z].[id] AS [id] FROM [d] AS [z];', N'';",
+            "params": []
+          },
+          "raw": "WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT [o].[id] AS [id] FROM [dbo].[orders] AS [o] UNION ALL SELECT [z].[id] AS [id] FROM [d] AS [z];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT `o`.`id` AS `id` FROM `orders` AS `o` UNION ALL SELECT `z`.`id` AS `id` FROM `d` AS `z`;",
+            "params": []
+          },
+          "raw": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT `o`.`id` AS `id` FROM `orders` AS `o` UNION ALL SELECT `z`.`id` AS `id` FROM `d` AS `z`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"o\" UNION ALL SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\";",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"o\" UNION ALL SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" UNION ALL SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\";",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" UNION ALL SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\";"
+        }
+      }
+    },
+    {
+      "name": "a cte referenced two sub-builder levels down is not owner qualified",
+      "ops": [
+        {
+          "op": "cte",
+          "name": "d",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "x",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": "x"
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "id",
+          "alias": "id"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "whereInWithBuilder",
+          "table": "o",
+          "column": "id",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "y",
+              "column": "id",
+              "alias": "id"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": "y"
+            },
+            {
+              "op": "whereInWithBuilder",
+              "table": "y",
+              "column": "id",
+              "ops": [
+                {
+                  "op": "selectColumn",
+                  "table": "z",
+                  "column": "id",
+                  "alias": "id"
+                },
+                {
+                  "op": "fromTable",
+                  "table": "d",
+                  "alias": "z"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT [o].[id] AS [id] FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [y].[id] AS [id] FROM [dbo].[orders] AS [y] WHERE [y].[id] IN (SELECT [z].[id] AS [id] FROM [d] AS [z]));', N'';",
+            "params": []
+          },
+          "raw": "WITH [d] AS (SELECT [x].[id] AS [id] FROM [dbo].[orders] AS [x]) SELECT [o].[id] AS [id] FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [y].[id] AS [id] FROM [dbo].[orders] AS [y] WHERE [y].[id] IN (SELECT [z].[id] AS [id] FROM [d] AS [z]));"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT `o`.`id` AS `id` FROM `orders` AS `o` WHERE `o`.`id` IN (SELECT `y`.`id` AS `id` FROM `orders` AS `y` WHERE `y`.`id` IN (SELECT `z`.`id` AS `id` FROM `d` AS `z`));",
+            "params": []
+          },
+          "raw": "WITH `d` AS (SELECT `x`.`id` AS `id` FROM `orders` AS `x`) SELECT `o`.`id` AS `id` FROM `orders` AS `o` WHERE `o`.`id` IN (SELECT `y`.`id` AS `id` FROM `orders` AS `y` WHERE `y`.`id` IN (SELECT `z`.`id` AS `id` FROM `d` AS `z`));"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"y\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"y\" WHERE \"y\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\"));",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"y\".\"id\" AS \"id\" FROM \"public\".\"orders\" AS \"y\" WHERE \"y\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\"));"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"y\".\"id\" AS \"id\" FROM \"orders\" AS \"y\" WHERE \"y\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\"));",
+            "params": []
+          },
+          "raw": "WITH \"d\" AS (SELECT \"x\".\"id\" AS \"id\" FROM \"orders\" AS \"x\") SELECT \"o\".\"id\" AS \"id\" FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"y\".\"id\" AS \"id\" FROM \"orders\" AS \"y\" WHERE \"y\".\"id\" IN (SELECT \"z\".\"id\" AS \"id\" FROM \"d\" AS \"z\"));"
+        }
+      }
     }
   ]
 }

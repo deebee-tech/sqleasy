@@ -1350,6 +1350,16 @@ type PreparedSql = {
 /** Hooks the dialect can inject into the shared clause walk (e.g. MSSQL's `TOP`). */
 type ToSqlOptions = {
   beforeSelectColumns?: (state: QueryState, config: Dialect, sqlHelper: SqlHelper) => void;
+  /**
+   * Every CTE name declared by this statement AND by each statement enclosing it.
+   *
+   * A CTE is visible to the whole statement, including its subqueries — so deciding whether a FROM
+   * target names a CTE cannot be answered from the state currently being parsed. Each child builder
+   * gets a FRESH state whose `cteStates` is empty, so an outer-declared name was invisible one level
+   * down and the dialect's default owner got stamped on it. Threading the accumulated set is what
+   * makes the answer the same at every depth.
+   */
+  declaredCteNames?: ReadonlySet<string>;
 };
 /**
  * Renders a {@link QueryState} to SQL by walking its clauses in order. Pure and

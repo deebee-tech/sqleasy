@@ -46,9 +46,34 @@ typedef BeforeSelectColumns = void Function(
 
 /// Hooks the dialect can inject into the shared clause walk.
 class ToSqlOptions {
-  const ToSqlOptions({this.beforeSelectColumns});
+  const ToSqlOptions({this.beforeSelectColumns, this.declaredCteNames});
 
   final BeforeSelectColumns? beforeSelectColumns;
+
+  /// Every CTE name declared by this statement AND by each statement enclosing it.
+  ///
+  /// A CTE is visible to the whole statement, including its subqueries — so deciding whether a FROM
+  /// target names a CTE cannot be answered from the state currently being parsed. Each child builder
+  /// gets a FRESH state whose `cteStates` is empty, so an outer-declared name was invisible one
+  /// level down and the dialect's default owner got stamped on it.
+  final Set<String>? declaredCteNames;
+}
+
+/// Adds this statement's own CTE names to the set inherited from its enclosing statements.
+///
+/// Returns the SAME options when the statement declares nothing, so the common case allocates
+/// nothing.
+ToSqlOptions? _withDeclaredCteNames(ToSqlOptions? options, QueryState state) {
+  if (state.cteStates.isEmpty) return options;
+
+  final names = <String>{...?options?.declaredCteNames};
+  for (final cte in state.cteStates) {
+    names.add(cte.name);
+  }
+  return ToSqlOptions(
+    beforeSelectColumns: options?.beforeSelectColumns,
+    declaredCteNames: names,
+  );
 }
 
 void _emitMutationWhere(
@@ -111,6 +136,11 @@ SqlHelper defaultToSql(
       '${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead',
     );
   }
+
+  // Every downstream parse — this statement's own clauses AND every child builder it contains —
+  // sees the CTE names declared here plus those inherited from enclosing statements. Reassigning
+  // once is what guarantees no child path is missed: there is no second place to forget.
+  options = _withDeclaredCteNames(options, state);
 
   // Index hints (hintUseIndex/hintForceIndex) are a MySQL-only construct, and the capability check
   // must run for EVERY statement kind. It used to live only on the SELECT tail, so a hint set on a

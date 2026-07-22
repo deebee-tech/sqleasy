@@ -1791,7 +1791,7 @@ const defaultFrom = (state, config, mode, options) => {
 		}
 		if (fromState.builderType === BuilderType.FromTable) {
 			if (fromState.owner !== "" && config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.From, "MySQL does not support table owners");
-			const namesADeclaredCte = state.cteStates.some((cte) => cte.name === fromState.tableName);
+			const namesADeclaredCte = state.cteStates.some((cte) => cte.name === fromState.tableName) || fromState.tableName !== void 0 && options?.declaredCteNames?.has(fromState.tableName) === true;
 			if (fromState.owner !== "" && !namesADeclaredCte) {
 				sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
 				sqlHelper.addSqlSnippet(".");
@@ -3329,6 +3329,21 @@ const defaultWhere = (state, config, mode, options) => {
 //#endregion
 //#region src/parser/to-sql.ts
 /**
+* Adds this statement's own CTE names to the set inherited from its enclosing statements.
+*
+* Returns the SAME options object when the statement declares nothing, so the common case
+* allocates nothing and the identity of `options` is preserved for every other consumer.
+*/
+const withDeclaredCteNames = (options, state) => {
+	if (state.cteStates.length === 0) return options;
+	const names = new Set(options?.declaredCteNames ?? []);
+	for (const cte of state.cteStates) names.add(cte.name);
+	return {
+		...options,
+		declaredCteNames: names
+	};
+};
+/**
 * Emits the ` WHERE ...` clause for a join-backed UPDATE/DELETE. For MySQL/MSSQL the join's ON
 * conditions were already emitted inline as real `JOIN ... ON` syntax by `defaultUpdate`/
 * `defaultDelete`, so this is just the caller's own `.where(...)` predicates, unchanged. For
@@ -3366,6 +3381,7 @@ const defaultToSql = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state === null || state === void 0) throw new ParserError(ParserArea.General, "No state provided");
 	if (config.databaseType !== DatabaseType.Mssql && hasExplicitTop(state)) throw new ParserError(ParserArea.LimitOffset, `${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead`);
+	options = withDeclaredCteNames(options, state);
 	validateHints(state, config, ParserArea.General);
 	if (state.isInnerStatement && state.queryType !== QueryType.Select) {
 		if (!(state.isCteBody === true && config.databaseType === DatabaseType.Postgres)) throw new ParserError(ParserArea.General, `A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. ${config.databaseType === DatabaseType.Postgres ? "Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant." : `${dialectDisplayName(config.databaseType)} has no data-modifying CTE either — run the mutation as its own statement.`}`);

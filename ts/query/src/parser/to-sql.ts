@@ -46,6 +46,35 @@ export type PreparedSql = {
 /** Hooks the dialect can inject into the shared clause walk (e.g. MSSQL's `TOP`). */
 export type ToSqlOptions = {
   beforeSelectColumns?: (state: QueryState, config: Dialect, sqlHelper: SqlHelper) => void;
+  /**
+   * Every CTE name declared by this statement AND by each statement enclosing it.
+   *
+   * A CTE is visible to the whole statement, including its subqueries — so deciding whether a FROM
+   * target names a CTE cannot be answered from the state currently being parsed. Each child builder
+   * gets a FRESH state whose `cteStates` is empty, so an outer-declared name was invisible one level
+   * down and the dialect's default owner got stamped on it. Threading the accumulated set is what
+   * makes the answer the same at every depth.
+   */
+  declaredCteNames?: ReadonlySet<string>;
+};
+
+/**
+ * Adds this statement's own CTE names to the set inherited from its enclosing statements.
+ *
+ * Returns the SAME options object when the statement declares nothing, so the common case
+ * allocates nothing and the identity of `options` is preserved for every other consumer.
+ */
+const withDeclaredCteNames = (
+  options: ToSqlOptions | undefined,
+  state: QueryState,
+): ToSqlOptions | undefined => {
+  if (state.cteStates.length === 0) return options;
+
+  const names = new Set(options?.declaredCteNames ?? []);
+  for (const cte of state.cteStates) {
+    names.add(cte.name);
+  }
+  return { ...options, declaredCteNames: names };
 };
 
 /**
@@ -124,6 +153,11 @@ export const defaultToSql = (
       `${dialectDisplayName(config.databaseType)} has no TOP clause — use limit() instead`,
     );
   }
+
+  // Every downstream parse — this statement's own clauses AND every child builder it contains — sees
+  // the CTE names declared here plus those inherited from enclosing statements. Reassigning
+  // `options` once is what guarantees no child path is missed: there is no second place to forget.
+  options = withDeclaredCteNames(options, state);
 
   // Index hints (hintUseIndex/hintForceIndex) are a MySQL-only construct, and the capability check
   // must run for EVERY statement kind. It used to live only on the SELECT tail, so a hint set on a

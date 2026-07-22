@@ -52,7 +52,21 @@ export const defaultFrom = (
       // without being asked, so referencing your own CTE by name was broken unless you happened to
       // route around it with `fromRaw`. Suppressing the owner for a declared CTE name is not a
       // guess: the name is declared in the same state, three lines up in the same statement.
-      const namesADeclaredCte = state.cteStates.some((cte) => cte.name === fromState.tableName);
+      // The set carries every CTE declared by this statement AND by each enclosing one, because a
+      // CTE is visible to the whole statement including its subqueries. Reading `state.cteStates`
+      // here answered only for the statement being parsed, so a reference from inside a child
+      // builder — a predicate subquery, a derived table, a join subquery, a set-operation branch —
+      // saw an empty list and got the default owner stamped on:
+      //
+      //     … WHERE o.id IN (SELECT z.id FROM "public"."d" AS z)   PG:    relation "public.d" …
+      //     … WHERE o.id IN (SELECT z.id FROM [dbo].[d] AS z)      MSSQL: Msg 208
+      //
+      // `state.cteStates` is still consulted so the check holds on the paths that reach here with
+      // no options at all.
+      const namesADeclaredCte =
+        state.cteStates.some((cte) => cte.name === fromState.tableName) ||
+        (fromState.tableName !== undefined &&
+          options?.declaredCteNames?.has(fromState.tableName) === true);
 
       if (fromState.owner !== '' && !namesADeclaredCte) {
         sqlHelper.addSqlSnippet(quoteIdentifier(fromState.owner, config.identifierDelimiters));
