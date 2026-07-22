@@ -143,10 +143,14 @@ export const defaultSelect = (
       emitAggregateCall(
         sqlHelper,
         config,
-        selectState.aggregate!,
-        selectState.tableNameOrAlias ?? '',
-        selectState.columnName ?? '',
-        selectState.aggregateDistinct === true,
+        {
+          aggregate: selectState.aggregate!,
+          tableNameOrAlias: selectState.tableNameOrAlias ?? '',
+          columnName: selectState.columnName ?? '',
+          distinct: selectState.aggregateDistinct === true,
+          filter: selectState.aggregateFilter,
+        },
+        mode,
         ParserArea.Select,
       );
 

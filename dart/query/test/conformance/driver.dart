@@ -262,6 +262,9 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
           _str(op, 'column'),
           alias: _optStr(op, 'alias'),
           distinct: op['distinct'] == true,
+          filter: op['filter'] == null
+              ? null
+              : (fb) => applyOps(fb, _ops(op, 'filter')),
         );
       case 'selectJsonExtract':
         b.selectJsonExtract(
@@ -479,6 +482,9 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
           WhereOperator.fromWire(_str(op, 'operator')),
           _val(op),
           distinct: op['distinct'] == true,
+          filter: op['filter'] == null
+              ? null
+              : (fb) => applyOps(fb, _ops(op, 'filter')),
         );
       case 'havingRaw':
         b.havingRaw(_str(op, 'sql'));

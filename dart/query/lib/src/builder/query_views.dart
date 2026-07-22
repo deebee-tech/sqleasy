@@ -65,6 +65,7 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     String column, {
     String? alias,
     bool distinct = false,
+    void Function(MssqlQueryBuilder builder)? filter,
   });
   MssqlQueryBuilder fromTable(String table, {String? alias, String? owner});
   MssqlQueryBuilder fromTables(List<TableRef> tables);
@@ -210,6 +211,7 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value, {
     bool distinct = false,
+    void Function(MssqlQueryBuilder builder)? filter,
   });
   MssqlQueryBuilder havingRaw(String rawHaving);
   MssqlQueryBuilder havingRaws(List<String> rawHavings);
@@ -387,6 +389,7 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     String column, {
     String? alias,
     bool distinct = false,
+    void Function(MysqlQueryBuilder builder)? filter,
   });
   MysqlQueryBuilder fromTable(String table, {String? alias, String? owner});
   MysqlQueryBuilder fromTables(List<TableRef> tables);
@@ -523,6 +526,7 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value, {
     bool distinct = false,
+    void Function(MysqlQueryBuilder builder)? filter,
   });
   MysqlQueryBuilder havingRaw(String rawHaving);
   MysqlQueryBuilder havingRaws(List<String> rawHavings);
@@ -721,6 +725,7 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     String column, {
     String? alias,
     bool distinct = false,
+    void Function(PostgresQueryBuilder builder)? filter,
   });
   PostgresQueryBuilder fromTable(String table, {String? alias, String? owner});
   PostgresQueryBuilder fromTables(List<TableRef> tables);
@@ -870,6 +875,7 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value, {
     bool distinct = false,
+    void Function(PostgresQueryBuilder builder)? filter,
   });
   PostgresQueryBuilder havingRaw(String rawHaving);
   PostgresQueryBuilder havingRaws(List<String> rawHavings);
@@ -1086,6 +1092,7 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     String column, {
     String? alias,
     bool distinct = false,
+    void Function(SqliteQueryBuilder builder)? filter,
   });
   SqliteQueryBuilder fromTable(String table, {String? alias, String? owner});
   SqliteQueryBuilder fromTables(List<TableRef> tables);
@@ -1218,6 +1225,7 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     WhereOperator operator,
     Object? value, {
     bool distinct = false,
+    void Function(SqliteQueryBuilder builder)? filter,
   });
   SqliteQueryBuilder havingRaw(String rawHaving);
   SqliteQueryBuilder havingRaws(List<String> rawHavings);

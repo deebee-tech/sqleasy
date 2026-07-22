@@ -177,25 +177,48 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.HavingAggregate) {
-      const scratch = new SqlHelper(mode);
+      // The aggregate call is rendered into its own helper because a FILTER predicate carries BOUND
+      // values, so the aggregate SQL contains placeholder tokens. `emitComparisonPredicate` takes a
+      // plain column STRING and would route those tokens through `addSqlSnippet`, which rejects the
+      // NUL bytes the token is made of. So the aggregate is rendered under a sentinel name, the
+      // sentinel is substituted for the real SQL, and the FILTER's values are prepended to the
+      // comparison's — the same shape `emitJsonExtractPredicate` uses for the identical reason.
+      const AGGREGATE_SENTINEL = '___aggregate___';
+      const aggScratch = new SqlHelper(mode);
       emitAggregateCall(
-        scratch,
+        aggScratch,
         config,
-        cur.aggregate!,
-        cur.tableNameOrAlias ?? '',
-        cur.columnName ?? '',
-        cur.aggregateDistinct === true,
+        {
+          aggregate: cur.aggregate!,
+          tableNameOrAlias: cur.tableNameOrAlias ?? '',
+          columnName: cur.columnName ?? '',
+          distinct: cur.aggregateDistinct === true,
+          filter: cur.aggregateFilter,
+        },
+        mode,
         ParserArea.Having,
       );
 
+      const cmpScratch = new SqlHelper(mode);
       emitComparisonPredicate(
-        sqlHelper,
+        cmpScratch,
         config,
-        scratch.getSql(),
+        AGGREGATE_SENTINEL,
         cur.whereOperator,
         cur.values[0],
         ParserArea.Having,
       );
+
+      const predicate = cmpScratch.getSql().split(AGGREGATE_SENTINEL).join(aggScratch.getSql());
+      if (predicate.includes(AGGREGATE_SENTINEL)) {
+        throw new ParserError(ParserArea.Having, 'HAVING aggregate failed to resolve its call');
+      }
+
+      // The aggregate is leftmost, so its FILTER values bind before the comparison value.
+      sqlHelper.addSqlSnippetWithValues(predicate, [
+        ...aggScratch.getValues(),
+        ...cmpScratch.getValues(),
+      ]);
       spaceAfter();
       continue;
     }

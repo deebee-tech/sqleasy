@@ -868,6 +868,7 @@ export class QueryBuilder {
     columnName: string,
     alias: string,
     distinct = false,
+    filter?: (builder: QueryBuilder) => void,
   ): this => {
     this.#markSelectQuery();
     this.#state.selectStates.push({
@@ -882,8 +883,27 @@ export class QueryBuilder {
       jsonExtractMode: undefined,
       aggregate,
       aggregateDistinct: distinct,
+      aggregateFilter: this.#captureFilter(filter),
     });
     return this;
+  };
+
+  /**
+   * Runs a `FILTER (WHERE …)` callback against a child builder and returns its state, or undefined
+   * when no filter was given. Only the child's WHERE predicates are read downstream; the rest of
+   * the child state is inert. The dialect refusal (MySQL/MSSQL) lives in the emitter, so it fires
+   * on the prepared paths too.
+   */
+  #captureFilter = (
+    filter: ((builder: QueryBuilder) => void) | undefined,
+  ): QueryState | undefined => {
+    if (filter === undefined) {
+      return undefined;
+    }
+    const child = this.#child();
+    filter(child);
+    child.state().isInnerStatement = true;
+    return child.state();
   };
 
   public selectJsonExtract = (
@@ -1452,6 +1472,7 @@ export class QueryBuilder {
     whereOperator: WhereOperator,
     value: unknown,
     distinct = false,
+    filter?: (builder: QueryBuilder) => void,
   ): this => {
     this.#combinatorTarget = 'having';
     this.#state.havingStates.push({
@@ -1464,6 +1485,7 @@ export class QueryBuilder {
       values: [value],
       aggregate,
       aggregateDistinct: distinct,
+      aggregateFilter: this.#captureFilter(filter),
     });
     return this;
   };

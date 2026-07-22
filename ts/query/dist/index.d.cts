@@ -771,6 +771,13 @@ type HavingState = {
   aggregate?: AggregateFunction;
   /** `HAVING COUNT(DISTINCT x) > n`. */
   aggregateDistinct?: boolean;
+  /**
+   * The `FILTER (WHERE …)` predicate on this aggregate, captured as a child state whose
+   * whereStates are the predicate. Postgres 9.4+ and SQLite 3.30+ only — MySQL and MSSQL refuse,
+   * and the refusal must be OURS: `FILTER` parses as a column alias there, so a bad emission is a
+   * silently mis-aliased column rather than an error.
+   */
+  aggregateFilter?: QueryState;
 };
 /** Creates a {@link HavingState} with default field values. */
 declare const createHavingState: () => HavingState;
@@ -1212,6 +1219,13 @@ type SelectState = {
   aggregate?: AggregateFunction;
   /** `COUNT(DISTINCT x)`. Refused with `*`, which every engine rejects. */
   aggregateDistinct?: boolean;
+  /**
+   * The `FILTER (WHERE …)` predicate on this aggregate, captured as a child state whose
+   * whereStates are the predicate. Postgres 9.4+ and SQLite 3.30+ only — MySQL and MSSQL refuse,
+   * and the refusal must be OURS: `FILTER` parses as a column alias there, so a bad emission is a
+   * silently mis-aliased column rather than an error.
+   */
+  aggregateFilter?: QueryState;
 };
 /** Creates a {@link SelectState} with default field values. */
 declare const createSelectState: () => SelectState;
@@ -1906,7 +1920,7 @@ declare class QueryBuilder {
    *
    * This is a call node with one operand, not an expression AST — see default-aggregate.ts.
    */
-  selectAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, alias: string, distinct?: boolean) => this;
+  selectAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, alias: string, distinct?: boolean, filter?: (builder: QueryBuilder) => void) => this;
   selectJsonExtract: (tableNameOrAlias: string, columnName: string, path: string, mode?: JsonExtractMode, alias?: string) => this;
   state: () => QueryState;
   where: (tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: any) => this;
@@ -1995,7 +2009,7 @@ declare class QueryBuilder {
    * `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
    * `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
    */
-  havingAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: unknown, distinct?: boolean) => this;
+  havingAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: unknown, distinct?: boolean, filter?: (builder: QueryBuilder) => void) => this;
   havingRaw: (rawHaving: string) => this;
   havingRaws: (rawHavings: string[]) => this;
   havingJsonExtract: (tableNameOrAlias: string, columnName: string, path: string, mode: JsonExtractMode, whereOperator: WhereOperator, value: any) => this;

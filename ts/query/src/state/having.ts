@@ -36,6 +36,13 @@ export type HavingState = {
   aggregate?: AggregateFunction;
   /** `HAVING COUNT(DISTINCT x) > n`. */
   aggregateDistinct?: boolean;
+  /**
+   * The `FILTER (WHERE …)` predicate on this aggregate, captured as a child state whose
+   * whereStates are the predicate. Postgres 9.4+ and SQLite 3.30+ only — MySQL and MSSQL refuse,
+   * and the refusal must be OURS: `FILTER` parses as a column alias there, so a bad emission is a
+   * silently mis-aliased column rather than an error.
+   */
+  aggregateFilter?: QueryState;
 };
 
 /** Creates a {@link HavingState} with default field values. */

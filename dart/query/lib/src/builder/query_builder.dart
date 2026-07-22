@@ -350,6 +350,7 @@ class QueryBuilder
     String column, {
     String? alias,
     bool distinct = false,
+    void Function(QueryBuilder builder)? filter,
   }) {
     _markSelectQuery();
     _state.selectStates.add(SelectState()
@@ -358,8 +359,19 @@ class QueryBuilder
       ..columnName = column
       ..alias = alias
       ..aggregate = aggregate
-      ..aggregateDistinct = distinct);
+      ..aggregateDistinct = distinct
+      ..aggregateFilter = _captureFilter(filter));
     return this;
+  }
+
+  /// Runs a `FILTER (WHERE …)` callback against a child builder and returns its state. Only the
+  /// child's WHERE predicates are read downstream; the dialect refusal lives in the emitter.
+  QueryState? _captureFilter(void Function(QueryBuilder builder)? filter) {
+    if (filter == null) return null;
+    final child = _child();
+    filter(child);
+    child.state.isInnerStatement = true;
+    return child.state;
   }
 
   // ---- FROM ----------------------------------------------------------------------------------
@@ -972,6 +984,7 @@ class QueryBuilder
     WhereOperator operator,
     Object? value, {
     bool distinct = false,
+    void Function(QueryBuilder builder)? filter,
   }) {
     _combinatorTarget = 'having';
     _state.havingStates.add(HavingState()
@@ -981,7 +994,8 @@ class QueryBuilder
       ..whereOperator = operator
       ..values = [value]
       ..aggregate = aggregate
-      ..aggregateDistinct = distinct);
+      ..aggregateDistinct = distinct
+      ..aggregateFilter = _captureFilter(filter));
     return this;
   }
 

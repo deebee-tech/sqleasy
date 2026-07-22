@@ -2399,6 +2399,278 @@ const AggregateFunction = {
 */
 const AGGREGATE_STAR = "*";
 //#endregion
+//#region src/parser/default-row-value.ts
+/**
+* Row-value comparison: `(a, b) > (?, ?)` and `(a, b) IN ((?,?), (?,?))`.
+*
+* The keyset-pagination predicate and the composite-key lookup. `(created_at, id) < (?, ?)` is the
+* only formulation of a keyset page that stays correct across ties and lets the engine use the
+* composite index that satisfies the ORDER BY — its absence is why deep pagination otherwise falls
+* back to OFFSET.
+*
+* ── WHERE IT WORKS (measured against the harness, 2026-07-22) ──
+*
+*     (a, b) > (?, ?)            Postgres  MySQL  SQLite 3.15+   accepted
+*     (a, b) IN ((?,?), (?,?))   Postgres  MySQL  SQLite         accepted
+*     (a, b) = (?, ?)            Postgres  MySQL  SQLite         accepted
+*     any of the above                                MSSQL      Msg — no row constructor
+*
+* T-SQL has no row constructor in a comparison in any version, and the OR-chain rewrite
+* (`a > ? OR (a = ? AND b > ?)`) is exactly the emulation this library refuses to synthesize: it
+* changes the plan, the parameter count, and the NULL semantics. So MSSQL refuses and says why.
+*/
+const MSSQL_REFUSAL = "MSSQL has no row-value constructor in a comparison — `(a, b) > (?, ?)` and `(a, b) IN (…)` are not T-SQL in any version. The equivalent OR-chain (a > ? OR (a = ? AND b > ?)) is an emulation this library will not synthesize for you: it changes the query plan and the NULL handling. Write that predicate yourself with whereRaw/whereGroup if you need it on SQL Server.";
+const emitTuple = (sqlHelper, config, columns) => {
+	sqlHelper.addSqlSnippet("(");
+	columns.forEach((c, i) => {
+		sqlHelper.addSqlSnippet(qualifiedColumn(c.tableNameOrAlias, c.columnName, config.identifierDelimiters));
+		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+};
+/** `(a, b) <op> (?, ?)` — one tuple on each side. `values` is the single right-hand tuple. */
+const emitRowValueComparison = (sqlHelper, config, cur, area) => {
+	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, MSSQL_REFUSAL);
+	const columns = cur.rowColumns ?? [];
+	const rhs = cur.values[0] ?? [];
+	if (columns.length < 2) throw new ParserError(area, "A row-value comparison needs at least two columns");
+	if (rhs.length !== columns.length) throw new ParserError(area, `A row-value comparison needs one value per column — got ${columns.length} columns and ${rhs.length} values`);
+	emitTuple(sqlHelper, config, columns);
+	sqlHelper.addSqlSnippet(` ${rowValueOperatorSql(cur.whereOperator, area)} `);
+	sqlHelper.addSqlSnippet("(");
+	rhs.forEach((value, i) => {
+		sqlHelper.addDynamicValue(value);
+		if (i < rhs.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+};
+/** `(a, b) IN ((?,?), (?,?))`. `values` is the list of tuples. */
+const emitRowValueIn = (sqlHelper, config, cur, area) => {
+	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, MSSQL_REFUSAL);
+	const columns = cur.rowColumns ?? [];
+	const tuples = cur.values;
+	if (columns.length < 2) throw new ParserError(area, "A row-value IN needs at least two columns");
+	if (tuples.length === 0) throw new ParserError(area, "A row-value IN needs at least one tuple");
+	for (const tuple of tuples) if (!Array.isArray(tuple) || tuple.length !== columns.length) throw new ParserError(area, `Every tuple in a row-value IN must have ${columns.length} values to match the columns`);
+	emitTuple(sqlHelper, config, columns);
+	sqlHelper.addSqlSnippet(" IN (");
+	tuples.forEach((tuple, ti) => {
+		sqlHelper.addSqlSnippet("(");
+		tuple.forEach((value, vi) => {
+			sqlHelper.addDynamicValue(value);
+			if (vi < tuple.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+		sqlHelper.addSqlSnippet(")");
+		if (ti < tuples.length - 1) sqlHelper.addSqlSnippet(", ");
+	});
+	sqlHelper.addSqlSnippet(")");
+};
+/**
+* The SQL text for a row-value comparison operator. Only the ordered comparisons and equality make
+* sense on a tuple — LIKE, IS NULL, BETWEEN and friends do not compose with a row constructor.
+*/
+const rowValueOperatorSql = (op, area) => {
+	switch (op) {
+		case WhereOperator.Equals: return "=";
+		case WhereOperator.NotEquals: return "<>";
+		case WhereOperator.GreaterThan: return ">";
+		case WhereOperator.GreaterThanOrEquals: return ">=";
+		case WhereOperator.LessThan: return "<";
+		case WhereOperator.LessThanOrEquals: return "<=";
+		default: throw new ParserError(area, "A row-value comparison takes only =, <>, <, <=, > or >= — LIKE, IS NULL and BETWEEN have no meaning on a tuple. Use a single-column predicate for those.");
+	}
+};
+//#endregion
+//#region src/parser/default-where.ts
+const WHERE_PREDICATE_TYPES = /* @__PURE__ */ new Set([
+	BuilderType.Where,
+	BuilderType.WhereRaw,
+	BuilderType.WhereBetween,
+	BuilderType.WhereExistsBuilder,
+	BuilderType.WhereInBuilder,
+	BuilderType.WhereInValues,
+	BuilderType.WhereNotExistsBuilder,
+	BuilderType.WhereNotInBuilder,
+	BuilderType.WhereNotInValues,
+	BuilderType.WhereNotNull,
+	BuilderType.WhereNull,
+	BuilderType.WhereJsonExtract,
+	BuilderType.WhereJsonContains,
+	BuilderType.WhereFullText
+]);
+const isWherePredicate = (state) => WHERE_PREDICATE_TYPES.has(state.builderType);
+/** True when the prior token ends an expression that can be AND-joined to the next. */
+const endsWhereExpression = (state) => isWherePredicate(state) || state.builderType === BuilderType.WhereGroupEnd;
+/** True when the current token starts an expression that can follow an auto-AND. */
+const startsWhereExpression = (state) => isWherePredicate(state) || state.builderType === BuilderType.WhereGroupBegin;
+const defaultWhere = (state, config, mode, options) => {
+	const sqlHelper = new SqlHelper(mode);
+	if (state.whereStates.length === 0) return sqlHelper;
+	sqlHelper.addSqlSnippet("WHERE ");
+	for (let i = 0; i < state.whereStates.length; i++) {
+		const cur = state.whereStates[i];
+		const prev = i > 0 ? state.whereStates[i - 1] : void 0;
+		const next = i < state.whereStates.length - 1 ? state.whereStates[i + 1] : void 0;
+		const spaceAfter = () => {
+			if (i < state.whereStates.length - 1 && next?.builderType !== BuilderType.WhereGroupEnd) sqlHelper.addSqlSnippet(" ");
+		};
+		if (i === 0 && (cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Where, "First WHERE operator cannot be AND or OR");
+		if (i === state.whereStates.length - 1 && (cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Where, "AND or OR cannot be used as the last WHERE operator");
+		if ((cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or) && (prev?.builderType === BuilderType.And || prev?.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Where, "AND or OR cannot be used consecutively");
+		if ((cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or) && prev?.builderType === BuilderType.WhereGroupBegin) throw new ParserError(ParserArea.Where, "AND or OR cannot be used directly after a group begin");
+		if (cur.builderType === BuilderType.WhereGroupBegin && i === state.whereStates.length - 1) throw new ParserError(ParserArea.Where, "Group begin cannot be the last WHERE operator");
+		if (cur.builderType === BuilderType.WhereGroupEnd && i === 0) throw new ParserError(ParserArea.Where, "Group end cannot be the first WHERE operator");
+		if (cur.builderType === BuilderType.And) {
+			sqlHelper.addSqlSnippet("AND");
+			if (i < state.whereStates.length - 1) sqlHelper.addSqlSnippet(" ");
+			continue;
+		}
+		if (cur.builderType === BuilderType.Or) {
+			sqlHelper.addSqlSnippet("OR");
+			spaceAfter();
+			continue;
+		}
+		if (i > 0 && prev && endsWhereExpression(prev) && startsWhereExpression(cur)) sqlHelper.addSqlSnippet("AND ");
+		if (cur.builderType === BuilderType.WhereGroupBegin) {
+			sqlHelper.addSqlSnippet("(");
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereGroupEnd) {
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereRaw) {
+			sqlHelper.addSqlSnippet(cur.raw ?? "");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereGroupBuilder) {
+			if (!cur.subquery || cur.subquery.whereStates.length === 0) throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
+			const subHelper = defaultWhere(cur.subquery, config, mode);
+			let inner = subHelper.getSql();
+			if (inner.startsWith("WHERE ")) inner = inner.slice(6);
+			if (inner.trim() === "") throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
+			sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereRowValue) {
+			emitRowValueComparison(sqlHelper, config, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereRowValueIn) {
+			emitRowValueIn(sqlHelper, config, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.Where) {
+			emitComparisonPredicate(sqlHelper, config, qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereBetween) {
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" ");
+			sqlHelper.addSqlSnippet("BETWEEN ");
+			sqlHelper.addDynamicValue(cur.values[0]);
+			sqlHelper.addSqlSnippet(" AND ");
+			sqlHelper.addDynamicValue(cur.values[1]);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereExistsBuilder) {
+			sqlHelper.addSqlSnippet("EXISTS (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereInBuilder) {
+			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IN (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereInValues) {
+			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "IN requires at least one value");
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IN (");
+			for (let j = 0; j < cur.values.length; j++) {
+				sqlHelper.addDynamicValue(cur.values[j]);
+				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
+			}
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereNotExistsBuilder) {
+			sqlHelper.addSqlSnippet("NOT EXISTS (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereNotInBuilder) {
+			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" NOT IN (");
+			const subHelper = defaultToSql(cur.subquery, config, mode, options);
+			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereNotInValues) {
+			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "NOT IN requires at least one value");
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" NOT IN (");
+			for (let j = 0; j < cur.values.length; j++) {
+				sqlHelper.addDynamicValue(cur.values[j]);
+				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
+			}
+			sqlHelper.addSqlSnippet(")");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereNotNull) {
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IS NOT NULL");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereNull) {
+			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(" IS NULL");
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereJsonExtract) {
+			emitJsonExtractPredicate(sqlHelper, config, mode, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereJsonContains) {
+			emitJsonContainsPredicate(sqlHelper, config, cur, ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+		if (cur.builderType === BuilderType.WhereFullText) {
+			emitFullTextMatchPredicate(sqlHelper, config, cur.fullTextColumns ?? [], cur.fullTextMode ?? FullTextMode.Natural, cur.values[0], ParserArea.Where);
+			spaceAfter();
+			continue;
+		}
+	}
+	return sqlHelper;
+};
+//#endregion
 //#region src/parser/default-aggregate.ts
 /**
 * The five aggregate calls, rendered.
@@ -2428,13 +2700,8 @@ const SQL_NAME = {
 	[AggregateFunction.Min]: "MIN",
 	[AggregateFunction.Max]: "MAX"
 };
-/**
-* Renders `FN(`, `FN(DISTINCT `, the operand, and `)`.
-*
-* The star is emitted bare. Quoting it would produce `"*"`, which is a column literally named `*` —
-* a different query that happens to parse.
-*/
-const emitAggregateCall = (sqlHelper, config, aggregate, tableNameOrAlias, columnName, distinct, area) => {
+const emitAggregateCall = (sqlHelper, config, call, mode, area) => {
+	const { aggregate, tableNameOrAlias, columnName, distinct, filter } = call;
 	const isStar = columnName === "*";
 	if (isStar && aggregate !== AggregateFunction.Count) throw new ParserError(area, `${SQL_NAME[aggregate]}(*) is not a function any dialect has — only COUNT takes the star. Aggregate a column instead, or use count if you meant "how many rows".`);
 	if (isStar && distinct) throw new ParserError(area, "COUNT(DISTINCT *) is rejected by every dialect — `*` is not a value that can be compared for distinctness. Name the column whose distinct values you want to count.");
@@ -2443,6 +2710,32 @@ const emitAggregateCall = (sqlHelper, config, aggregate, tableNameOrAlias, colum
 	sqlHelper.addSqlSnippet("(");
 	if (distinct) sqlHelper.addSqlSnippet("DISTINCT ");
 	sqlHelper.addSqlSnippet(isStar ? "*" : qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters));
+	sqlHelper.addSqlSnippet(")");
+	if (filter !== void 0) emitAggregateFilter(sqlHelper, config, filter, mode, area);
+};
+/**
+* `FILTER (WHERE …)` on the aggregate just emitted.
+*
+* Postgres 9.4+ and SQLite 3.30+ only. MySQL and MSSQL have no FILTER clause — and this is where
+* the refusal MUST live, not with the engine: measured, `FILTER` is not a reserved word on either,
+* so `COUNT(*) FILTER` parses as `COUNT(*) AS FILTER` and the engine then faults on the `(WHERE …)`
+* — or worse, on a shape where it does not, silently yields a mis-aliased column. So a bad emission
+* is not a syntax error there; it is a wrong answer. Refusing before emitting is the only safe
+* option, and the message names conditional aggregation as what those engines use instead (without
+* emitting it — this library refuses rather than rewrites).
+*
+* The predicate is a real WHERE clause, captured on `filter.whereStates`, so it composes with
+* everything WHERE composes with. `defaultWhere` emits `WHERE …`; the leading keyword is stripped
+* because FILTER supplies its own.
+*/
+const emitAggregateFilter = (sqlHelper, config, filter, mode, area) => {
+	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Mssql) throw new ParserError(area, `${config.databaseType === DatabaseType.Mysql ? "MySQL" : "MSSQL"} has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw.`);
+	if (filter.whereStates.length === 0) throw new ParserError(area, "FILTER requires a WHERE predicate");
+	const where = defaultWhere(filter, config, mode);
+	let whereSql = where.getSql();
+	if (whereSql.startsWith("WHERE ")) whereSql = whereSql.slice(6);
+	sqlHelper.addSqlSnippet(" FILTER (WHERE ");
+	sqlHelper.addSqlSnippetWithValues(whereSql, where.getValues());
 	sqlHelper.addSqlSnippet(")");
 };
 //#endregion
@@ -2529,9 +2822,20 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingAggregate) {
-			const scratch = new SqlHelper(mode);
-			emitAggregateCall(scratch, config, cur.aggregate, cur.tableNameOrAlias ?? "", cur.columnName ?? "", cur.aggregateDistinct === true, ParserArea.Having);
-			emitComparisonPredicate(sqlHelper, config, scratch.getSql(), cur.whereOperator, cur.values[0], ParserArea.Having);
+			const AGGREGATE_SENTINEL = "___aggregate___";
+			const aggScratch = new SqlHelper(mode);
+			emitAggregateCall(aggScratch, config, {
+				aggregate: cur.aggregate,
+				tableNameOrAlias: cur.tableNameOrAlias ?? "",
+				columnName: cur.columnName ?? "",
+				distinct: cur.aggregateDistinct === true,
+				filter: cur.aggregateFilter
+			}, mode, ParserArea.Having);
+			const cmpScratch = new SqlHelper(mode);
+			emitComparisonPredicate(cmpScratch, config, AGGREGATE_SENTINEL, cur.whereOperator, cur.values[0], ParserArea.Having);
+			const predicate = cmpScratch.getSql().split(AGGREGATE_SENTINEL).join(aggScratch.getSql());
+			if (predicate.includes(AGGREGATE_SENTINEL)) throw new ParserError(ParserArea.Having, "HAVING aggregate failed to resolve its call");
+			sqlHelper.addSqlSnippetWithValues(predicate, [...aggScratch.getValues(), ...cmpScratch.getValues()]);
 			spaceAfter();
 			continue;
 		}
@@ -3104,7 +3408,13 @@ const defaultSelect = (state, config, mode, options) => {
 			continue;
 		}
 		if (selectState.builderType === BuilderType.SelectAggregate) {
-			emitAggregateCall(sqlHelper, config, selectState.aggregate, selectState.tableNameOrAlias ?? "", selectState.columnName ?? "", selectState.aggregateDistinct === true, ParserArea.Select);
+			emitAggregateCall(sqlHelper, config, {
+				aggregate: selectState.aggregate,
+				tableNameOrAlias: selectState.tableNameOrAlias ?? "",
+				columnName: selectState.columnName ?? "",
+				distinct: selectState.aggregateDistinct === true,
+				filter: selectState.aggregateFilter
+			}, mode, ParserArea.Select);
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
@@ -3309,278 +3619,6 @@ const defaultUpdate = (state, config, mode, options) => {
 		const from = renderPostgresMutationFrom(config, state, mode, options, ParserArea.Update);
 		sqlHelper.addSqlSnippet(" FROM ");
 		sqlHelper.addSqlSnippetWithValues(from.getSql(), from.getValues());
-	}
-	return sqlHelper;
-};
-//#endregion
-//#region src/parser/default-row-value.ts
-/**
-* Row-value comparison: `(a, b) > (?, ?)` and `(a, b) IN ((?,?), (?,?))`.
-*
-* The keyset-pagination predicate and the composite-key lookup. `(created_at, id) < (?, ?)` is the
-* only formulation of a keyset page that stays correct across ties and lets the engine use the
-* composite index that satisfies the ORDER BY — its absence is why deep pagination otherwise falls
-* back to OFFSET.
-*
-* ── WHERE IT WORKS (measured against the harness, 2026-07-22) ──
-*
-*     (a, b) > (?, ?)            Postgres  MySQL  SQLite 3.15+   accepted
-*     (a, b) IN ((?,?), (?,?))   Postgres  MySQL  SQLite         accepted
-*     (a, b) = (?, ?)            Postgres  MySQL  SQLite         accepted
-*     any of the above                                MSSQL      Msg — no row constructor
-*
-* T-SQL has no row constructor in a comparison in any version, and the OR-chain rewrite
-* (`a > ? OR (a = ? AND b > ?)`) is exactly the emulation this library refuses to synthesize: it
-* changes the plan, the parameter count, and the NULL semantics. So MSSQL refuses and says why.
-*/
-const MSSQL_REFUSAL = "MSSQL has no row-value constructor in a comparison — `(a, b) > (?, ?)` and `(a, b) IN (…)` are not T-SQL in any version. The equivalent OR-chain (a > ? OR (a = ? AND b > ?)) is an emulation this library will not synthesize for you: it changes the query plan and the NULL handling. Write that predicate yourself with whereRaw/whereGroup if you need it on SQL Server.";
-const emitTuple = (sqlHelper, config, columns) => {
-	sqlHelper.addSqlSnippet("(");
-	columns.forEach((c, i) => {
-		sqlHelper.addSqlSnippet(qualifiedColumn(c.tableNameOrAlias, c.columnName, config.identifierDelimiters));
-		if (i < columns.length - 1) sqlHelper.addSqlSnippet(", ");
-	});
-	sqlHelper.addSqlSnippet(")");
-};
-/** `(a, b) <op> (?, ?)` — one tuple on each side. `values` is the single right-hand tuple. */
-const emitRowValueComparison = (sqlHelper, config, cur, area) => {
-	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, MSSQL_REFUSAL);
-	const columns = cur.rowColumns ?? [];
-	const rhs = cur.values[0] ?? [];
-	if (columns.length < 2) throw new ParserError(area, "A row-value comparison needs at least two columns");
-	if (rhs.length !== columns.length) throw new ParserError(area, `A row-value comparison needs one value per column — got ${columns.length} columns and ${rhs.length} values`);
-	emitTuple(sqlHelper, config, columns);
-	sqlHelper.addSqlSnippet(` ${rowValueOperatorSql(cur.whereOperator, area)} `);
-	sqlHelper.addSqlSnippet("(");
-	rhs.forEach((value, i) => {
-		sqlHelper.addDynamicValue(value);
-		if (i < rhs.length - 1) sqlHelper.addSqlSnippet(", ");
-	});
-	sqlHelper.addSqlSnippet(")");
-};
-/** `(a, b) IN ((?,?), (?,?))`. `values` is the list of tuples. */
-const emitRowValueIn = (sqlHelper, config, cur, area) => {
-	if (config.databaseType === DatabaseType.Mssql) throw new ParserError(area, MSSQL_REFUSAL);
-	const columns = cur.rowColumns ?? [];
-	const tuples = cur.values;
-	if (columns.length < 2) throw new ParserError(area, "A row-value IN needs at least two columns");
-	if (tuples.length === 0) throw new ParserError(area, "A row-value IN needs at least one tuple");
-	for (const tuple of tuples) if (!Array.isArray(tuple) || tuple.length !== columns.length) throw new ParserError(area, `Every tuple in a row-value IN must have ${columns.length} values to match the columns`);
-	emitTuple(sqlHelper, config, columns);
-	sqlHelper.addSqlSnippet(" IN (");
-	tuples.forEach((tuple, ti) => {
-		sqlHelper.addSqlSnippet("(");
-		tuple.forEach((value, vi) => {
-			sqlHelper.addDynamicValue(value);
-			if (vi < tuple.length - 1) sqlHelper.addSqlSnippet(", ");
-		});
-		sqlHelper.addSqlSnippet(")");
-		if (ti < tuples.length - 1) sqlHelper.addSqlSnippet(", ");
-	});
-	sqlHelper.addSqlSnippet(")");
-};
-/**
-* The SQL text for a row-value comparison operator. Only the ordered comparisons and equality make
-* sense on a tuple — LIKE, IS NULL, BETWEEN and friends do not compose with a row constructor.
-*/
-const rowValueOperatorSql = (op, area) => {
-	switch (op) {
-		case WhereOperator.Equals: return "=";
-		case WhereOperator.NotEquals: return "<>";
-		case WhereOperator.GreaterThan: return ">";
-		case WhereOperator.GreaterThanOrEquals: return ">=";
-		case WhereOperator.LessThan: return "<";
-		case WhereOperator.LessThanOrEquals: return "<=";
-		default: throw new ParserError(area, "A row-value comparison takes only =, <>, <, <=, > or >= — LIKE, IS NULL and BETWEEN have no meaning on a tuple. Use a single-column predicate for those.");
-	}
-};
-//#endregion
-//#region src/parser/default-where.ts
-const WHERE_PREDICATE_TYPES = /* @__PURE__ */ new Set([
-	BuilderType.Where,
-	BuilderType.WhereRaw,
-	BuilderType.WhereBetween,
-	BuilderType.WhereExistsBuilder,
-	BuilderType.WhereInBuilder,
-	BuilderType.WhereInValues,
-	BuilderType.WhereNotExistsBuilder,
-	BuilderType.WhereNotInBuilder,
-	BuilderType.WhereNotInValues,
-	BuilderType.WhereNotNull,
-	BuilderType.WhereNull,
-	BuilderType.WhereJsonExtract,
-	BuilderType.WhereJsonContains,
-	BuilderType.WhereFullText
-]);
-const isWherePredicate = (state) => WHERE_PREDICATE_TYPES.has(state.builderType);
-/** True when the prior token ends an expression that can be AND-joined to the next. */
-const endsWhereExpression = (state) => isWherePredicate(state) || state.builderType === BuilderType.WhereGroupEnd;
-/** True when the current token starts an expression that can follow an auto-AND. */
-const startsWhereExpression = (state) => isWherePredicate(state) || state.builderType === BuilderType.WhereGroupBegin;
-const defaultWhere = (state, config, mode, options) => {
-	const sqlHelper = new SqlHelper(mode);
-	if (state.whereStates.length === 0) return sqlHelper;
-	sqlHelper.addSqlSnippet("WHERE ");
-	for (let i = 0; i < state.whereStates.length; i++) {
-		const cur = state.whereStates[i];
-		const prev = i > 0 ? state.whereStates[i - 1] : void 0;
-		const next = i < state.whereStates.length - 1 ? state.whereStates[i + 1] : void 0;
-		const spaceAfter = () => {
-			if (i < state.whereStates.length - 1 && next?.builderType !== BuilderType.WhereGroupEnd) sqlHelper.addSqlSnippet(" ");
-		};
-		if (i === 0 && (cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Where, "First WHERE operator cannot be AND or OR");
-		if (i === state.whereStates.length - 1 && (cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Where, "AND or OR cannot be used as the last WHERE operator");
-		if ((cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or) && (prev?.builderType === BuilderType.And || prev?.builderType === BuilderType.Or)) throw new ParserError(ParserArea.Where, "AND or OR cannot be used consecutively");
-		if ((cur.builderType === BuilderType.And || cur.builderType === BuilderType.Or) && prev?.builderType === BuilderType.WhereGroupBegin) throw new ParserError(ParserArea.Where, "AND or OR cannot be used directly after a group begin");
-		if (cur.builderType === BuilderType.WhereGroupBegin && i === state.whereStates.length - 1) throw new ParserError(ParserArea.Where, "Group begin cannot be the last WHERE operator");
-		if (cur.builderType === BuilderType.WhereGroupEnd && i === 0) throw new ParserError(ParserArea.Where, "Group end cannot be the first WHERE operator");
-		if (cur.builderType === BuilderType.And) {
-			sqlHelper.addSqlSnippet("AND");
-			if (i < state.whereStates.length - 1) sqlHelper.addSqlSnippet(" ");
-			continue;
-		}
-		if (cur.builderType === BuilderType.Or) {
-			sqlHelper.addSqlSnippet("OR");
-			spaceAfter();
-			continue;
-		}
-		if (i > 0 && prev && endsWhereExpression(prev) && startsWhereExpression(cur)) sqlHelper.addSqlSnippet("AND ");
-		if (cur.builderType === BuilderType.WhereGroupBegin) {
-			sqlHelper.addSqlSnippet("(");
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereGroupEnd) {
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereRaw) {
-			sqlHelper.addSqlSnippet(cur.raw ?? "");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereGroupBuilder) {
-			if (!cur.subquery || cur.subquery.whereStates.length === 0) throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
-			const subHelper = defaultWhere(cur.subquery, config, mode);
-			let inner = subHelper.getSql();
-			if (inner.startsWith("WHERE ")) inner = inner.slice(6);
-			if (inner.trim() === "") throw new ParserError(ParserArea.Where, "WHERE group cannot be empty");
-			sqlHelper.addSqlSnippetWithValues(inner, subHelper.getValues());
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereRowValue) {
-			emitRowValueComparison(sqlHelper, config, cur, ParserArea.Where);
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereRowValueIn) {
-			emitRowValueIn(sqlHelper, config, cur, ParserArea.Where);
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.Where) {
-			emitComparisonPredicate(sqlHelper, config, qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters), cur.whereOperator, cur.values[0], ParserArea.Where);
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereBetween) {
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" ");
-			sqlHelper.addSqlSnippet("BETWEEN ");
-			sqlHelper.addDynamicValue(cur.values[0]);
-			sqlHelper.addSqlSnippet(" AND ");
-			sqlHelper.addDynamicValue(cur.values[1]);
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereExistsBuilder) {
-			sqlHelper.addSqlSnippet("EXISTS (");
-			const subHelper = defaultToSql(cur.subquery, config, mode, options);
-			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereInBuilder) {
-			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" IN (");
-			const subHelper = defaultToSql(cur.subquery, config, mode, options);
-			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereInValues) {
-			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "IN requires at least one value");
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" IN (");
-			for (let j = 0; j < cur.values.length; j++) {
-				sqlHelper.addDynamicValue(cur.values[j]);
-				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
-			}
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereNotExistsBuilder) {
-			sqlHelper.addSqlSnippet("NOT EXISTS (");
-			const subHelper = defaultToSql(cur.subquery, config, mode, options);
-			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereNotInBuilder) {
-			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" NOT IN (");
-			const subHelper = defaultToSql(cur.subquery, config, mode, options);
-			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereNotInValues) {
-			if (cur.values.length === 0) throw new ParserError(ParserArea.Where, "NOT IN requires at least one value");
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" NOT IN (");
-			for (let j = 0; j < cur.values.length; j++) {
-				sqlHelper.addDynamicValue(cur.values[j]);
-				if (j < cur.values.length - 1) sqlHelper.addSqlSnippet(", ");
-			}
-			sqlHelper.addSqlSnippet(")");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereNotNull) {
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" IS NOT NULL");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereNull) {
-			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
-			sqlHelper.addSqlSnippet(" IS NULL");
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereJsonExtract) {
-			emitJsonExtractPredicate(sqlHelper, config, mode, cur, ParserArea.Where);
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereJsonContains) {
-			emitJsonContainsPredicate(sqlHelper, config, cur, ParserArea.Where);
-			spaceAfter();
-			continue;
-		}
-		if (cur.builderType === BuilderType.WhereFullText) {
-			emitFullTextMatchPredicate(sqlHelper, config, cur.fullTextColumns ?? [], cur.fullTextMode ?? FullTextMode.Natural, cur.values[0], ParserArea.Where);
-			spaceAfter();
-			continue;
-		}
 	}
 	return sqlHelper;
 };
@@ -5001,7 +5039,7 @@ var QueryBuilder = class QueryBuilder {
 	*
 	* This is a call node with one operand, not an expression AST — see default-aggregate.ts.
 	*/
-	selectAggregate = (aggregate, tableNameOrAlias, columnName, alias, distinct = false) => {
+	selectAggregate = (aggregate, tableNameOrAlias, columnName, alias, distinct = false, filter) => {
 		this.#markSelectQuery();
 		this.#state.selectStates.push({
 			builderType: BuilderType.SelectAggregate,
@@ -5014,9 +5052,23 @@ var QueryBuilder = class QueryBuilder {
 			jsonPath: void 0,
 			jsonExtractMode: void 0,
 			aggregate,
-			aggregateDistinct: distinct
+			aggregateDistinct: distinct,
+			aggregateFilter: this.#captureFilter(filter)
 		});
 		return this;
+	};
+	/**
+	* Runs a `FILTER (WHERE …)` callback against a child builder and returns its state, or undefined
+	* when no filter was given. Only the child's WHERE predicates are read downstream; the rest of
+	* the child state is inert. The dialect refusal (MySQL/MSSQL) lives in the emitter, so it fires
+	* on the prepared paths too.
+	*/
+	#captureFilter = (filter) => {
+		if (filter === void 0) return;
+		const child = this.#child();
+		filter(child);
+		child.state().isInnerStatement = true;
+		return child.state();
 	};
 	selectJsonExtract = (tableNameOrAlias, columnName, path, mode = JsonExtractMode.Text, alias = "") => {
 		this.#markSelectQuery();
@@ -5454,7 +5506,7 @@ var QueryBuilder = class QueryBuilder {
 	* `HAVING COUNT(x) > n` — the canonical HAVING, which until now was reachable only through
 	* `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
 	*/
-	havingAggregate = (aggregate, tableNameOrAlias, columnName, whereOperator, value, distinct = false) => {
+	havingAggregate = (aggregate, tableNameOrAlias, columnName, whereOperator, value, distinct = false, filter) => {
 		this.#combinatorTarget = "having";
 		this.#state.havingStates.push({
 			builderType: BuilderType.HavingAggregate,
@@ -5465,7 +5517,8 @@ var QueryBuilder = class QueryBuilder {
 			subquery: void 0,
 			values: [value],
 			aggregate,
-			aggregateDistinct: distinct
+			aggregateDistinct: distinct,
+			aggregateFilter: this.#captureFilter(filter)
 		});
 		return this;
 	};

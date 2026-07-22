@@ -378,6 +378,7 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           str(op, 'column'),
           opt(op, 'alias'),
           op.distinct === true,
+          op.filter ? (fb) => apply(fb, ops(op, 'filter')) : undefined,
         );
         break;
       case 'selectJsonExtract':
@@ -654,6 +655,7 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
           enumOf(op, 'operator', WhereOperator),
           val(op),
           op.distinct === true,
+          op.filter ? (fb) => apply(fb, ops(op, 'filter')) : undefined,
         );
         break;
       case 'havingRaw':

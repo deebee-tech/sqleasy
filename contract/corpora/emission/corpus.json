@@ -27176,6 +27176,213 @@
           "raw": "SELECT \"o\".\"id\" FROM \"orders\" AS \"o\" WHERE (\"o\".\"customer_id\", \"o\".\"id\") IN ((1, 1), (2, 2));"
         }
       }
+    },
+    {
+      "name": "count star with a filter clause — postgres and sqlite only",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Count",
+          "table": "",
+          "column": "*",
+          "alias": "n",
+          "filter": [
+            {
+              "op": "where",
+              "table": "o",
+              "column": "total",
+              "operator": "GreaterThan",
+              "value": {
+                "t": "int",
+                "v": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw."
+        },
+        "mysql": {
+          "throws": "Select: MySQL has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT COUNT(*) FILTER (WHERE \"o\".\"total\" > $1) AS \"n\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT COUNT(*) FILTER (WHERE \"o\".\"total\" > 1) AS \"n\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT COUNT(*) FILTER (WHERE \"o\".\"total\" > ?) AS \"n\" FROM \"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT COUNT(*) FILTER (WHERE \"o\".\"total\" > 1) AS \"n\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "count distinct keeps distinct inside the parens and filter outside",
+      "ops": [
+        {
+          "op": "selectAggregate",
+          "aggregate": "Count",
+          "table": "o",
+          "column": "total",
+          "alias": "n",
+          "distinct": true,
+          "filter": [
+            {
+              "op": "where",
+              "table": "o",
+              "column": "total",
+              "operator": "GreaterThan",
+              "value": {
+                "t": "int",
+                "v": 1
+              }
+            }
+          ]
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw."
+        },
+        "mysql": {
+          "throws": "Select: MySQL has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT COUNT(DISTINCT \"o\".\"total\") FILTER (WHERE \"o\".\"total\" > $1) AS \"n\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT COUNT(DISTINCT \"o\".\"total\") FILTER (WHERE \"o\".\"total\" > 1) AS \"n\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT COUNT(DISTINCT \"o\".\"total\") FILTER (WHERE \"o\".\"total\" > ?) AS \"n\" FROM \"orders\" AS \"o\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "SELECT COUNT(DISTINCT \"o\".\"total\") FILTER (WHERE \"o\".\"total\" > 1) AS \"n\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "a filtered aggregate in having",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "o",
+          "column": "customer_id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "groupByColumn",
+          "table": "o",
+          "column": "customer_id"
+        },
+        {
+          "op": "havingAggregate",
+          "aggregate": "Count",
+          "table": "",
+          "column": "*",
+          "operator": "GreaterThan",
+          "value": {
+            "t": "int",
+            "v": 0
+          },
+          "filter": [
+            {
+              "op": "where",
+              "table": "o",
+              "column": "total",
+              "operator": "GreaterThan",
+              "value": {
+                "t": "int",
+                "v": 1
+              }
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Having: MSSQL has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw."
+        },
+        "mysql": {
+          "throws": "Having: MySQL has no FILTER clause on aggregates — and it cannot be emitted safely, because FILTER parses as a column alias there rather than erroring. Use conditional aggregation instead, e.g. COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"customer_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) FILTER (WHERE \"o\".\"total\" > $1) > $2;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"customer_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) FILTER (WHERE \"o\".\"total\" > 1) > 0;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT \"o\".\"customer_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) FILTER (WHERE \"o\".\"total\" > ?) > ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              },
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
+          },
+          "raw": "SELECT \"o\".\"customer_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"customer_id\" HAVING COUNT(*) FILTER (WHERE \"o\".\"total\" > 1) > 0;"
+        }
+      }
     }
   ]
 }

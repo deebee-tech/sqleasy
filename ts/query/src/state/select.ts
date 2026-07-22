@@ -38,6 +38,13 @@ export type SelectState = {
   aggregate?: AggregateFunction;
   /** `COUNT(DISTINCT x)`. Refused with `*`, which every engine rejects. */
   aggregateDistinct?: boolean;
+  /**
+   * The `FILTER (WHERE …)` predicate on this aggregate, captured as a child state whose
+   * whereStates are the predicate. Postgres 9.4+ and SQLite 3.30+ only — MySQL and MSSQL refuse,
+   * and the refusal must be OURS: `FILTER` parses as a column alias there, so a bad emission is a
+   * silently mis-aliased column rather than an error.
+   */
+  aggregateFilter?: QueryState;
 };
 
 /** Creates a {@link SelectState} with default field values. */

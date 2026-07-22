@@ -3,6 +3,8 @@ import '../enums.dart';
 import '../errors/parser_error.dart';
 import '../identifier.dart';
 import '../sql_helper.dart';
+import '../state.dart';
+import 'default_where.dart';
 
 /// The five aggregate calls, rendered.
 ///
@@ -35,8 +37,10 @@ void emitAggregateCall(
   String tableNameOrAlias,
   String columnName,
   bool distinct,
-  ParserArea area,
-) {
+  ParserArea area, {
+  QueryState? filter,
+  ParserMode? mode,
+}) {
   final isStar = columnName == aggregateStar;
   final name = _sqlName[aggregate]!;
 
@@ -71,5 +75,47 @@ void emitAggregateCall(
       ? aggregateStar
       : qualifiedColumn(
           tableNameOrAlias, columnName, config.identifierDelimiters));
+  sqlHelper.addSqlSnippet(')');
+
+  if (filter != null) {
+    _emitAggregateFilter(sqlHelper, config, filter, mode!, area);
+  }
+}
+
+/// `FILTER (WHERE …)` on the aggregate just emitted.
+///
+/// Postgres 9.4+ and SQLite 3.30+ only. MySQL and MSSQL have no FILTER clause, and this is where
+/// the refusal MUST live — `FILTER` is not a reserved word there, so `COUNT(*) FILTER` parses as a
+/// column alias and a bad emission is a silently mis-aliased column, not a syntax error.
+void _emitAggregateFilter(
+  SqlHelper sqlHelper,
+  Dialect config,
+  QueryState filter,
+  ParserMode mode,
+  ParserArea area,
+) {
+  if (config.databaseType == DatabaseType.mysql ||
+      config.databaseType == DatabaseType.mssql) {
+    throw ParserError(
+      area,
+      '${config.databaseType == DatabaseType.mysql ? 'MySQL' : 'MSSQL'} has no FILTER clause on '
+      'aggregates — and it cannot be emitted safely, because FILTER parses as a column alias '
+      'there rather than erroring. Use conditional aggregation instead, e.g. '
+      'COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw.',
+    );
+  }
+
+  if (filter.whereStates.isEmpty) {
+    throw ParserError(area, 'FILTER requires a WHERE predicate');
+  }
+
+  final where = defaultWhere(filter, config, mode);
+  var whereSql = where.getSql();
+  if (whereSql.startsWith('WHERE ')) {
+    whereSql = whereSql.substring('WHERE '.length);
+  }
+
+  sqlHelper.addSqlSnippet(' FILTER (WHERE ');
+  sqlHelper.addSqlSnippetWithValues(whereSql, where.getValues());
   sqlHelper.addSqlSnippet(')');
 }

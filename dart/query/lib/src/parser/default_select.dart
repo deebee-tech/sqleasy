@@ -155,6 +155,8 @@ SqlHelper defaultSelect(
         selectState.columnName ?? '',
         selectState.aggregateDistinct,
         ParserArea.select,
+        filter: selectState.aggregateFilter,
+        mode: mode,
       );
 
       if ((selectState.alias ?? '').isNotEmpty) {

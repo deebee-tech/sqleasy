@@ -99,6 +99,11 @@ class SelectState {
 
   /// `COUNT(DISTINCT x)`. Refused with `*`, which every engine rejects.
   bool aggregateDistinct = false;
+
+  /// The `FILTER (WHERE …)` predicate on this aggregate, as a child state whose whereStates are the
+  /// predicate. Postgres/SQLite only — MySQL/MSSQL refuse, and the refusal must be ours because
+  /// FILTER parses as a column alias there.
+  QueryState? aggregateFilter;
 }
 
 class FromState {
@@ -189,6 +194,11 @@ class HavingState {
 
   /// `HAVING COUNT(DISTINCT x) > n`.
   bool aggregateDistinct = false;
+
+  /// The `FILTER (WHERE …)` predicate on this aggregate, as a child state whose whereStates are the
+  /// predicate. Postgres/SQLite only — MySQL/MSSQL refuse, and the refusal must be ours because
+  /// FILTER parses as a column alias there.
+  QueryState? aggregateFilter;
 }
 
 class GroupByState {

@@ -1,9 +1,13 @@
 import type { Dialect } from '../configuration/configuration';
 import { AGGREGATE_STAR, AggregateFunction } from '../enums/aggregate-function';
+import { DatabaseType } from '../enums/database-type';
+import { ParserMode } from '../enums/parser-mode';
 import type { ParserArea } from '../enums/parser-area';
 import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import type { SqlHelper } from '../helpers/sql';
+import type { QueryState } from '../state/query';
+import { defaultWhere } from './default-where';
 
 /**
  * The five aggregate calls, rendered.
@@ -41,15 +45,23 @@ const SQL_NAME: Record<AggregateFunction, string> = {
  * The star is emitted bare. Quoting it would produce `"*"`, which is a column literally named `*` —
  * a different query that happens to parse.
  */
+/** The aggregate call fields, in whatever state carries them (SELECT list or HAVING). */
+export type AggregateCall = {
+  aggregate: AggregateFunction;
+  tableNameOrAlias: string;
+  columnName: string;
+  distinct: boolean;
+  filter?: QueryState;
+};
+
 export const emitAggregateCall = (
   sqlHelper: SqlHelper,
   config: Dialect,
-  aggregate: AggregateFunction,
-  tableNameOrAlias: string,
-  columnName: string,
-  distinct: boolean,
+  call: AggregateCall,
+  mode: ParserMode,
   area: ParserArea,
 ): void => {
+  const { aggregate, tableNameOrAlias, columnName, distinct, filter } = call;
   const isStar = columnName === AGGREGATE_STAR;
 
   // `SUM(*)` is not a syntax error — Postgres answers "function sum() does not exist", because `*`
@@ -87,5 +99,57 @@ export const emitAggregateCall = (
       ? AGGREGATE_STAR
       : qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters),
   );
+  sqlHelper.addSqlSnippet(')');
+
+  if (filter !== undefined) {
+    emitAggregateFilter(sqlHelper, config, filter, mode, area);
+  }
+};
+
+/**
+ * `FILTER (WHERE …)` on the aggregate just emitted.
+ *
+ * Postgres 9.4+ and SQLite 3.30+ only. MySQL and MSSQL have no FILTER clause — and this is where
+ * the refusal MUST live, not with the engine: measured, `FILTER` is not a reserved word on either,
+ * so `COUNT(*) FILTER` parses as `COUNT(*) AS FILTER` and the engine then faults on the `(WHERE …)`
+ * — or worse, on a shape where it does not, silently yields a mis-aliased column. So a bad emission
+ * is not a syntax error there; it is a wrong answer. Refusing before emitting is the only safe
+ * option, and the message names conditional aggregation as what those engines use instead (without
+ * emitting it — this library refuses rather than rewrites).
+ *
+ * The predicate is a real WHERE clause, captured on `filter.whereStates`, so it composes with
+ * everything WHERE composes with. `defaultWhere` emits `WHERE …`; the leading keyword is stripped
+ * because FILTER supplies its own.
+ */
+const emitAggregateFilter = (
+  sqlHelper: SqlHelper,
+  config: Dialect,
+  filter: QueryState,
+  mode: ParserMode,
+  area: ParserArea,
+): void => {
+  if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Mssql) {
+    throw new ParserError(
+      area,
+      `${config.databaseType === DatabaseType.Mysql ? 'MySQL' : 'MSSQL'} has no FILTER clause on ` +
+        'aggregates — and it cannot be emitted safely, because FILTER parses as a column alias ' +
+        'there rather than erroring. Use conditional aggregation instead, e.g. ' +
+        'COUNT(CASE WHEN <pred> THEN 1 END), which you can build with selectRaw.',
+    );
+  }
+
+  if (filter.whereStates.length === 0) {
+    throw new ParserError(area, 'FILTER requires a WHERE predicate');
+  }
+
+  const where = defaultWhere(filter, config, mode);
+  let whereSql = where.getSql();
+  // `defaultWhere` leads with `WHERE `; FILTER writes its own, so strip the duplicate.
+  if (whereSql.startsWith('WHERE ')) {
+    whereSql = whereSql.slice('WHERE '.length);
+  }
+
+  sqlHelper.addSqlSnippet(' FILTER (WHERE ');
+  sqlHelper.addSqlSnippetWithValues(whereSql, where.getValues());
   sqlHelper.addSqlSnippet(')');
 };

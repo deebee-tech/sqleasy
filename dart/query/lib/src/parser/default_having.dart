@@ -173,25 +173,48 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingAggregate) {
-      final scratch = SqlHelper(mode);
+      // The aggregate is rendered into its own helper because a FILTER carries BOUND values, so the
+      // aggregate SQL contains placeholder tokens. `emitComparisonPredicate` takes a plain column
+      // STRING and would route those through addSqlSnippet, which rejects the NUL bytes the token is
+      // made of. Render under a sentinel, substitute, and prepend the FILTER's values — the same
+      // shape emitJsonExtractPredicate uses for the identical reason.
+      const aggregateSentinel = '___aggregate___';
+      final aggScratch = SqlHelper(mode);
       emitAggregateCall(
-        scratch,
+        aggScratch,
         config,
         cur.aggregate!,
         cur.tableNameOrAlias ?? '',
         cur.columnName ?? '',
         cur.aggregateDistinct,
         ParserArea.having,
+        filter: cur.aggregateFilter,
+        mode: mode,
       );
 
+      final cmpScratch = SqlHelper(mode);
       emitComparisonPredicate(
-        sqlHelper,
+        cmpScratch,
         config,
-        scratch.getSql(),
+        aggregateSentinel,
         cur.whereOperator,
         cur.values.isNotEmpty ? cur.values[0] : null,
         ParserArea.having,
       );
+
+      final predicate = cmpScratch
+          .getSql()
+          .split(aggregateSentinel)
+          .join(aggScratch.getSql());
+      if (predicate.contains(aggregateSentinel)) {
+        throw ParserError(
+            ParserArea.having, 'HAVING aggregate failed to resolve its call');
+      }
+
+      sqlHelper.addSqlSnippetWithValues(predicate, [
+        ...aggScratch.getValues(),
+        ...cmpScratch.getValues(),
+      ]);
       spaceAfter();
       continue;
     }
