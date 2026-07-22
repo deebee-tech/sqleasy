@@ -1,6 +1,12 @@
 # SQLEasy capability roadmap
 
 **Status:** open. Written 2026-07-22, against SQLEasy 12.0.0 / contract 0.24.0.
+**Companion document:** [`subbuilder-scope-leaks-2026-07-22.md`](subbuilder-scope-leaks-2026-07-22.md)
+covers _defects_ — 45 places where a clause set on a child builder does not mean what the caller
+wrote once inlined. This file covers _missing capabilities_. Item #163 in §6 below ("grouped
+set-operation operands") is superseded by that document, which found the nested form silently
+flattens.
+
 **How to use this:** every entry is written so it can be picked up cold. Pick one, read its paragraph in
 §3, check §5 for whether something else has to land first, and go. Nothing here is sequenced —
 except the four dependency clusters in §5, which genuinely are.
