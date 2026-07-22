@@ -21,17 +21,17 @@
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 408,
-      "absent": 55,
-      "unadjudicated": 53
+      "native": 387,
+      "absent": 78,
+      "unadjudicated": 51
     },
     "enumCells": {
       "native": 268,
       "absent": 52,
       "unadjudicated": 0
     },
-    "adjudicated": 775,
-    "namesAssigned": 668
+    "adjudicated": 777,
+    "namesAssigned": 647
   },
   "ops": {
     "and": {
@@ -528,14 +528,14 @@
           }
         },
         "mysql": {
-          "name": "deleteFromWithOwner",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Delete: MySQL does not support table owners",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
@@ -1345,13 +1345,13 @@
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "From: MySQL does not support table owners",
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep-2026-07-20: Sybase-era vocabulary on the shared surface"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
@@ -2444,40 +2444,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "holdlock",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: MySQL has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "holdlock",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: Postgres has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "holdlock",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: SQLite has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -2592,14 +2592,14 @@
           }
         },
         "mysql": {
-          "name": "insertIntoWithOwner",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Insert: MySQL does not support table owners",
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
@@ -2828,40 +2828,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "into",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: MySQL has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "into",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: Postgres has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "into",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: SQLite has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -3072,14 +3072,14 @@
           }
         },
         "mysql": {
-          "name": "joinTableWithOwner",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Join: MySQL does not support table owners",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
@@ -5185,13 +5185,13 @@
         },
         "mysql": {
           "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "Update: MySQL does not support table owners",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 2,
-            "note": "forced unadjudicated — audit-G1: same blanket SQLite mutation-join guard"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
@@ -5228,40 +5228,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "usingValues",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: MySQL has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "usingValues",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: Postgres has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "usingValues",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: SQLite has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -5276,40 +5276,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "whenMatchedThenUpdate",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: MySQL has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "whenMatchedThenUpdate",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: Postgres has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "whenMatchedThenUpdate",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: SQLite has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -5324,40 +5324,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "whenNotMatchedBySourceThenDelete",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: MySQL has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "whenNotMatchedBySourceThenDelete",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: Postgres has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "whenNotMatchedBySourceThenDelete",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: SQLite has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -5372,40 +5372,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "whenNotMatchedThenInsert",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: MySQL has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "whenNotMatchedThenInsert",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: Postgres has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "whenNotMatchedThenInsert",
-          "kind": "native",
+          "name": "",
+          "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "Merge: SQLite has no MERGE statement — it is native T-SQL only",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }

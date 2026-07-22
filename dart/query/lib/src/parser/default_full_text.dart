@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import '../configuration.dart';
 import '../enums.dart';
 import '../errors/parser_error.dart';
@@ -44,20 +42,20 @@ void emitFullTextPredicate(
     if (columns.length == 1) {
       final col = columns.first;
       sqlHelper.addSqlSnippet('to_tsvector(');
-      sqlHelper.addSqlSnippet(jsonEncode('english'));
+      sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
       sqlHelper.addSqlSnippet(', ');
       sqlHelper.addSqlSnippet(_columnRef(config, col));
       sqlHelper.addSqlSnippet(') @@ ');
       sqlHelper.addSqlSnippet(
         _postgresTsQueryFunction(mode),
       );
-      sqlHelper.addSqlSnippet(jsonEncode('english'));
+      sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
       sqlHelper.addSqlSnippet(', ');
       return;
     }
 
     sqlHelper.addSqlSnippet('to_tsvector(');
-    sqlHelper.addSqlSnippet(jsonEncode('english'));
+    sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
     sqlHelper.addSqlSnippet(', ');
     sqlHelper.addSqlSnippet('concat(');
     for (var i = 0; i < columns.length; i++) {
@@ -70,7 +68,7 @@ void emitFullTextPredicate(
     sqlHelper.addSqlSnippet(
       _postgresTsQueryFunction(mode),
     );
-    sqlHelper.addSqlSnippet(jsonEncode('english'));
+    sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
     sqlHelper.addSqlSnippet(', ');
     return;
   }

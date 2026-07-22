@@ -34,7 +34,10 @@ describe('Tier 3 — JSON operators', () => {
       'users',
       'u',
     );
-    expect(b.parseRaw()).toContain('JSON_VALUE([u].[meta], "$.email") AS [email]');
+    // SINGLE-quoted: a JSON path is a string VALUE. This assertion used to demand the double-quoted
+    // form, which T-SQL reads as a delimited identifier — SQL Server rejects it under the default
+    // QUOTED_IDENTIFIER ON. The test was pinning unrunnable SQL, so it moved with the fix.
+    expect(b.parseRaw()).toContain("JSON_VALUE([u].[meta], '$.email') AS [email]");
   });
 });
 

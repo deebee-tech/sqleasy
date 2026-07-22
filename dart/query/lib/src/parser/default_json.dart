@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import '../configuration.dart';
 import '../enums.dart';
 import '../errors/parser_error.dart';
@@ -9,11 +7,6 @@ import '../sql_helper.dart';
 String _columnRef(Dialect config, String tableNameOrAlias, String columnName) =>
     '${quoteIdentifier(tableNameOrAlias, config.identifierDelimiters)}.'
     '${quoteIdentifier(columnName, config.identifierDelimiters)}';
-
-String _pgPathLiteral(String path) {
-  final escaped = path.replaceAll("'", "''");
-  return "'$escaped'";
-}
 
 /// Emits a dialect-specific JSON path extraction expression for [columnName] at [path].
 void emitJsonExtractExpression(
@@ -30,7 +23,7 @@ void emitJsonExtractExpression(
   if (config.databaseType == DatabaseType.postgres) {
     sqlHelper.addSqlSnippet(col);
     sqlHelper.addSqlSnippet(mode == JsonExtractMode.text ? '->>' : '->');
-    sqlHelper.addSqlSnippet(_pgPathLiteral(path));
+    sqlHelper.addSqlSnippet(sqlStringLiteral(path));
     return;
   }
 
@@ -39,7 +32,7 @@ void emitJsonExtractExpression(
       sqlHelper.addSqlSnippet('JSON_UNQUOTE(JSON_EXTRACT(');
       sqlHelper.addSqlSnippet(col);
       sqlHelper.addSqlSnippet(', ');
-      sqlHelper.addSqlSnippet(jsonEncode(path));
+      sqlHelper.addSqlSnippet(sqlStringLiteral(path));
       sqlHelper.addSqlSnippet('))');
       return;
     }
@@ -47,7 +40,7 @@ void emitJsonExtractExpression(
     sqlHelper.addSqlSnippet('JSON_EXTRACT(');
     sqlHelper.addSqlSnippet(col);
     sqlHelper.addSqlSnippet(', ');
-    sqlHelper.addSqlSnippet(jsonEncode(path));
+    sqlHelper.addSqlSnippet(sqlStringLiteral(path));
     sqlHelper.addSqlSnippet(')');
     return;
   }
@@ -57,7 +50,7 @@ void emitJsonExtractExpression(
       sqlHelper.addSqlSnippet('JSON_QUERY(');
       sqlHelper.addSqlSnippet(col);
       sqlHelper.addSqlSnippet(', ');
-      sqlHelper.addSqlSnippet(jsonEncode(path));
+      sqlHelper.addSqlSnippet(sqlStringLiteral(path));
       sqlHelper.addSqlSnippet(')');
       return;
     }
@@ -65,7 +58,7 @@ void emitJsonExtractExpression(
     sqlHelper.addSqlSnippet('JSON_VALUE(');
     sqlHelper.addSqlSnippet(col);
     sqlHelper.addSqlSnippet(', ');
-    sqlHelper.addSqlSnippet(jsonEncode(path));
+    sqlHelper.addSqlSnippet(sqlStringLiteral(path));
     sqlHelper.addSqlSnippet(')');
     return;
   }
@@ -81,7 +74,7 @@ void emitJsonExtractExpression(
     sqlHelper.addSqlSnippet('json_extract(');
     sqlHelper.addSqlSnippet(col);
     sqlHelper.addSqlSnippet(', ');
-    sqlHelper.addSqlSnippet(jsonEncode(path));
+    sqlHelper.addSqlSnippet(sqlStringLiteral(path));
     sqlHelper.addSqlSnippet(')');
     return;
   }

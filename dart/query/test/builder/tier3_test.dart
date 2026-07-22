@@ -38,7 +38,7 @@ void main() {
         ..fromTable('users', alias: 'u');
       expect(
         b.parseRaw(),
-        contains(r'JSON_VALUE([u].[meta], "$.email") AS [email]'),
+        contains(r"JSON_VALUE([u].[meta], '$.email') AS [email]"),
       );
     });
   });

@@ -4,7 +4,7 @@ import { FullTextMode } from '../enums/full-text-mode';
 import type { ParserArea } from '../enums/parser-area';
 import { quoteIdentifier } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
-import { SqlHelper } from '../helpers/sql';
+import { SqlHelper, sqlStringLiteral } from '../helpers/sql';
 
 export type FullTextColumnRef = {
   tableNameOrAlias: string;
@@ -53,18 +53,18 @@ export const emitFullTextPredicate = (
     if (columns.length === 1) {
       const col = columns[0]!;
       sqlHelper.addSqlSnippet('to_tsvector(');
-      sqlHelper.addSqlSnippet(JSON.stringify('english'));
+      sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
       sqlHelper.addSqlSnippet(', ');
       sqlHelper.addSqlSnippet(columnRef(config, col.tableNameOrAlias, col.columnName));
       sqlHelper.addSqlSnippet(') @@ ');
       sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
-      sqlHelper.addSqlSnippet(JSON.stringify('english'));
+      sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
       sqlHelper.addSqlSnippet(', ');
       return;
     }
 
     sqlHelper.addSqlSnippet('to_tsvector(');
-    sqlHelper.addSqlSnippet(JSON.stringify('english'));
+    sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
     sqlHelper.addSqlSnippet(', ');
     sqlHelper.addSqlSnippet('concat(');
     columns.forEach((col, i) => {
@@ -75,7 +75,7 @@ export const emitFullTextPredicate = (
     });
     sqlHelper.addSqlSnippet(')) @@ ');
     sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
-    sqlHelper.addSqlSnippet(JSON.stringify('english'));
+    sqlHelper.addSqlSnippet(sqlStringLiteral('english'));
     sqlHelper.addSqlSnippet(', ');
     return;
   }

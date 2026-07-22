@@ -21763,14 +21763,14 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], \"email\") = @p0;', N'@p0 nvarchar(max)', @p0 = N'a@b.c';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], ''email'') = @p0;', N'@p0 nvarchar(max)', @p0 = N'a@b.c';",
             "params": []
           },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], \"email\") = a@b.c;"
+          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], 'email') = a@b.c;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, \"email\")) = ?;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, 'email')) = ?;",
             "params": [
               {
                 "t": "string",
@@ -21778,7 +21778,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, \"email\")) = a@b.c;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, 'email')) = a@b.c;"
         },
         "postgres": {
           "prepared": {
@@ -21794,7 +21794,7 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE json_extract(\"u\".\"meta\", \"email\") = ?;",
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE json_extract(\"u\".\"meta\", 'email') = ?;",
             "params": [
               {
                 "t": "string",
@@ -21802,7 +21802,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE json_extract(\"u\".\"meta\", \"email\") = a@b.c;"
+          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE json_extract(\"u\".\"meta\", 'email') = a@b.c;"
         }
       }
     },
@@ -21879,17 +21879,17 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT JSON_VALUE([u].[meta], \"$.email\") AS [email] FROM [dbo].[users] AS [u];', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT JSON_VALUE([u].[meta], ''$.email'') AS [email] FROM [dbo].[users] AS [u];', N'';",
             "params": []
           },
-          "raw": "SELECT JSON_VALUE([u].[meta], \"$.email\") AS [email] FROM [dbo].[users] AS [u];"
+          "raw": "SELECT JSON_VALUE([u].[meta], '$.email') AS [email] FROM [dbo].[users] AS [u];"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, \"$.email\")) AS `email` FROM `users` AS `u`;",
+            "sql": "SELECT JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, '$.email')) AS `email` FROM `users` AS `u`;",
             "params": []
           },
-          "raw": "SELECT JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, \"$.email\")) AS `email` FROM `users` AS `u`;"
+          "raw": "SELECT JSON_UNQUOTE(JSON_EXTRACT(`u`.`meta`, '$.email')) AS `email` FROM `users` AS `u`;"
         },
         "postgres": {
           "prepared": {
@@ -21900,10 +21900,10 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT json_extract(\"u\".\"meta\", \"$.email\") AS \"email\" FROM \"users\" AS \"u\";",
+            "sql": "SELECT json_extract(\"u\".\"meta\", '$.email') AS \"email\" FROM \"users\" AS \"u\";",
             "params": []
           },
-          "raw": "SELECT json_extract(\"u\".\"meta\", \"$.email\") AS \"email\" FROM \"users\" AS \"u\";"
+          "raw": "SELECT json_extract(\"u\".\"meta\", '$.email') AS \"email\" FROM \"users\" AS \"u\";"
         }
       }
     },
@@ -21952,7 +21952,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector(\"english\", \"d\".\"body\") @@ plainto_tsquery(\"english\", $1);",
+            "sql": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector('english', \"d\".\"body\") @@ plainto_tsquery('english', $1);",
             "params": [
               {
                 "t": "string",
@@ -21960,7 +21960,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector(\"english\", \"d\".\"body\") @@ plainto_tsquery(\"english\", hello world);"
+          "raw": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector('english', \"d\".\"body\") @@ plainto_tsquery('english', hello world);"
         },
         "sqlite": {
           "prepared": {
@@ -22021,7 +22021,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector(\"english\", \"d\".\"body\") @@ to_tsquery(\"english\", $1);",
+            "sql": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector('english', \"d\".\"body\") @@ to_tsquery('english', $1);",
             "params": [
               {
                 "t": "string",
@@ -22029,7 +22029,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector(\"english\", \"d\".\"body\") @@ to_tsquery(\"english\", +hello);"
+          "raw": "SELECT * FROM \"public\".\"docs\" AS \"d\" WHERE to_tsvector('english', \"d\".\"body\") @@ to_tsquery('english', +hello);"
         },
         "sqlite": {
           "prepared": {
@@ -22090,7 +22090,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"docs_fts\" AS \"d\" WHERE to_tsvector(\"english\", \"d\".\"body\") @@ plainto_tsquery(\"english\", $1);",
+            "sql": "SELECT * FROM \"public\".\"docs_fts\" AS \"d\" WHERE to_tsvector('english', \"d\".\"body\") @@ plainto_tsquery('english', $1);",
             "params": [
               {
                 "t": "string",
@@ -22098,7 +22098,7 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"public\".\"docs_fts\" AS \"d\" WHERE to_tsvector(\"english\", \"d\".\"body\") @@ plainto_tsquery(\"english\", hello);"
+          "raw": "SELECT * FROM \"public\".\"docs_fts\" AS \"d\" WHERE to_tsvector('english', \"d\".\"body\") @@ plainto_tsquery('english', hello);"
         },
         "sqlite": {
           "prepared": {

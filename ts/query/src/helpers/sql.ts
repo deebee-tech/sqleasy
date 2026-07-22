@@ -164,3 +164,20 @@ export class SqlHelper {
     }
   };
 }
+
+/**
+ * A SQL STRING LITERAL — single-quoted, with embedded quotes doubled.
+ *
+ * Exists because `JSON.stringify()` was being used for this, and a JSON string is not a SQL string.
+ * JSON quotes with `"`, which every dialect here reads as a DELIMITED IDENTIFIER, so the emitted SQL
+ * asked for a column instead of a value. Measured against real servers:
+ *
+ *   Postgres  to_tsvector("english", ...)          -> ERROR: column "english" does not exist
+ *   MySQL     JSON_EXTRACT(c, "$.a")               -> works ONLY under the default sql_mode;
+ *                                                     under ANSI_QUOTES: Unknown column '$.a'
+ *
+ * The Postgres form was broken outright and the MySQL one survived on a technicality, which is the
+ * more dangerous shape: it works until someone sets a perfectly ordinary sql_mode. Use this for any
+ * value that must reach the server AS TEXT, and `quoteIdentifier` for anything naming an object.
+ */
+export const sqlStringLiteral = (value: string): string => "'" + value.replaceAll("'", "''") + "'";

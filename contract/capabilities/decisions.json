@@ -1,8 +1,8 @@
 {
-  "_comment": "HAND-AUTHORED adjudications, merged over the extracted hypothesis by scripts/build-capability-manifest.mjs. This file is the source of truth and is never generated; capabilities.json IS generated and must never be hand-edited. Each entry records what a human decided about one (op|enum, dialect) cell: `kind` native|absent, `name` the engine's OWN term for it, and `refusal` the exact message when absent. Filling all four dialects with the SAME name is what makes a capability shared — sharedness is DERIVED from the names agreeing, never authored. Leave `name` empty when the kind is settled but the surface term is still a design decision; the cell then stays unadjudicated on purpose.",
+  "_comment": "HAND-AUTHORED adjudications, merged over the extracted hypothesis by scripts/build-capability-manifest.mjs. This file is the source of truth and is never generated; capabilities.json IS generated and must never be hand-edited. Each entry records what a human decided about one (op|enum, dialect) cell: `kind` native|absent, `name` the engine's OWN term for it, and `refusal` the exact message when absent. Filling all four dialects with the SAME name is what makes a capability shared \u2014 sharedness is DERIVED from the names agreeing, never authored. Leave `name` empty when the kind is settled but the surface term is still a design decision; the cell then stays unadjudicated on purpose.",
   "ops": {
     "top": {
-      "_why": "T-SQL has TOP and, since 2012, OFFSET/FETCH. They are two different constructs, not two spellings of one — SQL Server gained OFFSET/FETCH later for standards compliance and kept TOP. So MSSQL genuinely has both, and the other three have only the LIMIT concept, which is reached by limit(). Through 10.x .top(n) was SILENTLY DISCARDED on the other three: the row cap the caller wrote vanished with no error and no clause. Fixed 2026-07-20.",
+      "_why": "T-SQL has TOP and, since 2012, OFFSET/FETCH. They are two different constructs, not two spellings of one \u2014 SQL Server gained OFFSET/FETCH later for standards compliance and kept TOP. So MSSQL genuinely has both, and the other three have only the LIMIT concept, which is reached by limit(). Through 10.x .top(n) was SILENTLY DISCARDED on the other three: the row cap the caller wrote vanished with no error and no clause. Fixed 2026-07-20.",
       "mssql": {
         "kind": "native",
         "name": "top",
@@ -11,24 +11,24 @@
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no TOP clause — use limit() instead",
+        "refusal": "MySQL has no TOP clause \u2014 use limit() instead",
         "adjudicated": true
       },
       "postgres": {
         "kind": "absent",
         "name": "",
-        "refusal": "Postgres has no TOP clause — use limit() instead",
+        "refusal": "Postgres has no TOP clause \u2014 use limit() instead",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite has no TOP clause — use limit() instead",
+        "refusal": "SQLite has no TOP clause \u2014 use limit() instead",
         "adjudicated": true
       }
     },
     "limitWithTies": {
-      "_why": "WITH TIES is real in MSSQL and Postgres and absent from MySQL and SQLite. The two that have it spell it differently — T-SQL `TOP (n) WITH TIES`, Postgres `FETCH FIRST n ROWS WITH TIES` — but both engines use the phrase WITH TIES, so the shared term is real rather than coined. Through 10.x MSSQL emitted `OFFSET 0 ROWS FETCH NEXT n ROWS WITH TIES`, which no T-SQL production allows: <offset_fetch> ends in a mandatory ONLY and TOP admits no offset. Fixed 2026-07-20 to render through TOP. NAME LEFT EMPTY DELIBERATELY: `limitWithTies` is SQLEasy's coinage, not either engine's term. The honest term is `withTies`, but renaming is an API decision that belongs with the typed per-engine surface, not with this behavioural fix.",
+      "_why": "WITH TIES is real in MSSQL and Postgres and absent from MySQL and SQLite. The two that have it spell it differently \u2014 T-SQL `TOP (n) WITH TIES`, Postgres `FETCH FIRST n ROWS WITH TIES` \u2014 but both engines use the phrase WITH TIES, so the shared term is real rather than coined. Through 10.x MSSQL emitted `OFFSET 0 ROWS FETCH NEXT n ROWS WITH TIES`, which no T-SQL production allows: <offset_fetch> ends in a mandatory ONLY and TOP admits no offset. Fixed 2026-07-20 to render through TOP. NAME LEFT EMPTY DELIBERATELY: `limitWithTies` is SQLEasy's coinage, not either engine's term. The honest term is `withTies`, but renaming is an API decision that belongs with the typed per-engine surface, not with this behavioural fix.",
       "mssql": {
         "kind": "native",
         "name": "",
@@ -53,7 +53,7 @@
       }
     },
     "joinOuterApply": {
-      "_why": "MSSQL OUTER APPLY is native and takes no ON clause. Postgres and MySQL express the same semantics as LEFT JOIN LATERAL, which is equally native — but a LEFT JOIN REQUIRES ON or USING, and an APPLY has no ON conditions by construction, so the emitted statement had no ON at all and neither engine could parse it. Closed with the documented `ON TRUE` idiom 2026-07-20. SQLite has neither LATERAL nor APPLY.\n\nNAMES LEFT EMPTY DELIBERATELY, and this op is the design's own worked example: `outerApply` is T-SQL vocabulary, yet the capability is genuinely native on three engines. Because all three cells read `native`, nothing about a per-engine type split would move it off the shared surface — a Postgres user would still hit the dot and see a T-SQL term. Only derived sharedness forces the question, by requiring someone to assert `outerApply` is a real term in Postgres and MySQL, which it is not. The rename belongs with the typed surface. See docs/capability-manifest-design.md.",
+      "_why": "MSSQL OUTER APPLY is native and takes no ON clause. Postgres and MySQL express the same semantics as LEFT JOIN LATERAL, which is equally native \u2014 but a LEFT JOIN REQUIRES ON or USING, and an APPLY has no ON conditions by construction, so the emitted statement had no ON at all and neither engine could parse it. Closed with the documented `ON TRUE` idiom 2026-07-20. SQLite has neither LATERAL nor APPLY.\n\nNAMES LEFT EMPTY DELIBERATELY, and this op is the design's own worked example: `outerApply` is T-SQL vocabulary, yet the capability is genuinely native on three engines. Because all three cells read `native`, nothing about a per-engine type split would move it off the shared surface \u2014 a Postgres user would still hit the dot and see a T-SQL term. Only derived sharedness forces the question, by requiring someone to assert `outerApply` is a real term in Postgres and MySQL, which it is not. The rename belongs with the typed surface. See docs/capability-manifest-design.md.",
       "mssql": {
         "kind": "native",
         "name": "",
@@ -77,7 +77,7 @@
       }
     },
     "forUpdate": {
-      "_why": "Postgres and MySQL have a statement-level FOR UPDATE that locks every table the statement reads — one clause, no placement question. MSSQL has no such clause at all: its nearest equivalent is a WITH (UPDLOCK, ROWLOCK) hint, and T-SQL's table_hint production attaches to a table_or_view_name, i.e. ONE table reference. Through 10.x the hint was emitted only in the FROM-table branch, so a joined table was read at plain READ COMMITTED while the caller believed the whole result was locked, and a derived-table or TVF source got no hint anywhere. Silent, and a data-integrity bug rather than a syntax one.\n\nThe corpus could not have caught it: of 322 cases, 8 use a row lock and NONE combines one with a join or a non-table FROM. A hand-written test asserted the bug outright, named 'MSSQL applies the hint to the FROM table even alongside a JOIN'.\n\nFixed 2026-07-20: the hint now reaches every table reference, and MSSQL REFUSES where T-SQL has nowhere to put one. SQLite has no row-level locking at any version — its locking is whole-database/WAL-level.\n\nMSSQL NAME = 'updlock' (Sandy's decision 2026-07-20). forUpdate is Postgres/MySQL vocabulary; a T-SQL DBA reaches for UPDLOCK, which is exactly what the hint emits — WITH (UPDLOCK, ROWLOCK). So the shared portable name does NOT derive here: Postgres and MySQL name it forUpdate, MSSQL names it updlock, and those are different real terms. The METHOD rename to .updlock() on the MSSQL builder lands with the typed surface; this cell records the target name now so the surface work has it.",
+      "_why": "Postgres and MySQL have a statement-level FOR UPDATE that locks every table the statement reads \u2014 one clause, no placement question. MSSQL has no such clause at all: its nearest equivalent is a WITH (UPDLOCK, ROWLOCK) hint, and T-SQL's table_hint production attaches to a table_or_view_name, i.e. ONE table reference. Through 10.x the hint was emitted only in the FROM-table branch, so a joined table was read at plain READ COMMITTED while the caller believed the whole result was locked, and a derived-table or TVF source got no hint anywhere. Silent, and a data-integrity bug rather than a syntax one.\n\nThe corpus could not have caught it: of 322 cases, 8 use a row lock and NONE combines one with a join or a non-table FROM. A hand-written test asserted the bug outright, named 'MSSQL applies the hint to the FROM table even alongside a JOIN'.\n\nFixed 2026-07-20: the hint now reaches every table reference, and MSSQL REFUSES where T-SQL has nowhere to put one. SQLite has no row-level locking at any version \u2014 its locking is whole-database/WAL-level.\n\nMSSQL NAME = 'updlock' (Sandy's decision 2026-07-20). forUpdate is Postgres/MySQL vocabulary; a T-SQL DBA reaches for UPDLOCK, which is exactly what the hint emits \u2014 WITH (UPDLOCK, ROWLOCK). So the shared portable name does NOT derive here: Postgres and MySQL name it forUpdate, MSSQL names it updlock, and those are different real terms. The METHOD rename to .updlock() on the MSSQL builder lands with the typed surface; this cell records the target name now so the surface work has it.",
       "postgres": {
         "kind": "native",
         "name": "forUpdate",
@@ -125,7 +125,7 @@
       }
     },
     "onConflictDoUpdate": {
-      "_why": "Postgres (9.5+) and SQLite (3.24+) have a real conflict TARGET: ON CONFLICT (cols) DO UPDATE. MySQL does not — ON DUPLICATE KEY UPDATE fires on ANY unique or primary key and its grammar accepts no column list. Through 10.x naming columns on MySQL was silently discarded, so 'conflict on email' became 'conflict on any unique key', which matches a DIFFERENT set of rows and can update rows the caller never intended. Fixed 2026-07-20: MySQL refuses a named target and still accepts the untargeted form, which is honest about what the engine means. MSSQL is NOT adjudicated here — it has no upsert primitive at all and is currently synthesized as MERGE without HOLDLOCK; that is queued for re-homing under an explicit merge surface.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE — a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary — that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
+      "_why": "Postgres (9.5+) and SQLite (3.24+) have a real conflict TARGET: ON CONFLICT (cols) DO UPDATE. MySQL does not \u2014 ON DUPLICATE KEY UPDATE fires on ANY unique or primary key and its grammar accepts no column list. Through 10.x naming columns on MySQL was silently discarded, so 'conflict on email' became 'conflict on any unique key', which matches a DIFFERENT set of rows and can update rows the caller never intended. Fixed 2026-07-20: MySQL refuses a named target and still accepts the untargeted form, which is honest about what the engine means. MSSQL is NOT adjudicated here \u2014 it has no upsert primitive at all and is currently synthesized as MERGE without HOLDLOCK; that is queued for re-homing under an explicit merge surface.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE \u2014 a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary \u2014 that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
       "postgres": {
         "kind": "native",
         "name": "onConflict",
@@ -144,12 +144,12 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
         "adjudicated": true
       }
     },
     "onConflictDoNothing": {
-      "_why": "Same conflict-target story as onConflictDoUpdate. Postgres/SQLite spell it DO NOTHING with an optional target; MySQL spells it INSERT IGNORE, which is a genuinely different construct — it suppresses OTHER errors too, not just duplicate keys — and accepts no target. Both engines' terms are real, and they are DIFFERENT terms, so this does not derive shared. MSSQL unadjudicated pending the merge re-home.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE — a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary — that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
+      "_why": "Same conflict-target story as onConflictDoUpdate. Postgres/SQLite spell it DO NOTHING with an optional target; MySQL spells it INSERT IGNORE, which is a genuinely different construct \u2014 it suppresses OTHER errors too, not just duplicate keys \u2014 and accepts no target. Both engines' terms are real, and they are DIFFERENT terms, so this does not derive shared. MSSQL unadjudicated pending the merge re-home.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE \u2014 a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary \u2014 that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
       "postgres": {
         "kind": "native",
         "name": "onConflict",
@@ -168,12 +168,12 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
         "adjudicated": true
       }
     },
     "onConflictDoUpdateRaw": {
-      "_why": "Raw-SET variant of onConflictDoUpdate; same conflict-target and MSSQL story.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE — a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary — that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
+      "_why": "Raw-SET variant of onConflictDoUpdate; same conflict-target and MSSQL story.\n\nMSSQL ADJUDICATED 2026-07-20: T-SQL has NO upsert primitive. This used to abandon the INSERT grammar and synthesize a MERGE \u2014 a different statement with different atomicity, trigger and error semantics, which the caller never wrote and could not see. It was unsafe as written too: an un-hinted MERGE used as an upsert is race-prone at READ COMMITTED and can raise a duplicate-key violation, which ON CONFLICT never does. The repo already knew this (forShare emitted WITH (HOLDLOCK)), so the omission was an oversight. MERGE is genuine native T-SQL and should return as an EXPLICIT surface named in T-SQL's own vocabulary \u2014 that belongs with the per-engine typed builders, because naming it now would mint `mergeMssql()`, the suffixed form Sandy rejected.",
       "postgres": {
         "kind": "native",
         "name": "onConflict",
@@ -192,12 +192,12 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
         "adjudicated": true
       }
     },
     "forShare": {
-      "_why": "Postgres and MySQL 8.0+ have a statement-level FOR SHARE. MSSQL does NOT, and the WITH (HOLDLOCK, ROWLOCK) it used to emit was not a near-equivalent: HOLDLOCK is a SYNONYM FOR SERIALIZABLE and takes key-range locks that prevent phantom inserts, which FOR SHARE does not do. Emitting it silently escalated the caller's isolation level. T-SQL's hint taxonomy splits into lock hints (UPDLOCK/XLOCK/ROWLOCK) and isolation hints (HOLDLOCK/REPEATABLEREAD/SERIALIZABLE), and there is no shared-mode counterpart to UPDLOCK in the first group.\n\nREPEATABLEREAD was considered and rejected: it is still a read-isolation instruction that happens to leave shared locks behind rather than a lock REQUEST, and it changes how every other row the statement scans is read. Under 'no approximations' that is a synthesis.\n\nRefused on MSSQL 2026-07-20. It should return under T-SQL's own vocabulary with the per-engine typed builders, where a caller naming HOLDLOCK or REPEATABLEREAD gets exactly what they asked for. forUpdate is unaffected — UPDLOCK, ROWLOCK is Microsoft's own documented idiom for it. SQLite has no row-level locking at any version.",
+      "_why": "Postgres and MySQL 8.0+ have a statement-level FOR SHARE. MSSQL does NOT, and the WITH (HOLDLOCK, ROWLOCK) it used to emit was not a near-equivalent: HOLDLOCK is a SYNONYM FOR SERIALIZABLE and takes key-range locks that prevent phantom inserts, which FOR SHARE does not do. Emitting it silently escalated the caller's isolation level. T-SQL's hint taxonomy splits into lock hints (UPDLOCK/XLOCK/ROWLOCK) and isolation hints (HOLDLOCK/REPEATABLEREAD/SERIALIZABLE), and there is no shared-mode counterpart to UPDLOCK in the first group.\n\nREPEATABLEREAD was considered and rejected: it is still a read-isolation instruction that happens to leave shared locks behind rather than a lock REQUEST, and it changes how every other row the statement scans is read. Under 'no approximations' that is a synthesis.\n\nRefused on MSSQL 2026-07-20. It should return under T-SQL's own vocabulary with the per-engine typed builders, where a caller naming HOLDLOCK or REPEATABLEREAD gets exactly what they asked for. forUpdate is unaffected \u2014 UPDLOCK, ROWLOCK is Microsoft's own documented idiom for it. SQLite has no row-level locking at any version.",
       "postgres": {
         "kind": "native",
         "name": "forShare",
@@ -211,7 +211,7 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
+        "refusal": "MSSQL has no shared row lock \u2014 HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
         "adjudicated": true
       },
       "sqlite": {
@@ -222,7 +222,7 @@
       }
     },
     "merge": {
-      "_why": "MERGE is native T-SQL and exists on no other dialect. RE-HOMED 2026-07-20 as an explicit surface — QueryBuilder.merge((m) => …) over a MergeBuilder — after Sandy approved bringing it back. It expresses MERGE as T-SQL defines it (INTO/USING/ON/WHEN MATCHED/WHEN NOT MATCHED [BY SOURCE]/OUTPUT/mandatory semicolon/WITH (HOLDLOCK)), NOT the merge(conflictColumns, updates) upsert-keyhole a reviewer flagged as a worse lie than mergeMssql(). Through 7015f6c it had been REFUSED, because the only MERGE in the codebase was the silent INSERT-becomes-MERGE upsert substitution, which was removed. This is its honest return. HOLDLOCK is exposed via .holdlock(), documented as the concurrency-safe form, and NOT injected — the builder emits the MERGE the caller wrote. Name = 'merge' with no suffix: it collides with nothing, so when the per-engine typed builders land it moves verbatim to MssqlQueryBuilder and the runtime refusal on the other three becomes a compile-time absence.",
+      "_why": "MERGE is native T-SQL and exists on no other dialect. RE-HOMED 2026-07-20 as an explicit surface \u2014 QueryBuilder.merge((m) => \u2026) over a MergeBuilder \u2014 after Sandy approved bringing it back. It expresses MERGE as T-SQL defines it (INTO/USING/ON/WHEN MATCHED/WHEN NOT MATCHED [BY SOURCE]/OUTPUT/mandatory semicolon/WITH (HOLDLOCK)), NOT the merge(conflictColumns, updates) upsert-keyhole a reviewer flagged as a worse lie than mergeMssql(). Through 7015f6c it had been REFUSED, because the only MERGE in the codebase was the silent INSERT-becomes-MERGE upsert substitution, which was removed. This is its honest return. HOLDLOCK is exposed via .holdlock(), documented as the concurrency-safe form, and NOT injected \u2014 the builder emits the MERGE the caller wrote. Name = 'merge' with no suffix: it collides with nothing, so when the per-engine typed builders land it moves verbatim to MssqlQueryBuilder and the runtime refusal on the other three becomes a compile-time absence.",
       "mssql": {
         "kind": "native",
         "name": "merge",
@@ -231,19 +231,220 @@
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no MERGE statement — it is native T-SQL only",
+        "refusal": "MySQL has no MERGE statement \u2014 it is native T-SQL only",
         "adjudicated": true
       },
       "postgres": {
         "kind": "absent",
         "name": "",
-        "refusal": "Postgres has no MERGE statement — it is native T-SQL only",
+        "refusal": "Postgres has no MERGE statement \u2014 it is native T-SQL only",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite has no MERGE statement — it is native T-SQL only",
+        "refusal": "SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "into": {
+      "_why": "MERGE is native T-SQL and exists nowhere else here, so every part of its grammar is MSSQL-only \u2014 not just the merge() entry point but each sub-builder method the MergeBuilder exposes (builder/merge.ts). The other three refuse with 'Merge: <Dialect> has no MERGE statement \u2014 it is native T-SQL only', verified by running each one. Recorded because the manifest was shipping these as native + adjudicated on all four: presence on a typed view is not performance, and these methods live on a sub-builder the view never gated. SQLEasy 10 synthesized a MERGE on MSSQL for upsert and it was race-prone without HOLDLOCK, which is exactly why holdlock() is part of this grammar rather than implied.",
+      "mssql": {
+        "kind": "native",
+        "name": "into",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "usingValues": {
+      "_why": "MERGE is native T-SQL and exists nowhere else here, so every part of its grammar is MSSQL-only \u2014 not just the merge() entry point but each sub-builder method the MergeBuilder exposes (builder/merge.ts). The other three refuse with 'Merge: <Dialect> has no MERGE statement \u2014 it is native T-SQL only', verified by running each one. Recorded because the manifest was shipping these as native + adjudicated on all four: presence on a typed view is not performance, and these methods live on a sub-builder the view never gated. SQLEasy 10 synthesized a MERGE on MSSQL for upsert and it was race-prone without HOLDLOCK, which is exactly why holdlock() is part of this grammar rather than implied.",
+      "mssql": {
+        "kind": "native",
+        "name": "usingValues",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "holdlock": {
+      "_why": "MERGE is native T-SQL and exists nowhere else here, so every part of its grammar is MSSQL-only \u2014 not just the merge() entry point but each sub-builder method the MergeBuilder exposes (builder/merge.ts). The other three refuse with 'Merge: <Dialect> has no MERGE statement \u2014 it is native T-SQL only', verified by running each one. Recorded because the manifest was shipping these as native + adjudicated on all four: presence on a typed view is not performance, and these methods live on a sub-builder the view never gated. SQLEasy 10 synthesized a MERGE on MSSQL for upsert and it was race-prone without HOLDLOCK, which is exactly why holdlock() is part of this grammar rather than implied.",
+      "mssql": {
+        "kind": "native",
+        "name": "holdlock",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "whenMatchedThenUpdate": {
+      "_why": "MERGE is native T-SQL and exists nowhere else here, so every part of its grammar is MSSQL-only \u2014 not just the merge() entry point but each sub-builder method the MergeBuilder exposes (builder/merge.ts). The other three refuse with 'Merge: <Dialect> has no MERGE statement \u2014 it is native T-SQL only', verified by running each one. Recorded because the manifest was shipping these as native + adjudicated on all four: presence on a typed view is not performance, and these methods live on a sub-builder the view never gated. SQLEasy 10 synthesized a MERGE on MSSQL for upsert and it was race-prone without HOLDLOCK, which is exactly why holdlock() is part of this grammar rather than implied.",
+      "mssql": {
+        "kind": "native",
+        "name": "whenMatchedThenUpdate",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "whenNotMatchedThenInsert": {
+      "_why": "MERGE is native T-SQL and exists nowhere else here, so every part of its grammar is MSSQL-only \u2014 not just the merge() entry point but each sub-builder method the MergeBuilder exposes (builder/merge.ts). The other three refuse with 'Merge: <Dialect> has no MERGE statement \u2014 it is native T-SQL only', verified by running each one. Recorded because the manifest was shipping these as native + adjudicated on all four: presence on a typed view is not performance, and these methods live on a sub-builder the view never gated. SQLEasy 10 synthesized a MERGE on MSSQL for upsert and it was race-prone without HOLDLOCK, which is exactly why holdlock() is part of this grammar rather than implied.",
+      "mssql": {
+        "kind": "native",
+        "name": "whenNotMatchedThenInsert",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "whenNotMatchedBySourceThenDelete": {
+      "_why": "MERGE is native T-SQL and exists nowhere else here, so every part of its grammar is MSSQL-only \u2014 not just the merge() entry point but each sub-builder method the MergeBuilder exposes (builder/merge.ts). The other three refuse with 'Merge: <Dialect> has no MERGE statement \u2014 it is native T-SQL only', verified by running each one. Recorded because the manifest was shipping these as native + adjudicated on all four: presence on a typed view is not performance, and these methods live on a sub-builder the view never gated. SQLEasy 10 synthesized a MERGE on MSSQL for upsert and it was race-prone without HOLDLOCK, which is exactly why holdlock() is part of this grammar rather than implied.",
+      "mssql": {
+        "kind": "native",
+        "name": "whenNotMatchedBySourceThenDelete",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: MySQL has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: Postgres has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Merge: SQLite has no MERGE statement \u2014 it is native T-SQL only",
+        "adjudicated": true
+      }
+    },
+    "fromTableWithOwner": {
+      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "From: MySQL does not support table owners",
+        "adjudicated": true
+      }
+    },
+    "joinTableWithOwner": {
+      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Join: MySQL does not support table owners",
+        "adjudicated": true
+      }
+    },
+    "insertIntoWithOwner": {
+      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Insert: MySQL does not support table owners",
+        "adjudicated": true
+      }
+    },
+    "deleteFromWithOwner": {
+      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Delete: MySQL does not support table owners",
+        "adjudicated": true
+      }
+    },
+    "updateTableWithOwner": {
+      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "Update: MySQL does not support table owners",
         "adjudicated": true
       }
     }
@@ -443,7 +644,7 @@
       }
     },
     "FrameBoundType.CurrentRow": {
-      "_why": "emitFrameBound (default-window.ts:21-22) emits the constant 'CURRENT ROW' for all four dialects with no branching or throw. Allowed on MSSQL even within RANGE (mssql_range_frame.test.ts → 'RANGE CURRENT ROW').",
+      "_why": "emitFrameBound (default-window.ts:21-22) emits the constant 'CURRENT ROW' for all four dialects with no branching or throw. Allowed on MSSQL even within RANGE (mssql_range_frame.test.ts \u2192 'RANGE CURRENT ROW').",
       "mssql": {
         "kind": "native",
         "name": "CURRENT ROW",
@@ -466,7 +667,7 @@
       }
     },
     "FrameBoundType.Following": {
-      "_why": "emitFrameBound (default-window.ts:24-25) emits '${offset} FOLLOWING' (e.g. '1 FOLLOWING') for every dialect with no dialect branch; window.test.ts renders 'ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING'. As with Preceding, the only MSSQL numeric-offset refusal comes from combining it with RANGE (default-window.ts:114-124, adjudicated under FrameUnit.Range), not from this bound type — MSSQL emits 'N FOLLOWING' in a ROWS frame. Native on all four.",
+      "_why": "emitFrameBound (default-window.ts:24-25) emits '${offset} FOLLOWING' (e.g. '1 FOLLOWING') for every dialect with no dialect branch; window.test.ts renders 'ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING'. As with Preceding, the only MSSQL numeric-offset refusal comes from combining it with RANGE (default-window.ts:114-124, adjudicated under FrameUnit.Range), not from this bound type \u2014 MSSQL emits 'N FOLLOWING' in a ROWS frame. Native on all four.",
       "mssql": {
         "kind": "native",
         "name": "N FOLLOWING",
@@ -489,7 +690,7 @@
       }
     },
     "FrameBoundType.Preceding": {
-      "_why": "emitFrameBound (default-window.ts:18-19) emits '${offset} PRECEDING' (e.g. '5 PRECEDING') for every dialect with no dialect branch. On MSSQL it emits fine inside a ROWS frame (mssql_range_frame.test.ts:82-90 → 'ROWS 5 PRECEDING'); the only MSSQL refusal for a numeric offset is when it is combined with RANGE, which is captured under FrameUnit.Range (default-window.ts:114-124), not attributable to this bound type itself. Native on all four.",
+      "_why": "emitFrameBound (default-window.ts:18-19) emits '${offset} PRECEDING' (e.g. '5 PRECEDING') for every dialect with no dialect branch. On MSSQL it emits fine inside a ROWS frame (mssql_range_frame.test.ts:82-90 \u2192 'ROWS 5 PRECEDING'); the only MSSQL refusal for a numeric offset is when it is combined with RANGE, which is captured under FrameUnit.Range (default-window.ts:114-124), not attributable to this bound type itself. Native on all four.",
       "mssql": {
         "kind": "native",
         "name": "N PRECEDING",
@@ -512,7 +713,7 @@
       }
     },
     "FrameBoundType.UnboundedFollowing": {
-      "_why": "emitFrameBound (default-window.ts:27-28) emits the constant 'UNBOUNDED FOLLOWING' for all four dialects with no branching and no throw. Confirmed by window.test.ts (SQLite → 'RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING').",
+      "_why": "emitFrameBound (default-window.ts:27-28) emits the constant 'UNBOUNDED FOLLOWING' for all four dialects with no branching and no throw. Confirmed by window.test.ts (SQLite \u2192 'RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING').",
       "mssql": {
         "kind": "native",
         "name": "UNBOUNDED FOLLOWING",
@@ -558,7 +759,7 @@
       }
     },
     "FrameUnit.Range": {
-      "_why": "default-window.ts:126 emits 'RANGE ' for every dialect; the one branch (lines 114-124) throws on MSSQL only when RANGE is paired with a numeric-offset bound, which is a constraint on the argument, not on the unit — MSSQL genuinely HAS the RANGE unit (mssql_range_frame.test.ts allows 'RANGE UNBOUNDED PRECEDING' and 'RANGE CURRENT ROW'). Stays consistent with the existing all-native decisions.json adjudication for FrameUnit.Range; Postgres/MySQL/SQLite emit RANGE with offsets freely (mssql_range_frame.test.ts:100-117).",
+      "_why": "default-window.ts:126 emits 'RANGE ' for every dialect; the one branch (lines 114-124) throws on MSSQL only when RANGE is paired with a numeric-offset bound, which is a constraint on the argument, not on the unit \u2014 MSSQL genuinely HAS the RANGE unit (mssql_range_frame.test.ts allows 'RANGE UNBOUNDED PRECEDING' and 'RANGE CURRENT ROW'). Stays consistent with the existing all-native decisions.json adjudication for FrameUnit.Range; Postgres/MySQL/SQLite emit RANGE with offsets freely (mssql_range_frame.test.ts:100-117).",
       "mssql": {
         "kind": "native",
         "name": "RANGE",
@@ -612,7 +813,7 @@
       },
       "mysql": {
         "kind": "native",
-        "name": "MATCH … AGAINST … IN BOOLEAN MODE",
+        "name": "MATCH \u2026 AGAINST \u2026 IN BOOLEAN MODE",
         "adjudicated": true
       },
       "postgres": {
@@ -635,7 +836,7 @@
       },
       "mysql": {
         "kind": "native",
-        "name": "MATCH … AGAINST … IN NATURAL LANGUAGE MODE",
+        "name": "MATCH \u2026 AGAINST \u2026 IN NATURAL LANGUAGE MODE",
         "adjudicated": true
       },
       "postgres": {
@@ -650,17 +851,17 @@
       }
     },
     "FullTextMode.Phrase": {
-      "_why": "Completes the partial adjudication in decisions.json (enums.FullTextMode.Phrase), matching its refusal wording verbatim. Only Postgres supports a phrase mode: default-full-text.ts routes it to phraseto_tsquery( (lines 35-37), which joins terms with the <-> distance operator (a true phrase match) — tier3/full_text_phrase tests assert phraseto_tsquery and not plainto_tsquery. MySQL and MSSQL throw because a phrase is expressed by quoting the bound search value, not by a mode (lines 89-95 and 119-125); SQLite throws because FTS only supports Natural/Boolean MATCH (line 150). All three throws pinned in full_text_phrase.test.ts. (decisions.json names the Postgres capability 'phrase'; the raw SQL term the parser actually emits is phraseto_tsquery.)",
+      "_why": "Completes the partial adjudication in decisions.json (enums.FullTextMode.Phrase), matching its refusal wording verbatim. Only Postgres supports a phrase mode: default-full-text.ts routes it to phraseto_tsquery( (lines 35-37), which joins terms with the <-> distance operator (a true phrase match) \u2014 tier3/full_text_phrase tests assert phraseto_tsquery and not plainto_tsquery. MySQL and MSSQL throw because a phrase is expressed by quoting the bound search value, not by a mode (lines 89-95 and 119-125); SQLite throws because FTS only supports Natural/Boolean MATCH (line 150). All three throws pinned in full_text_phrase.test.ts. (decisions.json names the Postgres capability 'phrase'; the raw SQL term the parser actually emits is phraseto_tsquery.)",
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw",
+        "refusal": "MSSQL expresses a phrase by quoting it inside the CONTAINS search condition, not by a mode \u2014 pass a quoted phrase to a Boolean search, or use whereMatchRaw",
         "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL expresses a phrase by quoting the search string, not by a mode — pass a quoted phrase to a Boolean search, or use whereMatchRaw",
+        "refusal": "MySQL expresses a phrase by quoting the search string, not by a mode \u2014 pass a quoted phrase to a Boolean search, or use whereMatchRaw",
         "adjudicated": true
       },
       "postgres": {
@@ -680,7 +881,7 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       },
       "mysql": {
@@ -691,13 +892,13 @@
       "postgres": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       }
     },
@@ -711,24 +912,24 @@
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects",
+        "refusal": "hintMssqlOption is only supported on MSSQL \u2014 use hintRaw on other dialects",
         "adjudicated": true
       },
       "postgres": {
         "kind": "absent",
         "name": "",
-        "refusal": "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects",
+        "refusal": "hintMssqlOption is only supported on MSSQL \u2014 use hintRaw on other dialects",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "hintMssqlOption is only supported on MSSQL — use hintRaw on other dialects",
+        "refusal": "hintMssqlOption is only supported on MSSQL \u2014 use hintRaw on other dialects",
         "adjudicated": true
       }
     },
     "HintKind.Raw": {
-      "_why": "default-hint.ts:emitTrailingHints (lines 81-88, called at to-sql.ts:295) has NO dialect gate for the Raw branch — it only rejects empty text ('hintRaw requires non-empty SQL') and otherwise appends the caller's raw string verbatim. Neither validateHints nor mysqlIndexHintForTable touches Raw, so it is accepted on all four dialects as a caller-owned passthrough.",
+      "_why": "default-hint.ts:emitTrailingHints (lines 81-88, called at to-sql.ts:295) has NO dialect gate for the Raw branch \u2014 it only rejects empty text ('hintRaw requires non-empty SQL') and otherwise appends the caller's raw string verbatim. Neither validateHints nor mysqlIndexHintForTable touches Raw, so it is accepted on all four dialects as a caller-owned passthrough.",
       "mssql": {
         "kind": "native",
         "name": "(raw passthrough)",
@@ -755,7 +956,7 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       },
       "mysql": {
@@ -766,13 +967,13 @@
       "postgres": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       },
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       }
     },
@@ -915,7 +1116,7 @@
       }
     },
     "JoinOperator.None": {
-      "_why": "Internal sentinel — \"no JoinOperator specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no JoinOperator specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1082,7 +1283,7 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL LATERAL joins use CROSS APPLY/OUTER APPLY — use joinCrossApply/joinOuterApply",
+        "refusal": "MSSQL LATERAL joins use CROSS APPLY/OUTER APPLY \u2014 use joinCrossApply/joinOuterApply",
         "adjudicated": true
       },
       "mysql": {
@@ -1149,7 +1350,7 @@
       }
     },
     "JoinType.None": {
-      "_why": "Internal sentinel — \"no JoinType specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no JoinType specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1196,7 +1397,7 @@
       }
     },
     "JoinType.Right": {
-      "_why": "default-join.ts line 52-54 emits 'RIGHT JOIN ' unconditionally — MySQL is NOT excluded (over-attribution trap avoided). tests/mysql/join.test.ts line 53-65 pins the MySQL RIGHT JOIN output.",
+      "_why": "default-join.ts line 52-54 emits 'RIGHT JOIN ' unconditionally \u2014 MySQL is NOT excluded (over-attribution trap avoided). tests/mysql/join.test.ts line 53-65 pins the MySQL RIGHT JOIN output.",
       "mssql": {
         "kind": "native",
         "name": "RIGHT JOIN",
@@ -1261,7 +1462,7 @@
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw",
+        "refusal": "SQLite json_extract always returns text \u2014 use JsonExtractMode.Text or selectJsonRaw",
         "adjudicated": true
       }
     },
@@ -1293,13 +1494,13 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
+        "refusal": "MSSQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
         "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
+        "refusal": "MySQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
         "adjudicated": true
       },
       "postgres": {
@@ -1318,13 +1519,13 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
+        "refusal": "MSSQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
         "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no NULLS FIRST/LAST — order by a nullability expression explicitly if you need it",
+        "refusal": "MySQL has no NULLS FIRST/LAST \u2014 order by a nullability expression explicitly if you need it",
         "adjudicated": true
       },
       "postgres": {
@@ -1339,7 +1540,7 @@
       }
     },
     "NullsOrder.None": {
-      "_why": "Internal sentinel — \"no NullsOrder specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no NullsOrder specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1408,7 +1609,7 @@
       }
     },
     "OrderByDirection.None": {
-      "_why": "Internal sentinel — \"no OrderByDirection specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no OrderByDirection specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1431,11 +1632,11 @@
       }
     },
     "RowLockMode.ForShare": {
-      "_why": "default-row-lock.ts:33 emits the trailing 'FOR SHARE' clause for Postgres/MySQL (row_lock.test.ts asserts `... FOR SHARE;`). MSSQL throws in mssqlRowLockHint (lines 92-96) because T-SQL has no shared-mode counterpart to UPDLOCK — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE. SQLite throws at lines 22-25.",
+      "_why": "default-row-lock.ts:33 emits the trailing 'FOR SHARE' clause for Postgres/MySQL (row_lock.test.ts asserts `... FOR SHARE;`). MSSQL throws in mssqlRowLockHint (lines 92-96) because T-SQL has no shared-mode counterpart to UPDLOCK \u2014 HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE. SQLite throws at lines 22-25.",
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
+        "refusal": "MSSQL has no shared row lock \u2014 HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
         "adjudicated": true
       },
       "mysql": {
@@ -1480,7 +1681,7 @@
       }
     },
     "RowLockMode.None": {
-      "_why": "Internal sentinel — \"no RowLockMode specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no RowLockMode specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1526,7 +1727,7 @@
       }
     },
     "RowLockWait.Nowait": {
-      "_why": "default-row-lock.ts:35-36 appends ' NOWAIT' for Postgres/MySQL (row_lock.test.ts asserts `FOR UPDATE NOWAIT`). MSSQL does NOT throw — mssqlRowLockHint line 101-103 emits ' WITH (UPDLOCK, ROWLOCK, NOWAIT)', so NOWAIT is native there (the 'MSSQL refuses' hypothesis is over-attribution; there is no wait-mode throw in source). SQLite throws first at lines 22-25 before any wait suffix.",
+      "_why": "default-row-lock.ts:35-36 appends ' NOWAIT' for Postgres/MySQL (row_lock.test.ts asserts `FOR UPDATE NOWAIT`). MSSQL does NOT throw \u2014 mssqlRowLockHint line 101-103 emits ' WITH (UPDLOCK, ROWLOCK, NOWAIT)', so NOWAIT is native there (the 'MSSQL refuses' hypothesis is over-attribution; there is no wait-mode throw in source). SQLite throws first at lines 22-25 before any wait suffix.",
       "mssql": {
         "kind": "native",
         "name": "NOWAIT",
@@ -1550,7 +1751,7 @@
       }
     },
     "RowLockWait.SkipLocked": {
-      "_why": "default-row-lock.ts:37-38 appends ' SKIP LOCKED' for Postgres/MySQL (row_lock.test.ts). MSSQL does NOT throw — mssqlRowLockHint line 108-109 emits ' WITH (UPDLOCK, ROWLOCK, READPAST)', READPAST being Microsoft's own term for the skip-locked behavior (mssql_row_lock_coverage.test.ts asserts READPAST). SQLite throws at lines 22-25.",
+      "_why": "default-row-lock.ts:37-38 appends ' SKIP LOCKED' for Postgres/MySQL (row_lock.test.ts). MSSQL does NOT throw \u2014 mssqlRowLockHint line 108-109 emits ' WITH (UPDLOCK, ROWLOCK, READPAST)', READPAST being Microsoft's own term for the skip-locked behavior (mssql_row_lock_coverage.test.ts asserts READPAST). SQLite throws at lines 22-25.",
       "mssql": {
         "kind": "native",
         "name": "READPAST",
@@ -1574,11 +1775,11 @@
       }
     },
     "UpsertAction.DoNothing": {
-      "_why": "Per ts/query/src/parser/default-upsert.ts and default-insert.ts: MySQL DoNothing takes the isMysqlInsertIgnore() path — defaultInsert emits an 'INSERT IGNORE' prefix (default-insert.ts:59-61) and emitUpsertClause emits nothing (default-upsert.ts:92-95); pinned by tests/shared/upsert.test.ts:50 ('INSERT IGNORE INTO ...'). Postgres/SQLite fall through to the shared branch emitting ' ON CONFLICT' + optional (cols) + ' DO NOTHING' (default-upsert.ts:103-113; upsert.test.ts:14,37). MSSQL is refused up front in defaultInsert (lines 45-51) whenever state.upsertState is present, before emitUpsertClause runs — MERGE is a separate statement/enum, not this INSERT-upsert path (test upsert.test.ts:80 asserts /MSSQL has no upsert/).",
+      "_why": "Per ts/query/src/parser/default-upsert.ts and default-insert.ts: MySQL DoNothing takes the isMysqlInsertIgnore() path \u2014 defaultInsert emits an 'INSERT IGNORE' prefix (default-insert.ts:59-61) and emitUpsertClause emits nothing (default-upsert.ts:92-95); pinned by tests/shared/upsert.test.ts:50 ('INSERT IGNORE INTO ...'). Postgres/SQLite fall through to the shared branch emitting ' ON CONFLICT' + optional (cols) + ' DO NOTHING' (default-upsert.ts:103-113; upsert.test.ts:14,37). MSSQL is refused up front in defaultInsert (lines 45-51) whenever state.upsertState is present, before emitUpsertClause runs \u2014 MERGE is a separate statement/enum, not this INSERT-upsert path (test upsert.test.ts:80 asserts /MSSQL has no upsert/).",
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
         "adjudicated": true
       },
       "mysql": {
@@ -1598,11 +1799,11 @@
       }
     },
     "UpsertAction.DoUpdate": {
-      "_why": "Per ts/query/src/parser/default-upsert.ts: MySQL DoUpdate emits ' ON DUPLICATE KEY UPDATE ' + SET list (default-upsert.ts:97-99; tests/shared/upsert.test.ts:109). Postgres/SQLite emit ' ON CONFLICT' + (conflict cols, required here) + ' DO UPDATE SET ' + SET list (default-upsert.ts:103-120; upsert.test.ts:95). MSSQL is refused in defaultInsert (lines 45-51) whenever an upsertState is present — the emitUpsertClause MSSQL guard (default-upsert.ts:72-77) is unreachable because defaultInsert throws first; MERGE is a separate native T-SQL surface, not this path (test tier3.test.ts:82 asserts /MSSQL has no upsert/).",
+      "_why": "Per ts/query/src/parser/default-upsert.ts: MySQL DoUpdate emits ' ON DUPLICATE KEY UPDATE ' + SET list (default-upsert.ts:97-99; tests/shared/upsert.test.ts:109). Postgres/SQLite emit ' ON CONFLICT' + (conflict cols, required here) + ' DO UPDATE SET ' + SET list (default-upsert.ts:103-120; upsert.test.ts:95). MSSQL is refused in defaultInsert (lines 45-51) whenever an upsertState is present \u2014 the emitUpsertClause MSSQL guard (default-upsert.ts:72-77) is unreachable because defaultInsert throws first; MERGE is a separate native T-SQL surface, not this path (test tier3.test.ts:82 asserts /MSSQL has no upsert/).",
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no upsert — T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
+        "refusal": "MSSQL has no upsert \u2014 T-SQL expresses this with MERGE, which is a different statement with different concurrency semantics; write it explicitly",
         "adjudicated": true
       },
       "mysql": {
@@ -1622,7 +1823,7 @@
       }
     },
     "UpsertAction.None": {
-      "_why": "Internal sentinel — \"no UpsertAction specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no UpsertAction specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1764,13 +1965,13 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
+        "refusal": "MSSQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
         "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
+        "refusal": "MySQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
         "adjudicated": true
       },
       "postgres": {
@@ -1781,7 +1982,7 @@
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
+        "refusal": "SQLite has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
         "adjudicated": true
       }
     },
@@ -1811,7 +2012,7 @@
       }
     },
     "WhereOperator.IsDistinctFrom": {
-      "_why": "comparison-operator.ts lines 37-99: Postgres and SQLite emit native ' IS DISTINCT FROM ' (lines 44-52); MySQL emits the rewrite 'NOT (col <=> value)' using its native null-safe operator (lines 64-69); MSSQL has no native operator but emits a sound bound-value-aware rewrite '(col <> value OR col IS NULL)' (or 'col IS NOT NULL' for a NULL value) at lines 75-98 — no dialect throws. tests/shared/is_distinct_from.test.ts pins all four.",
+      "_why": "comparison-operator.ts lines 37-99: Postgres and SQLite emit native ' IS DISTINCT FROM ' (lines 44-52); MySQL emits the rewrite 'NOT (col <=> value)' using its native null-safe operator (lines 64-69); MSSQL has no native operator but emits a sound bound-value-aware rewrite '(col <> value OR col IS NULL)' (or 'col IS NOT NULL' for a NULL value) at lines 75-98 \u2014 no dialect throws. tests/shared/is_distinct_from.test.ts pins all four.",
       "mssql": {
         "kind": "native",
         "name": "(col <> value OR col IS NULL)",
@@ -1834,7 +2035,7 @@
       }
     },
     "WhereOperator.IsNotDistinctFrom": {
-      "_why": "comparison-operator.ts lines 37-99: Postgres and SQLite emit native ' IS NOT DISTINCT FROM ' (lines 44-52); MySQL emits its genuinely native null-safe equality operator '<=>' (lines 57-62); MSSQL has no native operator but emits the sound bound-value-aware rewrite 'col = value' (or 'col IS NULL' for a NULL value) at lines 75-90 — no dialect throws. tests/shared/is_distinct_from.test.ts confirms MySQL '<=>' and the MSSQL rewrites.",
+      "_why": "comparison-operator.ts lines 37-99: Postgres and SQLite emit native ' IS NOT DISTINCT FROM ' (lines 44-52); MySQL emits its genuinely native null-safe equality operator '<=>' (lines 57-62); MSSQL has no native operator but emits the sound bound-value-aware rewrite 'col = value' (or 'col IS NULL' for a NULL value) at lines 75-90 \u2014 no dialect throws. tests/shared/is_distinct_from.test.ts confirms MySQL '<=>' and the MSSQL rewrites.",
       "mssql": {
         "kind": "native",
         "name": "col = value",
@@ -1926,7 +2127,7 @@
       }
     },
     "WhereOperator.None": {
-      "_why": "Internal sentinel — \"no WhereOperator specified\"; adds nothing to the SQL, so it parses on every dialect.",
+      "_why": "Internal sentinel \u2014 \"no WhereOperator specified\"; adds nothing to the SQL, so it parses on every dialect.",
       "mssql": {
         "kind": "native",
         "name": "(none)",
@@ -1999,13 +2200,13 @@
       "mssql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MSSQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
+        "refusal": "MSSQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
         "adjudicated": true
       },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "MySQL has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
+        "refusal": "MySQL has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
         "adjudicated": true
       },
       "postgres": {
@@ -2016,7 +2217,7 @@
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite has no ILIKE operator — its LIKE case-sensitivity is collation-dependent",
+        "refusal": "SQLite has no ILIKE operator \u2014 its LIKE case-sensitivity is collation-dependent",
         "adjudicated": true
       }
     },
@@ -2069,7 +2270,7 @@
       }
     },
     "WhereOperator.NotRegex": {
-      "_why": "comparison-operator.ts lines 126-175 with negate=true: Postgres emits ' !~ ' (line 140); MySQL prefixes 'NOT ' then REGEXP_LIKE(col, ?, 'c') → NOT REGEXP_LIKE (lines 158-166); SQLite/MSSQL throw (line 171-174). tests/shared/regex.test.ts pins \"NOT REGEXP_LIKE(`u`.`email`, ?, 'c')\".",
+      "_why": "comparison-operator.ts lines 126-175 with negate=true: Postgres emits ' !~ ' (line 140); MySQL prefixes 'NOT ' then REGEXP_LIKE(col, ?, 'c') \u2192 NOT REGEXP_LIKE (lines 158-166); SQLite/MSSQL throw (line 171-174). tests/shared/regex.test.ts pins \"NOT REGEXP_LIKE(`u`.`email`, ?, 'c')\".",
       "mssql": {
         "kind": "absent",
         "name": "",

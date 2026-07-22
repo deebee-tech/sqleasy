@@ -324,16 +324,34 @@ function buildCells(counts, forcedReason, decision, viewFor) {
     // held consistent, so this order only decides which one supplies the prose.
     const view = decided ? null : (viewFor?.(dialect) ?? null);
     const source = decided ? 'decisions' : view ? 'view' : forced ? 'forced' : 'extraction';
+    // CONTRADICTION GUARD. The view says "present", so viewFact calls it native — but presence is not
+    // performance. An op kept on a view as a CONDITIONAL refusal (MySQL keeps `*WithOwner` because an
+    // EMPTY owner is legal there) still throws for every real use, and the corpus proves it: every
+    // case on that dialect threw and none emitted. Before this guard the manifest shipped
+    // `deleteFromWithOwner`, `insertIntoWithOwner` and `joinTableWithOwner` as
+    // `native, adjudicated: true` on MySQL while the parser threw 'MySQL does not support table
+    // owners' — the manifest asserting a capability the engine refuses, which is the exact dishonesty
+    // it exists to prevent. `fromTableWithOwner`/`updateTableWithOwner` escaped only by happening to
+    // sit on FORCED.
+    //
+    // A HUMAN decision still outranks this: decisions.json can say native-with-nuance and mean it.
+    // Extraction and the view surface cannot.
+    const contradicted =
+      !decided && view?.kind === 'native' && observed.threw > 0 && observed.emitted === 0;
+
     cells[dialect] = {
-      name: decided?.name ?? view?.name ?? '',
-      kind: decided?.kind ?? view?.kind ?? (forced ? 'unadjudicated' : hypothesize(observed)),
-      adjudicated: decided?.adjudicated ?? (view ? true : false),
+      name: contradicted ? '' : (decided?.name ?? view?.name ?? ''),
+      kind: contradicted
+        ? 'unadjudicated'
+        : (decided?.kind ?? view?.kind ?? (forced ? 'unadjudicated' : hypothesize(observed))),
+      adjudicated: contradicted ? false : (decided?.adjudicated ?? (view ? true : false)),
       refusal: decided?.refusal ?? null,
       evidence: {
         casesEmitting: observed.emitted,
         casesThrowing: observed.threw,
-        note:
-          source === 'decisions'
+        note: contradicted
+          ? `presence on the ${dialect} view is a CONDITIONAL refusal — every corpus case throws and none emits, so it cannot be native; needs a human decision`
+          : source === 'decisions'
             ? 'adjudicated in contract/capabilities/decisions.json'
             : source === 'view'
               ? 'adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)'
