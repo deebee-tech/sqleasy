@@ -863,21 +863,33 @@ const defaultCall = (state, config, mode) => {
 * baseline recursive CTE that runs on all four:
 *
 *     in the RECURSIVE term      PG    MySQL  SQLite  MSSQL
-*     ORDER BY                   ERR   ERR    ERR     Msg 156     <- every engine
+*     ORDER BY                   ERR   ERR    OK      Msg 1033
 *     LIMIT                      ERR   OK     OK      (no LIMIT in T-SQL)
 *     SELECT DISTINCT            OK    ERR    OK      ERR
 *     — for contrast —
 *     LIMIT in the ANCHOR term   OK    OK
 *     LIMIT on the OUTER select  OK    OK                          <- where it belongs
 *
-* ORDER BY is refused everywhere because no engine takes it. LIMIT is refused only where the engine
-* refuses it, and the message points at the outer SELECT, which takes it on every dialect. DISTINCT
-* on the recursive member is refused on the two engines that reject it.
+* ── THE ORDER BY ROW WAS MEASURED WRONG THE FIRST TIME ──
+* The first probe used `ORDER BY n`, naming the CTE's declared column. SQLite rejected that with
+* "1st ORDER BY term does not match any column" — a COLUMN-RESOLUTION failure, not a prohibition —
+* and it was read as SQLite refusing the clause. Re-probed with a resolvable term:
+*
+*     … UNION ALL SELECT n+1 FROM t WHERE n<3 ORDER BY 1
+*       PG      ERROR: ORDER BY in a recursive query is not implemented
+*       MySQL   ERROR 1235: … 'ORDER BY over UNION in recursive Common Table Expression'
+*       MSSQL   Msg 1033
+*       SQLite  accepted, 3 rows
+*
+* Two of the three refusals name recursion explicitly, which is the evidence the first probe never
+* produced. SQLite genuinely allows it, so it is not refused here. MSSQL's Msg 1033 is the generic
+* "no ORDER BY in a subquery without a row cap" rule, already enforced for every inner statement in
+* `to-sql.ts`, so this guard leaves MSSQL to that one rather than duplicating it.
 */
 const assertRecursiveMembersSupported = (cteState, config) => {
 	const body = cteState.subquery;
 	if (!cteState.recursive || body === void 0) return;
-	if (body.orderByStates.length > 0) throw new ParserError(ParserArea.OrderBy, "A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts.");
+	if (body.orderByStates.length > 0 && (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql)) throw new ParserError(ParserArea.OrderBy, `${dialectDisplayName(config.databaseType)} cannot ORDER BY inside a recursive CTE body — it names the restriction explicitly ("ORDER BY in a recursive query is not implemented" / "ORDER BY over UNION in recursive Common Table Expression"), and a clause set on the body lands in the recursive term. Order the OUTER select instead, which every dialect accepts.`);
 	if (body.limit > 0 || body.offset !== void 0) {
 		if (config.databaseType === DatabaseType.Postgres) throw new ParserError(ParserArea.LimitOffset, "Postgres cannot LIMIT or OFFSET inside a recursive CTE body — the clause lands in the recursive term, which it rejects. Cap the OUTER select instead, which every dialect accepts, or bound the recursion with a WHERE on the recursive member.");
 	}

@@ -25788,7 +25788,7 @@
       }
     },
     {
-      "name": "a recursive cte cannot order by inside its own body on any dialect",
+      "name": "postgres and mysql refuse order by in a recursive cte body; sqlite allows it",
       "ops": [
         {
           "op": "cteRecursive",
@@ -25854,16 +25854,25 @@
       ],
       "expect": {
         "mssql": {
-          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+          "throws": "OrderBy: T-SQL rejects an ORDER BY inside a subquery, derived table, CTE body or set-operation operand unless it comes with a row cap (Msg 1033) — an ordering with nothing to cap has no meaning there. Add top(n), or offset(0) if you only want the ordering to be legal and are relying on it downstream."
         },
         "mysql": {
-          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+          "throws": "OrderBy: MySQL cannot ORDER BY inside a recursive CTE body — it names the restriction explicitly (\"ORDER BY in a recursive query is not implemented\" / \"ORDER BY over UNION in recursive Common Table Expression\"), and a clause set on the body lands in the recursive term. Order the OUTER select instead, which every dialect accepts."
         },
         "postgres": {
-          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+          "throws": "OrderBy: Postgres cannot ORDER BY inside a recursive CTE body — it names the restriction explicitly (\"ORDER BY in a recursive query is not implemented\" / \"ORDER BY over UNION in recursive Common Table Expression\"), and a clause set on the body lands in the recursive term. Order the OUTER select instead, which every dialect accepts."
         },
         "sqlite": {
-          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+          "prepared": {
+            "sql": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 ORDER BY n) SELECT \"n\" FROM t;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = 1 UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 ORDER BY n) SELECT \"n\" FROM t;"
         }
       }
     },

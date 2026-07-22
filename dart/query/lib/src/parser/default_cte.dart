@@ -15,7 +15,13 @@ import 'to_sql.dart';
 /// recursive CTE that runs on all four:
 ///
 ///     in the RECURSIVE term      PG    MySQL  SQLite  MSSQL
-///     ORDER BY                   ERR   ERR    ERR     Msg 156     <- every engine
+///     ORDER BY                   ERR   ERR    OK      Msg 1033
+///
+/// The ORDER BY row was measured WRONG the first time: the probe used `ORDER BY n`, naming the
+/// CTE's declared column, and SQLite rejected it with "1st ORDER BY term does not match any
+/// column" — a COLUMN-RESOLUTION failure, not a prohibition. Re-probed with `ORDER BY 1`, PG says
+/// "ORDER BY in a recursive query is not implemented", MySQL says "ORDER BY over UNION in
+/// recursive Common Table Expression", MSSQL gives the generic Msg 1033, and SQLite ACCEPTS it.
 ///     LIMIT                      ERR   OK     OK      (no LIMIT in T-SQL)
 ///     SELECT DISTINCT            OK    ERR    OK      ERR
 ///     — for contrast —
@@ -25,12 +31,15 @@ void _assertRecursiveMembersSupported(CteState cteState, Dialect config) {
   final body = cteState.subquery;
   if (!cteState.recursive || body == null) return;
 
-  if (body.orderByStates.isNotEmpty) {
+  if (body.orderByStates.isNotEmpty &&
+      (config.databaseType == DatabaseType.postgres ||
+          config.databaseType == DatabaseType.mysql)) {
     throw ParserError(
       ParserArea.orderBy,
-      'A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive '
-      'term, where a clause set on the body lands. Order the OUTER select instead, which every '
-      'dialect accepts.',
+      '${dialectDisplayName(config.databaseType)} cannot ORDER BY inside a recursive CTE body — it '
+      'names the restriction explicitly ("ORDER BY in a recursive query is not implemented" / '
+      '"ORDER BY over UNION in recursive Common Table Expression"), and a clause set on the body '
+      'lands in the recursive term. Order the OUTER select instead, which every dialect accepts.',
     );
   }
 
