@@ -22,13 +22,37 @@
  * the real plugin. Filtering is by the commit's changed files, read from git once per run.
  */
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import * as commitAnalyzer from '@semantic-release/commit-analyzer';
 import * as notesGenerator from '@semantic-release/release-notes-generator';
 
+/**
+ * The repository root, NOT the caller's cwd.
+ *
+ * semantic-release runs from the PACKAGE directory (the release workflow sets
+ * `working-directory: ts/query`), so a repo-relative pathspec like `ts/query` resolves against
+ * `ts/query/ts/query` and matches nothing. That is not hypothetical: the first dispatched release
+ * logged "path-scoped: 0 of 115 commits" and then reported SUCCESS having published nothing, because
+ * "no commits" is indistinguishable from "no changes" to semantic-release.
+ */
+const repoRoot = (cwd) =>
+  execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8' }).trim();
+
 /** Commit hashes that touched at least one of `paths`, for the whole history reachable from HEAD. */
-const hashesTouching = (paths, cwd) => {
+const hashesTouching = (paths, root) => {
+  // A path that does not exist is almost always a typo or a wrong base, and its only symptom would be
+  // a release that silently does not happen. Fail loudly instead.
+  for (const path of paths) {
+    if (!existsSync(join(root, path))) {
+      throw new Error(
+        `path-scoped: configured path "${path}" does not exist at the repository root (${root}). ` +
+          'Paths are resolved from the repo root, not from the package directory.',
+      );
+    }
+  }
   const out = execFileSync('git', ['log', '--format=%H', '--', ...paths], {
-    cwd,
+    cwd: root,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   });
@@ -47,8 +71,8 @@ const scope = (pluginConfig, context) => {
   if (!Array.isArray(paths) || paths.length === 0) {
     throw new Error('path-scoped: `paths` is required and must be a non-empty array');
   }
-  const repoRoot = context.cwd ?? process.cwd();
-  const touched = hashesTouching(paths, repoRoot);
+  const root = repoRoot(context.cwd ?? process.cwd());
+  const touched = hashesTouching(paths, root);
   const commits = (context.commits ?? []).filter((commit) => touched.has(commit.hash));
   context.logger?.log(
     `path-scoped: ${commits.length} of ${context.commits?.length ?? 0} commits touch ${paths.join(', ')}`,
