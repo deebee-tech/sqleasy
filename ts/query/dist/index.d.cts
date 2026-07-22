@@ -1706,6 +1706,13 @@ declare class QueryBuilder {
   /**
    * Table-valued / set-returning function in the FROM clause (`FROM fn(...) AS alias`).
    * Dialect-specific: Postgres/MSSQL TVFs, SQLite helpers like `json_each`.
+   *
+   * NO owner is injected. The default owner is a TABLE default, and a function is not a table:
+   * qualifying `generate_series` with it produced `FROM "public"."generate_series"(1, 5)`, which
+   * Postgres rejects with `function public.generate_series(integer, integer) does not exist` —
+   * built-ins live in `pg_catalog`, and the unqualified call resolves through `search_path` exactly
+   * as intended. MSSQL carried the identical defect as `[dbo].[generate_series](...)`. Use
+   * {@link fromTableFunctionWithOwner} when a function genuinely lives in a named schema.
    */
   fromTableFunction: (functionName: string, alias: string, params?: any[]) => this;
   /** {@link fromTableFunction} with an explicit schema/owner qualifier. */
@@ -1973,6 +1980,15 @@ declare class QueryBuilder {
   hintRaw: (rawHint: string) => this;
   clearHints: () => this;
   /** Invokes a stored procedure: Postgres/MySQL `CALL`, MSSQL `EXEC`. Not supported on SQLite. */
+  /**
+   * NO owner is injected — see {@link fromTableFunction} for the measurement. The default owner is a
+   * TABLE default, and qualifying a ROUTINE with it puts every built-in out of reach:
+   * `SELECT "public"."generate_series"()` and `[dbo].[STRING_SPLIT](...)` are both rejected by a live
+   * server (`function ... does not exist`, `Invalid object name 'dbo.STRING_SPLIT'`), while the
+   * unqualified call resolves through `search_path` / the default schema exactly as intended. Nothing
+   * is lost for a user's own routine, which resolves the same way; use the `WithOwner` variant when it
+   * genuinely lives in a named schema.
+   */
   callProcedure: (name: string) => this;
   /** {@link callProcedure}, qualified with an explicit schema/owner. */
   callProcedureWithOwner: (owner: string, name: string) => this;

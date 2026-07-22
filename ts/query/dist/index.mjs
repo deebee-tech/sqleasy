@@ -633,6 +633,22 @@ var SqlHelper = class {
 		}
 	};
 };
+/**
+* A SQL STRING LITERAL — single-quoted, with embedded quotes doubled.
+*
+* Exists because `JSON.stringify()` was being used for this, and a JSON string is not a SQL string.
+* JSON quotes with `"`, which every dialect here reads as a DELIMITED IDENTIFIER, so the emitted SQL
+* asked for a column instead of a value. Measured against real servers:
+*
+*   Postgres  to_tsvector("english", ...)          -> ERROR: column "english" does not exist
+*   MySQL     JSON_EXTRACT(c, "$.a")               -> works ONLY under the default sql_mode;
+*                                                     under ANSI_QUOTES: Unknown column '$.a'
+*
+* The Postgres form was broken outright and the MySQL one survived on a technicality, which is the
+* more dangerous shape: it works until someone sets a perfectly ordinary sql_mode. Use this for any
+* value that must reach the server AS TEXT, and `quoteIdentifier` for anything naming an object.
+*/
+const sqlStringLiteral = (value) => "'" + value.replaceAll("'", "''") + "'";
 //#endregion
 //#region src/helpers/identifier.ts
 /**
@@ -1665,17 +1681,17 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 		if (columns.length === 1) {
 			const col = columns[0];
 			sqlHelper.addSqlSnippet("to_tsvector(");
-			sqlHelper.addSqlSnippet(JSON.stringify("english"));
+			sqlHelper.addSqlSnippet(sqlStringLiteral("english"));
 			sqlHelper.addSqlSnippet(", ");
 			sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 			sqlHelper.addSqlSnippet(") @@ ");
 			sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
-			sqlHelper.addSqlSnippet(JSON.stringify("english"));
+			sqlHelper.addSqlSnippet(sqlStringLiteral("english"));
 			sqlHelper.addSqlSnippet(", ");
 			return;
 		}
 		sqlHelper.addSqlSnippet("to_tsvector(");
-		sqlHelper.addSqlSnippet(JSON.stringify("english"));
+		sqlHelper.addSqlSnippet(sqlStringLiteral("english"));
 		sqlHelper.addSqlSnippet(", ");
 		sqlHelper.addSqlSnippet("concat(");
 		columns.forEach((col, i) => {
@@ -1684,7 +1700,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 		});
 		sqlHelper.addSqlSnippet(")) @@ ");
 		sqlHelper.addSqlSnippet(postgresTsQueryFunction(mode));
-		sqlHelper.addSqlSnippet(JSON.stringify("english"));
+		sqlHelper.addSqlSnippet(sqlStringLiteral("english"));
 		sqlHelper.addSqlSnippet(", ");
 		return;
 	}
@@ -1715,7 +1731,7 @@ const emitFullTextPredicate = (sqlHelper, config, columns, mode, area) => {
 	}
 	if (config.databaseType === DatabaseType.Sqlite) {
 		if (columns.length !== 1) throw new ParserError(area, "SQLite FTS MATCH accepts a single FTS column — pass one column or use whereMatchRaw");
-		if (mode !== FullTextMode.Natural && mode !== FullTextMode.Boolean) throw new ParserError(area, "SQLite FTS only supports Natural/Boolean-style MATCH queries");
+		if (mode !== FullTextMode.Natural) throw new ParserError(area, `SQLite FTS MATCH has no mode selector — its operators live inside the query string, so FullTextMode.${FullTextMode[mode] ?? mode} cannot change the statement. Use FullTextMode.Natural and write the FTS5 operators into the query, or whereMatchRaw.`);
 		const col = columns[0];
 		sqlHelper.addSqlSnippet(columnRef$2(config, col.tableNameOrAlias, col.columnName));
 		sqlHelper.addSqlSnippet(" MATCH ");
@@ -1740,9 +1756,6 @@ const emitFullTextValueSuffix = (sqlHelper, config, mode) => {
 //#endregion
 //#region src/parser/default-json.ts
 const columnRef$1 = (config, tableNameOrAlias, columnName) => quoteIdentifier(tableNameOrAlias, config.identifierDelimiters) + "." + quoteIdentifier(columnName, config.identifierDelimiters);
-const pgPathLiteral = (path) => {
-	return `'${path.replaceAll("'", "''")}'`;
-};
 /**
 * Emits a dialect-specific JSON path extraction expression for `column` at `path`.
 * `path` is a single Postgres key segment (`'email'`) or a JSON path (`'$.email'`) on other dialects.
@@ -1750,9 +1763,11 @@ const pgPathLiteral = (path) => {
 const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnName, path, mode, area) => {
 	const col = columnRef$1(config, tableNameOrAlias, columnName);
 	if (config.databaseType === DatabaseType.Postgres) {
+		sqlHelper.addSqlSnippet("jsonb_path_query_first(");
 		sqlHelper.addSqlSnippet(col);
-		sqlHelper.addSqlSnippet(mode === JsonExtractMode.Text ? "->>" : "->");
-		sqlHelper.addSqlSnippet(pgPathLiteral(path));
+		sqlHelper.addSqlSnippet(", ");
+		sqlHelper.addSqlSnippet(sqlStringLiteral(path));
+		sqlHelper.addSqlSnippet(mode === JsonExtractMode.Text ? ") #>> '{}'" : ")");
 		return;
 	}
 	if (config.databaseType === DatabaseType.Mysql) {
@@ -1760,14 +1775,14 @@ const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnNa
 			sqlHelper.addSqlSnippet("JSON_UNQUOTE(JSON_EXTRACT(");
 			sqlHelper.addSqlSnippet(col);
 			sqlHelper.addSqlSnippet(", ");
-			sqlHelper.addSqlSnippet(JSON.stringify(path));
+			sqlHelper.addSqlSnippet(sqlStringLiteral(path));
 			sqlHelper.addSqlSnippet("))");
 			return;
 		}
 		sqlHelper.addSqlSnippet("JSON_EXTRACT(");
 		sqlHelper.addSqlSnippet(col);
 		sqlHelper.addSqlSnippet(", ");
-		sqlHelper.addSqlSnippet(JSON.stringify(path));
+		sqlHelper.addSqlSnippet(sqlStringLiteral(path));
 		sqlHelper.addSqlSnippet(")");
 		return;
 	}
@@ -1776,14 +1791,14 @@ const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnNa
 			sqlHelper.addSqlSnippet("JSON_QUERY(");
 			sqlHelper.addSqlSnippet(col);
 			sqlHelper.addSqlSnippet(", ");
-			sqlHelper.addSqlSnippet(JSON.stringify(path));
+			sqlHelper.addSqlSnippet(sqlStringLiteral(path));
 			sqlHelper.addSqlSnippet(")");
 			return;
 		}
 		sqlHelper.addSqlSnippet("JSON_VALUE(");
 		sqlHelper.addSqlSnippet(col);
 		sqlHelper.addSqlSnippet(", ");
-		sqlHelper.addSqlSnippet(JSON.stringify(path));
+		sqlHelper.addSqlSnippet(sqlStringLiteral(path));
 		sqlHelper.addSqlSnippet(")");
 		return;
 	}
@@ -1792,7 +1807,7 @@ const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnNa
 		sqlHelper.addSqlSnippet("json_extract(");
 		sqlHelper.addSqlSnippet(col);
 		sqlHelper.addSqlSnippet(", ");
-		sqlHelper.addSqlSnippet(JSON.stringify(path));
+		sqlHelper.addSqlSnippet(sqlStringLiteral(path));
 		sqlHelper.addSqlSnippet(")");
 		return;
 	}
@@ -4053,11 +4068,18 @@ var QueryBuilder = class QueryBuilder {
 	/**
 	* Table-valued / set-returning function in the FROM clause (`FROM fn(...) AS alias`).
 	* Dialect-specific: Postgres/MSSQL TVFs, SQLite helpers like `json_each`.
+	*
+	* NO owner is injected. The default owner is a TABLE default, and a function is not a table:
+	* qualifying `generate_series` with it produced `FROM "public"."generate_series"(1, 5)`, which
+	* Postgres rejects with `function public.generate_series(integer, integer) does not exist` —
+	* built-ins live in `pg_catalog`, and the unqualified call resolves through `search_path` exactly
+	* as intended. MSSQL carried the identical defect as `[dbo].[generate_series](...)`. Use
+	* {@link fromTableFunctionWithOwner} when a function genuinely lives in a named schema.
 	*/
 	fromTableFunction = (functionName, alias, params = []) => {
 		this.#state.fromStates.push({
 			builderType: BuilderType.FromFunction,
-			owner: this.#config.defaultOwner,
+			owner: "",
 			tableName: void 0,
 			alias,
 			subquery: void 0,
@@ -5420,11 +5442,20 @@ var QueryBuilder = class QueryBuilder {
 		return this.#state.callState;
 	};
 	/** Invokes a stored procedure: Postgres/MySQL `CALL`, MSSQL `EXEC`. Not supported on SQLite. */
+	/**
+	* NO owner is injected — see {@link fromTableFunction} for the measurement. The default owner is a
+	* TABLE default, and qualifying a ROUTINE with it puts every built-in out of reach:
+	* `SELECT "public"."generate_series"()` and `[dbo].[STRING_SPLIT](...)` are both rejected by a live
+	* server (`function ... does not exist`, `Invalid object name 'dbo.STRING_SPLIT'`), while the
+	* unqualified call resolves through `search_path` / the default schema exactly as intended. Nothing
+	* is lost for a user's own routine, which resolves the same way; use the `WithOwner` variant when it
+	* genuinely lives in a named schema.
+	*/
 	callProcedure = (name) => {
 		this.#state.queryType = QueryType.Call;
 		this.#state.callState = {
 			kind: CallKind.Procedure,
-			owner: this.#config.defaultOwner,
+			owner: "",
 			name,
 			returnIntent: CallReturnIntent.Void,
 			params: []
@@ -5453,7 +5484,7 @@ var QueryBuilder = class QueryBuilder {
 		this.#state.queryType = QueryType.Call;
 		this.#state.callState = {
 			kind: CallKind.Function,
-			owner: this.#config.defaultOwner,
+			owner: "",
 			name,
 			returnIntent,
 			params: []

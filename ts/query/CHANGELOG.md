@@ -1,3 +1,49 @@
+# [11.0.0-beta.1](https://github.com/deebee-tech/sqleasy/compare/v10.1.0...v11.0.0-beta.1) (2026-07-22)
+
+
+* chore(contract)!: drop to 0.x while the capability surface is settled ([5877227](https://github.com/deebee-tech/sqleasy/commit/58772271cd7cac4b31fb3c9424b603b43165341f))
+
+
+### Bug Fixes
+
+* **release:** give each package its own tag namespace — the engine would have shipped as 11.x ([e8524b6](https://github.com/deebee-tech/sqleasy/commit/e8524b615ec242430e5c86f6a198a5298d52877f))
+* **release:** scope each package's commit analysis to its own paths ([fc6e03b](https://github.com/deebee-tech/sqleasy/commit/fc6e03bab30385cf5aa7184869438c4b01db9cff))
+
+
+### Features
+
+* bring the execution engine in as ts/engine ([ddce114](https://github.com/deebee-tech/sqleasy/commit/ddce11492bd3fa185925fde8a0e37f07a1fd4b43))
+* **contract:** adjudicate the entire enum axis of the capability manifest ([f08a3ce](https://github.com/deebee-tech/sqleasy/commit/f08a3ceec8c47d79b0c9757e3eface397b4bd494))
+* **contract:** make the capability manifest a complete, verified record + parity-gate the surface ([20b1647](https://github.com/deebee-tech/sqleasy/commit/20b164722dea061f0c18b931727dc89dc7ebb349))
+* **contract:** mint corpus C — result normalization, replayed by the Dart engine ([d64c048](https://github.com/deebee-tech/sqleasy/commit/d64c0485cd0f0c4001b4b0b1167ba20bc4972307))
+* **contract:** mint corpus D — schema introspection, replayed on all four dialects ([0d5a029](https://github.com/deebee-tech/sqleasy/commit/0d5a0295c9917fff85dbbef5c8a82c09ad5e4b03))
+* **contract:** name MSSQL's forUpdate 'updlock' ([d1530c5](https://github.com/deebee-tech/sqleasy/commit/d1530c55e70152b5b3ff6806543fda18b0f76b9d))
+* **contract:** seed the capability manifest, inert ([73c7c18](https://github.com/deebee-tech/sqleasy/commit/73c7c184a129faa8e0dcbb1a825ca28144833f53))
+* fold the Dart query port in and delete the corpus fetch dance ([9d58388](https://github.com/deebee-tech/sqleasy/commit/9d58388096545431592b16dc03c7f741a60949d0))
+* **query:** per-engine typed builder views (foundation) ([0cc3322](https://github.com/deebee-tech/sqleasy/commit/0cc3322965a730f59c946d3532e129eb143aaae0))
+
+
+### BREAKING CHANGES
+
+* is a minor, which is the honest shape of a contract still
+being designed. 1.0.0 becomes a statement that the surface has settled,
+which is worth being able to say once rather than having already spent.
+
+2.0.0 -> 0.2.0: 0.1.0 is the extraction baseline that changed no behaviour,
+0.2.0 the five refusals and the MySQL index-hint fix from ef93bdb.
+
+Its siblings cannot follow. @deebeetech/sqleasy is public at 10.1.0 and
+@deebeetech/sqleasy-engine at 1.2.0, and npm will not let a published
+version be rewound or reused. Their churn belongs on the `next` prerelease
+channel — already configured in both release configs — so the redesign can
+iterate as 11.0.0-next.N and be promoted once, instead of minting a major
+per refinement.
+
+Also repairs the README structure: the version⇄content paragraph had been
+separated from the bump table it explains.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
 # [10.1.0](https://github.com/deebee-tech/sqleasy/compare/v10.0.0...v10.1.0) (2026-07-19)
 
 
