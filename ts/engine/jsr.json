@@ -17,11 +17,6 @@
     "pg": "npm:pg@^8.22.0"
   },
   "publish": {
-    "include": [
-      "./src/**/*",
-      "./README.md",
-      "./CHANGELOG.md",
-      "./LICENSE"
-    ]
+    "include": ["./src/**/*", "./README.md", "./CHANGELOG.md", "./LICENSE"]
   }
 }
