@@ -1,3 +1,18 @@
+# [2.0.0-beta.1](https://github.com/deebee-tech/sqleasy/compare/sqleasy-engine-v1.2.0...sqleasy-engine-v2.0.0-beta.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **release:** give each package its own tag namespace — the engine would have shipped as 11.x ([e8524b6](https://github.com/deebee-tech/sqleasy/commit/e8524b615ec242430e5c86f6a198a5298d52877f))
+* **release:** scope each package's commit analysis to its own paths ([fc6e03b](https://github.com/deebee-tech/sqleasy/commit/fc6e03bab30385cf5aa7184869438c4b01db9cff))
+
+
+### Features
+
+* bring the execution engine in as ts/engine ([ddce114](https://github.com/deebee-tech/sqleasy/commit/ddce11492bd3fa185925fde8a0e37f07a1fd4b43))
+* **contract:** mint corpus D — schema introspection, replayed on all four dialects ([0d5a029](https://github.com/deebee-tech/sqleasy/commit/0d5a0295c9917fff85dbbef5c8a82c09ad5e4b03))
+* fold the Dart query port in and delete the corpus fetch dance ([9d58388](https://github.com/deebee-tech/sqleasy/commit/9d58388096545431592b16dc03c7f741a60949d0))
+
 # [1.2.0](https://github.com/deebee-tech/sqleasy-engine/compare/v1.1.2...v1.2.0) (2026-07-19)
 
 

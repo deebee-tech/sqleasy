@@ -1,7 +1,7 @@
 {
   "name": "@deebeetech/sqleasy-engine",
-  "version": "1.2.0",
-  "description": "A thin, opt-in executor for @deebeetech/sqleasy: runs its prepared SQL and transactions on Postgres, MySQL, SQL Server, and SQLite \u2014 loading only the driver you import.",
+  "version": "2.0.0-beta.1",
+  "description": "A thin, opt-in executor for @deebeetech/sqleasy: runs its prepared SQL and transactions on Postgres, MySQL, SQL Server, and SQLite — loading only the driver you import.",
   "keywords": [
     "sql",
     "sql-executor",
