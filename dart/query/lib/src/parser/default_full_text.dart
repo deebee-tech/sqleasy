@@ -136,9 +136,22 @@ void emitFullTextPredicate(
       );
     }
 
-    if (mode != FullTextMode.natural && mode != FullTextMode.boolean) {
+    // SQLite's FTS5 `MATCH` takes ONE query string and has no mode selector at all: the operators
+    // live inside the query text. So every FullTextMode produced byte-identical SQL — Natural and
+    // Boolean differed in the corpus by the mode argument alone and emitted the same statement, which
+    // means the caller's choice was silently discarded. That is precisely the defect MySQL's
+    // `FullTextMode.phrase` was fixed by REFUSING (0ca6e4c), and it is the same fix here: only the
+    // mode SQLite can actually honour is accepted, and the rest say so.
+    //
+    // `natural` is that mode — a bare FTS5 query string, which is what MATCH already does. Anything
+    // else asks for a distinction the engine cannot make.
+    if (mode != FullTextMode.natural) {
       throw ParserError(
-          area, 'SQLite FTS only supports Natural/Boolean-style MATCH queries');
+        area,
+        'SQLite FTS MATCH has no mode selector — its operators live inside the query string, so '
+        'FullTextMode.${mode.wire} cannot change the statement. Use '
+        'FullTextMode.Natural and write the FTS5 operators into the query, or whereMatchRaw.',
+      );
     }
 
     final col = columns.first;

@@ -6,16 +6,25 @@ import 'package:test/test.dart';
 /// Mirrors the "Stored procedures & functions (CALL / EXEC)" describe block in the TypeScript
 /// port's tests/shared/call.test.ts, adapted to the Dart API (named `owner`/`alias` parameters
 /// instead of empty-string sentinels; `builder.state` instead of `builder.state()`).
+///
+/// NOTE (2026-07-22): these assertions no longer carry an owner prefix, and that is the fix, not
+/// drift. `callProcedure`/`callFunction` were injecting the dialect's DEFAULT owner into a ROUTINE
+/// name, which puts every built-in out of reach — a live server rejects
+/// `SELECT "public"."generate_series"()` and `[dbo].[STRING_SPLIT](...)`. The unqualified call
+/// resolves through search_path / the default schema, and the `WithOwner` variants (still asserted
+/// below, with an explicit "sales") cover a routine that genuinely lives in a named schema. TABLE
+/// references are untouched: a table legitimately takes the default owner, so
+/// `FROM "public"."users"` still asserts it.
 void main() {
   group('callProcedure', () {
     test('Postgres emits CALL name(...)', () {
       final builder = PostgresQuery().newBuilder();
       builder.callProcedure('archive_user').procParam(42);
 
-      expect(builder.parseRaw(), 'CALL "public"."archive_user"(42);');
-      expect(builder.parse(), 'CALL "public"."archive_user"(\$1);');
+      expect(builder.parseRaw(), 'CALL "archive_user"(42);');
+      expect(builder.parse(), 'CALL "archive_user"(\$1);');
       final prepared = builder.parsePrepared();
-      expect(prepared.sql, 'CALL "public"."archive_user"(\$1);');
+      expect(prepared.sql, 'CALL "archive_user"(\$1);');
       expect(prepared.params, [42]);
     });
 
@@ -40,14 +49,14 @@ void main() {
       final builder = MssqlQuery().newBuilder();
       builder.callProcedure('archive_user').procParam(42);
 
-      expect(builder.parseRaw(), 'EXEC [dbo].[archive_user] 42;');
+      expect(builder.parseRaw(), 'EXEC [archive_user] 42;');
     });
 
     test('MSSQL EXEC with no parameters omits the trailing space', () {
       final builder = MssqlQuery().newBuilder();
       builder.callProcedure('cleanup');
 
-      expect(builder.parseRaw(), 'EXEC [dbo].[cleanup];');
+      expect(builder.parseRaw(), 'EXEC [cleanup];');
     });
 
     test('SQLite has no stored procedures/functions and throws', () {
@@ -107,7 +116,7 @@ void main() {
       final builder = PostgresQuery().newBuilder();
       builder.callFunction('add_two').procParam(1).procParam(2);
 
-      expect(builder.parseRaw(), 'SELECT "public"."add_two"(1, 2);');
+      expect(builder.parseRaw(), 'SELECT "add_two"(1, 2);');
     });
 
     test('Postgres ResultSet emits SELECT * FROM name(...)', () {
@@ -116,7 +125,7 @@ void main() {
           .callFunction('users_over', CallReturnIntent.resultSet)
           .procParam(18);
 
-      expect(builder.parseRaw(), 'SELECT * FROM "public"."users_over"(18);');
+      expect(builder.parseRaw(), 'SELECT * FROM "users_over"(18);');
     });
 
     test('MySQL scalar emits SELECT name(...)', () {
@@ -143,7 +152,7 @@ void main() {
       final builder = MssqlQuery().newBuilder();
       builder.callFunction('add_two').procParam(1).procParam(2);
 
-      expect(builder.parseRaw(), 'SELECT [dbo].[add_two](1, 2);');
+      expect(builder.parseRaw(), 'SELECT [add_two](1, 2);');
     });
 
     test('MSSQL ResultSet emits SELECT * FROM name(...)', () {
@@ -152,7 +161,7 @@ void main() {
           .callFunction('users_over', CallReturnIntent.resultSet)
           .procParam(18);
 
-      expect(builder.parseRaw(), 'SELECT * FROM [dbo].[users_over](18);');
+      expect(builder.parseRaw(), 'SELECT * FROM [users_over](18);');
     });
 
     test('callFunction refuses CallReturnIntent.voidReturn', () {
@@ -207,7 +216,7 @@ void main() {
 
       expect(
         builder.parseRaw(),
-        'CALL "public"."set_status"(user_id := 1, status := active);',
+        'CALL "set_status"(user_id := 1, status := active);',
       );
     });
 
@@ -229,7 +238,7 @@ void main() {
       final builder = MssqlQuery().newBuilder();
       builder.callProcedure('set_status').procParamNamed('user_id', 1);
 
-      expect(builder.parseRaw(), 'EXEC [dbo].[set_status] @user_id = 1;');
+      expect(builder.parseRaw(), 'EXEC [set_status] @user_id = 1;');
     });
 
     test('MSSQL refuses a positional argument after a named one', () {
@@ -293,7 +302,7 @@ void main() {
           .procParam(1)
           .procParamRaw('score + 1');
 
-      expect(builder.parseRaw(), 'CALL "public"."bump_score"(1, score + 1);');
+      expect(builder.parseRaw(), 'CALL "bump_score"(1, score + 1);');
     });
 
     test('MSSQL procedures splice a raw argument in positionally', () {
@@ -303,14 +312,14 @@ void main() {
           .procParam(1)
           .procParamRaw('score + 1');
 
-      expect(builder.parseRaw(), 'EXEC [dbo].[bump_score] 1, score + 1;');
+      expect(builder.parseRaw(), 'EXEC [bump_score] 1, score + 1;');
     });
 
     test('MSSQL functions splice a raw argument in positionally', () {
       final builder = MssqlQuery().newBuilder();
       builder.callFunction('bump_score').procParam(1).procParamRaw('score + 1');
 
-      expect(builder.parseRaw(), 'SELECT [dbo].[bump_score](1, score + 1);');
+      expect(builder.parseRaw(), 'SELECT [bump_score](1, score + 1);');
     });
   });
 
@@ -325,7 +334,7 @@ void main() {
       expect(
         builder.parseRaw(),
         'DECLARE @archived_count INT; '
-        'EXEC [dbo].[archive_user] 42, @archived_count = @archived_count OUTPUT;',
+        'EXEC [archive_user] 42, @archived_count = @archived_count OUTPUT;',
       );
     });
 
@@ -354,7 +363,7 @@ void main() {
       expect(
         builder.parseRaw(),
         'DECLARE @balance INT = 100; '
-        'EXEC [dbo].[adjust_balance] @balance = @balance OUTPUT;',
+        'EXEC [adjust_balance] @balance = @balance OUTPUT;',
       );
 
       // MSSQL inlines every value into a self-contained `sp_executesql` batch, so `parsePrepared`
@@ -420,8 +429,7 @@ void main() {
           .procParamOut('archived_count');
 
       final prepared = builder.parsePrepared();
-      expect(prepared.sql,
-          'CALL "public"."archive_user"(\$1, archived_count := \$2);');
+      expect(prepared.sql, 'CALL "archive_user"(\$1, archived_count := \$2);');
       expect(prepared.params, [42, null]);
     });
 
@@ -519,7 +527,7 @@ void main() {
       final builder = PostgresQuery().newBuilder();
       builder.callProcedure('add_three').procParams([1, 2, 3]);
 
-      expect(builder.parseRaw(), 'CALL "public"."add_three"(1, 2, 3);');
+      expect(builder.parseRaw(), 'CALL "add_three"(1, 2, 3);');
     });
   });
 
@@ -532,11 +540,11 @@ void main() {
 
       expect(
         multi.parseRaw(),
-        'CALL "public"."archive_user"(1);SELECT * FROM "public"."users" AS "u";',
+        'CALL "archive_user"(1);SELECT * FROM "public"."users" AS "u";',
       );
 
       final prepared = multi.preparedStatements();
-      expect(prepared[0].sql, 'CALL "public"."archive_user"(\$1);');
+      expect(prepared[0].sql, 'CALL "archive_user"(\$1);');
       expect(prepared[0].params, [1]);
     });
   });

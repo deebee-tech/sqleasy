@@ -21,17 +21,17 @@
     "enumMembers": 80,
     "enumMembersWithNoCoverage": 25,
     "opCells": {
-      "native": 387,
+      "native": 424,
       "absent": 78,
-      "unadjudicated": 51
+      "unadjudicated": 14
     },
     "enumCells": {
       "native": 268,
       "absent": 52,
       "unadjudicated": 0
     },
-    "adjudicated": 777,
-    "namesAssigned": 647
+    "adjudicated": 807,
+    "namesAssigned": 677
   },
   "ops": {
     "and": {
@@ -760,44 +760,44 @@
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forShareNowait",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forShareNowait",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -808,44 +808,44 @@
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MSSQL has no shared row lock — HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forShareSkipLocked",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL READPAST is not equivalent to SKIP LOCKED"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forShareSkipLocked",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL READPAST is not equivalent to SKIP LOCKED"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -908,40 +908,40 @@
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forUpdateNowait",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forUpdateNowait",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL wait-mode mapping is not equivalent"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -949,47 +949,47 @@
     "forUpdateSkipLocked": {
       "cells": {
         "mssql": {
-          "name": "updlockSkipLocked",
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "mysql": {
+          "name": "forUpdateSkipLocked",
           "kind": "native",
           "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
-          }
-        },
-        "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL READPAST is not equivalent to SKIP LOCKED"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "forUpdateSkipLocked",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-S2: MSSQL READPAST is not equivalent to SKIP LOCKED"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -997,47 +997,47 @@
     "frame": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "frame",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL RANGE admits only UNBOUNDED/CURRENT ROW, not numeric offsets"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "frame",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL RANGE admits only UNBOUNDED/CURRENT ROW, not numeric offsets"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "frame",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL RANGE admits only UNBOUNDED/CURRENT ROW, not numeric offsets"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "frame",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: MSSQL RANGE admits only UNBOUNDED/CURRENT ROW, not numeric offsets"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -1275,8 +1275,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 167,
-            "casesThrowing": 62,
+            "casesEmitting": 166,
+            "casesThrowing": 63,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -1299,57 +1299,9 @@
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MySQL does not support table functions in FROM — use fromFunctionRaw",
           "evidence": {
             "casesEmitting": 0,
-            "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
-          }
-        },
-        "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F4/G3: MySQL emitted a FROM-clause function call it cannot parse; corpus covers only SQLite"
-          }
-        },
-        "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 2,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F4/G3: MySQL emitted a FROM-clause function call it cannot parse; corpus covers only SQLite"
-          }
-        }
-      }
-    },
-    "fromTableWithOwner": {
-      "cells": {
-        "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 2,
-            "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep-2026-07-20: Sybase-era vocabulary on the shared surface"
-          }
-        },
-        "mysql": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": true,
-          "refusal": "From: MySQL does not support table owners",
-          "evidence": {
-            "casesEmitting": 1,
             "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -1360,20 +1312,68 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 2,
+            "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep-2026-07-20: Sybase-era vocabulary on the shared surface"
+            "note": "forced unadjudicated — audit-F4/G3: MySQL emitted a FROM-clause function call it cannot parse; corpus covers only SQLite"
           }
         },
         "sqlite": {
+          "name": "fromTableFunction",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        }
+      }
+    },
+    "fromTableWithOwner": {
+      "cells": {
+        "mssql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep-2026-07-20: Sybase-era vocabulary on the shared surface"
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "mysql": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "MySQL does not support table owners",
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "postgres": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "native",
+          "adjudicated": false,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 2,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -1525,47 +1525,47 @@
     "groupByCube": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByCube",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted CUBE, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MySQL has no CUBE — use groupByRollup/groupByGroupingSets or groupByRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByCube",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted CUBE, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite has no CUBE — use groupByRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -1573,47 +1573,47 @@
     "groupByGroupingSets": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByGroupingSets",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted GROUPING SETS, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MySQL has no GROUPING SETS — use groupByRollup or groupByRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByGroupingSets",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted GROUPING SETS, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite has no GROUPING SETS — use groupByRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -1669,47 +1669,47 @@
     "groupByRollup": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByRollup",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted ROLLUP, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByRollup",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted ROLLUP, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "groupByRollup",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F2: SQLite emitted ROLLUP, which SQLite does not have"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite has no ROLLUP — use groupByRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -2392,44 +2392,44 @@
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "hintUseIndex",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-F3/G2: hint emitted before the alias (invalid MySQL); also MSSQL and SQLite have real index hints that were never offered"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL — use hintRaw elsewhere",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -3925,47 +3925,47 @@
     "orderByColumn": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "orderByColumn",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 19,
             "casesThrowing": 3,
-            "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "orderByColumn",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 14,
             "casesThrowing": 6,
-            "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "orderByColumn",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 20,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "orderByColumn",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 17,
             "casesThrowing": 4,
-            "note": "forced unadjudicated — sweep: NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -4539,8 +4539,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 128,
-            "casesThrowing": 49,
+            "casesEmitting": 127,
+            "casesThrowing": 50,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -5125,47 +5125,47 @@
     "updateTable": {
       "cells": {
         "mssql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "updateTable",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 11,
             "casesThrowing": 3,
-            "note": "forced unadjudicated — audit-G1: SQLite UPDATE … FROM rejected outright, but SQLite 3.33+ supports it"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "updateTable",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 4,
-            "note": "forced unadjudicated — audit-G1: SQLite UPDATE … FROM rejected outright, but SQLite 3.33+ supports it"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "updateTable",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 11,
             "casesThrowing": 4,
-            "note": "forced unadjudicated — audit-G1: SQLite UPDATE … FROM rejected outright, but SQLite 3.33+ supports it"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "updateTable",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 9,
             "casesThrowing": 4,
-            "note": "forced unadjudicated — audit-G1: SQLite UPDATE … FROM rejected outright, but SQLite 3.33+ supports it"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -5174,20 +5174,20 @@
       "cells": {
         "mssql": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-G1: same blanket SQLite mutation-join guard"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": "Update: MySQL does not support table owners",
+          "refusal": "MySQL does not support table owners",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 2,
@@ -5196,24 +5196,24 @@
         },
         "postgres": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 2,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — audit-G1: same blanket SQLite mutation-join guard"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
-          "kind": "unadjudicated",
+          "kind": "native",
           "adjudicated": false,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 1,
-            "note": "forced unadjudicated — audit-G1: same blanket SQLite mutation-join guard"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -5752,44 +5752,44 @@
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "MSSQL has no JSON containment operator — use whereJsonExtract or whereRaw with OPENJSON/JSON_QUERY",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "mysql": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "whereJsonContains",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same JSON path divergence"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "postgres": {
-          "name": "",
-          "kind": "unadjudicated",
-          "adjudicated": false,
+          "name": "whereJsonContains",
+          "kind": "native",
+          "adjudicated": true,
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
             "casesThrowing": 0,
-            "note": "forced unadjudicated — sweep: same JSON path divergence"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
         "sqlite": {
           "name": "",
           "kind": "absent",
           "adjudicated": true,
-          "refusal": null,
+          "refusal": "SQLite does not support JSON containment — use whereJsonExtract or whereRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 1,
-            "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
+            "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
       }
@@ -5883,8 +5883,8 @@
           "adjudicated": false,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 3,
-            "casesThrowing": 0,
+            "casesEmitting": 2,
+            "casesThrowing": 1,
             "note": "forced unadjudicated — audit-S4 + sweep: SQLite FTS5 operand may be wrong; one method spans four unrelated full-text subsystems"
           }
         }
@@ -6645,8 +6645,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
-            "casesThrowing": 0,
+            "casesEmitting": 0,
+            "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }

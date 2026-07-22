@@ -401,6 +401,13 @@ class QueryBuilder
   }
 
   /// Table-valued / set-returning function in the FROM clause.
+  ///
+  /// NO owner is injected. The default owner is a TABLE default, and a function is not a table:
+  /// qualifying `generate_series` with it produced `FROM "public"."generate_series"(1, 5)`, which
+  /// Postgres rejects with `function public.generate_series(integer, integer) does not exist` —
+  /// built-ins live in `pg_catalog`, and the unqualified call resolves through `search_path` exactly
+  /// as intended. MSSQL carried the identical defect as `[dbo].[generate_series](...)`. Use
+  /// [fromTableFunctionWithOwner] when a function genuinely lives in a named schema.
   QueryBuilder fromTableFunction(
     String functionName,
     String alias, [
@@ -408,7 +415,7 @@ class QueryBuilder
   ]) {
     _state.fromStates.add(FromState()
       ..builderType = BuilderType.fromFunction
-      ..owner = _config.defaultOwner
+      ..owner = ''
       ..functionName = functionName
       ..alias = alias
       ..functionParams = List.of(params));
@@ -1486,11 +1493,19 @@ class QueryBuilder
   }
 
   /// Invokes a stored procedure: Postgres/MySQL `CALL`, MSSQL `EXEC`. Not supported on SQLite.
+  ///
+  /// NO owner is injected — see [fromTableFunction] for the measurement. The default owner is a
+  /// TABLE default, and qualifying a ROUTINE with it puts every built-in out of reach:
+  /// `SELECT "public"."generate_series"()` and `[dbo].[STRING_SPLIT](...)` are both rejected by a
+  /// live server (`function ... does not exist`, `Invalid object name 'dbo.STRING_SPLIT'`), while
+  /// the unqualified call resolves through `search_path` / the default schema exactly as intended.
+  /// Nothing is lost for a user's own routine, which resolves the same way; use
+  /// [callProcedureWithOwner] when it genuinely lives in a named schema.
   QueryBuilder callProcedure(String name) {
     _state.queryType = QueryType.call;
     _state.callState = CallState()
       ..kind = CallKind.procedure
-      ..owner = _config.defaultOwner
+      ..owner = ''
       ..name = name
       ..returnIntent = CallReturnIntent.voidReturn
       ..params = [];
@@ -1519,9 +1534,10 @@ class QueryBuilder
           'callFunction requires CallReturnIntent.Scalar or CallReturnIntent.ResultSet');
     }
     _state.queryType = QueryType.call;
+    // No owner injected — same reasoning as callProcedure above.
     _state.callState = CallState()
       ..kind = CallKind.function
-      ..owner = _config.defaultOwner
+      ..owner = ''
       ..name = name
       ..returnIntent = returnIntent
       ..params = [];

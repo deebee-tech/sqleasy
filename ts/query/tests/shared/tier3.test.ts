@@ -18,8 +18,20 @@ describe('Tier 3 — JSON operators', () => {
     const b = new PostgresQuery().newBuilder();
     b.selectAll()
       .fromTable('users', 'u')
-      .whereJsonExtract('u', 'meta', 'email', JsonExtractMode.Text, WhereOperator.Equals, 'a@b.c');
-    expect(b.parseRaw()).toContain('"u"."meta"->>\'email\' = a@b.c');
+      .whereJsonExtract(
+        'u',
+        'meta',
+        '$.email',
+        JsonExtractMode.Text,
+        WhereOperator.Equals,
+        'a@b.c',
+      );
+    // Was asserting `->>'email'`, which is a KEY lookup, not a JSONPath — so given SQLEasy's `$.email`
+    // it returned NULL and the predicate silently never matched. The path argument is a JSONPath on
+    // all four dialects now, and `jsonb_path_query_first` is the operator that actually takes one.
+    expect(b.parseRaw()).toContain(
+      'jsonb_path_query_first("u"."meta", \'$.email\') #>> \'{}\' = a@b.c',
+    );
   });
 
   it('MySQL whereJsonContains', () => {
@@ -122,7 +134,10 @@ describe('Tier 3 — table functions', () => {
   it('Postgres fromTableFunction', () => {
     const b = new PostgresQuery().newBuilder();
     b.selectAll().fromTableFunction('generate_series', 'g', [1, 3]);
-    expect(b.parseRaw()).toContain('FROM "public"."generate_series"(1, 3) AS "g"');
+    // NOT owner-qualified. This used to assert `FROM "public"."generate_series"`, which Postgres
+    // rejects — `function public.generate_series(integer, integer) does not exist`, because built-ins
+    // live in pg_catalog and resolve through search_path. The default owner is a TABLE default.
+    expect(b.parseRaw()).toContain('FROM "generate_series"(1, 3) AS "g"');
   });
 
   it('SQLite json_each TVF', () => {

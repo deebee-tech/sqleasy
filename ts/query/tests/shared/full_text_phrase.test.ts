@@ -65,7 +65,10 @@ describe('FullTextMode.Phrase', () => {
     const b = new SqliteQuery().newBuilder();
     b.selectAll().fromTable('docs', 'd').whereMatch(cols, 'exact words', FullTextMode.Phrase);
 
-    expect(() => b.parseRaw()).toThrow(/SQLite FTS only supports Natural\/Boolean/);
+    // The refusal widened: SQLite's MATCH has NO mode selector, so Boolean was emitting SQL
+    // byte-identical to Natural — the caller's choice silently discarded, the same defect this file
+    // exists for. Only Natural is accepted now, and Phrase is still refused, as this test asserts.
+    expect(() => b.parseRaw()).toThrow(/SQLite FTS MATCH has no mode selector/);
   });
 
   // The modes that were never broken must stay working on every engine that has them.

@@ -27,9 +27,22 @@ export const emitJsonExtractExpression = (
   const col = columnRef(config, tableNameOrAlias, columnName);
 
   if (config.databaseType === DatabaseType.Postgres) {
+    // `->` / `->>` take a KEY or an array index — NOT a JSONPath. Given SQLEasy's `$.email`, they
+    // looked up a key literally named "$.email", which does not exist, so the expression returned
+    // NULL and the predicate silently never matched. No error, ever. Measured:
+    //
+    //   '{"email":"a@b.c"}'::jsonb ->> '$.email'  ->  NULL
+    //   '{"email":"a@b.c"}'::jsonb ->> 'email'    ->  a@b.c
+    //
+    // `jsonb_path_query_first` is Postgres's own JSONPath entry point and takes the path VERBATIM,
+    // so no path translation (and no approximation) is needed. `#>> '{}'` unwraps the jsonb result
+    // to text for Text mode — the documented idiom, and the counterpart to MySQL's JSON_UNQUOTE.
+    // Requires Postgres 12+, the same shape of floor as MySQL 8.0.4 for REGEXP_LIKE.
+    sqlHelper.addSqlSnippet('jsonb_path_query_first(');
     sqlHelper.addSqlSnippet(col);
-    sqlHelper.addSqlSnippet(mode === JsonExtractMode.Text ? '->>' : '->');
+    sqlHelper.addSqlSnippet(', ');
     sqlHelper.addSqlSnippet(sqlStringLiteral(path));
+    sqlHelper.addSqlSnippet(mode === JsonExtractMode.Text ? ") #>> '{}'" : ')');
     return;
   }
 

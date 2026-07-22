@@ -10,12 +10,21 @@ void main() {
         ..whereJsonExtract(
           'u',
           'meta',
-          'email',
+          r'$.email',
           JsonExtractMode.text,
           WhereOperator.equals,
           'a@b.c',
         );
-      expect(b.parseRaw(), contains('"u"."meta"->>\'email\' = a@b.c'));
+      // Was asserting `->>'email'`, which is a KEY lookup, not a JSONPath — so given SQLEasy's
+      // `$.email` it returned NULL and the predicate silently never matched. The path argument is a
+      // JSONPath on all four dialects now, and `jsonb_path_query_first` is the operator that
+      // actually takes one.
+      expect(
+        b.parseRaw(),
+        contains(
+          'jsonb_path_query_first("u"."meta", \'\$.email\') #>> \'{}\' = a@b.c',
+        ),
+      );
     });
 
     test('MySQL whereJsonContains', () {
@@ -132,9 +141,13 @@ void main() {
       final b = PostgresQuery().newBuilder()
         ..selectAll()
         ..fromTableFunction('generate_series', 'g', [1, 3]);
+      // NOT owner-qualified. This used to assert `FROM "public"."generate_series"`, which Postgres
+      // rejects — `function public.generate_series(integer, integer) does not exist`, because
+      // built-ins live in pg_catalog and resolve through search_path. The default owner is a TABLE
+      // default.
       expect(
         b.parseRaw(),
-        contains('FROM "public"."generate_series"(1, 3) AS "g"'),
+        contains('FROM "generate_series"(1, 3) AS "g"'),
       );
     });
 

@@ -404,12 +404,27 @@
       }
     },
     "fromTableWithOwner": {
-      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "_why": "KIND SETTLED ON ALL FOUR; THE THREE NATIVE NAMES ARE PARKED, deliberately, and this op is the anchor of the whole *WithOwner rename.\n\n'Owner' is Sybase / pre-2005 T-SQL vocabulary. docs/capability-manifest-design.md:108 names it as exactly that ('~10 ops, emitting a schema qualifier') and :211 puts it on the rename list derived sharedness forces; scripts/build-capability-manifest.mjs:82 forces it unadjudicated for 'sweep-2026-07-20: Sybase-era vocabulary on the shared surface'. All three engines that accept it call the thing a SCHEMA today (MSSQL since 2005, Postgres CREATE SCHEMA/search_path, SQLite's own grammar production is literally schema-name), and on Postgres 'owner' names a DIFFERENT real concept \u2014 ALTER TABLE \u2026 OWNER TO <role>. Writing `fromTableWithOwner` into three cells would assert a term that is wrong on at least two of them; writing `fromTableWithSchema` is an API rename Sandy has not taken. Kind recorded, name left empty, per this file's own convention.\n\nMYSQL IS ADJUDICATED ABSENT, and this DISAGREES WITH THE TYPED VIEW ON PURPOSE. typed-views.ts:69-70 keeps the method on the MySQL view, reasoning that an empty owner is accepted so the method is usable \u2014 right about the TYPE (structural absence would misfire on the degenerate `fromTableWithOwner('', \u2026)` call, which is just fromTable). But the CAPABILITY the method names \u2014 namespace-qualify the table \u2014 is unreachable on MySQL: default-from.ts:40-42 throws for every argument that does anything, and the corpus pins the throw. decisions.json is documented as outranking the view surface, which is the mechanism for exactly this drift.\n\nThe refusal is over-strict as ENGINE fact, and that is a separate ticket: MySQL does accept `db_name.tbl_name` \u2014 its schema IS the database \u2014 so SQLEasy is hiding a real MySQL capability rather than approximating a missing one. That is branch 3 pointed the wrong way.\n\nTRAPS. An explicit empty owner is NOT the same as no owner: fromTable substitutes the dialect default ([dbo]., \"public\".) while fromTableWithOwner('') emits a bare `SELECT * FROM users AS u` on all four. And SQLite's qualifier is an ATTACHed database name (main, temp), not a schema, so the same portable 'sales' string addresses a different namespace there than on Postgres.",
+      "mssql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "From: MySQL does not support table owners",
+        "refusal": "MySQL does not support table owners",
         "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
       }
     },
     "joinTableWithOwner": {
@@ -440,11 +455,332 @@
       }
     },
     "updateTableWithOwner": {
-      "_why": "Owner (schema) qualification. In MySQL the 'schema' IS the database the connection already targets, so there is no second namespace to qualify with and the parser refuses a NON-EMPTY owner: '<Area>: MySQL does not support table owners'. The method deliberately stays ON the MySQL view (typed-views.ts) because an EMPTY owner is legal there \u2014 a conditional refusal, not a hidden method. That is precisely what made the manifest wrong: presence was being read as native, so it asserted MySQL performs owner qualification while the parser threw. The CAPABILITY is absent on MySQL; the method merely remains callable in its degenerate form.",
+      "_why": "Same adjudication as fromTableWithOwner and it must move with it: kind settled on all four, the three native names parked as part of the *WithOwner rename sweep. Do not adjudicate this op's names in isolation from fromTableWithOwner, deleteFromWithOwner, insertIntoWithOwner and joinTableWithOwner.\n\nNative on MSSQL, Postgres and SQLite. default-update.ts:43 builds the two-part name and :55-58 writes it after UPDATE with `AS alias` (Postgres/SQLite); MSSQL takes the mssqlAliased path at :48-53 and :94-100, which is T-SQL's own and only aliasing form, not a synthesis. Nothing is emulated on any of the three.\n\nMYSQL IS ADJUDICATED ABSENT: default-update.ts:39-41 throws for every non-empty owner, and capabilities.json records casesEmitting 0 / casesThrowing 2 \u2014 MySQL has never emitted this op. Same deliberate disagreement with typed-views.ts:69-70 as fromTableWithOwner, for the same reason. The refusal is also stricter than the engine: ts/query/tests/mysql/update.test.ts:91-97 uses owner 'mydb' and expects a throw, yet `UPDATE mydb.users SET \u2026` is valid MySQL. SQLEasy declines because MySQL has no schema layer distinct from the database and conflating the two would be exactly the approximation this library refuses \u2014 defensible, but it is a hidden real capability, not a missing one.\n\nSemantics are not identical across the three natives: MSSQL and Postgres qualify a namespace inside one database, while SQLite's schema-name is an ATTACHed database file (tests/sqlite/update.test.ts:108-118 passes 'main'). That is another reason the shared name has to be decided once, for the whole family, rather than per op.\n\nThe SQLite throw counted in capabilities.json is the JOIN case (default-mutation-join.ts:31-44), not the owner.",
+      "mssql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
       "mysql": {
         "kind": "absent",
         "name": "",
-        "refusal": "Update: MySQL does not support table owners",
+        "refusal": "MySQL does not support table owners",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      }
+    },
+    "forUpdateNowait": {
+      "_why": "Postgres and MySQL carry the wait mode on the statement-level locking clause: default-row-lock.ts:32-38 appends ' NOWAIT' after 'FOR UPDATE'. One clause, no placement question. MSSQL has no such clause, so mssqlRowLockHint (default-row-lock.ts:99-102) returns ' WITH (UPDLOCK, ROWLOCK, NOWAIT)' and default-from.ts:63-66 / default-join.ts:133-136 stamp it onto EVERY table reference. That is native, not a synthesis \u2014 NOWAIT is a first-class T-SQL table hint \u2014 but it is native under MSSQL's OWN name: typed-views.ts:108 hides `forUpdateNowait` from the MSSQL view as an explicit engine-native rename (comment at :105-106) and typed-views.ts:149 gives MSSQL `updlockNowait` instead, which the other three views drop. Both halves of that name are genuine T-SQL terms (UPDLOCK is a lock hint, NOWAIT is a table hint), which is why it is adjudicated here and `updlockSkipLocked` is not. Sharedness derives across postgres+mysql only; MSSQL's name genuinely differs, exactly as forUpdate/updlock already records.\n\nTWO TRAPS. The MSSQL hint is TABLE-scoped, so any source T-SQL cannot hint \u2014 derived table, TVF, LATERAL body, raw fragment \u2014 is refused by refuseUnplaceableMssqlRowLock (default-row-lock.ts:61-74, called from default-from.ts:31/76/96/125 and default-join.ts:34/148) with a SECOND, different message: 'MSSQL cannot lock <source> \u2014 a locking hint attaches to a table reference only'. And T-SQL's NOWAIT is effectively LOCK_TIMEOUT 0 for that table and aborts (error 1222) on any ungrantable lock, where the Postgres/MySQL NOWAIT fails only on the target rows \u2014 same term, wider blast radius. MySQL emits unconditionally with no version gate (Dialect carries no version field), which hard-floors the library at MySQL 8.0.1+; stated in prose at comparison-operator.ts:153-156, not enforced.",
+      "mssql": {
+        "kind": "native",
+        "name": "updlockNowait",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "forUpdateNowait",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "forUpdateNowait",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
+        "adjudicated": true
+      }
+    },
+    "forUpdateSkipLocked": {
+      "_why": "Postgres and MySQL append ' SKIP LOCKED' to the same statement-level clause (default-row-lock.ts:37-39). MSSQL emits ' WITH (UPDLOCK, ROWLOCK, READPAST)' (default-row-lock.ts:104-109), and READPAST is genuinely native \u2014 a dedicated T-SQL table hint whose entire job is to skip rows locked by other transactions, and UPDLOCK+ROWLOCK+READPAST is Microsoft's own documented queue-table idiom. Branch 3 of the design, NOT a synthesis.\n\nMSSQL NAME LEFT EMPTY DELIBERATELY. The shipped method is `updlockSkipLocked` (query.ts:2037, typed-views.ts:150), which is HALF-translated: `updlock` is T-SQL, `SkipLocked` is Postgres/MySQL vocabulary. The already-settled enum cell RowLockWait.SkipLocked/mssql records MSSQL's own term as 'READPAST' (capabilities.json, adjudicated true), so the op cell and the enum cell would disagree on the wait half. If the typed surface is to speak T-SQL end to end the honest method name is `updlockReadpast`. That is an API rename Sandy has not taken, so the kind is recorded and the name is parked \u2014 same treatment as limitWithTies. Sharedness does not derive either way: MSSQL's name differs from the Postgres/MySQL `forUpdateSkipLocked` under both spellings.\n\nNote the asymmetry that makes this family confusing: skip-locked is native on MSSQL for the EXCLUSIVE lock and absent for the SHARED one, and the reason is the lock strength, not the wait mode.",
+      "mssql": {
+        "kind": "native",
+        "name": "",
+        "adjudicated": false
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "forUpdateSkipLocked",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "forUpdateSkipLocked",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
+        "adjudicated": true
+      }
+    },
+    "forShareNowait": {
+      "_why": "Postgres and MySQL 8.0+ have a statement-level FOR SHARE and the wait modifier rides on it identically to the exclusive form: default-row-lock.ts:33 picks 'FOR SHARE' and :35-36 appends ' NOWAIT'. MSSQL is absent for a reason that has NOTHING to do with the wait mode: mssqlRowLockHint checks RowLockMode.ForShare FIRST (default-row-lock.ts:90-96) and throws before it ever reaches the wait branch at :99, so no wait mode makes forShare reachable on T-SQL. The taxonomy has no shared-mode counterpart to UPDLOCK, and HOLDLOCK is a SERIALIZABLE synonym that silently escalated the caller's isolation level. Consistent with the settled forShare cell.\n\nMySQL is the version-sensitive cell: FOR SHARE, NOWAIT and SKIP LOCKED are all emitted UNCONDITIONALLY (Dialect in configuration/configuration.ts has no version field, so there is no gate to fail), hard-flooring the library at MySQL 8.0.1+ \u2014 pre-8.0 has only LOCK IN SHARE MODE, which admits no NOWAIT at all.\n\nCROSS-CHECK NIT, worth fixing when the typed surface lands: the MSSQL refusal tells the caller to 'use forUpdate()', but `forUpdate` is precisely what the MSSQL view hides (typed-views.ts:107) in favour of `updlock()`. The message names a method an MSSQL user cannot call. Left verbatim here because the manifest records the message that ships.",
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no shared row lock \u2014 HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "forShareNowait",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "forShareNowait",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
+        "adjudicated": true
+      }
+    },
+    "forShareSkipLocked": {
+      "_why": "Identical shape to forShareNowait: default-row-lock.ts:33 emits 'FOR SHARE' and :37-39 appends ' SKIP LOCKED' for Postgres and MySQL. MSSQL is absent, and the ORDER of the guard is the load-bearing detail \u2014 mssqlRowLockHint rejects RowLockMode.ForShare at default-row-lock.ts:90-96 BEFORE it ever consults rowLock.wait at :107, so READPAST (which MSSQL genuinely has, and which the forUpdate family uses) is never reached. There is no shared-mode lock hint for it to attach to. That is the trap for this whole group: the absence is about lock strength, not wait mode.\n\nMySQL carries the same unconditional 8.0.1+ floor as forShareNowait. SQLite throws at default-row-lock.ts:21-26, the first statement of emitTrailingRowLockClause, before mode or wait is inspected \u2014 no argument escapes it. Both MSSQL and SQLite absences are double-floored: typed-views.ts:92 and :203 hide the method, and the parser throws.",
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no shared row lock \u2014 HOLDLOCK is a SERIALIZABLE isolation hint, not FOR SHARE; use forUpdate() or take the isolation level explicitly",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "forShareSkipLocked",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "forShareSkipLocked",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support row locking (FOR UPDATE/FOR SHARE)",
+        "adjudicated": true
+      }
+    },
+    "frame": {
+      "_why": "default-window.ts:104-137 is ONE shared emitter \u2014 'ROWS '/'RANGE ' followed by either 'BETWEEN start AND end' or the SQL-standard single-bound shorthand \u2014 with exactly one dialect branch: :114-124 throws on MSSQL when FrameUnit.Range is paired with a numeric-offset bound, because T-SQL's RANGE admits only UNBOUNDED PRECEDING, CURRENT ROW and UNBOUNDED FOLLOWING while Postgres, MySQL 8.0+ and SQLite 3.28+ all take `RANGE 5 PRECEDING`. That refusal is conditional on an ARGUMENT rather than on the method, so `frame` rightly appears in none of the AbsentOn sets \u2014 typed-views.ts:66-75 is explicit that a method refusing only in a certain combination stays shared and runtime-guarded. All four names agree, so sharedness derives.\n\nTWO TRAPS. `frame` is a WindowBuilder method, not a QueryBuilder key, and typed-views.ts:36 deliberately leaves WindowBuilder callbacks unrebound \u2014 so nothing about the frame surface is enforced at compile time on any dialect and the MSSQL guard is runtime-only. And `frameRaw` bypasses that guard entirely (default-window.ts:109-111 emits frame.raw and returns before the branch), so `frameRaw('RANGE 5 PRECEDING')` still ships invalid T-SQL.\n\nSTILL OPEN, and NOT closed by this cell: the MSSQL RANGE+offset refusal is recorded NOWHERE in the manifest. FrameUnit.Range is adjudicated native on all four dialects with no note, and there is no bound-level cell for a numeric offset \u2014 so a manifest built from these cells will not surface the one real MSSQL frame constraint. GROUPS and EXCLUDE are also missing entirely: enums/frame-unit.ts declares only Rows and Range, and neither token appears anywhere in ts/query/src. Both are real on Postgres 11+ and SQLite 3.28+ and absent on MySQL/MSSQL \u2014 capabilities nobody wrote, not absent cells, so they belong on the missing-capability track.",
+      "mssql": {
+        "kind": "native",
+        "name": "frame",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "frame",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "frame",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "frame",
+        "adjudicated": true
+      }
+    },
+    "groupByRollup": {
+      "_why": "ROLLUP is genuinely native on three engines and absent from SQLite, but MySQL's spelling diverges: default-group-by.ts:94-98 branches on DatabaseType.Mysql and emits the column list followed by the trailing modifier ' WITH ROLLUP', where MSSQL and Postgres take the standard grouping-element form at :100-102, 'ROLLUP (...)'. That is NOT an emulation \u2014 WITH ROLLUP is MySQL's own construct under the same word, nothing is synthesized out of other constructs, and both spellings produce identical super-aggregate rows because SQLEasy can only ever roll up the WHOLE grouping list. Precedent controls the naming: limitWithTies already rules that a shared phrase spelled through different grammar (`TOP \u2026 WITH TIES` vs `FETCH FIRST \u2026 WITH TIES`) is still one real term, so ROLLUP derives shared across mssql/mysql/postgres rather than splitting into a MySQL-only `withRollup`. SQLite is double-floored: AbsentOnSqlite at typed-views.ts:209 plus the throw at default-group-by.ts:90-92.\n\nLIVE FINDING, argument axis, NOT closed by this cell: because 'WITH ROLLUP' is a whole-clause modifier while 'ROLLUP(...)' is one grouping ELEMENT, the mixed form `GROUP BY a, ROLLUP(b)` \u2014 legal on MSSQL/Postgres, impossible on MySQL \u2014 is inexpressible, and the parser does not refuse it. default-group-by.ts:51 skips the plain-column loop once a modifier is present and :81-84 prefers the explicit column list over plainColumns, so `.groupByColumn('o','region').groupByRollup([product])` SILENTLY DROPS `region` on all three dialects. No corpus case covers it. Same family as the `top()` silent-discard, on the argument axis.",
+      "mssql": {
+        "kind": "native",
+        "name": "groupByRollup",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "groupByRollup",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "groupByRollup",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no ROLLUP \u2014 use groupByRaw",
+        "adjudicated": true
+      }
+    },
+    "groupByCube": {
+      "_why": "CUBE is native on MSSQL and Postgres and genuinely absent on both MySQL and SQLite \u2014 the only op in this group where the two refusing dialects land together, for unrelated reasons (MySQL has ROLLUP but never gained CUBE; SQLite has no grouping extensions at all). default-group-by.ts:127-129 emits 'CUBE (' + column list + ')' for the two engines that have it. Nothing is synthesized on the refusing side \u2014 no UNION ALL over grouping levels, no CASE-built grouping key \u2014 which is the check that matters most here, since a CUBE is the easiest of the three to fake. Both refusals are double-floored: AbsentOnMysql typed-views.ts:134 + throw at :120-125, AbsentOnSqlite typed-views.ts:210 + throw at :116-118.\n\nONE WART, recorded not fixed: MySQL's refusal text points the caller at 'groupByRollup/groupByGroupingSets', but GROUPING SETS is equally absent on MySQL (typed-views.ts:135), so only the rollup and raw halves of that suggestion are actionable. Also inherited from the shared modifier path: as with groupByRollup, a preceding groupByColumn is silently dropped when groupByCube carries an explicit list.",
+      "mssql": {
+        "kind": "native",
+        "name": "groupByCube",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no CUBE \u2014 use groupByRollup/groupByGroupingSets or groupByRaw",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "groupByCube",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no CUBE \u2014 use groupByRaw",
+        "adjudicated": true
+      }
+    },
+    "groupByGroupingSets": {
+      "_why": "GROUPING SETS is native on MSSQL and Postgres and absent on MySQL and SQLite. default-group-by.ts:149-158 emits 'GROUPING SETS (' then one parenthesised column list per set, including the empty set '()' that expresses the grand total. The corpus case 'group by grouping sets postgres' hand-declares dialects ['postgres','mssql','sqlite'], omitting MySQL entirely \u2014 the corpus already agreeing with the AbsentOnMysql adjudication rather than papering over it. Both refusals carry the type ceiling and the runtime floor: typed-views.ts:135 / :211, throws at default-group-by.ts:142-147 / :138-140.\n\nThis is the only one of the three grouping ops with no implicit-column path \u2014 it always reads modifier.groupingSets and refuses an empty list at :135 ('GROUPING SETS requires at least one column set') \u2014 so it is IMMUNE to the plain-column silent drop that afflicts groupByRollup and groupByCube. Uncovered edge, verified against dist rather than the corpus: a single set emits the doubled-paren `GROUPING SETS ((\"o\".\"region\"))`, correct in both engines but with no golden.",
+      "mssql": {
+        "kind": "native",
+        "name": "groupByGroupingSets",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL has no GROUPING SETS \u2014 use groupByRollup or groupByRaw",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "groupByGroupingSets",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite has no GROUPING SETS \u2014 use groupByRaw",
+        "adjudicated": true
+      }
+    },
+    "fromTableFunction": {
+      "_why": "PARTIAL ADJUDICATION \u2014 mssql and postgres are DELIBERATELY OMITTED so they stay forced-unadjudicated. See below.\n\nMySQL has no user-callable FROM-clause table function at all (only the built-in JSON_TABLE), so default-from.ts:128-133 throws and names fromFunctionRaw as the escape hatch. Both sources agree: `fromTableFunction`/`fromTableFunctionWithOwner` are in AbsentOnMysql (typed-views.ts:136-137) AND the parser throws unconditionally. This is the fix for audit F4 (docs/audits/dialect-parity-2026-07-19.md:81), where MySQL previously emitted a call it cannot parse.\n\nSQLite is clean and is adjudicated native. Its defaultOwner is '' (dialects/sqlite/configuration.ts:14) so NO schema qualifier is injected, and default-from.ts:142-146 branches on DatabaseType.Sqlite to emit the function name UNQUOTED \u2014 `FROM json_each(?) AS \"j\"`, never `\"json_each\"(...)`. The dedicated corpus case 'from table function sqlite json_each' pins an executable prepared statement.\n\nMSSQL AND POSTGRES ARE NOT ADJUDICATED, and this is the reason: query.ts:329 stamps config.defaultOwner into the state even when the caller named no schema, while the method takes no owner argument and its doc comment at query.ts:323 promises `FROM fn(...) AS alias`. What is emitted is `FROM \"public\".\"fn\"(...)` on Postgres and `FROM [dbo].[fn](...)` on MSSQL. On Postgres that defeats search_path resolution and names a DIFFERENT function than the caller did \u2014 `fromTableFunction('x')` and `fromTableFunctionWithOwner('public','x')` are byte-identical, so there is NO way to reach an unqualified table function, and every set-returning function a Postgres user would actually name (generate_series, unnest, json_each, jsonb_array_elements, regexp_split_to_table) lives in pg_catalog and is therefore unreachable. The pinned golden `SELECT * FROM \"public\".\"generate_series\"(1, 3) AS \"g\";` is rejected by a live server (ERROR 42883), which is the audit's FALSE-CONFORMED class, not a caveat. MSSQL carries the same injection and the same defect for a system TVF. The CONSTRUCT is genuinely native on both and there is no emulation anywhere in this path \u2014 the emitter writes the engine's own FROM-clause function-call grammar directly \u2014 so `absent` would also be wrong. Adjudicate both as native under the name `fromTableFunction` only after the defaultOwner injection at query.ts:329 is fixed (or the op is deliberately redefined as the qualified form) and the re-minted goldens are accepted by a real server.",
+      "mysql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL does not support table functions in FROM \u2014 use fromFunctionRaw",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "fromTableFunction",
+        "adjudicated": true
+      }
+    },
+    "updateTable": {
+      "_why": "Shared on all four \u2014 `updateTable` in every cell, so sharedness derives. builder/query.ts:1692-1705 sets QueryType.Update, pushes a FromState carrying config.defaultOwner, and records mutationTargetIndex; default-update.ts then emits one ordinary UPDATE per dialect.\n\nMSSQL's shape genuinely differs \u2014 `UPDATE [u] SET \u2026 FROM [dbo].[users] AS [u]` instead of `UPDATE tbl AS alias SET \u2026` (the mssqlAliased branch, default-update.ts:48-59 and 94-100) \u2014 and this is NOT an emulation: `UPDATE <table> AS <alias>` is not a T-SQL production at all, so the alias-plus-trailing-FROM form is the engine's own and only spelling of an aliased update target. One native UPDATE statement, no substituted construct. default-update.ts:56-59 also shows the shape is chosen only when an alias is present or joins exist, so an unaliased MSSQL update emits no FROM at all.\n\nTRAP: MySQL only escapes the owner refusal at default-update.ts:39-41 because defaultOwner is '' (dialects/mysql/configuration.ts:14). A caller who overrides defaultOwner on MySQL makes plain `updateTable` throw 'MySQL does not support table owners' with no owner ever passed.\n\nAUDIT-G1 IS NOT RESOLVED BY THIS CELL, and the flag must survive the removal of the forced note. G1 ('SQLite UPDATE \u2026 FROM rejected outright, but SQLite 3.33+ supports it') is default-mutation-join.ts:31-44, which returns early when state.joinStates.length === 0 \u2014 so it belongs to the joinTable-in-mutation cell, not here; `updateTable` alone is clean on SQLite. It is a MISSING-capability finding, not a dishonest one. Adjacent and still open: Postgres's join-backed UPDATE translates ON conditions into a WHERE predicate (default-mutation-join.ts:45-66) and honestly REFUSES OUTER joins because WHERE cannot express them \u2014 guarded, and again on the join cell.",
+      "mssql": {
+        "kind": "native",
+        "name": "updateTable",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "updateTable",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "updateTable",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "updateTable",
+        "adjudicated": true
+      }
+    },
+    "orderByColumn": {
+      "_why": "Plainly shared. emitOrderByTerm (default-order-by.ts:30-66) reads config.databaseType exactly ONCE \u2014 line 44, to compute hasNativeNulls \u2014 and nothing else in the function branches on dialect: the column is quoted through the dialect's own delimiters and ' ASC'/' DESC' are appended as literals (:56-59), with OrderByDirection.None omitting the token entirely (:61). All four cells emit real, identical-shaped SQL, so the name is `orderByColumn` four times and sharedness derives.\n\nTHE DIVERGENCE IS ON THE ENUM AXIS, NOT THIS OP, and it is already adjudicated \u2014 do not double-count it. NullsOrder.First/.Last are absent on MSSQL and MySQL (:46-52 throw) and native on Postgres/SQLite (:64), and every MySQL/Postgres throw counted against this op in capabilities.json traces to a NullsOrder case. The sweep's forced note ('NullsOrder First/Last synthesized as CASE WHEN on MySQL and MSSQL') describes behaviour that has been REMOVED: the CASE WHEN synthesis is gone and replaced by a refusal.\n\nTHE REAL TRAP IS A SILENT DROP, not an emulation, and it is NOT closed by this cell: defaultOrderBy is only reached on the SELECT path (to-sql.ts:270), because the Insert/Update/Delete branches return earlier \u2014 so `orderByColumn` on an UPDATE builder produces no clause and no error on any dialect, and MySQL genuinely has `UPDATE \u2026 ORDER BY \u2026 LIMIT`. Same shape as the top() silent no-op. The corpus AGREES WITH THAT SILENCE: the case 'update with an owner on mysql throws\u2026' notes that orderByColumn and limit 'still produce nothing \u2014 no error, no SQL'. That is the golden-asserts-the-bug pattern.\n\nTwo corpus case names are stale relative to the code \u2014 'order by direction none renders desc' and 'order by direction None renders DESC' both PIN `ORDER BY [u].[id],` with no direction token, matching :61. Read the pinned SQL, not the title.",
+      "mssql": {
+        "kind": "native",
+        "name": "orderByColumn",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "orderByColumn",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "orderByColumn",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "native",
+        "name": "orderByColumn",
+        "adjudicated": true
+      }
+    },
+    "whereJsonContains": {
+      "_why": "The cleanest divide in the JSON group: two engines have a real containment primitive and two have none at all, and the parser REFUSES rather than synthesizing one. default-json.ts:106-110 emits Postgres `col @> $n::jsonb` (the ::jsonb cast added at default-json-predicate.ts:90-94 because the bound parameter is otherwise untyped \u2014 a typing necessity for a placeholder, not a rewrite), :112-117 emits MySQL `JSON_CONTAINS(col, ?)` with the closing paren supplied at default-json-predicate.ts:96-98, while :119-124 throws for MSSQL and :126-129 throws for SQLite. Both absences are mirrored structurally in typed-views.ts:95-96 and :212-213 and in the Dart view manifest, so the method is not merely refused but OFF those two views entirely.\n\nNAMES: `whereJsonContains` on both native cells, not the glyphs. Across the shipped manifest every named OP cell is a plain method identifier (updlock, insertIgnore, onConflict, top, merge) and SQL spellings appear ONLY on ENUM cells. The op name becomes the method on the typed view, and '@>' is not a legal method name in any of the five target languages. Recording '@>' and 'JSON_CONTAINS' would also forge a divergence between the only two dialects that HAVE the capability, over one concept both genuinely perform \u2014 and sharedness is derived from names agreeing, never authored.\n\nTWO CAUTIONS, neither changing a cell. The SQLite throw at :126-129 is an UNGUARDED fallthrough rather than a DatabaseType.Sqlite test, so DatabaseType.Unknown is also told 'SQLite does not support JSON containment'. And the ONLY corpus case for this op, 'json contains where mysql', binds NULL rather than a document: it carries value {t:'json',\u2026}, but 'json' is not a member of the InputValue union (contract/schema/corpus.ts:25-32) and the conformance driver's toValue has no case for it, so the frozen params read [{t:'null'}] and the raw goldens read `JSON_CONTAINS(\\`u\\`.\\`meta\\`, )` and `@> ::jsonb` \u2014 neither syntactically valid. The two NATIVE cells here rest on the emitter and on tests/shared/tier3.test.ts:25-29, NOT on that case's value path, which currently attests nothing. The two ABSENT cells rest on hard throws the broken value cannot reach.",
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MSSQL has no JSON containment operator \u2014 use whereJsonExtract or whereRaw with OPENJSON/JSON_QUERY",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "whereJsonContains",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "native",
+        "name": "whereJsonContains",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "SQLite does not support JSON containment \u2014 use whereJsonExtract or whereRaw",
+        "adjudicated": true
+      }
+    },
+    "hintUseIndex": {
+      "_why": "MySQL's table-reference grammar is `tbl_name [[AS] alias] [index_hint_list]`, so USE INDEX is a real MySQL keyword and the other three have nothing SQLEasy exposes under this name. default-hint.ts:43 emits the literal ' USE INDEX (' gated on DatabaseType.Mysql; nothing is synthesized anywhere. The three absences are double-floored: typed-views.ts:101 / :164 / :214, plus a runtime throw.\n\nTWO refusal sites exist and only ONE fires: validateHints (default-hint.ts:99-108) runs unconditionally at to-sql.ts:127 BEFORE the query-type dispatch \u2014 placed there precisely so a hint on a non-MySQL INSERT/UPDATE/DELETE is refused rather than silently dropped \u2014 which makes the near-identical From-area throw inside mysqlIndexHintForTable (default-hint.ts:32-37, no 'use hintRaw' tail) unreachable in practice. The message recorded here is the validateHints text, which is what a caller actually sees.\n\nAudit F3 (hint emitted before the alias, invalid MySQL) is FIXED and the forced note is stale: default-from.ts:56-60 and default-join.ts:124-128 now call mysqlIndexHintForTable AFTER the ` AS <alias>` block and, on a join, above defaultJoinOns. The corpus case 'mysql use index hint' and tier3.test.ts:236-257 pin the full ordering, not mere presence, and the Dart port agrees.\n\nNAME is `hintUseIndex`, the SQLEasy method name \u2014 NOT 'useIndex', which exists nowhere in ts/query/src (the only `useIndex` in the tree is the Dart HintKind enum tag). Op cells diverge from the method name only when a real engine-native RENAME exists as a method on the typed view (forUpdate\u2192updlock, onConflictDoNothing\u2192insertIgnore); there is no `useIndex` method, and typed-views.test.ts:83 asserts `mysql.hintUseIndex('u','idx')` compiles. The engine term 'USE INDEX' already lives on the enum cell HintKind.UseIndex/mysql, and the closest sibling settles it: hintMssqlOption/mssql is 'hintMssqlOption', not 'OPTION'.\n\nAUDIT-G2 IS STILL OPEN and is NOT closed by these cells: MSSQL has a real `WITH (INDEX(...))` and SQLite a real `INDEXED BY`, and SQLEasy offers neither. Those are capabilities nobody wrote \u2014 the missing-capability track \u2014 not this op's cells, which correctly record that MySQL's USE INDEX has no counterpart elsewhere.\n\nSILENT NO-OP STILL LIVE, MySQL only: mysqlIndexHintForTable is called ONLY from default-from.ts:59 and default-join.ts:127, so a hint set on a MySQL UPDATE/DELETE/INSERT is silently dropped \u2014 MySQL's `UPDATE table_reference` grammar does accept index_hint_list. The fix that closed this for the other three dialects (by refusing) left open the one dialect that can honour it. Secondary: default-hint.ts:25 matches on `alias ?? tableName`, so passing the table name when the FROM carries an alias also drops the hint silently.",
+      "mssql": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
+        "adjudicated": true
+      },
+      "mysql": {
+        "kind": "native",
+        "name": "hintUseIndex",
+        "adjudicated": true
+      },
+      "postgres": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
+        "adjudicated": true
+      },
+      "sqlite": {
+        "kind": "absent",
+        "name": "",
+        "refusal": "MySQL index hints (hintUseIndex/hintForceIndex) are only supported on MySQL \u2014 use hintRaw elsewhere",
         "adjudicated": true
       }
     }
