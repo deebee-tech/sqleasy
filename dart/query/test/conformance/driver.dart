@@ -255,6 +255,33 @@ void applyOps(QueryBuilder b, List<Map<String, Object?>> ops) {
       case 'selectWindow':
         b.selectWindow(_str(op, 'fn'), (w) => _applyWindow(w, _ops(op, 'over')),
             alias: _optStr(op, 'alias'));
+      case 'selectJsonArrayAgg':
+        b.selectJsonArrayAgg(
+          _str(op, 'table'),
+          _str(op, 'column'),
+          _str(op, 'alias'),
+          jsonb: op['jsonb'] == true,
+          distinct: op['distinct'] == true,
+          orderBy: [
+            for (final o in _ops(op, 'orderBy'))
+              StringAggOrderKey(_str(o, 'table'), _str(o, 'column'),
+                  OrderByDirection.fromWire(_str(o, 'direction'))),
+          ],
+        );
+      case 'selectJsonObjectAgg':
+        b.selectJsonObjectAgg(
+          _str(op, 'keyTable'),
+          _str(op, 'keyColumn'),
+          _str(op, 'table'),
+          _str(op, 'column'),
+          _str(op, 'alias'),
+          jsonb: op['jsonb'] == true,
+          orderBy: [
+            for (final o in _ops(op, 'orderBy'))
+              StringAggOrderKey(_str(o, 'table'), _str(o, 'column'),
+                  OrderByDirection.fromWire(_str(o, 'direction'))),
+          ],
+        );
       case 'selectStringAgg':
         b.selectStringAgg(
           _str(op, 'table'),

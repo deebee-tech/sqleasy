@@ -6,6 +6,7 @@ import '../sql_helper.dart';
 import '../state.dart';
 import 'default_window.dart';
 import 'default_aggregate.dart';
+import 'default_json_agg.dart';
 import 'default_string_agg.dart';
 import 'default_json.dart';
 import 'to_sql.dart';
@@ -138,6 +139,29 @@ SqlHelper defaultSelect(
         sqlHelper.addSqlSnippet(
           quoteIdentifier(selectState.alias, config.identifierDelimiters),
         );
+      }
+
+      if (i < state.selectStates.length - 1) {
+        sqlHelper.addSqlSnippet(', ');
+      }
+
+      continue;
+    }
+
+    if (selectState.builderType == BuilderType.selectJsonAgg) {
+      emitJsonAggregation(
+        sqlHelper,
+        config,
+        selectState.tableNameOrAlias ?? '',
+        selectState.columnName ?? '',
+        selectState,
+        ParserArea.select,
+      );
+
+      if ((selectState.alias ?? '').isNotEmpty) {
+        sqlHelper.addSqlSnippet(' AS ');
+        sqlHelper.addSqlSnippet(
+            quoteIdentifier(selectState.alias, config.identifierDelimiters));
       }
 
       if (i < state.selectStates.length - 1) {

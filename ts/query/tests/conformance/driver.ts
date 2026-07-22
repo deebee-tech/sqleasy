@@ -371,6 +371,40 @@ const apply = (b: QueryBuilder, opList: Op[]): void => {
       case 'selectWindow':
         b.selectWindow(str(op, 'fn'), (w) => applyWindow(w, ops(op, 'over')), opt(op, 'alias'));
         break;
+      case 'selectJsonArrayAgg':
+        b.selectJsonArrayAgg(str(op, 'table'), str(op, 'column'), opt(op, 'alias'), {
+          jsonb: op.jsonb === true,
+          distinct: op.distinct === true,
+          orderBy: list<{ table: string; column: string; direction: OrderByDirection }>(
+            op,
+            'orderBy',
+          ).map((o) => ({
+            tableNameOrAlias: o.table,
+            columnName: o.column,
+            direction: o.direction,
+          })),
+        });
+        break;
+      case 'selectJsonObjectAgg':
+        b.selectJsonObjectAgg(
+          str(op, 'keyTable'),
+          str(op, 'keyColumn'),
+          str(op, 'table'),
+          str(op, 'column'),
+          opt(op, 'alias'),
+          {
+            jsonb: op.jsonb === true,
+            orderBy: list<{ table: string; column: string; direction: OrderByDirection }>(
+              op,
+              'orderBy',
+            ).map((o) => ({
+              tableNameOrAlias: o.table,
+              columnName: o.column,
+              direction: o.direction,
+            })),
+          },
+        );
+        break;
       case 'selectStringAgg':
         b.selectStringAgg(
           str(op, 'table'),

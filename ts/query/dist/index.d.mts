@@ -556,6 +556,8 @@ declare const BuilderType: {
   readonly SelectAggregate: "SelectAggregate";
   /** `string_agg(x, sep ORDER BY y)` / `GROUP_CONCAT(x …)` — ordered string aggregation. */
   readonly SelectStringAgg: "SelectStringAgg";
+  /** `json_agg(x)` / `json_object_agg(k, v)` and their per-dialect spellings. */
+  readonly SelectJsonAgg: "SelectJsonAgg";
   /** UPDATE SET column assignment. */
   readonly UpdateColumn: "UpdateColumn";
   /** UPDATE fragment as raw SQL. */
@@ -1247,6 +1249,23 @@ type SelectState = {
       direction: OrderByDirection;
     }[];
   };
+  /**
+   * JSON aggregation — `json_agg` / `JSON_ARRAYAGG` / `json_group_array` (array) and the `*_object`
+   * forms. One capability per shape, spelled per dialect; refused entirely on MSSQL 2022, where the
+   * functions do not exist and `FOR JSON PATH` is a different, statement-level construct.
+   */
+  jsonAgg?: {
+    shape: 'array' | 'object';
+    jsonb: boolean;
+    distinct: boolean;
+    keyTableNameOrAlias?: string;
+    keyColumnName?: string;
+    orderBy: {
+      tableNameOrAlias: string;
+      columnName: string;
+      direction: OrderByDirection;
+    }[];
+  };
 };
 /** Creates a {@link SelectState} with default field values. */
 declare const createSelectState: () => SelectState;
@@ -1608,7 +1627,7 @@ type BuilderView<Keys extends keyof QueryBuilder, Self> = { [K in Keys]: QueryBu
  * (default-insert). `hintUseIndex`/`hintForceIndex` — MySQL-only index hints (default-hint).
  * `distinctOn`/`clearDistinctOn` — `DISTINCT ON` is Postgres-only (default-select).
  */
-type AbsentOnMssql = 'selectGroupConcat' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossLateral' | 'joinLeftLateral';
+type AbsentOnMssql = 'selectGroupConcat' | 'selectJsonArrayAgg' | 'selectJsonObjectAgg' | 'forShare' | 'forShareNowait' | 'forShareSkipLocked' | 'fromLateral' | 'joinLateral' | 'whereJsonContains' | 'havingJsonContains' | 'onConflictDoNothing' | 'onConflictDoUpdate' | 'onConflictDoUpdateRaw' | 'clearUpsert' | 'hintUseIndex' | 'hintForceIndex' | 'distinctOn' | 'clearDistinctOn' | 'forUpdate' | 'forUpdateNowait' | 'forUpdateSkipLocked' | 'insertIgnore' | 'onDuplicateKeyUpdate' | 'onDuplicateKeyUpdateRaw' | 'joinCrossLateral' | 'joinLeftLateral';
 /**
  * MySQL cannot run these.
  *
@@ -2047,6 +2066,32 @@ declare class QueryBuilder {
   selectGroupConcat: (tableNameOrAlias: string, columnName: string, alias: string, options?: {
     separator?: unknown;
     distinct?: boolean;
+    orderBy?: {
+      tableNameOrAlias: string;
+      columnName: string;
+      direction: OrderByDirection;
+    }[];
+  }) => this;
+  /**
+   * `json_agg(x)` — fold rows into a JSON ARRAY in one column. Postgres/MySQL/SQLite; hidden on
+   * MSSQL 2022, which has no such function. Pass `jsonb: true` for Postgres's `jsonb_agg`.
+   * DISTINCT and orderBy are available on Postgres and SQLite; MySQL refuses both.
+   */
+  selectJsonArrayAgg: (tableNameOrAlias: string, columnName: string, alias: string, options?: {
+    jsonb?: boolean;
+    distinct?: boolean;
+    orderBy?: {
+      tableNameOrAlias: string;
+      columnName: string;
+      direction: OrderByDirection;
+    }[];
+  }) => this;
+  /**
+   * `json_object_agg(k, v)` — fold rows into a JSON OBJECT keyed by `k`. Postgres/MySQL/SQLite;
+   * hidden on MSSQL 2022. `orderBy` on Postgres/SQLite; MySQL refuses it.
+   */
+  selectJsonObjectAgg: (keyTableNameOrAlias: string, keyColumnName: string, valueTableNameOrAlias: string, valueColumnName: string, alias: string, options?: {
+    jsonb?: boolean;
     orderBy?: {
       tableNameOrAlias: string;
       columnName: string;

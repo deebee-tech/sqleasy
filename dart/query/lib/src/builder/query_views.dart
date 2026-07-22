@@ -536,6 +536,23 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     bool distinct = false,
     List<StringAggOrderKey> orderBy = const [],
   });
+  MysqlQueryBuilder selectJsonArrayAgg(
+    String table,
+    String column,
+    String alias, {
+    bool jsonb = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
+  MysqlQueryBuilder selectJsonObjectAgg(
+    String keyTable,
+    String keyColumn,
+    String valueTable,
+    String valueColumn,
+    String alias, {
+    bool jsonb = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
   MysqlQueryBuilder havingAggregate(
     AggregateFunction aggregate,
     String table,
@@ -891,6 +908,23 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     Object? separator,
     String alias, {
     bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
+  PostgresQueryBuilder selectJsonArrayAgg(
+    String table,
+    String column,
+    String alias, {
+    bool jsonb = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
+  PostgresQueryBuilder selectJsonObjectAgg(
+    String keyTable,
+    String keyColumn,
+    String valueTable,
+    String valueColumn,
+    String alias, {
+    bool jsonb = false,
     List<StringAggOrderKey> orderBy = const [],
   });
   PostgresQueryBuilder havingAggregate(
@@ -1258,6 +1292,23 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     Object? separator,
     bool hasSeparator = false,
     bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
+  SqliteQueryBuilder selectJsonArrayAgg(
+    String table,
+    String column,
+    String alias, {
+    bool jsonb = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  });
+  SqliteQueryBuilder selectJsonObjectAgg(
+    String keyTable,
+    String keyColumn,
+    String valueTable,
+    String valueColumn,
+    String alias, {
+    bool jsonb = false,
     List<StringAggOrderKey> orderBy = const [],
   });
   SqliteQueryBuilder havingAggregate(

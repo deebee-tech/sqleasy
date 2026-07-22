@@ -1029,6 +1029,61 @@ class QueryBuilder
     return this;
   }
 
+  /// `json_agg(x)` — fold rows into a JSON ARRAY in one column. Postgres/MySQL/SQLite; hidden on
+  /// MSSQL 2022. `jsonb: true` for Postgres's jsonb_agg. DISTINCT/orderBy on Postgres/SQLite only.
+  QueryBuilder selectJsonArrayAgg(
+    String table,
+    String column,
+    String alias, {
+    bool jsonb = false,
+    bool distinct = false,
+    List<StringAggOrderKey> orderBy = const [],
+  }) {
+    return _pushJsonAgg(
+        'array', table, column, alias, null, null, jsonb, distinct, orderBy);
+  }
+
+  /// `json_object_agg(k, v)` — fold rows into a JSON OBJECT keyed by `k`. Postgres/MySQL/SQLite;
+  /// hidden on MSSQL 2022. orderBy on Postgres/SQLite only.
+  QueryBuilder selectJsonObjectAgg(
+    String keyTable,
+    String keyColumn,
+    String valueTable,
+    String valueColumn,
+    String alias, {
+    bool jsonb = false,
+    List<StringAggOrderKey> orderBy = const [],
+  }) {
+    return _pushJsonAgg('object', valueTable, valueColumn, alias, keyTable,
+        keyColumn, jsonb, false, orderBy);
+  }
+
+  QueryBuilder _pushJsonAgg(
+    String shape,
+    String table,
+    String column,
+    String alias,
+    String? keyTable,
+    String? keyColumn,
+    bool jsonb,
+    bool distinct,
+    List<StringAggOrderKey> orderBy,
+  ) {
+    _markSelectQuery();
+    _state.selectStates.add(SelectState()
+      ..builderType = BuilderType.selectJsonAgg
+      ..tableNameOrAlias = table
+      ..columnName = column
+      ..alias = alias
+      ..jsonAggShape = shape
+      ..jsonAggJsonb = jsonb
+      ..jsonAggDistinct = distinct
+      ..jsonAggKeyTable = keyTable
+      ..jsonAggKeyColumn = keyColumn
+      ..jsonAggOrderBy = List.of(orderBy));
+    return this;
+  }
+
   /// `HAVING COUNT(x) > n` — the canonical HAVING, previously reachable only through havingRaw.
   QueryBuilder havingAggregate(
     AggregateFunction aggregate,

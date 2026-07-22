@@ -61,6 +61,19 @@ export type SelectState = {
     distinct: boolean;
     orderBy: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
   };
+  /**
+   * JSON aggregation — `json_agg` / `JSON_ARRAYAGG` / `json_group_array` (array) and the `*_object`
+   * forms. One capability per shape, spelled per dialect; refused entirely on MSSQL 2022, where the
+   * functions do not exist and `FOR JSON PATH` is a different, statement-level construct.
+   */
+  jsonAgg?: {
+    shape: 'array' | 'object';
+    jsonb: boolean;
+    distinct: boolean;
+    keyTableNameOrAlias?: string;
+    keyColumnName?: string;
+    orderBy: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+  };
 };
 
 /** Creates a {@link SelectState} with default field values. */

@@ -112,6 +112,15 @@ class SelectState {
   bool stringAggHasSeparator = false;
   bool stringAggDistinct = false;
   List<StringAggOrderKey> stringAggOrderBy = const [];
+
+  /// JSON aggregation — json_agg / JSON_ARRAYAGG / json_group_array (array) and the *_object forms.
+  /// Refused on MSSQL 2022. 'array' or 'object'.
+  String? jsonAggShape;
+  bool jsonAggJsonb = false;
+  bool jsonAggDistinct = false;
+  String? jsonAggKeyTable;
+  String? jsonAggKeyColumn;
+  List<StringAggOrderKey> jsonAggOrderBy = const [];
 }
 
 class FromState {

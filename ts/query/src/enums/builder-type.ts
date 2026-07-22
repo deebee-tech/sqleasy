@@ -87,6 +87,8 @@ export const BuilderType = {
   SelectAggregate: 'SelectAggregate',
   /** `string_agg(x, sep ORDER BY y)` / `GROUP_CONCAT(x …)` — ordered string aggregation. */
   SelectStringAgg: 'SelectStringAgg',
+  /** `json_agg(x)` / `json_object_agg(k, v)` and their per-dialect spellings. */
+  SelectJsonAgg: 'SelectJsonAgg',
   /** UPDATE SET column assignment. */
   UpdateColumn: 'UpdateColumn',
   /** UPDATE fragment as raw SQL. */

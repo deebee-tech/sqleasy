@@ -36,6 +36,9 @@ const Map<String, DialectViewPolicy> viewManifest = {
   // (T-SQL uses the separate MERGE statement), no MySQL index hints, no Postgres DISTINCT ON.
   'mssql': DialectViewPolicy(
     absent: {
+      // JSON aggregation does not exist on SQL Server 2022 (Azure/2025 only).
+      'selectJsonArrayAgg',
+      'selectJsonObjectAgg',
       // GROUP_CONCAT is MySQL/SQLite's spelling; MSSQL's is stringAgg.
       'selectGroupConcat',
       'forShare',

@@ -27652,6 +27652,130 @@
           "raw": "SELECT string_agg(DISTINCT \"o\".\"note\", |) AS \"g\" FROM \"orders\" AS \"o\";"
         }
       }
+    },
+    {
+      "name": "json array aggregation, per dialect, refused on mssql",
+      "ops": [
+        {
+          "op": "selectJsonArrayAgg",
+          "table": "o",
+          "column": "id",
+          "alias": "arr",
+          "orderBy": [
+            {
+              "table": "o",
+              "column": "id",
+              "direction": "Ascending"
+            }
+          ]
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no JSON aggregate function — JSON_ARRAYAGG is Azure SQL / SQL Server 2025 only, and 2022 does not have it. FOR JSON PATH shapes the whole result set into one document, which is a different thing, so this library does not substitute it. Build the document yourself with a FOR JSON subquery via selectRaw if you need it on SQL Server 2022."
+        },
+        "mysql": {
+          "throws": "Select: MySQL JSON aggregation has no inner ORDER BY — element order is unspecified. Order the rows in a subquery, or aggregate on Postgres/SQLite which support the inner ORDER BY."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT json_agg(\"o\".\"id\" ORDER BY \"o\".\"id\" ASC) AS \"arr\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT json_agg(\"o\".\"id\" ORDER BY \"o\".\"id\" ASC) AS \"arr\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT json_group_array(\"o\".\"id\" ORDER BY \"o\".\"id\" ASC) AS \"arr\" FROM \"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT json_group_array(\"o\".\"id\" ORDER BY \"o\".\"id\" ASC) AS \"arr\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "json object aggregation keyed by a column",
+      "ops": [
+        {
+          "op": "selectJsonObjectAgg",
+          "keyTable": "o",
+          "keyColumn": "id",
+          "table": "o",
+          "column": "total",
+          "alias": "obj"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no JSON aggregate function — JSON_ARRAYAGG is Azure SQL / SQL Server 2025 only, and 2022 does not have it. FOR JSON PATH shapes the whole result set into one document, which is a different thing, so this library does not substitute it. Build the document yourself with a FOR JSON subquery via selectRaw if you need it on SQL Server 2022."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT JSON_OBJECTAGG(`o`.`id`, `o`.`total`) AS `obj` FROM `orders` AS `o`;",
+            "params": []
+          },
+          "raw": "SELECT JSON_OBJECTAGG(`o`.`id`, `o`.`total`) AS `obj` FROM `orders` AS `o`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT json_object_agg(\"o\".\"id\", \"o\".\"total\") AS \"obj\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT json_object_agg(\"o\".\"id\", \"o\".\"total\") AS \"obj\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT json_group_object(\"o\".\"id\", \"o\".\"total\") AS \"obj\" FROM \"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT json_group_object(\"o\".\"id\", \"o\".\"total\") AS \"obj\" FROM \"orders\" AS \"o\";"
+        }
+      }
+    },
+    {
+      "name": "jsonb aggregation is postgres only",
+      "ops": [
+        {
+          "op": "selectJsonArrayAgg",
+          "table": "o",
+          "column": "id",
+          "alias": "arr",
+          "jsonb": true
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL has no JSON aggregate function — JSON_ARRAYAGG is Azure SQL / SQL Server 2025 only, and 2022 does not have it. FOR JSON PATH shapes the whole result set into one document, which is a different thing, so this library does not substitute it. Build the document yourself with a FOR JSON subquery via selectRaw if you need it on SQL Server 2022."
+        },
+        "mysql": {
+          "throws": "Select: Only Postgres has a jsonb aggregate — jsonb is a Postgres storage type. Drop the jsonb option on this dialect; its json aggregate returns the same shape."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT jsonb_agg(\"o\".\"id\") AS \"arr\" FROM \"public\".\"orders\" AS \"o\";",
+            "params": []
+          },
+          "raw": "SELECT jsonb_agg(\"o\".\"id\") AS \"arr\" FROM \"public\".\"orders\" AS \"o\";"
+        },
+        "sqlite": {
+          "throws": "Select: Only Postgres has a jsonb aggregate — jsonb is a Postgres storage type. Drop the jsonb option on this dialect; its json aggregate returns the same shape."
+        }
+      }
     }
   ]
 }

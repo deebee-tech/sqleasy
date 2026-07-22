@@ -1514,6 +1514,94 @@ export class QueryBuilder {
     );
   };
 
+  /**
+   * `json_agg(x)` — fold rows into a JSON ARRAY in one column. Postgres/MySQL/SQLite; hidden on
+   * MSSQL 2022, which has no such function. Pass `jsonb: true` for Postgres's `jsonb_agg`.
+   * DISTINCT and orderBy are available on Postgres and SQLite; MySQL refuses both.
+   */
+  public selectJsonArrayAgg = (
+    tableNameOrAlias: string,
+    columnName: string,
+    alias: string,
+    options: {
+      jsonb?: boolean;
+      distinct?: boolean;
+      orderBy?: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+    } = {},
+  ): this => {
+    return this.#pushJsonAgg(
+      'array',
+      tableNameOrAlias,
+      columnName,
+      alias,
+      undefined,
+      undefined,
+      options,
+    );
+  };
+
+  /**
+   * `json_object_agg(k, v)` — fold rows into a JSON OBJECT keyed by `k`. Postgres/MySQL/SQLite;
+   * hidden on MSSQL 2022. `orderBy` on Postgres/SQLite; MySQL refuses it.
+   */
+  public selectJsonObjectAgg = (
+    keyTableNameOrAlias: string,
+    keyColumnName: string,
+    valueTableNameOrAlias: string,
+    valueColumnName: string,
+    alias: string,
+    options: {
+      jsonb?: boolean;
+      orderBy?: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+    } = {},
+  ): this => {
+    return this.#pushJsonAgg(
+      'object',
+      valueTableNameOrAlias,
+      valueColumnName,
+      alias,
+      keyTableNameOrAlias,
+      keyColumnName,
+      options,
+    );
+  };
+
+  #pushJsonAgg = (
+    shape: 'array' | 'object',
+    tableNameOrAlias: string,
+    columnName: string,
+    alias: string,
+    keyTableNameOrAlias: string | undefined,
+    keyColumnName: string | undefined,
+    options: {
+      jsonb?: boolean;
+      distinct?: boolean;
+      orderBy?: { tableNameOrAlias: string; columnName: string; direction: OrderByDirection }[];
+    },
+  ): this => {
+    this.#markSelectQuery();
+    this.#state.selectStates.push({
+      builderType: BuilderType.SelectJsonAgg,
+      tableNameOrAlias,
+      columnName,
+      alias,
+      raw: undefined,
+      subquery: undefined,
+      window: undefined,
+      jsonPath: undefined,
+      jsonExtractMode: undefined,
+      jsonAgg: {
+        shape,
+        jsonb: options.jsonb === true,
+        distinct: options.distinct === true,
+        keyTableNameOrAlias,
+        keyColumnName,
+        orderBy: (options.orderBy ?? []).map((o) => ({ ...o })),
+      },
+    });
+    return this;
+  };
+
   #pushStringAgg = (
     functionName: 'string_agg' | 'group_concat',
     tableNameOrAlias: string,

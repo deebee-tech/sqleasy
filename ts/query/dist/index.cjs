@@ -89,6 +89,8 @@ const BuilderType = {
 	SelectAggregate: "SelectAggregate",
 	/** `string_agg(x, sep ORDER BY y)` / `GROUP_CONCAT(x …)` — ordered string aggregation. */
 	SelectStringAgg: "SelectStringAgg",
+	/** `json_agg(x)` / `json_object_agg(k, v)` and their per-dialect spellings. */
+	SelectJsonAgg: "SelectJsonAgg",
 	/** UPDATE SET column assignment. */
 	UpdateColumn: "UpdateColumn",
 	/** UPDATE fragment as raw SQL. */
@@ -3348,6 +3350,50 @@ const defaultWindow = (windowState, config, mode) => {
 	return sqlHelper;
 };
 //#endregion
+//#region src/parser/default-json-agg.ts
+const FN = {
+	[DatabaseType.Postgres]: {
+		array: "json_agg",
+		object: "json_object_agg"
+	},
+	[DatabaseType.Mysql]: {
+		array: "JSON_ARRAYAGG",
+		object: "JSON_OBJECTAGG"
+	},
+	[DatabaseType.Sqlite]: {
+		array: "json_group_array",
+		object: "json_group_object"
+	}
+};
+const emitJsonAggregation = (sqlHelper, config, valueExpr, state, area) => {
+	const db = config.databaseType;
+	const names = FN[db];
+	if (names === void 0) throw new ParserError(area, "MSSQL has no JSON aggregate function — JSON_ARRAYAGG is Azure SQL / SQL Server 2025 only, and 2022 does not have it. FOR JSON PATH shapes the whole result set into one document, which is a different thing, so this library does not substitute it. Build the document yourself with a FOR JSON subquery via selectRaw if you need it on SQL Server 2022.");
+	const value = qualifiedColumn(valueExpr.tableNameOrAlias, valueExpr.columnName, config.identifierDelimiters);
+	if (db === DatabaseType.Mysql) {
+		if (state.distinct) throw new ParserError(area, "MySQL JSON aggregation has no DISTINCT — de-duplicate in a subquery first, or aggregate on Postgres/SQLite which support it.");
+		if (state.orderBy.length > 0) throw new ParserError(area, "MySQL JSON aggregation has no inner ORDER BY — element order is unspecified. Order the rows in a subquery, or aggregate on Postgres/SQLite which support the inner ORDER BY.");
+	}
+	if (state.jsonb && db !== DatabaseType.Postgres) throw new ParserError(area, "Only Postgres has a jsonb aggregate — jsonb is a Postgres storage type. Drop the jsonb option on this dialect; its json aggregate returns the same shape.");
+	const fnName = state.jsonb ? state.shape === "array" ? "jsonb_agg" : "jsonb_object_agg" : state.shape === "array" ? names.array : names.object;
+	sqlHelper.addSqlSnippet(fnName);
+	sqlHelper.addSqlSnippet("(");
+	if (state.distinct) sqlHelper.addSqlSnippet("DISTINCT ");
+	if (state.shape === "object") {
+		sqlHelper.addSqlSnippet(qualifiedColumn(state.keyTableNameOrAlias ?? "", state.keyColumnName ?? "", config.identifierDelimiters));
+		sqlHelper.addSqlSnippet(", ");
+	}
+	sqlHelper.addSqlSnippet(value);
+	if (state.orderBy.length > 0) {
+		sqlHelper.addSqlSnippet(" ORDER BY ");
+		state.orderBy.forEach((key, i) => {
+			emitOrderByTerm(sqlHelper, config, key.tableNameOrAlias, key.columnName, key.direction, NullsOrder.None);
+			if (i < state.orderBy.length - 1) sqlHelper.addSqlSnippet(", ");
+		});
+	}
+	sqlHelper.addSqlSnippet(")");
+};
+//#endregion
 //#region src/parser/default-string-agg.ts
 const emitOrderKeys = (sqlHelper, config, keys) => {
 	keys.forEach((key, i) => {
@@ -3476,6 +3522,18 @@ const defaultSelect = (state, config, mode, options) => {
 		if (selectState.builderType === BuilderType.SelectBuilder) {
 			const subHelper = defaultToSql(selectState.subquery, config, mode, options);
 			sqlHelper.addSqlSnippetWithValues(`(${subHelper.getSql()})`, subHelper.getValues());
+			if (selectState.alias !== "") {
+				sqlHelper.addSqlSnippet(" AS ");
+				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
+			}
+			if (i < state.selectStates.length - 1) sqlHelper.addSqlSnippet(", ");
+			continue;
+		}
+		if (selectState.builderType === BuilderType.SelectJsonAgg) {
+			emitJsonAggregation(sqlHelper, config, {
+				tableNameOrAlias: selectState.tableNameOrAlias ?? "",
+				columnName: selectState.columnName ?? ""
+			}, selectState.jsonAgg, ParserArea.Select);
 			if (selectState.alias !== "") {
 				sqlHelper.addSqlSnippet(" AS ");
 				sqlHelper.addSqlSnippet(quoteIdentifier(selectState.alias, config.identifierDelimiters));
@@ -5606,6 +5664,44 @@ var QueryBuilder = class QueryBuilder {
 	selectGroupConcat = (tableNameOrAlias, columnName, alias, options = {}) => {
 		const { separator, ...rest } = options;
 		return this.#pushStringAgg("group_concat", tableNameOrAlias, columnName, separator !== void 0, separator, alias, rest);
+	};
+	/**
+	* `json_agg(x)` — fold rows into a JSON ARRAY in one column. Postgres/MySQL/SQLite; hidden on
+	* MSSQL 2022, which has no such function. Pass `jsonb: true` for Postgres's `jsonb_agg`.
+	* DISTINCT and orderBy are available on Postgres and SQLite; MySQL refuses both.
+	*/
+	selectJsonArrayAgg = (tableNameOrAlias, columnName, alias, options = {}) => {
+		return this.#pushJsonAgg("array", tableNameOrAlias, columnName, alias, void 0, void 0, options);
+	};
+	/**
+	* `json_object_agg(k, v)` — fold rows into a JSON OBJECT keyed by `k`. Postgres/MySQL/SQLite;
+	* hidden on MSSQL 2022. `orderBy` on Postgres/SQLite; MySQL refuses it.
+	*/
+	selectJsonObjectAgg = (keyTableNameOrAlias, keyColumnName, valueTableNameOrAlias, valueColumnName, alias, options = {}) => {
+		return this.#pushJsonAgg("object", valueTableNameOrAlias, valueColumnName, alias, keyTableNameOrAlias, keyColumnName, options);
+	};
+	#pushJsonAgg = (shape, tableNameOrAlias, columnName, alias, keyTableNameOrAlias, keyColumnName, options) => {
+		this.#markSelectQuery();
+		this.#state.selectStates.push({
+			builderType: BuilderType.SelectJsonAgg,
+			tableNameOrAlias,
+			columnName,
+			alias,
+			raw: void 0,
+			subquery: void 0,
+			window: void 0,
+			jsonPath: void 0,
+			jsonExtractMode: void 0,
+			jsonAgg: {
+				shape,
+				jsonb: options.jsonb === true,
+				distinct: options.distinct === true,
+				keyTableNameOrAlias,
+				keyColumnName,
+				orderBy: (options.orderBy ?? []).map((o) => ({ ...o }))
+			}
+		});
+		return this;
 	};
 	#pushStringAgg = (functionName, tableNameOrAlias, columnName, hasSeparator, separator, alias, options) => {
 		this.#markSelectQuery();

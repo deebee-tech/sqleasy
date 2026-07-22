@@ -98,6 +98,14 @@ const CASES = {
     base: 'select',
     apply: (b) => b.selectJsonExtract('o', 'note', '$.x', JsonExtractMode.Text, 'k'),
   },
+  selectJsonArrayAgg: {
+    base: 'select',
+    apply: (b) => b.selectJsonArrayAgg('o', 'id', 'arr'),
+  },
+  selectJsonObjectAgg: {
+    base: 'select',
+    apply: (b) => b.selectJsonObjectAgg('o', 'id', 'o', 'total', 'obj'),
+  },
   selectStringAgg: {
     base: 'select',
     apply: (b) => b.selectStringAgg('o', 'note', '|', 'g'),

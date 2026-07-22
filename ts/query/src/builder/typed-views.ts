@@ -89,6 +89,9 @@ export type BuilderView<Keys extends keyof QueryBuilder, Self> = {
 type AbsentOnMssql =
   // GROUP_CONCAT is MySQL/SQLite's spelling; MSSQL's is stringAgg.
   | 'selectGroupConcat'
+  // JSON aggregation does not exist on SQL Server 2022 (Azure/2025 only).
+  | 'selectJsonArrayAgg'
+  | 'selectJsonObjectAgg'
   | 'forShare'
   | 'forShareNowait'
   | 'forShareSkipLocked'
