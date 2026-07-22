@@ -137,9 +137,26 @@ SqlHelper defaultLimitOffset(
           ParserArea.limitOffset, 'ORDER BY is required when using WITH TIES');
     }
 
-    if (state.offset != null) {
+    // A REAL skip needs a deterministic order to skip against — this library's policy, and it
+    // applies to `offset(n > 0)`. `offset(0)` skips nothing, so it carries no such hazard, and
+    // three of four engines take it bare. On Postgres it is a deliberate OPTIMIZER FENCE, which is
+    // a real capability, not a no-op — EXPLAIN on the harness:
+    //
+    //     SELECT * FROM (SELECT id FROM orders)          x WHERE id=1  ->  Index Only Scan
+    //     SELECT * FROM (SELECT id FROM orders OFFSET 0) x WHERE id=1  ->  Subquery Scan + Seq Scan
+    if (state.offset != null && state.offset! > 0) {
       throw ParserError(
           ParserArea.limitOffset, 'ORDER BY is required when using OFFSET');
+    }
+
+    // T-SQL is the exception: OFFSET belongs to `<offset_fetch>`, which attaches to ORDER BY, so
+    // even `OFFSET 0 ROWS` alone is Msg 102.
+    if (state.offset == 0 && config.databaseType == DatabaseType.mssql) {
+      throw ParserError(
+        ParserArea.limitOffset,
+        'ORDER BY is required when using OFFSET on MSSQL — T-SQL attaches OFFSET/FETCH to ORDER BY, '
+        'so even OFFSET 0 ROWS needs one (Msg 102)',
+      );
     }
 
     // MSSQL renders `.limit(n)` as OFFSET/FETCH, and T-SQL requires an ORDER BY for it (Msg 102).

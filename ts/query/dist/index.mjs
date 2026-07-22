@@ -1503,7 +1503,8 @@ const defaultLimitOffset = (state, config, mode) => {
 	}
 	if (state.orderByStates.length === 0) {
 		if (state.limitWithTies) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using WITH TIES");
-		if (state.offset !== void 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+		if (state.offset !== void 0 && state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+		if (state.offset === 0 && config.databaseType === DatabaseType.Mssql) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET on MSSQL — T-SQL attaches OFFSET/FETCH to ORDER BY, so even OFFSET 0 ROWS needs one (Msg 102)");
 		if (config.databaseType === DatabaseType.Mssql && state.limit > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap");
 	}
 	return sqlHelper;

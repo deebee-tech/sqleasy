@@ -147,8 +147,9 @@ SqlHelper defaultUnion(
 
       final subHelper =
           defaultToSql(unionState.subquery, config, mode, options);
-      // Parenthesized ONLY when the branch carries ORDER BY/LIMIT/OFFSET. Wrapping unconditionally
-      // would rewrite every existing golden, and MSSQL and SQLite reject a parenthesized operand.
+      // Parenthesized ONLY when the branch needs it — a paging clause or a nested set operation.
+      // Wrapping unconditionally would rewrite every existing golden, and SQLite rejects a
+      // parenthesized operand outright. (MSSQL does NOT — it rejects paging inside an operand.)
       final wrap = _branchIsScoped(unionState.subquery!);
       sqlHelper.addSqlSnippetWithValues(
           wrap ? '(${subHelper.getSql()})' : subHelper.getSql(),

@@ -25308,6 +25308,80 @@
           "throws": "General: SQLite does not support row locking (FOR UPDATE/FOR SHARE)"
         }
       }
+    },
+    {
+      "name": "offset zero needs no order by, because it skips nothing and fences the postgres planner",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "offset",
+          "n": 0
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "LimitOffset: ORDER BY is required when using OFFSET on MSSQL — T-SQL attaches OFFSET/FETCH to ORDER BY, so even OFFSET 0 ROWS needs one (Msg 102)"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` LIMIT 18446744073709551615 OFFSET 0;",
+            "params": []
+          },
+          "raw": "SELECT * FROM `orders` LIMIT 18446744073709551615 OFFSET 0;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\"  OFFSET 0;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\"  OFFSET 0;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" LIMIT -1 OFFSET 0;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"orders\" LIMIT -1 OFFSET 0;"
+        }
+      }
+    },
+    {
+      "name": "a real offset still requires an order by to skip against",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "offset",
+          "n": 2
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "LimitOffset: ORDER BY is required when using OFFSET"
+        },
+        "mysql": {
+          "throws": "LimitOffset: ORDER BY is required when using OFFSET"
+        },
+        "postgres": {
+          "throws": "LimitOffset: ORDER BY is required when using OFFSET"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: ORDER BY is required when using OFFSET"
+        }
+      }
     }
   ]
 }

@@ -166,9 +166,10 @@ export const defaultUnion = (
       assertBranchScopeSupported(unionState.subquery, config);
 
       const subHelper = defaultToSql(unionState.subquery, config, mode, options);
-      // Parenthesized ONLY when the branch carries ORDER BY/LIMIT/OFFSET. Wrapping unconditionally
-      // would be wrong twice over: it would rewrite every existing golden, and MSSQL and SQLite
-      // reject a parenthesized operand outright.
+      // Parenthesized ONLY when the branch needs it to mean what the caller wrote — a paging
+      // clause or a nested set operation. Wrapping unconditionally would rewrite every existing
+      // golden, and SQLite rejects a parenthesized operand outright. (MSSQL does NOT — it accepts
+      // the parentheses; what it rejects is paging inside an operand. See the note above.)
       const wrap = branchIsScoped(unionState.subquery);
       sqlHelper.addSqlSnippetWithValues(
         wrap ? `(${subHelper.getSql()})` : subHelper.getSql(),
