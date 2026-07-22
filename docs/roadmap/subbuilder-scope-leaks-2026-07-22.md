@@ -1,6 +1,7 @@
 # SQLEasy — sub-builder clause-scope leaks
 
-**Status:** open. Found 2026-07-22 against 12.0.0 plus the three fixes on `beta`.
+**Status:** the **14 silent leaks are FIXED** on `beta` (unreleased). The **31 invalid-SQL leaks
+remain open** — see §2 for why that split is the one that matters.
 
 **Companion to** [`capability-gaps-2026-07-22.md`](capability-gaps-2026-07-22.md). That file is
 missing _capabilities_; this one is **defects** — places where a clause set on a CHILD builder
@@ -16,6 +17,27 @@ it. **45 survived.**
 The calibration example was the union-LIMIT bug already fixed on `beta`: a branch `.limit(3)`
 emitted `… UNION ALL SELECT … LIMIT 3`, capping the whole union instead of the branch — one row
 returned where four were written, on every dialect, with no error.
+
+## 1a. What was fixed, and what a verification pass caught
+
+All 6 wrong-scope and all 8 silently-dropped leaks are closed, each measured against the live
+harness and pinned in the emission corpus. Verified 16/16 by direct reproduction afterwards.
+
+A second workflow re-measured every rule with a one-variable-at-a-time protocol and **overturned
+three claims** — two from the original sweep and one from the fix itself:
+
+- **`limit(0)` was not a bug.** `limit()` has always thrown "LIMIT must be a positive integer", so
+  0 can never reach the state. The sweep reported four zero-related leaks; two were real.
+- **`offset(0)` must NOT require an ORDER BY.** The first fix made it presence-based, which
+  correctly stopped it being dropped — but then it tripped a guard whose rationale (pagination needs
+  a deterministic order) is false for skipping zero rows, and that refused Postgres's real
+  `OFFSET 0` optimizer fence. Corrected in `522d2cc`.
+- **MSSQL accepts a parenthesized set-operation operand.** The first fix claimed otherwise, because
+  its probe had an ORDER BY inside the parentheses and the `Msg 156` was about the ORDER BY. MSSQL
+  now emits a grouped operand; SQLite is the only engine that rejects the parentheses.
+
+The through-line: **vary exactly one thing.** Every remaining floor and refusal reason in this
+document should be re-measured that way before it is built on.
 
 ## 2. Triage — read this before picking anything up
 
