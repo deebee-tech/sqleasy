@@ -196,6 +196,7 @@ SqlHelper defaultWhere(
     }
 
     if (cur.builderType == BuilderType.whereInBuilder) {
+      assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.where);
       sqlHelper.addSqlSnippet(qualifiedColumn(
           cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IN (');
@@ -241,6 +242,7 @@ SqlHelper defaultWhere(
     }
 
     if (cur.builderType == BuilderType.whereNotInBuilder) {
+      assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.where);
       sqlHelper.addSqlSnippet(qualifiedColumn(
           cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' NOT IN (');

@@ -206,6 +206,7 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingInBuilder) {
+      assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.having);
       sqlHelper.addSqlSnippet(qualifiedColumn(
           cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' IN (');
@@ -250,6 +251,7 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingNotInBuilder) {
+      assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.having);
       sqlHelper.addSqlSnippet(qualifiedColumn(
           cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
       sqlHelper.addSqlSnippet(' NOT IN (');

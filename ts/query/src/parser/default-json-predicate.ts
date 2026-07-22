@@ -138,3 +138,39 @@ export const emitGroupByColumnRef = (
 
 export const defaultJson = (_state: QueryState, _config: Dialect, mode: ParserMode): SqlHelper =>
   new SqlHelper(mode);
+
+/**
+ * Refuses a row cap on a subquery used in an `IN` / `NOT IN` / quantified predicate on MySQL.
+ *
+ * MySQL cannot evaluate a LIMIT inside that specific position and says so plainly. Measured, with
+ * the LIMIT as the only variable — a derived table and an EXISTS subquery both take it fine, so the
+ * restriction is about the PREDICATE position, not about subqueries in general:
+ *
+ *     … WHERE o.id IN     (SELECT id FROM orders LIMIT 2)   ERROR 1235
+ *     … WHERE o.id NOT IN (SELECT id FROM orders LIMIT 2)   ERROR 1235
+ *     … WHERE o.id > ANY  (SELECT id FROM orders LIMIT 2)   ERROR 1235
+ *     … WHERE EXISTS      (SELECT id FROM orders LIMIT 2)   accepted
+ *     SELECT * FROM       (SELECT id FROM orders LIMIT 2) x accepted
+ *
+ * "This version of MySQL doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'" — the server's own
+ * words, and the reason the refusal names the derived-table rewrite rather than performing it.
+ *
+ * `offset()` trips the same error on MySQL, because an offset with no limit synthesizes the
+ * sentinel `LIMIT 18446744073709551615` in front of it — a LIMIT is a LIMIT to the parser.
+ */
+export const assertPredicateSubqueryRowCap = (
+  subquery: QueryState | undefined,
+  config: Dialect,
+  area: ParserArea,
+): void => {
+  if (config.databaseType !== DatabaseType.Mysql || subquery === undefined) return;
+  if (subquery.limit === 0 && subquery.offset === undefined) return;
+
+  throw new ParserError(
+    area,
+    'MySQL cannot evaluate a row cap inside an IN/NOT IN/ANY/ALL subquery — the server reports ' +
+      "\"doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'\". Select the capped rows into a " +
+      'derived table with fromWithBuilder and join or match against that instead; MySQL accepts a ' +
+      'LIMIT there.',
+  );
+};

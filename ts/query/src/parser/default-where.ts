@@ -13,6 +13,7 @@ import {
   emitFullTextMatchPredicate,
   emitJsonContainsPredicate,
   emitJsonExtractPredicate,
+  assertPredicateSubqueryRowCap,
 } from './default-json-predicate';
 import type { ToSqlOptions } from './to-sql';
 import { defaultToSql } from './to-sql';
@@ -204,6 +205,7 @@ export const defaultWhere = (
     }
 
     if (cur.builderType === BuilderType.WhereInBuilder) {
+      assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
       sqlHelper.addSqlSnippet(
         qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
       );
@@ -250,6 +252,7 @@ export const defaultWhere = (
     }
 
     if (cur.builderType === BuilderType.WhereNotInBuilder) {
+      assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
       sqlHelper.addSqlSnippet(
         qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters),
       );

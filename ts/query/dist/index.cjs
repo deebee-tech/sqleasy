@@ -2161,6 +2161,30 @@ const emitFullTextMatchPredicate = (sqlHelper, config, columns, mode, value, are
 const emitGroupByColumnRef = (sqlHelper, config, tableNameOrAlias, columnName) => {
 	sqlHelper.addSqlSnippet(qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters));
 };
+/**
+* Refuses a row cap on a subquery used in an `IN` / `NOT IN` / quantified predicate on MySQL.
+*
+* MySQL cannot evaluate a LIMIT inside that specific position and says so plainly. Measured, with
+* the LIMIT as the only variable — a derived table and an EXISTS subquery both take it fine, so the
+* restriction is about the PREDICATE position, not about subqueries in general:
+*
+*     … WHERE o.id IN     (SELECT id FROM orders LIMIT 2)   ERROR 1235
+*     … WHERE o.id NOT IN (SELECT id FROM orders LIMIT 2)   ERROR 1235
+*     … WHERE o.id > ANY  (SELECT id FROM orders LIMIT 2)   ERROR 1235
+*     … WHERE EXISTS      (SELECT id FROM orders LIMIT 2)   accepted
+*     SELECT * FROM       (SELECT id FROM orders LIMIT 2) x accepted
+*
+* "This version of MySQL doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'" — the server's own
+* words, and the reason the refusal names the derived-table rewrite rather than performing it.
+*
+* `offset()` trips the same error on MySQL, because an offset with no limit synthesizes the
+* sentinel `LIMIT 18446744073709551615` in front of it — a LIMIT is a LIMIT to the parser.
+*/
+const assertPredicateSubqueryRowCap = (subquery, config, area) => {
+	if (config.databaseType !== DatabaseType.Mysql || subquery === void 0) return;
+	if (subquery.limit === 0 && subquery.offset === void 0) return;
+	throw new ParserError(area, "MySQL cannot evaluate a row cap inside an IN/NOT IN/ANY/ALL subquery — the server reports \"doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'\". Select the capped rows into a derived table with fromWithBuilder and join or match against that instead; MySQL accepts a LIMIT there.");
+};
 //#endregion
 //#region src/parser/default-group-by.ts
 const emitColumnList = (sqlHelper, config, columns) => {
@@ -2338,6 +2362,7 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingInBuilder) {
+			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Having);
 			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
@@ -2367,6 +2392,7 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingNotInBuilder) {
+			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Having);
 			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
@@ -3177,6 +3203,7 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereInBuilder) {
+			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
 			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
@@ -3206,6 +3233,7 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereNotInBuilder) {
+			assertPredicateSubqueryRowCap(cur.subquery, config, ParserArea.Where);
 			sqlHelper.addSqlSnippet(qualifiedColumn(cur.tableNameOrAlias, cur.columnName, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(" NOT IN (");
 			const subHelper = defaultToSql(cur.subquery, config, mode, options);
@@ -3300,6 +3328,7 @@ const defaultToSql = (state, config, mode, options) => {
 	if (state.isInnerStatement && state.queryType !== QueryType.Select) {
 		if (!(state.isCteBody === true && config.databaseType === DatabaseType.Postgres)) throw new ParserError(ParserArea.General, `A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. ${config.databaseType === DatabaseType.Postgres ? "Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant." : `${dialectDisplayName(config.databaseType)} has no data-modifying CTE either — run the mutation as its own statement.`}`);
 	}
+	if (config.databaseType === DatabaseType.Mssql && state.isInnerStatement && state.orderByStates.length > 0 && state.limit === 0 && state.offset === void 0 && !hasExplicitTop(state)) throw new ParserError(ParserArea.OrderBy, "T-SQL rejects an ORDER BY inside a subquery, derived table, CTE body or set-operation operand unless it comes with a row cap (Msg 1033) — an ordering with nothing to cap has no meaning there. Add top(n), or offset(0) if you only want the ordering to be legal and are relying on it downstream.");
 	if (config.databaseType === DatabaseType.Mssql && state.isInnerStatement && state.cteStates.length > 0) throw new ParserError(ParserArea.General, "T-SQL allows WITH only at the start of a statement, so a CTE cannot be declared on a subquery, a derived table, a set-operation branch or another CTE body. Declare it on the outermost builder — a T-SQL CTE is visible to the whole statement, including its subqueries.");
 	if (state.cteStates.length > 0) {
 		const cte = defaultCte(state, config, mode, options);

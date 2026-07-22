@@ -7719,11 +7719,7 @@
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[user_id] HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY);"
         },
         "mysql": {
-          "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`id` IN (SELECT `o`.`user_id` FROM `orders` AS `o` GROUP BY `o`.`user_id` HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT 5);",
-            "params": []
-          },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`id` IN (SELECT `o`.`user_id` FROM `orders` AS `o` GROUP BY `o`.`user_id` HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT 5);"
+          "throws": "Where: MySQL cannot evaluate a row cap inside an IN/NOT IN/ANY/ALL subquery — the server reports \"doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'\". Select the capped rows into a derived table with fromWithBuilder and join or match against that instead; MySQL accepts a LIMIT there."
         },
         "postgres": {
           "prepared": {
@@ -25599,6 +25595,195 @@
             "params": []
           },
           "raw": "SELECT * FROM (WITH \"c\" AS (SELECT \"id\" FROM \"orders\") SELECT \"id\" FROM c) AS \"x\";"
+        }
+      }
+    },
+    {
+      "name": "mssql refuses a bare order by in a derived table, but takes it with offset zero",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "orderByColumn",
+              "table": "",
+              "column": "id",
+              "direction": "Ascending"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "OrderBy: T-SQL rejects an ORDER BY inside a subquery, derived table, CTE body or set-operation operand unless it comes with a row cap (Msg 1033) — an ordering with nothing to cap has no meaning there. Add top(n), or offset(0) if you only want the ordering to be legal and are relying on it downstream."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC) AS `x`;",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC) AS `x`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC) AS \"x\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC) AS \"x\";"
+        }
+      }
+    },
+    {
+      "name": "an ordered derived table with offset zero is legal everywhere",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "orderByColumn",
+              "table": "",
+              "column": "id",
+              "direction": "Ascending"
+            },
+            {
+              "op": "offset",
+              "n": 0
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";"
+        }
+      }
+    },
+    {
+      "name": "mysql refuses a row cap in an in-subquery but takes one in a derived table",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": "o"
+        },
+        {
+          "op": "whereInWithBuilder",
+          "table": "o",
+          "column": "id",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "orderByColumn",
+              "table": "",
+              "column": "id",
+              "direction": "Ascending"
+            },
+            {
+              "op": "limit",
+              "n": 2
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY);', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY);"
+        },
+        "mysql": {
+          "throws": "Where: MySQL cannot evaluate a row cap inside an IN/NOT IN/ANY/ALL subquery — the server reports \"doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'\". Select the capped rows into a derived table with fromWithBuilder and join or match against that instead; MySQL accepts a LIMIT there."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC LIMIT 2);",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC LIMIT 2);"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT 2);",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT 2);"
         }
       }
     }

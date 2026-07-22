@@ -163,6 +163,37 @@ export const defaultToSql = (
     }
   }
 
+  // T-SQL forbids a BARE ORDER BY inside any subquery, derived table, CTE body or set-operation
+  // operand — an ORDER BY there is only legal alongside a row cap, which is what gives the ordering
+  // something to mean. Measured, with a working baseline and one variable at a time:
+  //
+  //                                            PG   MySQL  SQLite  MSSQL
+  //     SELECT * FROM (SELECT id FROM o) x           OK    OK     OK      OK      <- baseline
+  //     SELECT * FROM (SELECT … ORDER BY id) x       OK    OK     OK      Msg 1033
+  //     WITH c AS (SELECT … ORDER BY id) SELECT …    OK    OK     OK      Msg 1033
+  //     … WHERE id IN (SELECT … ORDER BY id)         OK    OK     OK      Msg 1033
+  //     … WHERE EXISTS (SELECT … ORDER BY id)        OK    OK     OK      Msg 1033
+  //     SELECT (SELECT … ORDER BY id LIMIT 1) AS k   OK    OK     OK      Msg 1033
+  //
+  // The other three take it in every position, so this is MSSQL's rule alone. `OFFSET 0 ROWS` alone
+  // legalises it (measured), which is exactly why `offset(0)` had to stop being treated as unset.
+  if (
+    config.databaseType === DatabaseType.Mssql &&
+    state.isInnerStatement &&
+    state.orderByStates.length > 0 &&
+    state.limit === 0 &&
+    state.offset === undefined &&
+    !hasExplicitTop(state)
+  ) {
+    throw new ParserError(
+      ParserArea.OrderBy,
+      'T-SQL rejects an ORDER BY inside a subquery, derived table, CTE body or set-operation ' +
+        'operand unless it comes with a row cap (Msg 1033) — an ordering with nothing to cap ' +
+        'has no meaning there. Add top(n), or offset(0) if you only want the ordering to be legal ' +
+        'and are relying on it downstream.',
+    );
+  }
+
   // T-SQL allows WITH only at the START of a statement — never inside a subquery's parentheses, a
   // derived table, or another CTE's body. Measured, each position on its own and against a working
   // baseline, so the failure is attributable to the WITH and nothing else:
