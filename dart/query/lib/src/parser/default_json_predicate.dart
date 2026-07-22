@@ -24,12 +24,13 @@ void emitJsonExtractPredicate(
   required List<Object?> values,
   required ParserArea area,
 }) {
-  if (tableNameOrAlias == null ||
-      columnName == null ||
-      jsonPath == null ||
-      jsonExtractMode == null) {
+  // A null/empty alias is the library's "unqualified" convention, not a missing table — the same
+  // convention `fromTable(name)` uses. Requiring it here made an unqualified JSON column impossible
+  // to express. Only the column, path and mode are genuinely required; `qualifiedColumn` already
+  // handles the empty alias by emitting no prefix.
+  if (columnName == null || jsonPath == null || jsonExtractMode == null) {
     throw ParserError(
-        area, 'JSON extract predicate requires table, column, path, and mode');
+        area, 'JSON extract predicate requires a column, a path, and a mode');
   }
 
   // The comparison operators are written against a plain column reference, so the JSON extraction
@@ -43,7 +44,8 @@ void emitJsonExtractPredicate(
   emitJsonExtractExpression(
     jsonScratch,
     config,
-    tableNameOrAlias,
+    // '' is the unqualified convention; qualifiedColumn() emits no prefix for it.
+    tableNameOrAlias ?? '',
     columnName,
     jsonPath,
     jsonExtractMode,
@@ -84,13 +86,13 @@ void emitJsonContainsPredicate(
   required List<Object?> values,
   required ParserArea area,
 }) {
-  if (tableNameOrAlias == null || columnName == null) {
-    throw ParserError(
-        area, 'JSON contains predicate requires table and column');
+  // As above: an empty/null alias means unqualified, not missing.
+  if (columnName == null) {
+    throw ParserError(area, 'JSON contains predicate requires a column');
   }
 
   emitJsonContainsExpression(
-      sqlHelper, config, tableNameOrAlias, columnName, area);
+      sqlHelper, config, tableNameOrAlias ?? '', columnName, area);
   sqlHelper.addDynamicValue(values.isNotEmpty ? values[0] : null);
 
   if (config.databaseType == DatabaseType.postgres) {

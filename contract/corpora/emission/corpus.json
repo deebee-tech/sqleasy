@@ -10016,7 +10016,7 @@
       }
     },
     {
-      "name": "mssql top is emitted inside a union branch but dropped inside a cte body",
+      "name": "mssql top is emitted inside both a cte body and a union branch",
       "note": "An asymmetry in the MSSQL TOP hook, frozen as-is. The union parser threads the dialect's `beforeSelectColumns` hook into each branch, so an explicit `.top(3)` on a union branch renders `SELECT TOP (3)`. The CTE parser does NOT thread the hook, so the identical `.top(5)` on the CTE body renders nothing at all — the golden's CTE is a plain `SELECT [u].[id]`. Being an inner statement is not the reason: the hook never looks at `isInnerStatement`, which is exactly why the union branch keeps its TOP despite being one. Reaching the hook is the whole difference. A Dart port that threads the hook uniformly through both emits an extra TOP in the CTE and diverges. Since 7.0.0 removed the automatic cap, every TOP in this statement is one the caller wrote; the golden has exactly one, on the union branch.",
       "dialects": [
         "mssql"
@@ -24313,6 +24313,286 @@
         },
         "sqlite": {
           "throws": "Delete: offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation"
+        }
+      }
+    },
+    {
+      "name": "a set operation branch limit is scoped to that branch, not the whole result",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectAll"
+            },
+            {
+              "op": "fromTable",
+              "table": "admins",
+              "alias": ""
+            },
+            {
+              "op": "limit",
+              "n": 3
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "LimitOffset: MSSQL cannot scope LIMIT to one branch of a set operation. T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3);",
+            "params": []
+          },
+          "raw": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3);",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3);"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: SQLite cannot scope LIMIT to one branch of a set operation. SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+        }
+      }
+    },
+    {
+      "name": "a set operation branch order by and limit are scoped to that branch",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectAll"
+            },
+            {
+              "op": "fromTable",
+              "table": "admins",
+              "alias": ""
+            },
+            {
+              "op": "orderByColumn",
+              "table": "",
+              "column": "id",
+              "direction": "Descending"
+            },
+            {
+              "op": "limit",
+              "n": 3
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "OrderBy: MSSQL cannot scope ORDER BY to one branch of a set operation. T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` ORDER BY `id` DESC LIMIT 3);",
+            "params": []
+          },
+          "raw": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` ORDER BY `id` DESC LIMIT 3);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" ORDER BY \"id\" DESC LIMIT 3);",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" ORDER BY \"id\" DESC LIMIT 3);"
+        },
+        "sqlite": {
+          "throws": "OrderBy: SQLite cannot scope ORDER BY to one branch of a set operation. SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+        }
+      }
+    },
+    {
+      "name": "a scoped set operation branch composes with an outer limit",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectAll"
+            },
+            {
+              "op": "fromTable",
+              "table": "admins",
+              "alias": ""
+            },
+            {
+              "op": "limit",
+              "n": 3
+            }
+          ]
+        },
+        {
+          "op": "limit",
+          "n": 99
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "LimitOffset: MSSQL cannot scope LIMIT to one branch of a set operation. T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3) LIMIT 99;",
+            "params": []
+          },
+          "raw": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3) LIMIT 99;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3) LIMIT 99;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3) LIMIT 99;"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: SQLite cannot scope LIMIT to one branch of a set operation. SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+        }
+      }
+    },
+    {
+      "name": "sqlite refuses json object mode and names a raw method that exists",
+      "ops": [
+        {
+          "op": "selectJsonExtract",
+          "table": "",
+          "column": "data",
+          "path": "$.x",
+          "mode": "Object",
+          "alias": "x"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": ""
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT JSON_QUERY([data], ''$.x'') AS [x] FROM [dbo].[users];', N'';",
+            "params": []
+          },
+          "raw": "SELECT JSON_QUERY([data], '$.x') AS [x] FROM [dbo].[users];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT JSON_EXTRACT(`data`, '$.x') AS `x` FROM `users`;",
+            "params": []
+          },
+          "raw": "SELECT JSON_EXTRACT(`data`, '$.x') AS `x` FROM `users`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT jsonb_path_query_first(\"data\", '$.x') AS \"x\" FROM \"public\".\"users\";",
+            "params": []
+          },
+          "raw": "SELECT jsonb_path_query_first(\"data\", '$.x') AS \"x\" FROM \"public\".\"users\";"
+        },
+        "sqlite": {
+          "throws": "Select: SQLite json_extract always returns text — use JsonExtractMode.Text or selectRaw"
+        }
+      }
+    },
+    {
+      "name": "an unqualified json extract in where emits no table prefix",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "users",
+          "alias": ""
+        },
+        {
+          "op": "whereJsonExtract",
+          "table": "",
+          "column": "data",
+          "path": "$.x",
+          "mode": "Text",
+          "operator": "Equals",
+          "value": {
+            "t": "string",
+            "v": "a"
+          }
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] WHERE JSON_VALUE([data], ''$.x'') = @p0;', N'@p0 nvarchar(max)', @p0 = N'a';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[users] WHERE JSON_VALUE([data], '$.x') = a;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `users` WHERE JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.x')) = ?;",
+            "params": [
+              {
+                "t": "string",
+                "v": "a"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM `users` WHERE JSON_UNQUOTE(JSON_EXTRACT(`data`, '$.x')) = a;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"users\" WHERE jsonb_path_query_first(\"data\", '$.x') #>> '{}' = $1;",
+            "params": [
+              {
+                "t": "string",
+                "v": "a"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"public\".\"users\" WHERE jsonb_path_query_first(\"data\", '$.x') #>> '{}' = a;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"users\" WHERE json_extract(\"data\", '$.x') = ?;",
+            "params": [
+              {
+                "t": "string",
+                "v": "a"
+              }
+            ]
+          },
+          "raw": "SELECT * FROM \"users\" WHERE json_extract(\"data\", '$.x') = a;"
         }
       }
     }

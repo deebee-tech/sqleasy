@@ -28,8 +28,13 @@ export const emitJsonExtractPredicate = (
   >,
   area: ParserArea,
 ): void => {
-  if (!state.tableNameOrAlias || !state.columnName || !state.jsonPath || !state.jsonExtractMode) {
-    throw new ParserError(area, 'JSON extract predicate requires table, column, path, and mode');
+  // An EMPTY alias is the library's "unqualified" convention, not a missing table — the same
+  // convention `fromTable(name, '')` uses. Requiring it here made an unqualified JSON column
+  // impossible to express: `whereJsonExtract('', 'data', '$.x', …)` was rejected as a missing
+  // table. Only the column, path and mode are genuinely required; `qualifiedColumn` already
+  // handles the empty alias by emitting no prefix.
+  if (!state.columnName || !state.jsonPath || !state.jsonExtractMode) {
+    throw new ParserError(area, 'JSON extract predicate requires a column, a path, and a mode');
   }
 
   // The comparison operators are written against a plain column reference, so the JSON extraction
@@ -44,7 +49,8 @@ export const emitJsonExtractPredicate = (
   emitJsonExtractExpression(
     jsonScratch,
     config,
-    state.tableNameOrAlias,
+    // '' is the unqualified convention; qualifiedColumn() emits no prefix for it.
+    state.tableNameOrAlias ?? '',
     state.columnName,
     state.jsonPath,
     state.jsonExtractMode,
@@ -82,11 +88,18 @@ export const emitJsonContainsPredicate = (
   state: Pick<WhereState, 'tableNameOrAlias' | 'columnName' | 'values'>,
   area: ParserArea,
 ): void => {
-  if (!state.tableNameOrAlias || !state.columnName) {
-    throw new ParserError(area, 'JSON contains predicate requires table and column');
+  // As above: an empty alias means unqualified, not missing.
+  if (!state.columnName) {
+    throw new ParserError(area, 'JSON contains predicate requires a column');
   }
 
-  emitJsonContainsExpression(sqlHelper, config, state.tableNameOrAlias, state.columnName, area);
+  emitJsonContainsExpression(
+    sqlHelper,
+    config,
+    state.tableNameOrAlias ?? '',
+    state.columnName,
+    area,
+  );
   sqlHelper.addDynamicValue(state.values[0]);
 
   if (config.databaseType === DatabaseType.Postgres) {

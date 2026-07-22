@@ -7,6 +7,18 @@ import '../sql_helper.dart';
 String _columnRef(Dialect config, String tableNameOrAlias, String columnName) =>
     qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 
+/// The raw escape hatch that actually exists for the clause a refusal fired in.
+///
+/// The SQLite refusal below used to name `selectJsonRaw`, a method that has never existed anywhere
+/// in this library — and the wrong name had been copied into both contract manifests, so the
+/// contract itself asserted it. A refusal that points at a method the caller cannot call is the
+/// same failure as an emulation: the library saying something untrue about its own surface.
+String _rawHatchFor(ParserArea area) {
+  if (area == ParserArea.where) return 'whereRaw';
+  if (area == ParserArea.having) return 'havingRaw';
+  return 'selectRaw';
+}
+
 /// Emits a dialect-specific JSON path extraction expression for [columnName] at [path].
 void emitJsonExtractExpression(
   SqlHelper sqlHelper,
@@ -79,7 +91,8 @@ void emitJsonExtractExpression(
     if (mode == JsonExtractMode.object) {
       throw ParserError(
         area,
-        'SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw',
+        'SQLite json_extract always returns text — use JsonExtractMode.Text or '
+        '${_rawHatchFor(area)}',
       );
     }
 

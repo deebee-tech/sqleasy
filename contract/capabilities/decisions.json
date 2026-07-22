@@ -1877,7 +1877,7 @@
       "sqlite": {
         "kind": "absent",
         "name": "",
-        "refusal": "SQLite json_extract always returns text \u2014 use JsonExtractMode.Text or selectJsonRaw",
+        "refusal": "SQLite json_extract always returns text \u2014 use JsonExtractMode.Text or selectRaw",
         "adjudicated": true
       }
     },

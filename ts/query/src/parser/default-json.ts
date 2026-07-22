@@ -1,13 +1,29 @@
 import type { Dialect } from '../configuration/configuration';
 import { DatabaseType } from '../enums/database-type';
 import { JsonExtractMode } from '../enums/json-extract-mode';
-import type { ParserArea } from '../enums/parser-area';
+import { ParserArea } from '../enums/parser-area';
 import { qualifiedColumn } from '../helpers/identifier';
 import { ParserError } from '../helpers/parser-error';
 import { SqlHelper, sqlStringLiteral } from '../helpers/sql';
 
 const columnRef = (config: Dialect, tableNameOrAlias: string, columnName: string): string =>
   qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
+
+/**
+ * The raw escape hatch that actually exists for the clause a refusal fired in.
+ *
+ * The SQLite refusal below used to name `selectJsonRaw`, a method that has never existed anywhere
+ * in this library — and the wrong name had been copied into the Dart port and BOTH contract
+ * manifests, so the contract itself asserted it. A refusal that points at a method the caller
+ * cannot call is worse than no advice, and it is exactly the same failure as an emulation: the
+ * library saying something untrue about its own surface. These three are real, and which one is
+ * right depends on the clause.
+ */
+const rawHatchFor = (area: ParserArea): string => {
+  if (area === ParserArea.Where) return 'whereRaw';
+  if (area === ParserArea.Having) return 'havingRaw';
+  return 'selectRaw';
+};
 
 /**
  * Emits a dialect-specific JSON path extraction expression for `column` at `path`.
@@ -84,7 +100,7 @@ export const emitJsonExtractExpression = (
     if (mode === JsonExtractMode.Object) {
       throw new ParserError(
         area,
-        'SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw',
+        `SQLite json_extract always returns text — use JsonExtractMode.Text or ${rawHatchFor(area)}`,
       );
     }
 

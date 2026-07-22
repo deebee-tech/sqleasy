@@ -4,7 +4,7 @@
   "generatedFrom": {
     "corpus": "contract/corpora/emission/corpus.json",
     "corpusVersion": "1.0.0",
-    "corpusCases": 336,
+    "corpusCases": 341,
     "decisions": "contract/capabilities/decisions.json",
     "typedViewSurface": "dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)",
     "audit": "docs/audits/dialect-parity-2026-07-19.md",
@@ -19,7 +19,7 @@
   "summary": {
     "ops": 129,
     "enumMembers": 80,
-    "enumMembersWithNoCoverage": 25,
+    "enumMembersWithNoCoverage": 24,
     "opCells": {
       "native": 438,
       "absent": 78,
@@ -1242,8 +1242,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 190,
-            "casesThrowing": 53,
+            "casesEmitting": 192,
+            "casesThrowing": 56,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -1253,7 +1253,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 187,
+            "casesEmitting": 192,
             "casesThrowing": 49,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -1264,7 +1264,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 199,
+            "casesEmitting": 204,
             "casesThrowing": 39,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -1275,8 +1275,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 173,
-            "casesThrowing": 64,
+            "casesEmitting": 174,
+            "casesThrowing": 68,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -3163,7 +3163,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
-            "casesThrowing": 10,
+            "casesThrowing": 13,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -3173,7 +3173,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 8,
+            "casesEmitting": 11,
             "casesThrowing": 6,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -3184,7 +3184,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 6,
+            "casesEmitting": 9,
             "casesThrowing": 8,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -3196,7 +3196,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
-            "casesThrowing": 8,
+            "casesThrowing": 11,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -3931,7 +3931,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 19,
-            "casesThrowing": 5,
+            "casesThrowing": 6,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -3941,7 +3941,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 16,
+            "casesEmitting": 17,
             "casesThrowing": 6,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -3952,7 +3952,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 20,
+            "casesEmitting": 21,
             "casesThrowing": 3,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -3964,7 +3964,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 18,
-            "casesThrowing": 5,
+            "casesThrowing": 6,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
@@ -4506,8 +4506,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 142,
-            "casesThrowing": 44,
+            "casesEmitting": 143,
+            "casesThrowing": 47,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -4517,7 +4517,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 141,
+            "casesEmitting": 145,
             "casesThrowing": 40,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -4528,7 +4528,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 152,
+            "casesEmitting": 156,
             "casesThrowing": 31,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -4539,8 +4539,8 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 132,
-            "casesThrowing": 51,
+            "casesEmitting": 133,
+            "casesThrowing": 54,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -4650,7 +4650,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -4661,7 +4661,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -4672,7 +4672,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -4684,7 +4684,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 1,
-            "casesThrowing": 0,
+            "casesThrowing": 1,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
@@ -5083,7 +5083,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
-            "casesThrowing": 0,
+            "casesThrowing": 3,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         },
@@ -5093,7 +5093,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
+            "casesEmitting": 8,
             "casesThrowing": 1,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -5104,7 +5104,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
+            "casesEmitting": 8,
             "casesThrowing": 1,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
@@ -5116,7 +5116,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 5,
-            "casesThrowing": 1,
+            "casesThrowing": 4,
             "note": "adjudicated by the typed-view surface (dart/query/tool/view_manifest.dart)"
           }
         }
@@ -5802,7 +5802,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -5813,7 +5813,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -5824,7 +5824,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -5835,7 +5835,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 1,
+            "casesEmitting": 2,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6722,7 +6722,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 107,
+            "casesEmitting": 108,
             "casesThrowing": 22,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6733,7 +6733,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 101,
+            "casesEmitting": 102,
             "casesThrowing": 24,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6744,7 +6744,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 105,
+            "casesEmitting": 106,
             "casesThrowing": 21,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -6755,7 +6755,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 96,
+            "casesEmitting": 97,
             "casesThrowing": 29,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7629,6 +7629,59 @@
         }
       }
     },
+    "JsonExtractMode.Object": {
+      "enum": "JsonExtractMode",
+      "member": "Object",
+      "usedByOps": [
+        "selectJsonExtract"
+      ],
+      "cells": {
+        "mssql": {
+          "name": "JSON_QUERY",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "mysql": {
+          "name": "JSON_EXTRACT",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "postgres": {
+          "name": "->",
+          "kind": "native",
+          "adjudicated": true,
+          "refusal": null,
+          "evidence": {
+            "casesEmitting": 1,
+            "casesThrowing": 0,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        },
+        "sqlite": {
+          "name": "",
+          "kind": "absent",
+          "adjudicated": true,
+          "refusal": "SQLite json_extract always returns text — use JsonExtractMode.Text or selectRaw",
+          "evidence": {
+            "casesEmitting": 0,
+            "casesThrowing": 1,
+            "note": "adjudicated in contract/capabilities/decisions.json"
+          }
+        }
+      }
+    },
     "JsonExtractMode.Text": {
       "enum": "JsonExtractMode",
       "member": "Text",
@@ -7643,7 +7696,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 2,
+            "casesEmitting": 3,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7654,7 +7707,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 2,
+            "casesEmitting": 3,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7665,7 +7718,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 2,
+            "casesEmitting": 3,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7676,7 +7729,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 2,
+            "casesEmitting": 3,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7910,7 +7963,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 7,
-            "casesThrowing": 1,
+            "casesThrowing": 2,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         },
@@ -7920,7 +7973,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 5,
+            "casesEmitting": 6,
             "casesThrowing": 2,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7931,7 +7984,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 7,
+            "casesEmitting": 8,
             "casesThrowing": 0,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -7943,7 +7996,7 @@
           "refusal": null,
           "evidence": {
             "casesEmitting": 6,
-            "casesThrowing": 2,
+            "casesThrowing": 3,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
         }
@@ -8234,7 +8287,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 107,
+            "casesEmitting": 108,
             "casesThrowing": 22,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8245,7 +8298,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 101,
+            "casesEmitting": 102,
             "casesThrowing": 24,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8256,7 +8309,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 105,
+            "casesEmitting": 106,
             "casesThrowing": 21,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -8267,7 +8320,7 @@
           "adjudicated": true,
           "refusal": null,
           "evidence": {
-            "casesEmitting": 96,
+            "casesEmitting": 97,
             "casesThrowing": 29,
             "note": "adjudicated in contract/capabilities/decisions.json"
           }
@@ -10001,57 +10054,6 @@
           "kind": "absent",
           "adjudicated": true,
           "refusal": "SQLite does not support OUTER APPLY/LATERAL joins",
-          "evidence": {
-            "casesEmitting": 0,
-            "casesThrowing": 0,
-            "note": "adjudicated in contract/capabilities/decisions.json"
-          }
-        }
-      }
-    },
-    "JsonExtractMode.Object": {
-      "enum": "JsonExtractMode",
-      "member": "Object",
-      "usedByOps": [],
-      "cells": {
-        "mssql": {
-          "name": "JSON_QUERY",
-          "kind": "native",
-          "adjudicated": true,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 0,
-            "casesThrowing": 0,
-            "note": "adjudicated in contract/capabilities/decisions.json"
-          }
-        },
-        "mysql": {
-          "name": "JSON_EXTRACT",
-          "kind": "native",
-          "adjudicated": true,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 0,
-            "casesThrowing": 0,
-            "note": "adjudicated in contract/capabilities/decisions.json"
-          }
-        },
-        "postgres": {
-          "name": "->",
-          "kind": "native",
-          "adjudicated": true,
-          "refusal": null,
-          "evidence": {
-            "casesEmitting": 0,
-            "casesThrowing": 0,
-            "note": "adjudicated in contract/capabilities/decisions.json"
-          }
-        },
-        "sqlite": {
-          "name": "",
-          "kind": "absent",
-          "adjudicated": true,
-          "refusal": "SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw",
           "evidence": {
             "casesEmitting": 0,
             "casesThrowing": 0,

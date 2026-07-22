@@ -1977,6 +1977,21 @@ const emitFullTextValueSuffix = (sqlHelper, config, mode) => {
 //#region src/parser/default-json.ts
 const columnRef$1 = (config, tableNameOrAlias, columnName) => qualifiedColumn(tableNameOrAlias, columnName, config.identifierDelimiters);
 /**
+* The raw escape hatch that actually exists for the clause a refusal fired in.
+*
+* The SQLite refusal below used to name `selectJsonRaw`, a method that has never existed anywhere
+* in this library — and the wrong name had been copied into the Dart port and BOTH contract
+* manifests, so the contract itself asserted it. A refusal that points at a method the caller
+* cannot call is worse than no advice, and it is exactly the same failure as an emulation: the
+* library saying something untrue about its own surface. These three are real, and which one is
+* right depends on the clause.
+*/
+const rawHatchFor = (area) => {
+	if (area === ParserArea.Where) return "whereRaw";
+	if (area === ParserArea.Having) return "havingRaw";
+	return "selectRaw";
+};
+/**
 * Emits a dialect-specific JSON path extraction expression for `column` at `path`.
 * `path` is a single Postgres key segment (`'email'`) or a JSON path (`'$.email'`) on other dialects.
 */
@@ -2023,7 +2038,7 @@ const emitJsonExtractExpression = (sqlHelper, config, tableNameOrAlias, columnNa
 		return;
 	}
 	if (config.databaseType === DatabaseType.Sqlite) {
-		if (mode === JsonExtractMode.Object) throw new ParserError(area, "SQLite json_extract always returns text — use JsonExtractMode.Text or selectJsonRaw");
+		if (mode === JsonExtractMode.Object) throw new ParserError(area, `SQLite json_extract always returns text — use JsonExtractMode.Text or ${rawHatchFor(area)}`);
 		sqlHelper.addSqlSnippet("json_extract(");
 		sqlHelper.addSqlSnippet(col);
 		sqlHelper.addSqlSnippet(", ");
@@ -2058,9 +2073,9 @@ const emitJsonContainsExpression = (sqlHelper, config, tableNameOrAlias, columnN
 */
 const JSON_COLUMN_SENTINEL = "___json___";
 const emitJsonExtractPredicate = (sqlHelper, config, mode, state, area) => {
-	if (!state.tableNameOrAlias || !state.columnName || !state.jsonPath || !state.jsonExtractMode) throw new ParserError(area, "JSON extract predicate requires table, column, path, and mode");
+	if (!state.columnName || !state.jsonPath || !state.jsonExtractMode) throw new ParserError(area, "JSON extract predicate requires a column, a path, and a mode");
 	const jsonScratch = new SqlHelper(mode);
-	emitJsonExtractExpression(jsonScratch, config, state.tableNameOrAlias, state.columnName, state.jsonPath, state.jsonExtractMode, area);
+	emitJsonExtractExpression(jsonScratch, config, state.tableNameOrAlias ?? "", state.columnName, state.jsonPath, state.jsonExtractMode, area);
 	const jsonSql = jsonScratch.getSql();
 	const scratch = new SqlHelper(mode);
 	emitComparisonPredicate(scratch, config, JSON_COLUMN_SENTINEL, state.whereOperator, state.values[0], area);
@@ -2069,8 +2084,8 @@ const emitJsonExtractPredicate = (sqlHelper, config, mode, state, area) => {
 	sqlHelper.addSqlSnippetWithValues(predicate, [...jsonScratch.getValues(), ...scratch.getValues()]);
 };
 const emitJsonContainsPredicate = (sqlHelper, config, state, area) => {
-	if (!state.tableNameOrAlias || !state.columnName) throw new ParserError(area, "JSON contains predicate requires table and column");
-	emitJsonContainsExpression(sqlHelper, config, state.tableNameOrAlias, state.columnName, area);
+	if (!state.columnName) throw new ParserError(area, "JSON contains predicate requires a column");
+	emitJsonContainsExpression(sqlHelper, config, state.tableNameOrAlias ?? "", state.columnName, area);
 	sqlHelper.addDynamicValue(state.values[0]);
 	if (config.databaseType === DatabaseType.Postgres) sqlHelper.addSqlSnippet("::jsonb");
 	if (config.databaseType === DatabaseType.Mysql) sqlHelper.addSqlSnippet(")");
@@ -2812,6 +2827,52 @@ const defaultSelect = (state, config, mode, options) => {
 };
 //#endregion
 //#region src/parser/default-union.ts
+/**
+* Does this set-operation BRANCH carry a clause whose scope depends on parentheses?
+*
+* `ORDER BY`, `LIMIT` and `OFFSET` are the three. Everything else a branch can carry — `DISTINCT`,
+* MSSQL's `TOP (n)`, the whole WHERE/GROUP BY/HAVING stack — is already lexically bound to its own
+* SELECT and needs no help. (Verified: `UNION ALL SELECT TOP (3) * FROM b` caps the OPERAND on
+* MSSQL, returning 3 rows from it rather than 3 from the union.)
+*/
+const branchIsScoped = (branch) => branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset > 0;
+/**
+* Refuses a scoping clause on a branch the dialect cannot scope, and reports whether the operand
+* must be wrapped in parentheses to mean what the caller wrote.
+*
+* ── THE BUG THIS EXISTS TO FIX (found 2026-07-22) ──
+* A branch's `ORDER BY` / `LIMIT` was emitted in the right textual place but with NO parentheses,
+* so it bound to the whole compound instead of the operand it was written on:
+*
+*     .unionAll(u => u.fromTable('b','').selectAll().limit(3))
+*     ->  SELECT * FROM "a" UNION ALL SELECT * FROM "b" LIMIT 3
+*
+* That caps the UNION, not the branch. The statement runs and returns the wrong rows — no error,
+* nothing to notice. Adding an outer `.limit(99)` made it worse still: `LIMIT 3 LIMIT 99`, which
+* Postgres, MySQL and SQLite all reject as a syntax error.
+*
+* ── WHAT EACH ENGINE ACTUALLY DOES (measured against the harness, 2026-07-22) ──
+*
+*     Postgres 17   … UNION ALL (SELECT … ORDER BY id LIMIT 3)   accepted
+*     MySQL 8.4     … UNION ALL (SELECT … ORDER BY id LIMIT 3)   accepted
+*     MSSQL 2022    … UNION ALL (SELECT … )                      Msg 156 — no parenthesized operand
+*                   SELECT … ORDER BY id UNION ALL SELECT …      Msg 156 — ORDER BY only on the last
+*                   SELECT … OFFSET 0 ROWS FETCH NEXT 3 … UNION  Msg 156
+*                   SELECT TOP (3) … UNION ALL SELECT …          accepted — the operand IS capped
+*     SQLite 3.51   … UNION ALL (SELECT … LIMIT 3)               near "(": syntax error
+*                   SELECT … LIMIT 3 UNION ALL SELECT …          "LIMIT clause should come after
+*                                                                 UNION ALL not before"
+*
+* So two dialects can express this and two cannot. The rewrite that would fake it on SQLite and
+* MSSQL — hoisting the branch into a derived table or CTE — is emulation, and the caller can write
+* that themselves with `fromWithBuilder`/`cte` if that is what they meant. So they refuse and say so.
+*/
+const assertBranchScopeSupported = (branch, config) => {
+	if (!branchIsScoped(branch)) return;
+	if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) return;
+	const clause = branch.orderByStates.length > 0 ? "ORDER BY" : branch.limit > 0 ? "LIMIT" : "OFFSET";
+	throw new ParserError(branch.orderByStates.length > 0 ? ParserArea.OrderBy : ParserArea.LimitOffset, `${dialectDisplayName(config.databaseType)} cannot scope ${clause} to one branch of a set operation. ${config.databaseType === DatabaseType.Mssql ? "T-SQL allows no parenthesized operand and no per-operand ORDER BY — cap the branch with top(n) instead, or lift it into a CTE and select from that" : "SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that"}. Setting it on the outer builder instead applies it to the whole result, which is a different query.`);
+};
 const defaultUnion = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
 	if (state.unionStates.length === 0) return sqlHelper;
@@ -2833,8 +2894,10 @@ const defaultUnion = (state, config, mode, options) => {
 		}
 		if (unionState.raw) sqlHelper.addSqlSnippet(unionState.raw);
 		else if (unionState.subquery) {
+			assertBranchScopeSupported(unionState.subquery, config);
 			const subHelper = defaultToSql(unionState.subquery, config, mode, options);
-			sqlHelper.addSqlSnippetWithValues(subHelper.getSql(), subHelper.getValues());
+			const wrap = branchIsScoped(unionState.subquery);
+			sqlHelper.addSqlSnippetWithValues(wrap ? `(${subHelper.getSql()})` : subHelper.getSql(), subHelper.getValues());
 		}
 		if (i < state.unionStates.length - 1) sqlHelper.addSqlSnippet(" ");
 	}
