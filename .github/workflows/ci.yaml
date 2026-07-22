@@ -33,6 +33,13 @@ jobs:
       - run: pnpm run check:parity
       # The contract is versioned independently of every implementation: content change => version bump.
       - run: pnpm run check:contract
+      # The two ports must HIDE the same methods on the same dialects. A capability that is absent in
+      # TypeScript but reachable in Dart is a broken promise in whichever port is wrong.
+      - run: pnpm run check:surface
+      # capabilities.json is GENERATED from typed-views.ts, decisions.json and the emission corpus, all
+      # of which move. A stale manifest is worse than none: it still reads as authoritative while
+      # describing a surface that no longer exists.
+      - run: pnpm run check:capabilities
 
   # ── Gate 2: unit + EMISSION conformance, per language, NO database ──
   emission:
@@ -93,9 +100,10 @@ jobs:
           sdk: stable
       - run: pnpm install --frozen-lockfile
 
-      # `harness:up` includes `harness:seed`. The seed is NOT optional and NOT only for MSSQL's sake:
-      # Postgres and MySQL self-seed from their entrypoints, but SQL Server has no such mechanism, so
-      # without this step its `sqleasy_ci` database does not exist and every mssql golden fails.
+      # `harness:up` includes `harness:seed`, which is the ONLY way any of these databases gets its
+      # schema — no container mounts a seed file. Without this step all three are empty and every
+      # golden fails. See the note at the top of docker-compose.harness.yml for why both of the
+      # mount-based alternatives were removed: each of them fails SILENTLY.
       - name: Start and seed the shared harness
         run: pnpm run harness:up
 

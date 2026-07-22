@@ -445,8 +445,31 @@ const manifest = {
   enums,
 };
 
+const rendered = JSON.stringify(manifest, null, 2) + '\n';
+
+// `--check` REBUILDS and COMPARES instead of writing — the freshness gate.
+//
+// capabilities.json is generated from typed-views.ts, decisions.json and the emission corpus, and
+// every one of those moves. Without this, the committed manifest drifts silently: it keeps describing
+// a surface that no longer exists, and it is the artifact that documents what each dialect can do.
+// A stale one is worse than none, because it reads as authoritative.
+if (process.argv.includes('--check')) {
+  const current = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
+  if (current !== rendered) {
+    console.error(
+      'check-capabilities: STALE — contract/capabilities/capabilities.json does not match its inputs.\n' +
+        '  It is generated from ts/query/src/builder/typed-views.ts, contract/capabilities/decisions.json\n' +
+        '  and the emission corpus. Regenerate and commit the result:\n' +
+        '    pnpm capabilities',
+    );
+    process.exit(1);
+  }
+  console.log('check-capabilities: ok — the manifest matches its inputs.');
+  process.exit(0);
+}
+
 mkdirSync(dirname(OUT), { recursive: true });
-writeFileSync(OUT, JSON.stringify(manifest, null, 2) + '\n');
+writeFileSync(OUT, rendered);
 
 const { opCells: oc, enumCells: ec } = manifest.summary;
 console.log(
