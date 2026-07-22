@@ -25786,6 +25786,281 @@
           "raw": "SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT 2);"
         }
       }
+    },
+    {
+      "name": "a recursive cte cannot order by inside its own body on any dialect",
+      "ops": [
+        {
+          "op": "cteRecursive",
+          "name": "t",
+          "columns": [
+            "n"
+          ],
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": "n"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "where",
+              "table": "",
+              "column": "id",
+              "operator": "Equals",
+              "value": {
+                "t": "int",
+                "v": 1
+              }
+            },
+            {
+              "op": "unionAll",
+              "ops": [
+                {
+                  "op": "selectRaw",
+                  "sql": "t.n + 1"
+                },
+                {
+                  "op": "fromRaw",
+                  "sql": "t"
+                },
+                {
+                  "op": "whereRaw",
+                  "sql": "t.n < 3"
+                }
+              ]
+            },
+            {
+              "op": "orderByRaw",
+              "sql": "n"
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "n",
+          "alias": ""
+        },
+        {
+          "op": "fromRaw",
+          "sql": "t"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+        },
+        "mysql": {
+          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+        },
+        "postgres": {
+          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+        },
+        "sqlite": {
+          "throws": "OrderBy: A recursive CTE cannot ORDER BY inside its own body — no dialect allows it in the recursive term, where a clause set on the body lands. Order the OUTER select instead, which every dialect accepts."
+        }
+      }
+    },
+    {
+      "name": "postgres alone refuses a row cap inside a recursive cte body",
+      "ops": [
+        {
+          "op": "cteRecursive",
+          "name": "t",
+          "columns": [
+            "n"
+          ],
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": "n"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "where",
+              "table": "",
+              "column": "id",
+              "operator": "Equals",
+              "value": {
+                "t": "int",
+                "v": 1
+              }
+            },
+            {
+              "op": "unionAll",
+              "ops": [
+                {
+                  "op": "selectRaw",
+                  "sql": "t.n + 1"
+                },
+                {
+                  "op": "fromRaw",
+                  "sql": "t"
+                },
+                {
+                  "op": "whereRaw",
+                  "sql": "t.n < 3"
+                }
+              ]
+            },
+            {
+              "op": "limit",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "n",
+          "alias": ""
+        },
+        {
+          "op": "fromRaw",
+          "sql": "t"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "LimitOffset: ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "WITH RECURSIVE `t` (`n`) AS (SELECT `id` AS `n` FROM `orders` WHERE `id` = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT 2) SELECT `n` FROM t;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "WITH RECURSIVE `t` (`n`) AS (SELECT `id` AS `n` FROM `orders` WHERE `id` = 1 UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT 2) SELECT `n` FROM t;"
+        },
+        "postgres": {
+          "throws": "LimitOffset: Postgres cannot LIMIT or OFFSET inside a recursive CTE body — the clause lands in the recursive term, which it rejects. Cap the OUTER select instead, which every dialect accepts, or bound the recursion with a WHERE on the recursive member."
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT 2) SELECT \"n\" FROM t;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = 1 UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT 2) SELECT \"n\" FROM t;"
+        }
+      }
+    },
+    {
+      "name": "mysql and mssql refuse distinct on the recursive member",
+      "ops": [
+        {
+          "op": "cteRecursive",
+          "name": "t",
+          "columns": [
+            "n"
+          ],
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": "n"
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "where",
+              "table": "",
+              "column": "id",
+              "operator": "Equals",
+              "value": {
+                "t": "int",
+                "v": 1
+              }
+            },
+            {
+              "op": "unionAll",
+              "ops": [
+                {
+                  "op": "selectRaw",
+                  "sql": "t.n + 1"
+                },
+                {
+                  "op": "fromRaw",
+                  "sql": "t"
+                },
+                {
+                  "op": "whereRaw",
+                  "sql": "t.n < 3"
+                },
+                {
+                  "op": "distinct"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "n",
+          "alias": ""
+        },
+        {
+          "op": "fromRaw",
+          "sql": "t"
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "Select: MSSQL rejects SELECT DISTINCT on the recursive member of a recursive CTE. Use union() rather than unionAll() if you want duplicate elimination across the recursion, which is where these engines allow it."
+        },
+        "mysql": {
+          "throws": "Select: MySQL rejects SELECT DISTINCT on the recursive member of a recursive CTE. Use union() rather than unionAll() if you want duplicate elimination across the recursion, which is where these engines allow it."
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"public\".\"orders\" WHERE \"id\" = $1 UNION ALL SELECT DISTINCT t.n + 1 FROM t WHERE t.n < 3) SELECT \"n\" FROM t;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"public\".\"orders\" WHERE \"id\" = 1 UNION ALL SELECT DISTINCT t.n + 1 FROM t WHERE t.n < 3) SELECT \"n\" FROM t;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = ? UNION ALL SELECT DISTINCT t.n + 1 FROM t WHERE t.n < 3) SELECT \"n\" FROM t;",
+            "params": [
+              {
+                "t": "num",
+                "v": 1
+              }
+            ]
+          },
+          "raw": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = 1 UNION ALL SELECT DISTINCT t.n + 1 FROM t WHERE t.n < 3) SELECT \"n\" FROM t;"
+        }
+      }
     }
   ]
 }
