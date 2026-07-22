@@ -40,7 +40,11 @@ class QueryState {
   CallState? callState;
   bool isInnerStatement = false;
   int limit = 0;
-  int offset = 0;
+
+  /// Rows to skip. `null` means the caller never asked; `0` means they asked for zero, which is NOT
+  /// the same thing. `OFFSET 0 ROWS` is what legalises an ORDER BY inside an MSSQL derived table or
+  /// subquery — measured: a bare ORDER BY there is Msg 1033, and `OFFSET 0 ROWS` alone makes it run.
+  int? offset;
   bool limitWithTies = false;
   bool distinct = false;
 

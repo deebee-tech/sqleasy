@@ -57,7 +57,7 @@ void assertMutationRowCapSupported(
 ) {
   final wantsTop = hasExplicitTop(state);
   final wantsLimit = state.limit > 0;
-  final wantsOffset = state.offset > 0;
+  final wantsOffset = state.offset != null;
   final wantsOrderBy = state.orderByStates.isNotEmpty;
 
   if (!wantsTop && !wantsLimit && !wantsOffset && !wantsOrderBy) return;
@@ -116,8 +116,10 @@ String mssqlMutationTop(QueryState state, Dialect config) {
   if (config.databaseType != DatabaseType.mssql || !hasExplicitTop(state)) {
     return '';
   }
+  // Presence, not positivity — `DELETE TOP (0)` is legal and deletes nothing. Testing `> 0` would
+  // turn "delete no rows" into "delete every row".
   final top = (state.customState!['top'] as num).toInt();
-  return top > 0 ? 'TOP ($top) ' : '';
+  return 'TOP ($top) ';
 }
 
 /// Emits MySQL's trailing `ORDER BY … LIMIT n` on a mutation.

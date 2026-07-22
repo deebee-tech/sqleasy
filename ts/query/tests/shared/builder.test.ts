@@ -28,7 +28,8 @@ describe('Builder state management', () => {
       expect(state.groupByStates).toEqual([]);
       expect(state.havingStates).toEqual([]);
       expect(state.limit).toBe(0);
-      expect(state.offset).toBe(0);
+      // `undefined`, not 0 — offset(0) is a real value that emits `OFFSET 0`.
+      expect(state.offset).toBeUndefined();
     });
   });
 
@@ -188,7 +189,8 @@ describe('Builder state management', () => {
       expect(builder.state().offset).toBe(20);
 
       builder.clearOffset();
-      expect(builder.state().offset).toBe(0);
+      // Cleared means absent, which is distinct from offset(0) — that one still emits.
+      expect(builder.state().offset).toBeUndefined();
     });
   });
 
@@ -232,7 +234,7 @@ describe('Builder state management', () => {
       expect(state.groupByStates).toBeDefined();
       expect(state.havingStates).toBeDefined();
       expect(state.limit).toBe(0);
-      expect(state.offset).toBe(0);
+      expect(state.offset).toBeUndefined();
       expect(state.distinct).toBe(false);
     });
 

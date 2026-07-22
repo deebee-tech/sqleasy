@@ -1291,12 +1291,20 @@ type QueryState = {
   callState: CallState | undefined;
   /** True when this state represents a nested subquery, not the outer query. */
   isInnerStatement: boolean;
-  /** Maximum row count (0 often means unset; dialect-specific). */
+  /** Maximum row count. `0` is unreachable — `limit()` refuses a non-positive value. */
   limit: number;
   /** When true, emit `WITH TIES` alongside the row limit (dialect-specific). */
   limitWithTies?: boolean;
-  /** Rows to skip before returning (0 often means unset). */
-  offset: number;
+  /**
+   * Rows to skip before returning. `undefined` means the caller never asked; `0` means they asked
+   * for zero, which is NOT the same thing and is not interchangeable.
+   *
+   * `OFFSET 0 ROWS` is the token that legalises an ORDER BY inside an MSSQL derived table or
+   * subquery — measured: `SELECT * FROM (SELECT id FROM orders ORDER BY id) x` is Msg 1033, and
+   * adding `OFFSET 0 ROWS` alone (no FETCH) makes it run. Treating `0` as "unset" therefore
+   * deleted the only clause holding the statement up.
+   */
+  offset: number | undefined;
   /** Whether SELECT DISTINCT was requested. */
   distinct: boolean;
   /**
@@ -1665,6 +1673,7 @@ declare class QueryBuilder {
   clearHaving: () => this;
   clearJoin: () => this;
   clearLimit: () => this;
+  /** Removes the offset entirely. `undefined`, not `0` — `offset(0)` is a real, emitted value. */
   clearOffset: () => this;
   clearOrderBy: () => this;
   clearSelect: () => this;
@@ -1761,6 +1770,11 @@ declare class QueryBuilder {
    */
   limitWithTies: (limit: number) => this;
   clearLimitWithTies: () => this;
+  /**
+   * Rows to skip. `0` is a REAL value, not "unset" — it is what legalises an ORDER BY inside an
+   * MSSQL derived table or subquery (`OFFSET 0 ROWS`, measured), so it is stored and emitted.
+   * Omitting the call entirely is how you say "no offset".
+   */
   offset: (offset: number) => this;
   orderByColumn: (tableNameOrAlias: string, columnName: string, direction: OrderByDirection, nulls?: NullsOrder) => this;
   orderByColumns: (columns: {

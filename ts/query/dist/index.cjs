@@ -1448,15 +1448,15 @@ const unboundedLimit = {
 const hasExplicitTop = (state) => state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0;
 const defaultLimitOffset = (state, config, mode) => {
 	const sqlHelper = new SqlHelper(mode);
-	if (state.limit === 0 && state.offset === 0) return sqlHelper;
+	if (state.limit === 0 && state.offset === void 0) return sqlHelper;
 	if (config.databaseType === DatabaseType.Mysql || config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Sqlite) {
 		if (state.limitWithTies) {
 			if (config.databaseType === DatabaseType.Sqlite) throw new ParserError(ParserArea.LimitOffset, "SQLite does not support WITH TIES");
 			if (config.databaseType === DatabaseType.Mysql) throw new ParserError(ParserArea.LimitOffset, "MySQL does not support WITH TIES");
 			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
-			if (state.offset > 0) {
+			if (state.offset !== void 0) {
 				sqlHelper.addSqlSnippet("OFFSET ");
-				sqlHelper.addSqlSnippet(state.offset.toString());
+				sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
 				sqlHelper.addSqlSnippet(" ROWS ");
 			}
 			sqlHelper.addSqlSnippet("FETCH FIRST ");
@@ -1467,28 +1467,28 @@ const defaultLimitOffset = (state, config, mode) => {
 		if (state.limit > 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
 			sqlHelper.addSqlSnippet(state.limit.toString());
-		} else if (state.offset > 0) {
+		} else if (state.offset !== void 0) {
 			const sentinel = unboundedLimit[config.databaseType];
 			if (sentinel !== void 0) {
 				sqlHelper.addSqlSnippet("LIMIT ");
 				sqlHelper.addSqlSnippet(sentinel);
 			}
 		}
-		if (state.offset > 0) {
+		if (state.offset !== void 0) {
 			if (state.limit > 0) sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet(" OFFSET ");
-			sqlHelper.addSqlSnippet(state.offset.toString());
+			sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
 		}
 	}
 	if (config.databaseType === DatabaseType.Mssql) {
-		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && (state.limit > 0 || state.offset > 0)) throw new ParserError(ParserArea.LimitOffset, "MSSQL should not use both TOP and LIMIT/OFFSET in the same query");
+		if (state.customState !== null && state.customState !== void 0 && state.customState["top"] !== null && state.customState["top"] !== void 0 && (state.limit > 0 || state.offset !== void 0)) throw new ParserError(ParserArea.LimitOffset, "MSSQL should not use both TOP and LIMIT/OFFSET in the same query");
 		if (state.limitWithTies) {
 			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
-			if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset");
+			if (state.offset !== void 0) throw new ParserError(ParserArea.LimitOffset, "MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset");
 		} else {
-			if (state.limit > 0 || state.offset > 0) {
+			if (state.limit > 0 || state.offset !== void 0) {
 				sqlHelper.addSqlSnippet("OFFSET ");
-				sqlHelper.addSqlSnippet(state.offset.toString());
+				sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
 				sqlHelper.addSqlSnippet(" ROWS");
 			}
 			if (state.limit > 0) {
@@ -1501,7 +1501,7 @@ const defaultLimitOffset = (state, config, mode) => {
 	}
 	if (state.orderByStates.length === 0) {
 		if (state.limitWithTies) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using WITH TIES");
-		if (state.offset > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
+		if (state.offset !== void 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using OFFSET");
 		if (config.databaseType === DatabaseType.Mssql && state.limit > 0) throw new ParserError(ParserArea.LimitOffset, "ORDER BY is required when using LIMIT on MSSQL, which paginates with OFFSET/FETCH; use top() for an unordered row cap");
 	}
 	return sqlHelper;
@@ -1550,7 +1550,7 @@ const NO_MUTATION_CAP = {
 const assertMutationRowCapSupported = (state, config, area) => {
 	const wantsTop = hasExplicitTop(state);
 	const wantsLimit = state.limit > 0;
-	const wantsOffset = state.offset > 0;
+	const wantsOffset = state.offset !== void 0;
 	const wantsOrderBy = state.orderByStates.length > 0;
 	if (!wantsTop && !wantsLimit && !wantsOffset && !wantsOrderBy) return;
 	if (wantsOffset) throw new ParserError(area, "offset() has no meaning on UPDATE/DELETE — no dialect supports skipping rows in a mutation");
@@ -1575,8 +1575,7 @@ const assertMutationRowCapSupported = (state, config, area) => {
 */
 const mssqlMutationTop = (state, config) => {
 	if (config.databaseType !== DatabaseType.Mssql || !hasExplicitTop(state)) return "";
-	const top = Number(state.customState["top"]);
-	return top > 0 ? `TOP (${top}) ` : "";
+	return `TOP (${Number(state.customState["top"])}) `;
 };
 /**
 * Emits MySQL's trailing `ORDER BY … LIMIT n` on a mutation.
@@ -2832,7 +2831,7 @@ const defaultSelect = (state, config, mode, options) => {
 * A branch's own paging clauses — the ones that need parentheses AND that some engines forbid
 * inside an operand.
 */
-const branchPages = (branch) => branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset > 0;
+const branchPages = (branch) => branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset !== void 0;
 /**
 * A branch that is ITSELF a set operation, i.e. the caller expressed a grouped operand.
 *
@@ -3307,7 +3306,7 @@ const defaultToSql = (state, config, mode, options) => {
 		sqlHelper.addSqlSnippet(" ");
 		sqlHelper.addSqlSnippetWithValues(orderBy.getSql(), orderBy.getValues());
 	}
-	if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
+	if (state.limit > 0 || state.offset !== void 0 || state.limitWithTies) {
 		const limitOffset = defaultLimitOffset(state, config, mode);
 		const clause = limitOffset.getSql();
 		if (clause !== "") {
@@ -3331,9 +3330,8 @@ const defaultToSql = (state, config, mode, options) => {
 const toSqlOptionsFor = (config) => {
 	if (config.databaseType !== DatabaseType.Mssql) return {};
 	return { beforeSelectColumns: (state, _cfg, sqlHelper) => {
-		const explicitTop = hasExplicitTop(state) ? Number(state.customState["top"]) : 0;
-		if (explicitTop > 0) {
-			sqlHelper.addSqlSnippet(`TOP (${explicitTop}) `);
+		if (hasExplicitTop(state)) {
+			sqlHelper.addSqlSnippet(`TOP (${Number(state.customState["top"])}) `);
 			return;
 		}
 		if (state.limitWithTies && state.limit > 0) sqlHelper.addSqlSnippet(`TOP (${state.limit}) WITH TIES `);
@@ -3526,7 +3524,7 @@ const createQueryState = () => ({
 	isInnerStatement: false,
 	limit: 0,
 	limitWithTies: false,
-	offset: 0,
+	offset: void 0,
 	distinct: false,
 	distinctOnColumns: void 0,
 	customState: void 0,
@@ -4069,8 +4067,9 @@ var QueryBuilder = class QueryBuilder {
 		this.#state.limitWithTies = false;
 		return this;
 	};
+	/** Removes the offset entirely. `undefined`, not `0` — `offset(0)` is a real, emitted value. */
 	clearOffset = () => {
-		this.#state.offset = 0;
+		this.#state.offset = void 0;
 		return this;
 	};
 	clearOrderBy = () => {
@@ -4417,7 +4416,13 @@ var QueryBuilder = class QueryBuilder {
 		this.#state.limitWithTies = false;
 		return this;
 	};
+	/**
+	* Rows to skip. `0` is a REAL value, not "unset" — it is what legalises an ORDER BY inside an
+	* MSSQL derived table or subquery (`OFFSET 0 ROWS`, measured), so it is stored and emitted.
+	* Omitting the call entirely is how you say "no offset".
+	*/
 	offset = (offset) => {
+		if (!Number.isFinite(offset) || offset < 0 || !Number.isInteger(offset)) throw new ParserError(ParserArea.LimitOffset, "OFFSET must be a non-negative integer");
 		this.#state.offset = offset;
 		return this;
 	};

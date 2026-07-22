@@ -281,7 +281,7 @@ export const defaultToSql = (
     sqlHelper.addSqlSnippetWithValues(orderBy.getSql(), orderBy.getValues());
   }
 
-  if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
+  if (state.limit > 0 || state.offset !== undefined || state.limitWithTies) {
     const limitOffset = defaultLimitOffset(state, config, mode);
 
     // MSSQL's WITH TIES renders as a `TOP (n) WITH TIES` prefix on the SELECT list, so the trailing
@@ -327,10 +327,12 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
       // Two distinct T-SQL constructs share this slot. `.top(n)` is the caller asking for TOP
       // directly; `.limitWithTies(n)` also renders here, because WITH TIES is only expressible on
       // TOP. They cannot both apply — `defaultLimitOffset` refuses TOP combined with limit/offset.
-      const explicitTop = hasExplicitTop(state) ? Number(state.customState!['top']) : 0;
-
-      if (explicitTop > 0) {
-        sqlHelper.addSqlSnippet(`TOP (${explicitTop}) `);
+      // PRESENCE, not positivity — the same rule `hasExplicitTop` already documents. `TOP (0)` is
+      // legal T-SQL and returns no rows (measured), so testing `> 0` here silently turned the
+      // caller's "give me nothing" into "give me everything": an uncapped SELECT, no error. That
+      // semantic inversion is worse than a dropped clause, because the statement still succeeds.
+      if (hasExplicitTop(state)) {
+        sqlHelper.addSqlSnippet(`TOP (${Number(state.customState!['top'])}) `);
         return;
       }
 

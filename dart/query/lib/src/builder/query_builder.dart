@@ -143,8 +143,9 @@ class QueryBuilder
     return this;
   }
 
+  /// Removes the offset entirely. `null`, not `0` — `offset(0)` is a real, emitted value.
   QueryBuilder clearOffset() {
-    _state.offset = 0;
+    _state.offset = null;
     return this;
   }
 
@@ -1142,7 +1143,13 @@ class QueryBuilder
     return this;
   }
 
+  /// Rows to skip. `0` is a REAL value, not "unset" — it is what legalises an ORDER BY inside an
+  /// MSSQL derived table or subquery (`OFFSET 0 ROWS`). Omit the call entirely for "no offset".
   QueryBuilder offset(int offset) {
+    if (offset < 0) {
+      throw ParserError(
+          ParserArea.limitOffset, 'OFFSET must be a non-negative integer');
+    }
     _state.offset = offset;
     return this;
   }

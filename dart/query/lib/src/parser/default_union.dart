@@ -12,7 +12,9 @@ import 'to_sql.dart';
 /// MSSQL's `TOP (n)`, the whole WHERE/GROUP BY/HAVING stack — is already lexically bound to its own
 /// SELECT and needs no help.
 bool _branchPages(QueryState branch) =>
-    branch.orderByStates.isNotEmpty || branch.limit > 0 || branch.offset > 0;
+    branch.orderByStates.isNotEmpty ||
+    branch.limit > 0 ||
+    branch.offset != null;
 
 /// A branch that is ITSELF a set operation, i.e. the caller expressed a grouped operand.
 ///

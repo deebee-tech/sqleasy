@@ -61,7 +61,7 @@ export const assertMutationRowCapSupported = (
 ): void => {
   const wantsTop = hasExplicitTop(state);
   const wantsLimit = state.limit > 0;
-  const wantsOffset = state.offset > 0;
+  const wantsOffset = state.offset !== undefined;
   const wantsOrderBy = state.orderByStates.length > 0;
 
   if (!wantsTop && !wantsLimit && !wantsOffset && !wantsOrderBy) return;
@@ -121,8 +121,10 @@ export const assertMutationRowCapSupported = (
  */
 export const mssqlMutationTop = (state: QueryState, config: Dialect): string => {
   if (config.databaseType !== DatabaseType.Mssql || !hasExplicitTop(state)) return '';
-  const top = Number(state.customState!['top']);
-  return top > 0 ? `TOP (${top}) ` : '';
+  // Presence, not positivity — `DELETE TOP (0)` is legal and deletes nothing. Testing `> 0` here
+  // would turn "delete no rows" into "delete every row", which is the worst possible direction for
+  // this particular inversion to go.
+  return `TOP (${Number(state.customState!['top'])}) `;
 };
 
 /**

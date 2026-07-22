@@ -117,8 +117,9 @@ export class QueryBuilder {
     return this;
   };
 
+  /** Removes the offset entirely. `undefined`, not `0` — `offset(0)` is a real, emitted value. */
   public clearOffset = (): this => {
-    this.#state.offset = 0;
+    this.#state.offset = undefined;
     return this;
   };
 
@@ -615,7 +616,15 @@ export class QueryBuilder {
     return this;
   };
 
+  /**
+   * Rows to skip. `0` is a REAL value, not "unset" — it is what legalises an ORDER BY inside an
+   * MSSQL derived table or subquery (`OFFSET 0 ROWS`, measured), so it is stored and emitted.
+   * Omitting the call entirely is how you say "no offset".
+   */
   public offset = (offset: number): this => {
+    if (!Number.isFinite(offset) || offset < 0 || !Number.isInteger(offset)) {
+      throw new ParserError(ParserArea.LimitOffset, 'OFFSET must be a non-negative integer');
+    }
     this.#state.offset = offset;
     return this;
   };

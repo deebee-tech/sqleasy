@@ -27,7 +27,7 @@ SqlHelper defaultLimitOffset(
     QueryState state, Dialect config, ParserMode mode) {
   final sqlHelper = SqlHelper(mode);
 
-  if (state.limit == 0 && state.offset == 0 && !state.limitWithTies) {
+  if (state.limit == 0 && state.offset == null && !state.limitWithTies) {
     return sqlHelper;
   }
 
@@ -50,9 +50,9 @@ SqlHelper defaultLimitOffset(
             ParserArea.limitOffset, 'limitWithTies requires a positive limit');
       }
 
-      if (state.offset > 0) {
+      if (state.offset != null) {
         sqlHelper.addSqlSnippet('OFFSET ');
-        sqlHelper.addSqlSnippet(state.offset.toString());
+        sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
         sqlHelper.addSqlSnippet(' ROWS ');
       }
 
@@ -65,7 +65,7 @@ SqlHelper defaultLimitOffset(
     if (state.limit > 0) {
       sqlHelper.addSqlSnippet('LIMIT ');
       sqlHelper.addSqlSnippet(state.limit.toString());
-    } else if (state.offset > 0) {
+    } else if (state.offset != null) {
       // Offset with no limit is a legitimate query — "skip n, return the rest" — but MySQL and
       // SQLite cannot spell it without a limit in front. Postgres yields no sentinel and keeps its
       // bare OFFSET.
@@ -77,19 +77,19 @@ SqlHelper defaultLimitOffset(
       }
     }
 
-    if (state.offset > 0) {
+    if (state.offset != null) {
       if (state.limit > 0) {
         sqlHelper.addSqlSnippet(' ');
       }
 
       sqlHelper.addSqlSnippet(' OFFSET ');
-      sqlHelper.addSqlSnippet(state.offset.toString());
+      sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
     }
   }
 
   if (config.databaseType == DatabaseType.mssql) {
     final top = state.customState?['top'];
-    if (top != null && (state.limit > 0 || state.offset > 0)) {
+    if (top != null && (state.limit > 0 || state.offset != null)) {
       throw ParserError(
         ParserArea.limitOffset,
         'MSSQL should not use both TOP and LIMIT/OFFSET in the same query',
@@ -106,16 +106,16 @@ SqlHelper defaultLimitOffset(
             ParserArea.limitOffset, 'limitWithTies requires a positive limit');
       }
 
-      if (state.offset > 0) {
+      if (state.offset != null) {
         throw ParserError(
           ParserArea.limitOffset,
           'MSSQL cannot combine WITH TIES and OFFSET — TOP admits no offset',
         );
       }
     } else {
-      if (state.limit > 0 || state.offset > 0) {
+      if (state.limit > 0 || state.offset != null) {
         sqlHelper.addSqlSnippet('OFFSET ');
-        sqlHelper.addSqlSnippet(state.offset.toString());
+        sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
         sqlHelper.addSqlSnippet(' ROWS');
       }
 
@@ -137,7 +137,7 @@ SqlHelper defaultLimitOffset(
           ParserArea.limitOffset, 'ORDER BY is required when using WITH TIES');
     }
 
-    if (state.offset > 0) {
+    if (state.offset != null) {
       throw ParserError(
           ParserArea.limitOffset, 'ORDER BY is required when using OFFSET');
     }

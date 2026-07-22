@@ -60,12 +60,20 @@ export type QueryState = {
   callState: CallState | undefined;
   /** True when this state represents a nested subquery, not the outer query. */
   isInnerStatement: boolean;
-  /** Maximum row count (0 often means unset; dialect-specific). */
+  /** Maximum row count. `0` is unreachable — `limit()` refuses a non-positive value. */
   limit: number;
   /** When true, emit `WITH TIES` alongside the row limit (dialect-specific). */
   limitWithTies?: boolean;
-  /** Rows to skip before returning (0 often means unset). */
-  offset: number;
+  /**
+   * Rows to skip before returning. `undefined` means the caller never asked; `0` means they asked
+   * for zero, which is NOT the same thing and is not interchangeable.
+   *
+   * `OFFSET 0 ROWS` is the token that legalises an ORDER BY inside an MSSQL derived table or
+   * subquery — measured: `SELECT * FROM (SELECT id FROM orders ORDER BY id) x` is Msg 1033, and
+   * adding `OFFSET 0 ROWS` alone (no FETCH) makes it run. Treating `0` as "unset" therefore
+   * deleted the only clause holding the statement up.
+   */
+  offset: number | undefined;
   /** Whether SELECT DISTINCT was requested. */
   distinct: boolean;
   /**
@@ -107,7 +115,7 @@ export const createQueryState = (): QueryState => ({
   isInnerStatement: false,
   limit: 0,
   limitWithTies: false,
-  offset: 0,
+  offset: undefined,
   distinct: false,
   distinctOnColumns: undefined,
   customState: undefined,

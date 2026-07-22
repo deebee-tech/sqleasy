@@ -15,7 +15,7 @@ import { defaultToSql } from './to-sql';
  * inside an operand.
  */
 const branchPages = (branch: QueryState): boolean =>
-  branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset > 0;
+  branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset !== undefined;
 
 /**
  * A branch that is ITSELF a set operation, i.e. the caller expressed a grouped operand.

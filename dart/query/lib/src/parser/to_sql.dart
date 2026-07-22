@@ -279,7 +279,7 @@ SqlHelper defaultToSql(
     sqlHelper.addSqlSnippetWithValues(orderBy.getSql(), orderBy.getValues());
   }
 
-  if (state.limit > 0 || state.offset > 0 || state.limitWithTies) {
+  if (state.limit > 0 || state.offset != null || state.limitWithTies) {
     final limitOffset = defaultLimitOffset(state, config, mode);
 
     // MSSQL's WITH TIES renders as a `TOP (n) WITH TIES` prefix on the SELECT list, so the trailing
@@ -323,8 +323,10 @@ ToSqlOptions toSqlOptionsFor(Dialect config) {
       // Two distinct T-SQL constructs share this slot. `.top(n)` is the caller asking for TOP
       // directly; `.limitWithTies(n)` also renders here, because WITH TIES is only expressible on
       // TOP. They cannot both apply — `defaultLimitOffset` refuses TOP combined with limit/offset.
+      // PRESENCE, not positivity — `TOP (0)` is legal T-SQL and returns no rows (measured), so
+      // testing `> 0` silently turned "give me nothing" into an uncapped SELECT.
       final top = state.customState?['top'];
-      if (top is num && top > 0) {
+      if (top is num) {
         sqlHelper.addSqlSnippet('TOP (${formatNumber(top)}) ');
         return;
       }

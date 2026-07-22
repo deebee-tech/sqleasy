@@ -13873,7 +13873,7 @@
       }
     },
     {
-      "name": "top zero is absent for rendering but present for the limit conflict check",
+      "name": "top zero is present for the limit conflict check, as it is for rendering",
       "note": "Two different tests read customState['top']. The select hook requires `top > 0` to render, so top(0) renders nothing. The MSSQL limit/offset guard only tests presence (`!== null && !== undefined`), so top(0) DOES trip 'MSSQL should not use both TOP and LIMIT/OFFSET in the same query'. MSSQL therefore THROWS here while MySQL/Postgres/SQLite ignore the top and happily emit LIMIT 10. A Dart port modelling top as `int?` and treating 0 as unset never throws; one that treats it as set renders `TOP (0)`. Both fail.",
       "ops": [
         {
@@ -24817,6 +24817,159 @@
         },
         "sqlite": {
           "throws": "General: SQLite cannot scope a nested set operation to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
+        }
+      }
+    },
+    {
+      "name": "top zero is a real cap and emits TOP (0), not an uncapped select",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "top",
+          "n": 0
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT TOP (0) * FROM [dbo].[orders];', N'';",
+            "params": []
+          },
+          "raw": "SELECT TOP (0) * FROM [dbo].[orders];"
+        },
+        "mysql": {
+          "throws": "LimitOffset: MySQL has no TOP clause — use limit() instead"
+        },
+        "postgres": {
+          "throws": "LimitOffset: Postgres has no TOP clause — use limit() instead"
+        },
+        "sqlite": {
+          "throws": "LimitOffset: SQLite has no TOP clause — use limit() instead"
+        }
+      }
+    },
+    {
+      "name": "offset zero is emitted, because it is what legalises an ordered mssql subquery",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "orderByColumn",
+          "table": "",
+          "column": "id",
+          "direction": "Ascending"
+        },
+        {
+          "op": "offset",
+          "n": 0
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS;', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS;"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0;",
+            "params": []
+          },
+          "raw": "SELECT * FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0;"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0;",
+            "params": []
+          },
+          "raw": "SELECT * FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0;"
+        }
+      }
+    },
+    {
+      "name": "an ordered derived table carries offset zero through to the child",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "orders",
+              "alias": ""
+            },
+            {
+              "op": "orderByColumn",
+              "table": "",
+              "column": "id",
+              "direction": "Ascending"
+            },
+            {
+              "op": "offset",
+              "n": 0
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];', N'';",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";"
         }
       }
     }
