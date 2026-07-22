@@ -1,3 +1,20 @@
+# [13.0.0](https://github.com/deebee-tech/sqleasy/compare/v12.0.0...v13.0.0) (2026-07-22)
+
+
+### Bug Fixes
+
+* **query:** a CTE stays unqualified when referenced from inside a child builder ([9550021](https://github.com/deebee-tech/sqleasy/commit/9550021d0f1819743580355a9b0bc03002b40b5f))
+* **query:** correct a false claim about MSSQL in the set-operation refusal ([b91fc82](https://github.com/deebee-tech/sqleasy/commit/b91fc822a6544b4330df4771abce649370e8b0cb))
+* **query:** offset(0) needs no ORDER BY — it skips nothing and fences the planner ([522d2cc](https://github.com/deebee-tech/sqleasy/commit/522d2cc5d4d7f48f755229bde96fe27191bf79ae))
+* **query:** SQLite does allow ORDER BY in a recursive CTE body — stop refusing it ([3b3d866](https://github.com/deebee-tech/sqleasy/commit/3b3d86604b8e9b1bf878a35aaf8612fb06eb758c))
+
+
+### Features
+
+* **query:** an aggregate call node — COUNT/SUM/AVG/MIN/MAX, with DISTINCT ([4905588](https://github.com/deebee-tech/sqleasy/commit/4905588ff19497c338ca93e23ed66507bce1563f)), closes [#10](https://github.com/deebee-tech/sqleasy/issues/10) [15/#24](https://github.com/deebee-tech/sqleasy/issues/24)
+* **query:** FILTER (WHERE …) on aggregates — Postgres and SQLite, refused elsewhere ([0a7e6a8](https://github.com/deebee-tech/sqleasy/commit/0a7e6a858380bd65a174015606aa7cfe8f54c425))
+* **query:** row-value comparison — (a,b) > (?,?) and (a,b) IN ((?,?),…) ([48e3239](https://github.com/deebee-tech/sqleasy/commit/48e3239997f6c7ed2aa9472cce2d4f3917c4af47)), closes [14/#15](https://github.com/deebee-tech/sqleasy/issues/15)
+
 # [12.0.0](https://github.com/deebee-tech/sqleasy/compare/v11.0.0...v12.0.0) (2026-07-22)
 
 # [11.0.0](https://github.com/deebee-tech/sqleasy/compare/v10.1.0...v11.0.0) (2026-07-22)
