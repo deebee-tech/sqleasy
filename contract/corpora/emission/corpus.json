@@ -13570,7 +13570,7 @@
       }
     },
     {
-      "name": "a union branch that carries its own cte emits WITH inside the UNION",
+      "name": "a union branch that carries its own cte is parenthesized, not spliced after the operator",
       "note": "defaultUnion renders each branch with the full defaultToSql, and that walk emits the branch's cteStates FIRST — so a CTE declared inside a union branch produces `... UNION ALL WITH \"t\" AS (...) SELECT ...`, which no engine accepts. Frozen contract: reproduce it, do not hoist the CTE to the head of the statement. Also pins the value order across the boundary: the OUTER where value binds before the branch's CTE value, which binds before the branch's own where value.",
       "ops": [
         {
@@ -13642,15 +13642,11 @@
       ],
       "expect": {
         "mssql": {
-          "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 UNION ALL WITH [banned] AS (SELECT [b].[user_id] FROM [dbo].[bans] AS [b] WHERE [b].[reason] = @p1) SELECT * FROM banned AS bn WHERE [bn].[user_id] > @p2;', N'@p0 bit, @p1 nvarchar(max), @p2 tinyint', @p0 = 1, @p1 = N'spam', @p2 = 0;",
-            "params": []
-          },
-          "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true UNION ALL WITH [banned] AS (SELECT [b].[user_id] FROM [dbo].[bans] AS [b] WHERE [b].[reason] = spam) SELECT * FROM banned AS bn WHERE [bn].[user_id] > 0;"
+          "throws": "General: T-SQL allows WITH only at the start of a statement, so a CTE cannot be declared on a subquery, a derived table, a set-operation branch or another CTE body. Declare it on the outermost builder — a T-SQL CTE is visible to the whole statement, including its subqueries."
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? UNION ALL WITH `banned` AS (SELECT `b`.`user_id` FROM `bans` AS `b` WHERE `b`.`reason` = ?) SELECT * FROM banned AS bn WHERE `bn`.`user_id` > ?;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? UNION ALL (WITH `banned` AS (SELECT `b`.`user_id` FROM `bans` AS `b` WHERE `b`.`reason` = ?) SELECT * FROM banned AS bn WHERE `bn`.`user_id` > ?);",
             "params": [
               {
                 "t": "bool",
@@ -13666,11 +13662,11 @@
               }
             ]
           },
-          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true UNION ALL WITH `banned` AS (SELECT `b`.`user_id` FROM `bans` AS `b` WHERE `b`.`reason` = spam) SELECT * FROM banned AS bn WHERE `bn`.`user_id` > 0;"
+          "raw": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = true UNION ALL (WITH `banned` AS (SELECT `b`.`user_id` FROM `bans` AS `b` WHERE `b`.`reason` = spam) SELECT * FROM banned AS bn WHERE `bn`.`user_id` > 0);"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 UNION ALL WITH \"banned\" AS (SELECT \"b\".\"user_id\" FROM \"public\".\"bans\" AS \"b\" WHERE \"b\".\"reason\" = $2) SELECT * FROM banned AS bn WHERE \"bn\".\"user_id\" > $3;",
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 UNION ALL (WITH \"banned\" AS (SELECT \"b\".\"user_id\" FROM \"public\".\"bans\" AS \"b\" WHERE \"b\".\"reason\" = $2) SELECT * FROM banned AS bn WHERE \"bn\".\"user_id\" > $3);",
             "params": [
               {
                 "t": "bool",
@@ -13686,27 +13682,10 @@
               }
             ]
           },
-          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = true UNION ALL WITH \"banned\" AS (SELECT \"b\".\"user_id\" FROM \"public\".\"bans\" AS \"b\" WHERE \"b\".\"reason\" = spam) SELECT * FROM banned AS bn WHERE \"bn\".\"user_id\" > 0;"
+          "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = true UNION ALL (WITH \"banned\" AS (SELECT \"b\".\"user_id\" FROM \"public\".\"bans\" AS \"b\" WHERE \"b\".\"reason\" = spam) SELECT * FROM banned AS bn WHERE \"bn\".\"user_id\" > 0);"
         },
         "sqlite": {
-          "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? UNION ALL WITH \"banned\" AS (SELECT \"b\".\"user_id\" FROM \"bans\" AS \"b\" WHERE \"b\".\"reason\" = ?) SELECT * FROM banned AS bn WHERE \"bn\".\"user_id\" > ?;",
-            "params": [
-              {
-                "t": "bool",
-                "v": true
-              },
-              {
-                "t": "string",
-                "v": "spam"
-              },
-              {
-                "t": "num",
-                "v": 0
-              }
-            ]
-          },
-          "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = true UNION ALL WITH \"banned\" AS (SELECT \"b\".\"user_id\" FROM \"bans\" AS \"b\" WHERE \"b\".\"reason\" = spam) SELECT * FROM banned AS bn WHERE \"bn\".\"user_id\" > 0;"
+          "throws": "General: SQLite cannot scope a CTE to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
         }
       }
     },
@@ -25483,6 +25462,143 @@
         },
         "sqlite": {
           "throws": "General: A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. SQLite has no data-modifying CTE either — run the mutation as its own statement."
+        }
+      }
+    },
+    {
+      "name": "a cte on a set operation branch is parenthesized, never spliced after the operator",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "orders",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "cte",
+              "name": "c",
+              "ops": [
+                {
+                  "op": "selectColumn",
+                  "table": "",
+                  "column": "id",
+                  "alias": ""
+                },
+                {
+                  "op": "fromTable",
+                  "table": "orders",
+                  "alias": ""
+                }
+              ]
+            },
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromRaw",
+              "sql": "c"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: T-SQL allows WITH only at the start of a statement, so a CTE cannot be declared on a subquery, a derived table, a set-operation branch or another CTE body. Declare it on the outermost builder — a T-SQL CTE is visible to the whole statement, including its subqueries."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `id` FROM `orders` UNION ALL (WITH `c` AS (SELECT `id` FROM `orders`) SELECT `id` FROM c);",
+            "params": []
+          },
+          "raw": "SELECT `id` FROM `orders` UNION ALL (WITH `c` AS (SELECT `id` FROM `orders`) SELECT `id` FROM c);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"id\" FROM \"public\".\"orders\" UNION ALL (WITH \"c\" AS (SELECT \"id\" FROM \"public\".\"orders\") SELECT \"id\" FROM c);",
+            "params": []
+          },
+          "raw": "SELECT \"id\" FROM \"public\".\"orders\" UNION ALL (WITH \"c\" AS (SELECT \"id\" FROM \"public\".\"orders\") SELECT \"id\" FROM c);"
+        },
+        "sqlite": {
+          "throws": "General: SQLite cannot scope a CTE to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
+        }
+      }
+    },
+    {
+      "name": "a cte on a derived table is refused on mssql, where with is statement-start only",
+      "ops": [
+        {
+          "op": "selectAll"
+        },
+        {
+          "op": "fromWithBuilder",
+          "alias": "x",
+          "ops": [
+            {
+              "op": "cte",
+              "name": "c",
+              "ops": [
+                {
+                  "op": "selectColumn",
+                  "table": "",
+                  "column": "id",
+                  "alias": ""
+                },
+                {
+                  "op": "fromTable",
+                  "table": "orders",
+                  "alias": ""
+                }
+              ]
+            },
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromRaw",
+              "sql": "c"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "throws": "General: T-SQL allows WITH only at the start of a statement, so a CTE cannot be declared on a subquery, a derived table, a set-operation branch or another CTE body. Declare it on the outermost builder — a T-SQL CTE is visible to the whole statement, including its subqueries."
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT * FROM (WITH `c` AS (SELECT `id` FROM `orders`) SELECT `id` FROM c) AS `x`;",
+            "params": []
+          },
+          "raw": "SELECT * FROM (WITH `c` AS (SELECT `id` FROM `orders`) SELECT `id` FROM c) AS `x`;"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT * FROM (WITH \"c\" AS (SELECT \"id\" FROM \"public\".\"orders\") SELECT \"id\" FROM c) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (WITH \"c\" AS (SELECT \"id\" FROM \"public\".\"orders\") SELECT \"id\" FROM c) AS \"x\";"
+        },
+        "sqlite": {
+          "prepared": {
+            "sql": "SELECT * FROM (WITH \"c\" AS (SELECT \"id\" FROM \"orders\") SELECT \"id\" FROM c) AS \"x\";",
+            "params": []
+          },
+          "raw": "SELECT * FROM (WITH \"c\" AS (SELECT \"id\" FROM \"orders\") SELECT \"id\" FROM c) AS \"x\";"
         }
       }
     }

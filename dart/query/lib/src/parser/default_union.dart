@@ -25,7 +25,8 @@ bool _branchPages(QueryState branch) =>
 ///
 /// This wants only the parentheses, and three of four engines give them — a different dialect
 /// profile from [_branchPages].
-bool _branchGroups(QueryState branch) => branch.unionStates.isNotEmpty;
+bool _branchGroups(QueryState branch) =>
+    branch.unionStates.isNotEmpty || branch.cteStates.isNotEmpty;
 
 bool _branchIsScoped(QueryState branch) =>
     _branchPages(branch) || _branchGroups(branch);
@@ -70,7 +71,7 @@ void _assertBranchScopeSupported(QueryState branch, Dialect config) {
   // SQLite refuses on the parentheses themselves, so BOTH needs are out of reach.
   if (config.databaseType == DatabaseType.sqlite) {
     final what = _branchGroups(branch)
-        ? 'a nested set operation'
+        ? (branch.unionStates.isNotEmpty ? 'a nested set operation' : 'a CTE')
         : branch.orderByStates.isNotEmpty
             ? 'ORDER BY'
             : branch.limit > 0

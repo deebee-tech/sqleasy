@@ -163,6 +163,30 @@ export const defaultToSql = (
     }
   }
 
+  // T-SQL allows WITH only at the START of a statement — never inside a subquery's parentheses, a
+  // derived table, or another CTE's body. Measured, each position on its own and against a working
+  // baseline, so the failure is attributable to the WITH and nothing else:
+  //
+  //                                            PG   MySQL  SQLite  MSSQL
+  //     SELECT * FROM (WITH c AS (…) SELECT …) x    OK    OK     OK      Msg 156
+  //     … WHERE id IN (WITH c AS (…) SELECT …)      OK    OK     OK      Msg 156
+  //     WITH o AS (WITH i AS (…) SELECT …) SELECT   OK    OK     OK      Msg 156
+  //
+  // The other three take it in every position, so this is MSSQL's rule alone, not a shared one.
+  if (
+    config.databaseType === DatabaseType.Mssql &&
+    state.isInnerStatement &&
+    state.cteStates.length > 0
+  ) {
+    throw new ParserError(
+      ParserArea.General,
+      'T-SQL allows WITH only at the start of a statement, so a CTE cannot be declared on a ' +
+        'subquery, a derived table, a set-operation branch or another CTE body. Declare it on the ' +
+        'outermost builder — a T-SQL CTE is visible to the whole statement, including its ' +
+        'subqueries.',
+    );
+  }
+
   if (state.cteStates.length > 0) {
     const cte = defaultCte(state, config, mode, options);
     sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());

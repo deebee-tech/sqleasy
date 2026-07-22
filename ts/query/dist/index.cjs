@@ -2898,17 +2898,26 @@ const defaultSelect = (state, config, mode, options) => {
 */
 const branchPages = (branch) => branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset !== void 0;
 /**
-* A branch that is ITSELF a set operation, i.e. the caller expressed a grouped operand.
+* A branch that needs parentheses to sit in the operand slot at all — either it is ITSELF a set
+* operation (the caller expressed a grouped operand), or it declares its own CTE.
 *
 * `A UNION ALL (B UNION C)` is not `A UNION ALL B UNION C`. Every engine reads the flat form as
 * `(A UNION ALL B) UNION C`, so the outer UNION ALL's duplicates get deduplicated by an inner UNION
 * that was never meant to see them. Measured on customers {1,2,3} with A=id<=2, B=id>=2, C=id=3:
 * the grouped form returns 4 rows (1,2,3,2) and the flat form 3. No error either way.
 *
+* A branch that declares a CTE is the same shape of problem: `UNION ALL WITH c AS (…) SELECT …` is
+* a syntax error on EVERY engine, while the parenthesized `UNION ALL (WITH c AS (…) SELECT …)` is
+* accepted by Postgres and MySQL. Measured, with a working baseline on each:
+*
+*                                          PG   MySQL  SQLite  MSSQL
+*     UNION ALL WITH c AS (…) SELECT …     ERR   ERR    ERR     ERR
+*     UNION ALL (WITH c AS (…) SELECT …)   OK    OK     ERR     ERR
+*
 * This is a scoping need with a DIFFERENT dialect profile from {@link branchPages}: it wants only
 * the parentheses, and three of four engines are happy to give them.
 */
-const branchGroups = (branch) => branch.unionStates.length > 0;
+const branchGroups = (branch) => branch.unionStates.length > 0 || branch.cteStates.length > 0;
 /**
 * Does this set-operation BRANCH need parentheses to mean what the caller wrote?
 *
@@ -2970,7 +2979,7 @@ const assertBranchScopeSupported = (branch, config) => {
 	if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) return;
 	const name = dialectDisplayName(config.databaseType);
 	if (config.databaseType === DatabaseType.Sqlite) {
-		const [what, area] = branchGroups(branch) ? ["a nested set operation", ParserArea.General] : [branch.orderByStates.length > 0 ? "ORDER BY" : branch.limit > 0 ? "LIMIT" : "OFFSET", branch.orderByStates.length > 0 ? ParserArea.OrderBy : ParserArea.LimitOffset];
+		const [what, area] = branchGroups(branch) ? [branch.unionStates.length > 0 ? "a nested set operation" : "a CTE", ParserArea.General] : [branch.orderByStates.length > 0 ? "ORDER BY" : branch.limit > 0 ? "LIMIT" : "OFFSET", branch.orderByStates.length > 0 ? ParserArea.OrderBy : ParserArea.LimitOffset];
 		throw new ParserError(area, `${name} cannot scope ${what} to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns.`);
 	}
 	if (!branchPages(branch)) return;
@@ -3291,6 +3300,7 @@ const defaultToSql = (state, config, mode, options) => {
 	if (state.isInnerStatement && state.queryType !== QueryType.Select) {
 		if (!(state.isCteBody === true && config.databaseType === DatabaseType.Postgres)) throw new ParserError(ParserArea.General, `A sub-builder must be a SELECT — an INSERT, UPDATE, DELETE or CALL built inside a child callback would be spliced in wherever that child is inlined, which no engine parses. ${config.databaseType === DatabaseType.Postgres ? "Postgres allows a data-modifying CTE, so build it with cte() if that is what you meant." : `${dialectDisplayName(config.databaseType)} has no data-modifying CTE either — run the mutation as its own statement.`}`);
 	}
+	if (config.databaseType === DatabaseType.Mssql && state.isInnerStatement && state.cteStates.length > 0) throw new ParserError(ParserArea.General, "T-SQL allows WITH only at the start of a statement, so a CTE cannot be declared on a subquery, a derived table, a set-operation branch or another CTE body. Declare it on the outermost builder — a T-SQL CTE is visible to the whole statement, including its subqueries.");
 	if (state.cteStates.length > 0) {
 		const cte = defaultCte(state, config, mode, options);
 		sqlHelper.addSqlSnippetWithValues(cte.getSql(), cte.getValues());
