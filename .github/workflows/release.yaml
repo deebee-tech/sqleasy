@@ -54,6 +54,13 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'pnpm'
+      # The preflight below spans the WHOLE workspace, which now includes two Dart packages whose
+      # lint and test are `dart analyze` / `dart test`. Without the SDK the release aborts in
+      # preflight — which is the right place to abort, but it never gets to publish. The first
+      # dispatched release died exactly here.
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
       - run: pnpm install --frozen-lockfile
 
       # Verify the WHOLE graph before releasing any single package. In a contract-first monorepo a
