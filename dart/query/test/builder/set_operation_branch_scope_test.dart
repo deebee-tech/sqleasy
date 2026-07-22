@@ -98,6 +98,54 @@ void main() {
     });
   });
 
+  // A UNION ALL (B UNION C) is not A UNION ALL B UNION C. Every engine reads the flat form as
+  // (A UNION ALL B) UNION C, so the outer UNION ALL's duplicates get deduplicated by an inner UNION
+  // that was never meant to see them. Measured on customers {1,2,3}: grouped 4 rows, flat 3.
+  group('a nested set operation keeps its grouping', () {
+    test('Postgres parenthesizes the nested operand', () {
+      final b = build(
+          PostgresQuery().configuration,
+          (u) => u.union((v) => v
+            ..fromTable('staff')
+            ..selectAll()));
+      expect(
+        b.parsePrepared().sql,
+        'SELECT * FROM "public"."users" UNION ALL '
+        '(SELECT * FROM "public"."admins" UNION SELECT * FROM "public"."staff");',
+      );
+    });
+
+    // SQLite refuses on the PARENTHESES, so a grouped operand is out of reach — where MSSQL, which
+    // parenthesizes happily, emits it. The refusals split by reason, not by dialect.
+    test('SQLite refuses it, for the same reason it refuses a branch LIMIT',
+        () {
+      final b = build(
+          SqliteQuery().configuration,
+          (u) => u.union((v) => v
+            ..fromTable('staff')
+            ..selectAll()));
+      expect(
+        () => b.parsePrepared(),
+        throwsA(predicate((e) =>
+            '$e'.contains('cannot scope a nested set operation') &&
+            '$e'.contains('no parenthesized operand at all'))),
+      );
+    });
+
+    test('MSSQL ALLOWS it, because T-SQL takes the parentheses', () {
+      final b = build(
+          MssqlQuery().configuration,
+          (u) => u.union((v) => v
+            ..fromTable('staff')
+            ..selectAll()));
+      expect(
+        b.parsePrepared().sql,
+        contains(
+            'UNION ALL (SELECT * FROM [dbo].[admins] UNION SELECT * FROM [dbo].[staff])'),
+      );
+    });
+  });
+
   group('unscoped branches are untouched — no stray parentheses', () {
     for (final entry in {
       'postgres': PostgresQuery().configuration,

@@ -24364,7 +24364,7 @@
           "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3);"
         },
         "sqlite": {
-          "throws": "LimitOffset: SQLite cannot scope LIMIT to one branch of a set operation. SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+          "throws": "LimitOffset: SQLite cannot scope LIMIT to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
         }
       }
     },
@@ -24422,7 +24422,7 @@
           "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" ORDER BY \"id\" DESC LIMIT 3);"
         },
         "sqlite": {
-          "throws": "OrderBy: SQLite cannot scope ORDER BY to one branch of a set operation. SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+          "throws": "OrderBy: SQLite cannot scope ORDER BY to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
         }
       }
     },
@@ -24478,7 +24478,7 @@
           "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3) LIMIT 99;"
         },
         "sqlite": {
-          "throws": "LimitOffset: SQLite cannot scope LIMIT to one branch of a set operation. SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query."
+          "throws": "LimitOffset: SQLite cannot scope LIMIT to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
         }
       }
     },
@@ -24593,6 +24593,230 @@
             ]
           },
           "raw": "SELECT * FROM \"users\" WHERE json_extract(\"data\", '$.x') = a;"
+        }
+      }
+    },
+    {
+      "name": "a nested set operation keeps the grouping the caller expressed",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "customers",
+          "alias": ""
+        },
+        {
+          "op": "where",
+          "table": "",
+          "column": "id",
+          "operator": "LessThanOrEquals",
+          "value": {
+            "t": "int",
+            "v": 2
+          }
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "customers",
+              "alias": ""
+            },
+            {
+              "op": "where",
+              "table": "",
+              "column": "id",
+              "operator": "GreaterThanOrEquals",
+              "value": {
+                "t": "int",
+                "v": 2
+              }
+            },
+            {
+              "op": "union",
+              "ops": [
+                {
+                  "op": "selectColumn",
+                  "table": "",
+                  "column": "id",
+                  "alias": ""
+                },
+                {
+                  "op": "fromTable",
+                  "table": "customers",
+                  "alias": ""
+                },
+                {
+                  "op": "where",
+                  "table": "",
+                  "column": "id",
+                  "operator": "Equals",
+                  "value": {
+                    "t": "int",
+                    "v": 3
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [id] FROM [dbo].[customers] WHERE [id] <= @p0 UNION ALL (SELECT [id] FROM [dbo].[customers] WHERE [id] >= @p1 UNION SELECT [id] FROM [dbo].[customers] WHERE [id] = @p2);', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 2, @p1 = 2, @p2 = 3;",
+            "params": []
+          },
+          "raw": "SELECT [id] FROM [dbo].[customers] WHERE [id] <= 2 UNION ALL (SELECT [id] FROM [dbo].[customers] WHERE [id] >= 2 UNION SELECT [id] FROM [dbo].[customers] WHERE [id] = 3);"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `id` FROM `customers` WHERE `id` <= ? UNION ALL (SELECT `id` FROM `customers` WHERE `id` >= ? UNION SELECT `id` FROM `customers` WHERE `id` = ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
+          },
+          "raw": "SELECT `id` FROM `customers` WHERE `id` <= 2 UNION ALL (SELECT `id` FROM `customers` WHERE `id` >= 2 UNION SELECT `id` FROM `customers` WHERE `id` = 3);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" <= $1 UNION ALL (SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" >= $2 UNION SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" = $3);",
+            "params": [
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 2
+              },
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
+          },
+          "raw": "SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" <= 2 UNION ALL (SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" >= 2 UNION SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" = 3);"
+        },
+        "sqlite": {
+          "throws": "General: SQLite cannot scope a nested set operation to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
+        }
+      }
+    },
+    {
+      "name": "a nested intersect inside a union branch is parenthesized rather than left to precedence",
+      "ops": [
+        {
+          "op": "selectColumn",
+          "table": "",
+          "column": "id",
+          "alias": ""
+        },
+        {
+          "op": "fromTable",
+          "table": "customers",
+          "alias": ""
+        },
+        {
+          "op": "unionAll",
+          "ops": [
+            {
+              "op": "selectColumn",
+              "table": "",
+              "column": "id",
+              "alias": ""
+            },
+            {
+              "op": "fromTable",
+              "table": "customers",
+              "alias": ""
+            },
+            {
+              "op": "intersect",
+              "ops": [
+                {
+                  "op": "selectColumn",
+                  "table": "",
+                  "column": "id",
+                  "alias": ""
+                },
+                {
+                  "op": "fromTable",
+                  "table": "customers",
+                  "alias": ""
+                },
+                {
+                  "op": "where",
+                  "table": "",
+                  "column": "id",
+                  "operator": "Equals",
+                  "value": {
+                    "t": "int",
+                    "v": 3
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "mssql": {
+          "prepared": {
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [id] FROM [dbo].[customers] UNION ALL (SELECT [id] FROM [dbo].[customers] INTERSECT SELECT [id] FROM [dbo].[customers] WHERE [id] = @p0);', N'@p0 tinyint', @p0 = 3;",
+            "params": []
+          },
+          "raw": "SELECT [id] FROM [dbo].[customers] UNION ALL (SELECT [id] FROM [dbo].[customers] INTERSECT SELECT [id] FROM [dbo].[customers] WHERE [id] = 3);"
+        },
+        "mysql": {
+          "prepared": {
+            "sql": "SELECT `id` FROM `customers` UNION ALL (SELECT `id` FROM `customers` INTERSECT SELECT `id` FROM `customers` WHERE `id` = ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
+          },
+          "raw": "SELECT `id` FROM `customers` UNION ALL (SELECT `id` FROM `customers` INTERSECT SELECT `id` FROM `customers` WHERE `id` = 3);"
+        },
+        "postgres": {
+          "prepared": {
+            "sql": "SELECT \"id\" FROM \"public\".\"customers\" UNION ALL (SELECT \"id\" FROM \"public\".\"customers\" INTERSECT SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" = $1);",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
+          },
+          "raw": "SELECT \"id\" FROM \"public\".\"customers\" UNION ALL (SELECT \"id\" FROM \"public\".\"customers\" INTERSECT SELECT \"id\" FROM \"public\".\"customers\" WHERE \"id\" = 3);"
+        },
+        "sqlite": {
+          "throws": "General: SQLite cannot scope a nested set operation to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns."
         }
       }
     }

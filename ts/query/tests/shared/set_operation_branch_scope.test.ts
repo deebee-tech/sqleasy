@@ -86,6 +86,23 @@ describe('a set-operation branch clause binds to the branch', () => {
       expect(() => b.parsePrepared()).toThrow(/CTE or a derived table/);
     });
 
+    // SQLite refuses on the PARENTHESES, so a grouped operand is out of reach too — where MSSQL,
+    // which parenthesizes happily, emits it. The refusals split by reason, not by dialect.
+    it('SQLite also refuses a NESTED set operation, for the same reason', () => {
+      const b = new SqliteQuery().newBuilder();
+      branch((u: any) => u.union((v: any) => v.fromTable('staff', '').selectAll()))(b);
+      expect(() => b.parsePrepared()).toThrow(/cannot scope a nested set operation/);
+      expect(() => b.parsePrepared()).toThrow(/no parenthesized operand at all/);
+    });
+
+    it('MSSQL ALLOWS a nested set operation, because T-SQL takes the parentheses', () => {
+      const b = new MssqlQuery().newBuilder();
+      branch((u: any) => u.union((v: any) => v.fromTable('staff', '').selectAll()))(b);
+      expect(b.parsePrepared().sql).toContain(
+        'UNION ALL (SELECT * FROM [dbo].[admins] UNION SELECT * FROM [dbo].[staff])',
+      );
+    });
+
     it('MSSQL refuses a branch ORDER BY and points at top()', () => {
       const b = new MssqlQuery().newBuilder();
       branch((u: any) => u.orderByColumn('', 'id', OrderByDirection.Descending))(b);
@@ -98,6 +115,28 @@ describe('a set-operation branch clause binds to the branch', () => {
       const b = new MssqlQuery().newBuilder();
       branch((u: any) => u.top(3))(b);
       expect(b.parsePrepared().sql).toContain('UNION ALL SELECT TOP (3) * FROM [dbo].[admins]');
+    });
+  });
+
+  // A UNION ALL (B UNION C) is not A UNION ALL B UNION C. Every engine reads the flat form as
+  // (A UNION ALL B) UNION C, so the outer UNION ALL's duplicates get deduplicated by an inner UNION
+  // that was never meant to see them. Measured on customers {1,2,3}: grouped 4 rows, flat 3.
+  describe('a nested set operation keeps its grouping', () => {
+    it('Postgres parenthesizes the nested operand', () => {
+      const b = new PostgresQuery().newBuilder();
+      branch((u: any) => u.union((v: any) => v.fromTable('staff', '').selectAll()))(b);
+      expect(b.parsePrepared().sql).toBe(
+        'SELECT * FROM "public"."users" UNION ALL ' +
+          '(SELECT * FROM "public"."admins" UNION SELECT * FROM "public"."staff");',
+      );
+    });
+
+    it('MySQL parenthesizes a nested INTERSECT rather than leaving it to precedence', () => {
+      const b = new MysqlQuery().newBuilder();
+      branch((u: any) => u.intersect((v: any) => v.fromTable('staff', '').selectAll()))(b);
+      expect(b.parsePrepared().sql).toContain(
+        'UNION ALL (SELECT * FROM `admins` INTERSECT SELECT * FROM `staff`)',
+      );
     });
   });
 

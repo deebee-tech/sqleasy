@@ -11,8 +11,22 @@ import 'to_sql.dart';
 /// `ORDER BY`, `LIMIT` and `OFFSET` are the three. Everything else a branch can carry — `DISTINCT`,
 /// MSSQL's `TOP (n)`, the whole WHERE/GROUP BY/HAVING stack — is already lexically bound to its own
 /// SELECT and needs no help.
-bool _branchIsScoped(QueryState branch) =>
+bool _branchPages(QueryState branch) =>
     branch.orderByStates.isNotEmpty || branch.limit > 0 || branch.offset > 0;
+
+/// A branch that is ITSELF a set operation, i.e. the caller expressed a grouped operand.
+///
+/// `A UNION ALL (B UNION C)` is not `A UNION ALL B UNION C`. Every engine reads the flat form as
+/// `(A UNION ALL B) UNION C`, so the outer UNION ALL's duplicates get deduplicated by an inner
+/// UNION that was never meant to see them. Measured on customers {1,2,3} with A=id<=2, B=id>=2,
+/// C=id=3: grouped returns 4 rows, flat returns 3. No error either way.
+///
+/// This wants only the parentheses, and three of four engines give them — a different dialect
+/// profile from [_branchPages].
+bool _branchGroups(QueryState branch) => branch.unionStates.isNotEmpty;
+
+bool _branchIsScoped(QueryState branch) =>
+    _branchPages(branch) || _branchGroups(branch);
 
 /// Refuses a scoping clause on a branch the dialect cannot scope.
 ///
@@ -49,6 +63,34 @@ void _assertBranchScopeSupported(QueryState branch, Dialect config) {
     return;
   }
 
+  final name = dialectDisplayName(config.databaseType);
+
+  // SQLite refuses on the parentheses themselves, so BOTH needs are out of reach.
+  if (config.databaseType == DatabaseType.sqlite) {
+    final what = _branchGroups(branch)
+        ? 'a nested set operation'
+        : branch.orderByStates.isNotEmpty
+            ? 'ORDER BY'
+            : branch.limit > 0
+                ? 'LIMIT'
+                : 'OFFSET';
+    final area = _branchGroups(branch)
+        ? ParserArea.general
+        : branch.orderByStates.isNotEmpty
+            ? ParserArea.orderBy
+            : ParserArea.limitOffset;
+
+    throw ParserError(
+      area,
+      '$name cannot scope $what to one branch of a set operation — it allows no parenthesized '
+      'operand at all. Lift the branch into a CTE or a derived table and select from that. '
+      'Leaving it unparenthesized would change which rows the statement returns.',
+    );
+  }
+
+  // MSSQL: grouping is fine, paging is not.
+  if (!_branchPages(branch)) return;
+
   final clause = branch.orderByStates.isNotEmpty
       ? 'ORDER BY'
       : branch.limit > 0
@@ -57,18 +99,12 @@ void _assertBranchScopeSupported(QueryState branch, Dialect config) {
   final area = branch.orderByStates.isNotEmpty
       ? ParserArea.orderBy
       : ParserArea.limitOffset;
-  final name = dialectDisplayName(config.databaseType);
-
-  final remedy = config.databaseType == DatabaseType.mssql
-      ? 'T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form '
-          'requires one — cap the branch with top(n), which needs neither, or lift it into a CTE '
-          'and select from that'
-      : 'SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the '
-          'branch into a CTE or a derived table and select from that';
 
   throw ParserError(
     area,
-    '$name cannot scope $clause to one branch of a set operation. $remedy. '
+    '$name cannot scope $clause to one branch of a set operation. T-SQL allows no ORDER BY '
+    'inside a set-operation operand, and its OFFSET/FETCH paging form requires one — cap the '
+    'branch with top(n), which needs neither, or lift it into a CTE and select from that. '
     'Setting it on the outer builder instead applies it to the whole result, which is a '
     'different query.',
   );

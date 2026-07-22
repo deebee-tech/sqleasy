@@ -2828,14 +2828,31 @@ const defaultSelect = (state, config, mode, options) => {
 //#endregion
 //#region src/parser/default-union.ts
 /**
-* Does this set-operation BRANCH carry a clause whose scope depends on parentheses?
-*
-* `ORDER BY`, `LIMIT` and `OFFSET` are the three. Everything else a branch can carry — `DISTINCT`,
-* MSSQL's `TOP (n)`, the whole WHERE/GROUP BY/HAVING stack — is already lexically bound to its own
-* SELECT and needs no help. (Verified: `UNION ALL SELECT TOP (3) * FROM b` caps the OPERAND on
-* MSSQL, returning 3 rows from it rather than 3 from the union.)
+* A branch's own paging clauses — the ones that need parentheses AND that some engines forbid
+* inside an operand.
 */
-const branchIsScoped = (branch) => branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset > 0;
+const branchPages = (branch) => branch.orderByStates.length > 0 || branch.limit > 0 || branch.offset > 0;
+/**
+* A branch that is ITSELF a set operation, i.e. the caller expressed a grouped operand.
+*
+* `A UNION ALL (B UNION C)` is not `A UNION ALL B UNION C`. Every engine reads the flat form as
+* `(A UNION ALL B) UNION C`, so the outer UNION ALL's duplicates get deduplicated by an inner UNION
+* that was never meant to see them. Measured on customers {1,2,3} with A=id<=2, B=id>=2, C=id=3:
+* the grouped form returns 4 rows (1,2,3,2) and the flat form 3. No error either way.
+*
+* This is a scoping need with a DIFFERENT dialect profile from {@link branchPages}: it wants only
+* the parentheses, and three of four engines are happy to give them.
+*/
+const branchGroups = (branch) => branch.unionStates.length > 0;
+/**
+* Does this set-operation BRANCH need parentheses to mean what the caller wrote?
+*
+* Everything else a branch can carry — `DISTINCT`, MSSQL's `TOP (n)`, the whole WHERE/GROUP BY/
+* HAVING stack — is already lexically bound to its own SELECT and needs no help. (Verified:
+* `UNION ALL SELECT TOP (3) * FROM b` caps the OPERAND on MSSQL, returning 3 rows from it rather
+* than 3 from the union.)
+*/
+const branchIsScoped = (branch) => branchPages(branch) || branchGroups(branch);
 /**
 * Refuses a scoping clause on a branch the dialect cannot scope, and reports whether the operand
 * must be wrapped in parentheses to mean what the caller wrote.
@@ -2870,18 +2887,30 @@ const branchIsScoped = (branch) => branch.orderByStates.length > 0 || branch.lim
 * ORDER BY, not the parentheses; testing the parentheses on their own accepts. SQLite is the only
 * one that rejects the parentheses themselves.
 *
-* MSSQL still cannot scope a branch row cap, but because T-SQL allows no ORDER BY inside a
-* set-operation operand at all — and `limit()` on MSSQL renders as OFFSET/FETCH, which REQUIRES an
-* ORDER BY. Its one real branch cap is `top(n)`, which needs neither. So the refusals below stand;
-* only the reason given for MSSQL had to be corrected. Hoisting the branch into a derived table or
-* CTE would fake it on both, and that is emulation — the caller can write it with
-* `fromWithBuilder`/`cte` if that is what they meant.
+* ── THE REFUSALS SPLIT BY REASON, NOT BY DIALECT ──
+* The two failing engines fail at different points, so a blanket per-dialect refusal is wrong:
+*
+*   SQLite  cannot parenthesize an operand AT ALL, so it refuses every scoping need — a grouped
+*           operand as much as a paged one.
+*   MSSQL   parenthesizes happily, so a GROUPED operand is fine (measured: the nested form returns
+*           the 4 correct rows). What it cannot do is PAGE inside an operand: T-SQL allows no
+*           ORDER BY there, and `limit()` renders as OFFSET/FETCH, which requires one. Its one real
+*           branch cap is `top(n)`, which needs neither and is emitted unparenthesized.
+*
+* Hoisting a branch into a derived table or CTE would fake the refused cases, and that is emulation
+* — the caller can write it with `fromWithBuilder`/`cte` if that is what they meant.
 */
 const assertBranchScopeSupported = (branch, config) => {
 	if (!branchIsScoped(branch)) return;
 	if (config.databaseType === DatabaseType.Postgres || config.databaseType === DatabaseType.Mysql) return;
+	const name = dialectDisplayName(config.databaseType);
+	if (config.databaseType === DatabaseType.Sqlite) {
+		const [what, area] = branchGroups(branch) ? ["a nested set operation", ParserArea.General] : [branch.orderByStates.length > 0 ? "ORDER BY" : branch.limit > 0 ? "LIMIT" : "OFFSET", branch.orderByStates.length > 0 ? ParserArea.OrderBy : ParserArea.LimitOffset];
+		throw new ParserError(area, `${name} cannot scope ${what} to one branch of a set operation — it allows no parenthesized operand at all. Lift the branch into a CTE or a derived table and select from that. Leaving it unparenthesized would change which rows the statement returns.`);
+	}
+	if (!branchPages(branch)) return;
 	const clause = branch.orderByStates.length > 0 ? "ORDER BY" : branch.limit > 0 ? "LIMIT" : "OFFSET";
-	throw new ParserError(branch.orderByStates.length > 0 ? ParserArea.OrderBy : ParserArea.LimitOffset, `${dialectDisplayName(config.databaseType)} cannot scope ${clause} to one branch of a set operation. ${config.databaseType === DatabaseType.Mssql ? "T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form requires one — cap the branch with top(n), which needs neither, or lift it into a CTE and select from that" : "SQLite allows no parenthesized operand and no LIMIT before the set operator — lift the branch into a CTE or a derived table and select from that"}. Setting it on the outer builder instead applies it to the whole result, which is a different query.`);
+	throw new ParserError(branch.orderByStates.length > 0 ? ParserArea.OrderBy : ParserArea.LimitOffset, `${name} cannot scope ${clause} to one branch of a set operation. T-SQL allows no ORDER BY inside a set-operation operand, and its OFFSET/FETCH paging form requires one — cap the branch with top(n), which needs neither, or lift it into a CTE and select from that. Setting it on the outer builder instead applies it to the whole result, which is a different query.`);
 };
 const defaultUnion = (state, config, mode, options) => {
 	const sqlHelper = new SqlHelper(mode);
