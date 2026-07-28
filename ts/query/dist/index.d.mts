@@ -1505,8 +1505,20 @@ declare const parsePrepared: (state: QueryState, config: Dialect) => PreparedSql
  * TEST display only: values are inlined UNQUOTED + UNESCAPED (readable golden SQL for the parser
  * test suite), so the result is NOT execution-safe. To run a query, use `parsePrepared` (bound
  * params) — never execute `parseRaw`/`parse` output against a driver. See `SqlHelper.getSqlDebug`.
+ *
+ * For a pasteable, dialect-escaped statement (product debug screens / SQL clients), use
+ * {@link parseDisplay} instead.
  */
 declare const parseRaw: (state: QueryState, config: Dialect) => string;
+/**
+ * DISPLAY ONLY — a single statement with values inlined as dialect-escaped SQL literals, suitable
+ * for pasting into SSMS / psql / mysql / sqlite3 (or showing on a debug screen).
+ *
+ * Unlike {@link parseRaw}, strings are quoted and escaped, `NULL` is the SQL null literal, and
+ * MSSQL is **not** wrapped in `sp_executesql` — you get the inner statement with literals. Unlike
+ * {@link parsePrepared}, this is not meant for a driver: prefer bound parameters for execution.
+ */
+declare const parseDisplay: (state: QueryState, config: Dialect) => string;
 /**
  * Renders a batch of query states as a single prepared SQL string. Each statement is prepared
  * independently (so placeholder numbering restarts per statement, matching running them one by
@@ -1521,6 +1533,12 @@ declare const parseMulti: (states: QueryState[], transactionState: MultiBuilderT
  * {@link MultiBuilderTransactionState.TransactionOn}.
  */
 declare const parseMultiRaw: (states: QueryState[], transactionState: MultiBuilderTransactionState, config: Dialect) => string;
+/**
+ * DISPLAY ONLY — batch form of {@link parseDisplay}. Values are dialect-escaped literals; wrap in
+ * the dialect's `transactionDelimiters` when `transactionState` is
+ * {@link MultiBuilderTransactionState.TransactionOn}. Not for driver execution.
+ */
+declare const parseMultiDisplay: (states: QueryState[], transactionState: MultiBuilderTransactionState, config: Dialect) => string;
 //#endregion
 //#region src/builder/join-on.d.ts
 /**
@@ -1930,6 +1948,13 @@ declare class QueryBuilder {
   parsePrepared: () => PreparedSql;
   /** DEBUG / TEST rendering with values inlined UNQUOTED. NOT execution-safe — run {@link parsePrepared}. */
   parseRaw: () => string;
+  /**
+   * DISPLAY ONLY — statement with values inlined as dialect-escaped literals (paste into a SQL
+   * client or show on a debug screen). Not for a driver; use {@link parsePrepared} to execute.
+   * Distinct from {@link parseRaw} (unquoted golden-test form) and from MSSQL's `sp_executesql`
+   * wrapper on {@link parse}/{@link parsePrepared}.
+   */
+  parseDisplay: () => string;
   selectAll: () => this;
   selectColumn: (tableNameOrAlias: string, columnName: string, columnAlias: string) => this;
   selectColumns: (columns: {
@@ -2312,6 +2337,11 @@ declare class MultiBuilder<V = QueryBuilder> {
   /** Renders the batch as a single raw SQL string with values inlined. DEBUG / TEST only. */
   parseRaw: () => string;
   /**
+   * DISPLAY ONLY — batch with values inlined as dialect-escaped literals (paste into a SQL client
+   * or show on a debug screen). Not for a driver; use {@link preparedStatements} to execute.
+   */
+  parseDisplay: () => string;
+  /**
    * The execution-safe form of the batch: each builder rendered as its own prepared
    * `{ sql, params }`, in batch order. This — not {@link parse} — is what you run: a batch is
    * executed statement by statement, because placeholder numbering restarts per statement (so the
@@ -2524,5 +2554,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { AGGREGATE_STAR, AggregateFunction, BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { AGGREGATE_STAR, AggregateFunction, BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseDisplay, parseMulti, parseMultiDisplay, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.mts.map

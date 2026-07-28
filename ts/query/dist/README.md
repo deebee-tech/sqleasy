@@ -843,7 +843,7 @@ try {
 
 ## Prepared Statements vs Raw SQL
 
-Every builder offers three renderings:
+Every builder offers four renderings:
 
 - **`parsePrepared()`** — the execution-safe one. Returns `{ sql, params }`. The exact shape is
   dialect-specific:
@@ -859,8 +859,12 @@ Every builder offers three renderings:
   (handy for logging the shape). On **MSSQL**, `parse()` and `parsePrepared()` both return the same
   `sp_executesql` string with values already inlined (`params` is empty) — there is no separate
   placeholder-only form.
-- **`parseRaw()`** — values inlined into the SQL. **Debug / display only** — it is not escaped and
-  not execution-safe. Never run `parseRaw()` output against a database.
+- **`parseDisplay()`** — values inlined as **dialect-escaped** SQL literals. **Display /
+  paste-into-client only** — meant for debug screens and copying into SSMS / psql / mysql /
+  sqlite3. On MSSQL this is the inner statement (no `sp_executesql` wrapper). Prefer
+  `parsePrepared()` for driver execution.
+- **`parseRaw()`** — values inlined **unquoted / unescaped**. Golden-test / debug readability only —
+  not paste-safe. Never run `parseRaw()` output against a database.
 
 > **Warning:** `*Raw*` builder methods (`whereRaw`, `selectRaw`, `fromRaw`, `setRaw`, etc.) are
 > raw SQL sinks with no quoting or binding. Never pass untrusted input into them.
@@ -871,7 +875,8 @@ builder.selectAll().fromTable('users', 'u').where('u', 'id', WhereOperator.Equal
 
 builder.parsePrepared(); // { sql: 'SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = $1;', params: [42] }
 builder.parse(); // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = $1;
-builder.parseRaw(); // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;   (debug only)
+builder.parseDisplay(); // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;
+builder.parseRaw(); // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;   (unquoted; golden only)
 ```
 
 ## Configuration

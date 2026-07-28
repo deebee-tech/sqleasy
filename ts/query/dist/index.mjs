@@ -678,6 +678,50 @@ var SqlHelper = class {
 */
 const sqlStringLiteral = (value) => "'" + value.replaceAll("'", "''") + "'";
 //#endregion
+//#region src/helpers/sql-literal.ts
+const toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+const isBinaryValue$1 = (value) => value instanceof Uint8Array;
+/**
+* A dialect-correct SQL literal for DISPLAY / paste-into-client use.
+*
+* Quotes and escapes strings, renders `NULL`, and uses each engine's usual forms for booleans,
+* dates, and binary. This is what {@link parseDisplay} inlines into the statement text so a human
+* can copy the result into SSMS / psql / mysql / sqlite3.
+*
+* **Not for driver execution.** Prefer {@link parsePrepared}. Distinct from {@link parseRaw}, which
+* deliberately leaves values unquoted for golden-test readability.
+*/
+const sqlLiteral = (value, databaseType) => {
+	if (value === null || value === void 0) return "NULL";
+	if (isBinaryValue$1(value)) {
+		const hex = toHex(value);
+		switch (databaseType) {
+			case DatabaseType.Mssql: return "0x" + hex;
+			case DatabaseType.Postgres: return sqlStringLiteral("\\x" + hex);
+			default: return "X'" + hex + "'";
+		}
+	}
+	switch (typeof value) {
+		case "number":
+			if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
+			return value.toString();
+		case "bigint": return value.toString();
+		case "boolean":
+			if (databaseType === DatabaseType.Mssql || databaseType === DatabaseType.Sqlite) return value ? "1" : "0";
+			return value ? "TRUE" : "FALSE";
+		case "string":
+			if (databaseType === DatabaseType.Mssql) return "N'" + value.replaceAll("'", "''") + "'";
+			return sqlStringLiteral(value);
+		case "object":
+			if (value instanceof Date) return sqlStringLiteral(value.toISOString());
+			{
+				const json = JSON.stringify(value).replaceAll("'", "''");
+				return databaseType === DatabaseType.Mssql ? "N'" + json + "'" : "'" + json + "'";
+			}
+		default: return sqlStringLiteral(String(value));
+	}
+};
+//#endregion
 //#region src/helpers/identifier.ts
 /**
 * Quote a SQL identifier (schema/table/column/alias) for a dialect, escaping any embedded closing
@@ -3947,24 +3991,9 @@ const toSqlOptionsFor = (config) => {
 		if (state.limitWithTies && state.limit > 0) sqlHelper.addSqlSnippet(`TOP (${state.limit}) WITH TIES `);
 	} };
 };
-/** A parameter value as a T-SQL literal for the sp_executesql value list. */
-const toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 const isBinaryValue = (value) => value instanceof Uint8Array;
-const mssqlParameterValue = (value) => {
-	if (value === null || value === void 0) return "NULL";
-	if (isBinaryValue(value)) return "0x" + toHex(value);
-	switch (typeof value) {
-		case "number":
-			if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
-			return value.toString();
-		case "boolean": return value ? "1" : "0";
-		case "bigint": return value.toString();
-		case "object":
-			if (value instanceof Date) return "'" + value.toISOString() + "'";
-			return "N'" + JSON.stringify(value).replaceAll("'", "''") + "'";
-		default: return "N'" + String(value).replaceAll("'", "''") + "'";
-	}
-};
+/** A parameter value as a T-SQL literal for the sp_executesql value list. */
+const mssqlParameterValue = (value) => sqlLiteral(value, DatabaseType.Mssql);
 /** The T-SQL declared type for an sp_executesql `@pN` parameter, inferred from the value. */
 const mssqlParameterType = (value) => {
 	if (isBinaryValue(value)) return "varbinary(max)";
@@ -4068,9 +4097,25 @@ const parsePrepared = (state, config) => {
 * TEST display only: values are inlined UNQUOTED + UNESCAPED (readable golden SQL for the parser
 * test suite), so the result is NOT execution-safe. To run a query, use `parsePrepared` (bound
 * params) — never execute `parseRaw`/`parse` output against a driver. See `SqlHelper.getSqlDebug`.
+*
+* For a pasteable, dialect-escaped statement (product debug screens / SQL clients), use
+* {@link parseDisplay} instead.
 */
 const parseRaw = (state, config) => {
 	return defaultToSql(state, config, ParserMode.Raw, toSqlOptionsFor(config)).getSqlDebug();
+};
+/**
+* DISPLAY ONLY — a single statement with values inlined as dialect-escaped SQL literals, suitable
+* for pasting into SSMS / psql / mysql / sqlite3 (or showing on a debug screen).
+*
+* Unlike {@link parseRaw}, strings are quoted and escaped, `NULL` is the SQL null literal, and
+* MSSQL is **not** wrapped in `sp_executesql` — you get the inner statement with literals. Unlike
+* {@link parsePrepared}, this is not meant for a driver: prefer bound parameters for execution.
+*/
+const parseDisplay = (state, config) => {
+	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
+	const values = sqlHelper.getValues();
+	return renderPlaceholders(sqlHelper.getSql(), (index) => index < values.length ? sqlLiteral(values[index], config.databaseType) : "");
 };
 /**
 * Renders a batch of query states as a single prepared SQL string. Each statement is prepared
@@ -4095,6 +4140,18 @@ const parseMultiRaw = (states, transactionState, config) => {
 	let sql = "";
 	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.begin + "; ";
 	for (const state of states) sql += parseRaw(state, config);
+	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.end + ";";
+	return sql;
+};
+/**
+* DISPLAY ONLY — batch form of {@link parseDisplay}. Values are dialect-escaped literals; wrap in
+* the dialect's `transactionDelimiters` when `transactionState` is
+* {@link MultiBuilderTransactionState.TransactionOn}. Not for driver execution.
+*/
+const parseMultiDisplay = (states, transactionState, config) => {
+	let sql = "";
+	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.begin + "; ";
+	for (const state of states) sql += parseDisplay(state, config);
 	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.end + ";";
 	return sql;
 };
@@ -5082,6 +5139,15 @@ var QueryBuilder = class QueryBuilder {
 	/** DEBUG / TEST rendering with values inlined UNQUOTED. NOT execution-safe — run {@link parsePrepared}. */
 	parseRaw = () => {
 		return parseRaw(this.state(), this.#config);
+	};
+	/**
+	* DISPLAY ONLY — statement with values inlined as dialect-escaped literals (paste into a SQL
+	* client or show on a debug screen). Not for a driver; use {@link parsePrepared} to execute.
+	* Distinct from {@link parseRaw} (unquoted golden-test form) and from MSSQL's `sp_executesql`
+	* wrapper on {@link parse}/{@link parsePrepared}.
+	*/
+	parseDisplay = () => {
+		return parseDisplay(this.state(), this.#config);
 	};
 	selectAll = () => {
 		this.#markSelectQuery();
@@ -6607,6 +6673,13 @@ var MultiBuilder = class {
 		return parseMultiRaw(this.states(), this.#transactionState, this.#config);
 	};
 	/**
+	* DISPLAY ONLY — batch with values inlined as dialect-escaped literals (paste into a SQL client
+	* or show on a debug screen). Not for a driver; use {@link preparedStatements} to execute.
+	*/
+	parseDisplay = () => {
+		return parseMultiDisplay(this.states(), this.#transactionState, this.#config);
+	};
+	/**
 	* The execution-safe form of the batch: each builder rendered as its own prepared
 	* `{ sql, params }`, in batch order. This — not {@link parse} — is what you run: a batch is
 	* executed statement by statement, because placeholder numbering restarts per statement (so the
@@ -7060,6 +7133,6 @@ const Fn = {
 	}
 };
 //#endregion
-export { AGGREGATE_STAR, AggregateFunction, BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseMulti, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { AGGREGATE_STAR, AggregateFunction, BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseDisplay, parseMulti, parseMultiDisplay, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 
 //# sourceMappingURL=index.mjs.map

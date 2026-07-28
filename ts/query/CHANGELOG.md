@@ -1,3 +1,10 @@
+# [13.1.0](https://github.com/deebee-tech/sqleasy/compare/v13.0.0...v13.1.0) (2026-07-28)
+
+
+### Features
+
+* **query:** add parseDisplay() for pasteable, dialect-escaped SQL ([d365311](https://github.com/deebee-tech/sqleasy/commit/d365311bcea9e2460995d59f7099c40f6590983f))
+
 # [13.0.0](https://github.com/deebee-tech/sqleasy/compare/v12.0.0...v13.0.0) (2026-07-22)
 
 
