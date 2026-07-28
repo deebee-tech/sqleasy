@@ -619,6 +619,7 @@ builder.parse();         // SELECT * FROM "public"."users" AS "u" WHERE "u"."id"
 builder.parseDisplay();  // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;
 builder.parseRaw();      // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;   (unquoted; golden only)
 ```
+
 ## Configuration
 
 Pass a `RuntimeConfiguration` to carry host-defined settings alongside a query:

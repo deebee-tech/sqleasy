@@ -44,12 +44,10 @@ describe('parseDisplay', () => {
       .fromTable('users', 'u')
       .where('u', 'active', WhereOperator.Equals, false);
 
-    expect(builder.parseDisplay()).toBe(
-      'SELECT * FROM "users" AS "u" WHERE "u"."active" = 0;',
-    );
+    expect(builder.parseDisplay()).toBe('SELECT * FROM "users" AS "u" WHERE "u"."active" = 0;');
   });
 
-  it('MSSQL returns the inner statement — not sp_executesql — with N\'…\' literals', () => {
+  it("MSSQL returns the inner statement — not sp_executesql — with N'…' literals", () => {
     const builder = new MssqlQuery()
       .newBuilder()
       .selectAll()
@@ -77,7 +75,7 @@ describe('parseDisplay', () => {
 
     expect(builder.parseDisplay()).toContain("'O''Brien'");
     // parseRaw deliberately leaves values unquoted for golden readability.
-    expect(builder.parseRaw()).toContain('= O\'Brien');
+    expect(builder.parseRaw()).toContain("= O'Brien");
     expect(builder.parseRaw()).not.toContain("'O''Brien'");
   });
 
