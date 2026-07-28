@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.2.0
+
+Mirrors `@deebeetech/sqleasy` **13.1.0**: pasteable, dialect-escaped SQL for debug screens.
+
+- **`parseDisplay()` / `MultiBuilder.parseDisplay()`** — values inlined as dialect-escaped SQL
+  literals for pasting into SSMS / psql / mysql / sqlite3 (or showing on a product debug screen).
+  Distinct from `parseRaw()` (unquoted golden form) and from MSSQL's `sp_executesql` wrapper on
+  `parse()` / `parsePrepared()`.
+
 ## 4.1.0
 
 Tracks the TypeScript `@deebeetech/sqleasy` **10.1.0** golden corpus (byte-identical to 10.0.0 — the

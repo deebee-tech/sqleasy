@@ -1888,6 +1888,12 @@ class QueryBuilder
   /// DEBUG / TEST rendering with values inlined UNQUOTED. NOT execution-safe — run [parsePrepared].
   String parseRaw() => parser.parseRaw(state, _config);
 
+  /// DISPLAY ONLY — statement with values inlined as dialect-escaped literals (paste into a SQL
+  /// client or show on a debug screen). Not for a driver; use [parsePrepared] to execute.
+  /// Distinct from [parseRaw] (unquoted golden-test form) and from MSSQL's `sp_executesql`
+  /// wrapper on [parse]/[parsePrepared].
+  String parseDisplay() => parser.parseDisplay(state, _config);
+
   /// DEBUG / TEST rendering (placeholders as text). NOT execution-safe — run [parsePrepared].
   String parse() => parser.parse(state, _config);
 

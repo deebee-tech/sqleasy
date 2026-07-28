@@ -19,7 +19,7 @@ import { UpsertAction } from '../enums/upsert-action';
 import { WhereOperator } from '../enums/where-operator';
 import { ParserError } from '../helpers/parser-error';
 import type { PreparedSql } from '../parser/to-sql';
-import { parse, parsePrepared, parseRaw } from '../parser/to-sql';
+import { parse, parseDisplay, parsePrepared, parseRaw } from '../parser/to-sql';
 import type { CallState } from '../state/call';
 import { createInsertState } from '../state/insert';
 import { createQueryState, type QueryState } from '../state/query';
@@ -728,6 +728,16 @@ export class QueryBuilder {
   /** DEBUG / TEST rendering with values inlined UNQUOTED. NOT execution-safe — run {@link parsePrepared}. */
   public parseRaw = (): string => {
     return parseRaw(this.state(), this.#config);
+  };
+
+  /**
+   * DISPLAY ONLY — statement with values inlined as dialect-escaped literals (paste into a SQL
+   * client or show on a debug screen). Not for a driver; use {@link parsePrepared} to execute.
+   * Distinct from {@link parseRaw} (unquoted golden-test form) and from MSSQL's `sp_executesql`
+   * wrapper on {@link parse}/{@link parsePrepared}.
+   */
+  public parseDisplay = (): string => {
+    return parseDisplay(this.state(), this.#config);
   };
 
   public selectAll = (): this => {

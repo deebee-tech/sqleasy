@@ -7,6 +7,7 @@ import { QueryType } from '../enums/query-type';
 import { ParserError } from '../helpers/parser-error';
 import { dialectDisplayName } from '../helpers/dialect-name';
 import { renderPlaceholders, SqlHelper } from '../helpers/sql';
+import { sqlLiteral } from '../helpers/sql-literal';
 import type { QueryState } from '../state/query';
 import { defaultCall } from './default-call';
 import { defaultCte } from './default-cte';
@@ -522,40 +523,10 @@ const toSqlOptionsFor = (config: Dialect): ToSqlOptions => {
   };
 };
 
-/** A parameter value as a T-SQL literal for the sp_executesql value list. */
-const toHex = (bytes: Uint8Array): string =>
-  Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-
 const isBinaryValue = (value: unknown): value is Uint8Array => value instanceof Uint8Array;
 
-const mssqlParameterValue = (value: any): string => {
-  if (value === null || value === undefined) {
-    return 'NULL';
-  }
-
-  if (isBinaryValue(value)) {
-    return '0x' + toHex(value);
-  }
-
-  switch (typeof value) {
-    case 'number':
-      if (!Number.isFinite(value)) {
-        throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
-      }
-      return value.toString();
-    case 'boolean':
-      return value ? '1' : '0';
-    case 'bigint':
-      return value.toString();
-    case 'object':
-      if (value instanceof Date) {
-        return "'" + value.toISOString() + "'";
-      }
-      return "N'" + JSON.stringify(value).replaceAll("'", "''") + "'";
-    default:
-      return "N'" + String(value).replaceAll("'", "''") + "'";
-  }
-};
+/** A parameter value as a T-SQL literal for the sp_executesql value list. */
+const mssqlParameterValue = (value: any): string => sqlLiteral(value, DatabaseType.Mssql);
 
 /** The T-SQL declared type for an sp_executesql `@pN` parameter, inferred from the value. */
 const mssqlParameterType = (value: any): string => {
@@ -721,10 +692,29 @@ export const parsePrepared = (state: QueryState, config: Dialect): PreparedSql =
  * TEST display only: values are inlined UNQUOTED + UNESCAPED (readable golden SQL for the parser
  * test suite), so the result is NOT execution-safe. To run a query, use `parsePrepared` (bound
  * params) — never execute `parseRaw`/`parse` output against a driver. See `SqlHelper.getSqlDebug`.
+ *
+ * For a pasteable, dialect-escaped statement (product debug screens / SQL clients), use
+ * {@link parseDisplay} instead.
  */
 export const parseRaw = (state: QueryState, config: Dialect): string => {
   const sqlHelper = defaultToSql(state, config, ParserMode.Raw, toSqlOptionsFor(config));
   return sqlHelper.getSqlDebug();
+};
+
+/**
+ * DISPLAY ONLY — a single statement with values inlined as dialect-escaped SQL literals, suitable
+ * for pasting into SSMS / psql / mysql / sqlite3 (or showing on a debug screen).
+ *
+ * Unlike {@link parseRaw}, strings are quoted and escaped, `NULL` is the SQL null literal, and
+ * MSSQL is **not** wrapped in `sp_executesql` — you get the inner statement with literals. Unlike
+ * {@link parsePrepared}, this is not meant for a driver: prefer bound parameters for execution.
+ */
+export const parseDisplay = (state: QueryState, config: Dialect): string => {
+  const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
+  const values = sqlHelper.getValues();
+  return renderPlaceholders(sqlHelper.getSql(), (index) =>
+    index < values.length ? sqlLiteral(values[index], config.databaseType) : '',
+  );
 };
 
 /**
@@ -774,6 +764,33 @@ export const parseMultiRaw = (
 
   for (const state of states) {
     sql += parseRaw(state, config);
+  }
+
+  if (transactionState === MultiBuilderTransactionState.TransactionOn) {
+    sql += config.transactionDelimiters.end + ';';
+  }
+
+  return sql;
+};
+
+/**
+ * DISPLAY ONLY — batch form of {@link parseDisplay}. Values are dialect-escaped literals; wrap in
+ * the dialect's `transactionDelimiters` when `transactionState` is
+ * {@link MultiBuilderTransactionState.TransactionOn}. Not for driver execution.
+ */
+export const parseMultiDisplay = (
+  states: QueryState[],
+  transactionState: MultiBuilderTransactionState,
+  config: Dialect,
+): string => {
+  let sql = '';
+
+  if (transactionState === MultiBuilderTransactionState.TransactionOn) {
+    sql += config.transactionDelimiters.begin + '; ';
+  }
+
+  for (const state of states) {
+    sql += parseDisplay(state, config);
   }
 
   if (transactionState === MultiBuilderTransactionState.TransactionOn) {

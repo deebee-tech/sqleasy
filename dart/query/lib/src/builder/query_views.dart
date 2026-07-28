@@ -12,6 +12,7 @@ abstract interface class SqlBuilderView {
   Dialect get configuration;
   QueryState get state;
   String parseRaw();
+  String parseDisplay();
   String parse();
   PreparedSql parsePrepared();
 }

@@ -591,7 +591,7 @@ try {
 
 ## Prepared Statements vs Raw SQL
 
-Every builder offers three renderings:
+Every builder offers four renderings:
 
 - **`parsePrepared()`** — the execution-safe one. Returns a `PreparedSql` (`.sql`, `.params`), whose
   shape is dialect-specific:
@@ -601,8 +601,12 @@ Every builder offers three renderings:
     arguments, so `params` is **empty**. It is still injection-safe: values are escaped and passed as
     sp_executesql arguments, never concatenated into the statement text.
 - **`parse()`** — the SQL string with placeholders, without the values (handy for logging the shape).
-- **`parseRaw()`** — values inlined into the SQL. **Debug / display only** — not escaped, not
-  execution-safe. Never run `parseRaw()` output against a database.
+- **`parseDisplay()`** — values inlined as **dialect-escaped** SQL literals. **Display /
+  paste-into-client only** — meant for debug screens and copying into SSMS / psql / mysql /
+  sqlite3. On MSSQL this is the inner statement (no `sp_executesql` wrapper). Prefer
+  `parsePrepared()` for driver execution.
+- **`parseRaw()`** — values inlined **unquoted / unescaped**. Golden-test / debug readability only —
+  not paste-safe. Never run `parseRaw()` output against a database.
 
 ```dart
 final builder = PostgresQuery().newBuilder()
@@ -612,9 +616,9 @@ final builder = PostgresQuery().newBuilder()
 
 builder.parsePrepared(); // .sql: '... WHERE "u"."id" = $1;'  .params: [42]
 builder.parse();         // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = $1;
-builder.parseRaw();      // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;   (debug only)
+builder.parseDisplay();  // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;
+builder.parseRaw();      // SELECT * FROM "public"."users" AS "u" WHERE "u"."id" = 42;   (unquoted; golden only)
 ```
-
 ## Configuration
 
 Pass a `RuntimeConfiguration` to carry host-defined settings alongside a query:

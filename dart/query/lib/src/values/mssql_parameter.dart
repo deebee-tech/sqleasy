@@ -6,19 +6,12 @@
 /// divergence in [sql_value] is therefore a **correctness** bug here, not just a golden-string one.
 library;
 
-import 'dart:convert';
 import 'dart:typed_data';
 
+import '../enums.dart';
 import '../errors/parser_error.dart';
+import 'sql_literal.dart';
 import 'sql_value.dart';
-
-String _toHex(Uint8List bytes) {
-  final buffer = StringBuffer();
-  for (final b in bytes) {
-    buffer.write(b.toRadixString(16).padLeft(2, '0'));
-  }
-  return buffer.toString();
-}
 
 /// The T-SQL type declared for an `@pN` parameter, inferred from its value.
 String mssqlParameterType(Object? value) {
@@ -72,29 +65,5 @@ String mssqlParameterType(Object? value) {
 }
 
 /// A value as a T-SQL literal for the `sp_executesql` value list.
-String mssqlParameterValue(Object? value) {
-  if (value == null) {
-    return 'NULL';
-  }
-  if (value is Uint8List) {
-    return '0x${_toHex(value)}';
-  }
-  if (value is num) {
-    return formatNumber(value);
-  }
-  if (value is bool) {
-    return value ? '1' : '0';
-  }
-  if (value is DateTime) {
-    return "'${formatDateTime(value)}'";
-  }
-  if (value is String) {
-    return "N'${value.replaceAll("'", "''")}'";
-  }
-  // Match TypeScript's `typeof 'bigint'` arm: bare decimal digits, declared as `bigint`.
-  if (value is BigInt) {
-    return value.toString();
-  }
-
-  return "N'${jsonEncode(value).replaceAll("'", "''")}'";
-}
+String mssqlParameterValue(Object? value) =>
+    sqlLiteral(value, DatabaseType.mssql);

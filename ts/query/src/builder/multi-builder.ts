@@ -1,6 +1,6 @@
 import type { Dialect } from '../configuration/configuration';
 import { MultiBuilderTransactionState } from '../enums/multi-builder-transaction-state';
-import { parseMulti, parseMultiRaw, type PreparedSql } from '../parser/to-sql';
+import { parseMulti, parseMultiDisplay, parseMultiRaw, type PreparedSql } from '../parser/to-sql';
 import type { QueryState } from '../state/query';
 import { QueryBuilder } from './query';
 
@@ -40,6 +40,14 @@ export class MultiBuilder<V = QueryBuilder> {
   /** Renders the batch as a single raw SQL string with values inlined. DEBUG / TEST only. */
   public parseRaw = (): string => {
     return parseMultiRaw(this.states(), this.#transactionState, this.#config);
+  };
+
+  /**
+   * DISPLAY ONLY — batch with values inlined as dialect-escaped literals (paste into a SQL client
+   * or show on a debug screen). Not for a driver; use {@link preparedStatements} to execute.
+   */
+  public parseDisplay = (): string => {
+    return parseMultiDisplay(this.states(), this.#transactionState, this.#config);
   };
 
   /**

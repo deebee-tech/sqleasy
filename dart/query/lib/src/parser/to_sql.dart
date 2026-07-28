@@ -8,6 +8,7 @@ import '../dialect_name.dart';
 import '../sql_helper.dart';
 import '../state.dart';
 import '../values/mssql_parameter.dart';
+import '../values/sql_literal.dart';
 import '../values/sql_value.dart';
 import 'default_call.dart';
 import 'default_merge.dart';
@@ -579,10 +580,31 @@ PreparedSql parsePrepared(QueryState state, Dialect config) {
 
 /// Renders one query state as a raw SQL string with values inlined (MSSQL keeps its `TOP`). DEBUG /
 /// TEST display only — NOT execution-safe.
+///
+/// For a pasteable, dialect-escaped statement (product debug screens / SQL clients), use
+/// [parseDisplay] instead.
 String parseRaw(QueryState state, Dialect config) {
   final sqlHelper =
       defaultToSql(state, config, ParserMode.raw, toSqlOptionsFor(config));
   return sqlHelper.getSqlDebug();
+}
+
+/// DISPLAY ONLY — a single statement with values inlined as dialect-escaped SQL literals, suitable
+/// for pasting into SSMS / psql / mysql / sqlite3 (or showing on a debug screen).
+///
+/// Unlike [parseRaw], strings are quoted and escaped, `NULL` is the SQL null literal, and MSSQL is
+/// **not** wrapped in `sp_executesql` — you get the inner statement with literals. Unlike
+/// [parsePrepared], this is not meant for a driver: prefer bound parameters for execution.
+String parseDisplay(QueryState state, Dialect config) {
+  final sqlHelper =
+      defaultToSql(state, config, ParserMode.prepared, toSqlOptionsFor(config));
+  final values = sqlHelper.getValues();
+  return renderPlaceholders(
+    sqlHelper.getSql(),
+    (index) => index < values.length
+        ? sqlLiteral(values[index], config.databaseType)
+        : '',
+  );
 }
 
 /// Renders a batch of query states as a single prepared SQL string. Each statement is prepared
@@ -623,6 +645,31 @@ String parseMultiRaw(
 
   for (final state in states) {
     sql += parseRaw(state, config);
+  }
+
+  if (transactionState == MultiBuilderTransactionState.transactionOn) {
+    sql += '${config.transactionDelimiters.end};';
+  }
+
+  return sql;
+}
+
+/// DISPLAY ONLY — batch form of [parseDisplay]. Values are dialect-escaped literals; wrap in the
+/// dialect's `transactionDelimiters` when [transactionState] is
+/// [MultiBuilderTransactionState.transactionOn]. Not for driver execution.
+String parseMultiDisplay(
+  List<QueryState> states,
+  MultiBuilderTransactionState transactionState,
+  Dialect config,
+) {
+  var sql = '';
+
+  if (transactionState == MultiBuilderTransactionState.transactionOn) {
+    sql += '${config.transactionDelimiters.begin}; ';
+  }
+
+  for (final state in states) {
+    sql += parseDisplay(state, config);
   }
 
   if (transactionState == MultiBuilderTransactionState.transactionOn) {

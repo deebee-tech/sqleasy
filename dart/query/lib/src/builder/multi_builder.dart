@@ -65,6 +65,11 @@ class MultiBuilder<V extends SqlBuilderView> {
   String parseRaw() =>
       parser.parseMultiRaw(states(), _transactionState, _config);
 
+  /// DISPLAY ONLY — batch with values inlined as dialect-escaped literals (paste into a SQL
+  /// client or show on a debug screen). Not for a driver; use [preparedStatements] to execute.
+  String parseDisplay() =>
+      parser.parseMultiDisplay(states(), _transactionState, _config);
+
   /// The execution-safe form of the batch: each builder rendered as its own prepared
   /// `(sql, params)`, in batch order. This — not [parse] — is what you run: a batch executes
   /// statement by statement, because placeholder numbering restarts per statement (so the single
