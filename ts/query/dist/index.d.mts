@@ -12,6 +12,32 @@ type ConfigurationDelimiters = {
 declare class RuntimeConfiguration {
   /** Optional host-defined settings carried alongside runtime options. */
   customConfiguration: any | undefined;
+  /**
+   * MSSQL ONLY — bind parameters through the driver instead of inlining them.
+   *
+   * Named for its dialect because it is the only one with a choice to make: Postgres, MySQL and
+   * SQLite always hand `{ sql, params }` to the driver, so this flag does nothing there and is not
+   * read. MSSQL defaults to a self-contained `exec sp_executesql` batch with the values written
+   * into the EXEC argument list, which is portable — you can paste it into SSMS — and keeps the
+   * INNER statement text stable.
+   *
+   * **Plan reuse is NOT the reason to turn this on.** Measured against SQL Server 2022 with
+   * `optimize for ad hoc workloads` off: 25 executions of one shape with 25 distinct values cache
+   * ONE plan under the default form, the same as under this one. The outer `exec` batch gets no
+   * cache entry at all, so only the value-independent inner statement is cached. (Literal SQL, with
+   * the values written into the statement itself, caches 25 — that is the pathology, and the
+   * default form already avoids it.)
+   *
+   * Turn it on for the narrower wins: values never reach the SQL text, so a logged statement cannot
+   * leak them; the payload is smaller; and the parameter TYPE comes from the driver instead of
+   * being inferred from the value, which matters because `sp_executesql` keys its cache on the
+   * declaration — see `mssqlParameterType` for the banding that used to split one shape into
+   * several plans.
+   *
+   * Set this to `true` and `parsePrepared()` returns `@p0`-style placeholders with the ordered
+   * values alongside, for the caller to bind (`request.input('p0', value)`).
+   */
+  mssqlBoundParameters: boolean;
 }
 //#endregion
 //#region src/enums/database-type.d.ts
@@ -338,6 +364,18 @@ declare class SqlHelper {
    * legitimately carries {@link PLACEHOLDER_TOKEN}s, so it bypasses the NUL check in
    * {@link addSqlSnippet} — its own fragments were validated when the sub-parser built them.
    */
+  /**
+   * A caller's raw fragment plus the values its `?` markers stand for.
+   *
+   * This is what `addSqlSnippet` could not do: a raw fragment was text and only text, so a caller
+   * with `WHERE name LIKE ?` had nowhere to put the value and had to interpolate it — which is how
+   * a query builder ends up shipping SQL injection. The markers are replaced HERE, while the fragment
+   * is still being walked, so the value never becomes part of the statement text at all.
+   *
+   * A count mismatch throws rather than binding what it can. Silently taking the first two of three
+   * values leaves the third marker dangling and every dialect reports it far from this call.
+   */
+  addRawWithValues: (raw: string, values: readonly any[]) => void;
   addSqlSnippetWithValues: (sqlString: string, values: any[]) => void;
   clear: () => void;
   /**
@@ -838,6 +876,10 @@ declare const JoinOnOperator: {
   readonly Between: "Between";
   /** `ON column NOT BETWEEN low AND high` — see {@link JoinOnBuilder.onNotBetween}. */
   readonly NotBetween: "NotBetween";
+  /** `ON column IS NULL` — see {@link JoinOnBuilder.onNull}. */
+  readonly Null: "Null";
+  /** `ON column IS NOT NULL` — see {@link JoinOnBuilder.onNotNull}. */
+  readonly NotNull: "NotNull";
   /** No operator / unused slot. */
   readonly None: "None";
 };
@@ -1491,13 +1533,18 @@ declare const defaultToSql: (state: QueryState | undefined, config: Dialect, mod
 /**
  * Renders one query state as a prepared SQL string (placeholders, without a separate params
  * array). For Postgres/MySQL/SQLite this is **not** execution-safe on its own — use
- * {@link parsePrepared} to get `{ sql, params }`. For MSSQL, `parse` and `parsePrepared`
- * both return the same self-contained `sp_executesql` batch (values inlined; `params` empty).
+ * {@link parsePrepared} to get `{ sql, params }`. For MSSQL this is always the self-contained
+ * `sp_executesql` batch (values inlined), because a bare string has nowhere to carry values —
+ * {@link RuntimeConfiguration.mssqlBoundParameters} does not change it, only `parsePrepared`.
  */
 declare const parse: (state: QueryState, config: Dialect) => string;
 /**
- * Renders one query state as prepared SQL plus its ordered bound values. MSSQL inlines its
- * values into the `sp_executesql` string, so its `params` is empty.
+ * Renders one query state as prepared SQL plus its ordered bound values.
+ *
+ * MSSQL has two forms and defaults to the first: values inlined into a self-contained
+ * `sp_executesql` batch, so `params` is empty; or, under
+ * {@link RuntimeConfiguration.mssqlBoundParameters}, `@p0`… placeholders with the values left for
+ * the driver to bind. The other three dialects always bind.
  */
 declare const parsePrepared: (state: QueryState, config: Dialect) => PreparedSql;
 /**
@@ -1532,6 +1579,26 @@ declare const parseMulti: (states: QueryState[], transactionState: MultiBuilderT
  * `transactionDelimiters` when `transactionState` is
  * {@link MultiBuilderTransactionState.TransactionOn}.
  */
+/**
+ * Renders a batch as ONE prepared statement: every placeholder renumbered continuously across the
+ * whole batch, and every statement's values concatenated in the same order.
+ *
+ * **MSSQL only, and it REFUSES elsewhere rather than emitting something that would misbind.** This
+ * is the difference between `sp_executesql` and everything else: it takes a `;`-joined batch plus a
+ * SINGLE parameter list that every statement in the batch can see, so continuous numbering is
+ * exactly right. Postgres's extended protocol runs one statement per parameterized query, MySQL
+ * needs `multipleStatements`, and SQLite executes one statement at a time — on those three a
+ * concatenated batch is not a runnable parameterized call at all, which is why
+ * {@link MultiBuilder.preparedStatements} (statement by statement) remains the portable answer.
+ *
+ * Reach for this when the round trip is what costs you — a paginated read sending its COUNT and its
+ * page together, and reading both back from one result. Reach for `preparedStatements` when you
+ * want the statements to be ATOMIC; that is a transaction, and it works everywhere.
+ *
+ * Under the default (inlined) MSSQL form there is nothing to renumber: each statement is already a
+ * self-contained `sp_executesql` carrying its own values, so the batch is returned with no params.
+ */
+declare const parseMultiPrepared: (states: QueryState[], transactionState: MultiBuilderTransactionState, config: Dialect) => PreparedSql;
 declare const parseMultiRaw: (states: QueryState[], transactionState: MultiBuilderTransactionState, config: Dialect) => string;
 /**
  * DISPLAY ONLY — batch form of {@link parseDisplay}. Values are dialect-escaped literals; wrap in
@@ -1553,7 +1620,14 @@ declare class JoinOnBuilder {
   and: () => this;
   on: (aliasLeft: string, columnLeft: string, joinOperator: JoinOperator, aliasRight: string, columnRight: string) => this;
   onGroup: (builder: (builder: JoinOnBuilder) => void) => this;
-  onRaw: (raw: string) => this;
+  /**
+   * A raw ON fragment, optionally carrying bound values for its `?` markers.
+   *
+   * Same reason as `whereRaw`: without values a caller comparing against anything dynamic had to
+   * interpolate it into the fragment, and an ON clause is no safer a place to do that than a WHERE.
+   * `\?` is an escaped literal question mark, as in knex.
+   */
+  onRaw: (raw: string, values?: readonly any[]) => this;
   onValue: (aliasLeft: string, columnLeft: string, joinOperator: JoinOperator, valueRight: any) => this;
   /** `ON column IN (values)`. */
   onIn: (aliasLeft: string, columnLeft: string, values: any[]) => this;
@@ -1563,6 +1637,18 @@ declare class JoinOnBuilder {
   onBetween: (aliasLeft: string, columnLeft: string, value1: any, value2: any) => this;
   /** `ON column NOT BETWEEN value1 AND value2`. */
   onNotBetween: (aliasLeft: string, columnLeft: string, value1: any, value2: any) => this;
+  /**
+   * `ON column IS NULL`.
+   *
+   * A null test is not expressible through {@link onValue}: `= NULL` is never true in SQL, so
+   * passing null there produces a predicate that silently matches nothing. The WHERE clause has
+   * had `whereNull`/`whereNotNull` all along; this closes the same gap on the JOIN, and closing it
+   * removes the raw fragment callers were otherwise forced to hand-write — which also meant
+   * hand-quoting the identifier.
+   */
+  onNull: (aliasLeft: string, columnLeft: string) => this;
+  /** `ON column IS NOT NULL` — see {@link onNull}. */
+  onNotNull: (aliasLeft: string, columnLeft: string) => this;
   or: () => this;
   states: () => JoinOnState[];
 }
@@ -2034,7 +2120,14 @@ declare class QueryBuilder {
   whereNotInValues: (tableNameOrAlias: string, columnName: string, values: any[]) => this;
   whereNotNull: (tableNameOrAlias: string, columnName: string) => this;
   whereNull: (tableNameOrAlias: string, columnName: string) => this;
-  whereRaw: (rawWhere: string) => this;
+  /**
+   * A raw WHERE fragment, optionally carrying bound values for its `?` markers.
+   *
+   * Without `values` a caller with `name LIKE ?` had to interpolate the value into the string,
+   * which is how a query builder ends up shipping SQL injection. `\?` is an escaped literal
+   * question mark, as in knex.
+   */
+  whereRaw: (rawWhere: string, values?: readonly any[]) => this;
   whereRaws: (rawWheres: string[]) => this;
   /** Compare a dialect-specific JSON path extraction against a bound value. */
   whereJsonExtract: (tableNameOrAlias: string, columnName: string, path: string, mode: JsonExtractMode, whereOperator: WhereOperator, value: any) => this;
@@ -2128,7 +2221,7 @@ declare class QueryBuilder {
    * `havingRaw`. Pass `'*'` as the column for `COUNT(*)`.
    */
   havingAggregate: (aggregate: AggregateFunction, tableNameOrAlias: string, columnName: string, whereOperator: WhereOperator, value: unknown, distinct?: boolean, filter?: (builder: QueryBuilder) => void) => this;
-  havingRaw: (rawHaving: string) => this;
+  havingRaw: (rawHaving: string, values?: readonly any[]) => this;
   havingRaws: (rawHavings: string[]) => this;
   havingJsonExtract: (tableNameOrAlias: string, columnName: string, path: string, mode: JsonExtractMode, whereOperator: WhereOperator, value: any) => this;
   havingJsonContains: (tableNameOrAlias: string, columnName: string, value: any) => this;
@@ -2351,6 +2444,21 @@ declare class MultiBuilder<V = QueryBuilder> {
    * delimiters are NOT included here.
    */
   preparedStatements: () => PreparedSql[];
+  /**
+   * The batch as ONE prepared statement — placeholders renumbered continuously across every
+   * statement, values concatenated in the same order — for a single round trip that returns a
+   * result set per statement.
+   *
+   * **MSSQL only; throws on the other three.** `sp_executesql` takes a `;`-joined batch plus one
+   * shared parameter list, which is what makes continuous numbering correct. Elsewhere a
+   * concatenated batch is not a runnable parameterized call, so {@link preparedStatements} is the
+   * portable answer — and the right one whenever you want the statements to be ATOMIC, since that
+   * is a transaction.
+   *
+   * Unlike {@link preparedStatements}, the transaction delimiters ARE included when
+   * {@link transactionState} is on, because the batch travels as one statement.
+   */
+  preparedBatch: () => PreparedSql;
   /** Removes a previously added builder from the batch by name. */
   removeBuilder: (builderName: string) => void;
   /**
@@ -2554,5 +2662,5 @@ type ScalarExpressions = {
  */
 declare const Fn: ScalarExpressions;
 //#endregion
-export { AGGREGATE_STAR, AggregateFunction, BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseDisplay, parseMulti, parseMultiDisplay, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { AGGREGATE_STAR, AggregateFunction, BuilderType, BuilderView, CallKind, CallParamDirection, CallParamState, CallReturnIntent, CallState, CommonQueryBuilder, ConfigurationDelimiters, CteState, DatabaseType, Dialect, Fn, FrameBoundType, FrameUnit, FromState, FullTextColumnRef, FullTextMode, GroupByColumnRef, GroupByState, HavingState, HintKind, HintState, InsertState, JoinOnBuilder, JoinOnOperator, JoinOnState, JoinOperator, JoinState, JoinType, JsonExtractMode, MergeAssignment, MergeBuilder, MergeExpr, MergeState, MergeUsing, MergeWhenAction, MergeWhenMatch, MergeWhenState, MssqlQuery, MssqlQueryBuilder, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, MysqlQueryBuilder, NullsOrder, OrderByDirection, OrderByState, ParserArea, ParserError, PostgresQuery, PostgresQueryBuilder, PreparedSql, QueryBuilder, QueryState, QueryType, ReturningState, RowLockMode, RowLockState, RowLockWait, RuntimeConfiguration, SelectState, SqliteQuery, SqliteQueryBuilder, ToSqlOptions, UnionState, UpdateState, UpsertAction, UpsertState, WhereOperator, WhereState, WindowBuilder, WindowFrameBoundState, WindowFrameState, WindowOrderByState, WindowPartitionByState, WindowState, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseDisplay, parseMulti, parseMultiDisplay, parseMultiPrepared, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 //# sourceMappingURL=index.d.mts.map

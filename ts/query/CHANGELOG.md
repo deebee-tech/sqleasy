@@ -1,3 +1,15 @@
+# [14.0.0-beta.1](https://github.com/deebee-tech/sqleasy/compare/v13.1.0...v14.0.0-beta.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **dart:** regenerate the typed views and satisfy the release gate ([1d7f456](https://github.com/deebee-tech/sqleasy/commit/1d7f45685c5fe7523705c678936a5c2da53144c9))
+
+
+### Features
+
+* **raw:** let raw fragments carry bound values ([85b3bde](https://github.com/deebee-tech/sqleasy/commit/85b3bdefab854312c9ce1bf9eb0530f21efc02dc))
+
 # [13.1.0](https://github.com/deebee-tech/sqleasy/compare/v13.0.0...v13.1.0) (2026-07-28)
 
 

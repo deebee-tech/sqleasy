@@ -578,6 +578,35 @@ const renderPlaceholders = (sql, nth) => {
 	return sql.split("\0?\0").reduce((acc, part) => acc + nth(index++) + part);
 };
 /**
+* Splits a caller's raw fragment on its unescaped `?` markers.
+*
+* `\?` is an escaped literal question mark and does NOT mark a value — the same convention knex
+* uses, which matters because the fragments being ported here come from knex. Without it a fragment
+* like `WHERE note LIKE 'why\?'` would claim a value it does not have and shift every later
+* binding.
+*
+* Returns one more part than there are markers, so `parts.length - 1` is the placeholder count.
+*/
+const splitOnValueMarkers = (raw) => {
+	const parts = [];
+	let current = "";
+	for (let index = 0; index < raw.length; index++) {
+		if (raw[index] === "\\" && raw[index + 1] === "?") {
+			current += "?";
+			index++;
+			continue;
+		}
+		if (raw[index] === "?") {
+			parts.push(current);
+			current = "";
+			continue;
+		}
+		current += raw[index];
+	}
+	parts.push(current);
+	return parts;
+};
+/**
 * Accumulates SQL fragments and their bound values while a parser walks a query state.
 *
 * Deliberately dialect-agnostic: it emits {@link PLACEHOLDER_TOKEN}, never a dialect's `?`/`$`, so
@@ -623,6 +652,38 @@ var SqlHelper = class {
 	* legitimately carries {@link PLACEHOLDER_TOKEN}s, so it bypasses the NUL check in
 	* {@link addSqlSnippet} — its own fragments were validated when the sub-parser built them.
 	*/
+	/**
+	* A caller's raw fragment plus the values its `?` markers stand for.
+	*
+	* This is what `addSqlSnippet` could not do: a raw fragment was text and only text, so a caller
+	* with `WHERE name LIKE ?` had nowhere to put the value and had to interpolate it — which is how
+	* a query builder ends up shipping SQL injection. The markers are replaced HERE, while the fragment
+	* is still being walked, so the value never becomes part of the statement text at all.
+	*
+	* A count mismatch throws rather than binding what it can. Silently taking the first two of three
+	* values leaves the third marker dangling and every dialect reports it far from this call.
+	*/
+	addRawWithValues = (raw, values) => {
+		if (raw.includes(NUL)) throw new ParserError(ParserArea.General, "SQL fragment contains a NUL byte");
+		if (values.length === 0) {
+			this.#parts.push(raw);
+			return;
+		}
+		const parts = splitOnValueMarkers(raw);
+		const markers = parts.length - 1;
+		if (markers !== values.length) throw new ParserError(ParserArea.General, `raw fragment has ${markers} value marker(s) but ${values.length} value(s) were supplied`);
+		values.forEach(assertBindableValue);
+		parts.forEach((part, index) => {
+			this.#parts.push(part);
+			if (index >= values.length) return;
+			if (this.#parserMode === ParserMode.Prepared) {
+				this.#values.push(values[index]);
+				this.#parts.push("\0?\0");
+				return;
+			}
+			this.#parts.push(this.getValueStringFromDataType(values[index]));
+		});
+	};
 	addSqlSnippetWithValues = (sqlString, values) => {
 		this.#values.push(...values);
 		this.#parts.push(sqlString);
@@ -682,6 +743,27 @@ const sqlStringLiteral = (value) => "'" + value.replaceAll("'", "''") + "'";
 const toHex = (bytes) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 const isBinaryValue$1 = (value) => value instanceof Uint8Array;
 /**
+* Whether a string is safe to carry to SQL Server as `varchar` rather than `nvarchar`.
+*
+* This decides an index seek, not a nicety. T-SQL type precedence puts `nvarchar` above `varchar`,
+* so comparing a `varchar` COLUMN to an `nvarchar` parameter converts the column — and a converted
+* column cannot be seeked. Measured on `SQL_Latin1_General_CP1_CI_AS`: an `nvarchar` parameter
+* against an indexed `varchar(50)` column produced an index SCAN at 10x the cost of the seek a
+* `varchar` parameter got. The reverse never bites: a `varchar` parameter against an `nvarchar`
+* column converts the PARAMETER, which is one scalar operation and leaves the seek intact. So
+* `varchar` is the strictly safer declaration wherever the value survives it.
+*
+* ASCII is the conservative test. `varchar` really means "the server's codepage", which the parser
+* cannot know, and CP1252 would admit accented Latin text too — so a name like `José` falls back to
+* `nvarchar` here and may scan a `varchar` column. That is the correct trade: a scan returns the
+* right rows, and guessing a codepage returns the wrong ones. Everything a check-in kiosk actually
+* searches on — plain names, phone digits, email addresses, codes — is ASCII and gets the seek.
+*/
+const isCodepageSafeText = (value) => {
+	for (let i = 0; i < value.length; i++) if (value.charCodeAt(i) > 127) return false;
+	return true;
+};
+/**
 * A dialect-correct SQL literal for DISPLAY / paste-into-client use.
 *
 * Quotes and escapes strings, renders `NULL`, and uses each engine's usual forms for booleans,
@@ -710,7 +792,10 @@ const sqlLiteral = (value, databaseType) => {
 			if (databaseType === DatabaseType.Mssql || databaseType === DatabaseType.Sqlite) return value ? "1" : "0";
 			return value ? "TRUE" : "FALSE";
 		case "string":
-			if (databaseType === DatabaseType.Mssql) return "N'" + value.replaceAll("'", "''") + "'";
+			if (databaseType === DatabaseType.Mssql) {
+				const quoted = "'" + value.replaceAll("'", "''") + "'";
+				return isCodepageSafeText(value) ? quoted : "N" + quoted;
+			}
 			return sqlStringLiteral(value);
 		case "object":
 			if (value instanceof Date) return sqlStringLiteral(value.toISOString());
@@ -1023,6 +1108,10 @@ const JoinOnOperator = {
 	Between: "Between",
 	/** `ON column NOT BETWEEN low AND high` — see {@link JoinOnBuilder.onNotBetween}. */
 	NotBetween: "NotBetween",
+	/** `ON column IS NULL` — see {@link JoinOnBuilder.onNull}. */
+	Null: "Null",
+	/** `ON column IS NOT NULL` — see {@link JoinOnBuilder.onNotNull}. */
+	NotNull: "NotNull",
 	/** No operator / unused slot. */
 	None: "None"
 };
@@ -1264,7 +1353,7 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			spaceAfter();
 			continue;
 		}
-		const isPredicateOperator = (joinOnOperator) => joinOnOperator === JoinOnOperator.On || joinOnOperator === JoinOnOperator.Value || joinOnOperator === JoinOnOperator.Raw || joinOnOperator === JoinOnOperator.InValues || joinOnOperator === JoinOnOperator.NotInValues || joinOnOperator === JoinOnOperator.Between || joinOnOperator === JoinOnOperator.NotBetween;
+		const isPredicateOperator = (joinOnOperator) => joinOnOperator === JoinOnOperator.On || joinOnOperator === JoinOnOperator.Value || joinOnOperator === JoinOnOperator.Raw || joinOnOperator === JoinOnOperator.InValues || joinOnOperator === JoinOnOperator.NotInValues || joinOnOperator === JoinOnOperator.Between || joinOnOperator === JoinOnOperator.NotBetween || joinOnOperator === JoinOnOperator.Null || joinOnOperator === JoinOnOperator.NotNull;
 		const endsOnExpression = prevOn && (isPredicateOperator(prevOn.joinOnOperator) || prevOn.joinOnOperator === JoinOnOperator.GroupEnd);
 		const startsOnExpression = isPredicateOperator(on.joinOnOperator) || on.joinOnOperator === JoinOnOperator.GroupBegin;
 		if (i > 0 && endsOnExpression && startsOnExpression) sqlHelper.addSqlSnippet("AND ");
@@ -1278,7 +1367,7 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.Raw) {
-			sqlHelper.addSqlSnippet(on.raw ?? "");
+			sqlHelper.addRawWithValues(on.raw ?? "", on.valuesRight ?? []);
 			spaceAfter();
 			continue;
 		}
@@ -1351,6 +1440,7 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			continue;
 		}
 		if (on.joinOnOperator === JoinOnOperator.InValues || on.joinOnOperator === JoinOnOperator.NotInValues) {
+			if ((on.valuesRight ?? []).length === 0) throw new ParserError(ParserArea.Join, on.joinOnOperator === JoinOnOperator.NotInValues ? "NOT IN requires at least one value" : "IN requires at least one value");
 			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 			sqlHelper.addSqlSnippet(on.joinOnOperator === JoinOnOperator.NotInValues ? " NOT IN (" : " IN (");
 			const values = on.valuesRight ?? [];
@@ -1369,6 +1459,12 @@ const renderJoinOnPredicate = (sqlHelper, config, joinOnStates) => {
 			sqlHelper.addDynamicValue(lower);
 			sqlHelper.addSqlSnippet(" AND ");
 			sqlHelper.addDynamicValue(upper);
+			spaceAfter();
+			continue;
+		}
+		if (on.joinOnOperator === JoinOnOperator.Null || on.joinOnOperator === JoinOnOperator.NotNull) {
+			sqlHelper.addSqlSnippet(qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters));
+			sqlHelper.addSqlSnippet(on.joinOnOperator === JoinOnOperator.NotNull ? " IS NOT NULL" : " IS NULL");
 			spaceAfter();
 			continue;
 		}
@@ -1544,6 +1640,10 @@ const defaultOrderBy = (state, config, mode) => {
 /**
 * Each grammar's idiom for "no upper bound, just skip n rows".
 *
+* Stays a LITERAL while the caller's own limit and offset are bound: this is grammar standing in for
+* the absence of a limit, not a value anyone supplied, and binding it would attach a meaningless
+* parameter to every offset-without-limit query.
+*
 * MySQL and SQLite have no standalone OFFSET — it only parses as the tail of a LIMIT — so an offset
 * without a limit needs a sentinel limit in front of it or the statement is a syntax error (MySQL
 * 1064, SQLite `near "OFFSET"`). MySQL's documented idiom is the largest unsigned BIGINT, 2^64-1;
@@ -1572,17 +1672,17 @@ const defaultLimitOffset = (state, config, mode) => {
 			if (state.limit <= 0) throw new ParserError(ParserArea.LimitOffset, "limitWithTies requires a positive limit");
 			if (state.offset !== void 0) {
 				sqlHelper.addSqlSnippet("OFFSET ");
-				sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
+				sqlHelper.addDynamicValue(state.offset ?? 0);
 				sqlHelper.addSqlSnippet(" ROWS ");
 			}
 			sqlHelper.addSqlSnippet("FETCH FIRST ");
-			sqlHelper.addSqlSnippet(state.limit.toString());
+			sqlHelper.addDynamicValue(state.limit);
 			sqlHelper.addSqlSnippet(" ROWS WITH TIES");
 			return sqlHelper;
 		}
 		if (state.limit > 0) {
 			sqlHelper.addSqlSnippet("LIMIT ");
-			sqlHelper.addSqlSnippet(state.limit.toString());
+			sqlHelper.addDynamicValue(state.limit);
 		} else if (state.offset !== void 0) {
 			const sentinel = unboundedLimit[config.databaseType];
 			if (sentinel !== void 0) {
@@ -1593,7 +1693,7 @@ const defaultLimitOffset = (state, config, mode) => {
 		if (state.offset !== void 0) {
 			if (state.limit > 0) sqlHelper.addSqlSnippet(" ");
 			sqlHelper.addSqlSnippet(" OFFSET ");
-			sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
+			sqlHelper.addDynamicValue(state.offset ?? 0);
 		}
 	}
 	if (config.databaseType === DatabaseType.Mssql) {
@@ -1604,13 +1704,13 @@ const defaultLimitOffset = (state, config, mode) => {
 		} else {
 			if (state.limit > 0 || state.offset !== void 0) {
 				sqlHelper.addSqlSnippet("OFFSET ");
-				sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
+				sqlHelper.addDynamicValue(state.offset ?? 0);
 				sqlHelper.addSqlSnippet(" ROWS");
 			}
 			if (state.limit > 0) {
 				sqlHelper.addSqlSnippet(" ");
 				sqlHelper.addSqlSnippet("FETCH NEXT ");
-				sqlHelper.addSqlSnippet(state.limit.toString());
+				sqlHelper.addDynamicValue(state.limit);
 				sqlHelper.addSqlSnippet(" ROWS ONLY");
 			}
 		}
@@ -2589,7 +2689,7 @@ const defaultWhere = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.WhereRaw) {
-			sqlHelper.addSqlSnippet(cur.raw ?? "");
+			sqlHelper.addRawWithValues(cur.raw ?? "", cur.values ?? []);
 			spaceAfter();
 			continue;
 		}
@@ -2852,7 +2952,7 @@ const defaultHaving = (state, config, mode, options) => {
 			continue;
 		}
 		if (cur.builderType === BuilderType.HavingRaw) {
-			sqlHelper.addSqlSnippet(cur.raw ?? "");
+			sqlHelper.addRawWithValues(cur.raw ?? "", cur.values ?? []);
 			spaceAfter();
 			continue;
 		}
@@ -3998,12 +4098,10 @@ const mssqlParameterValue = (value) => sqlLiteral(value, DatabaseType.Mssql);
 const mssqlParameterType = (value) => {
 	if (isBinaryValue(value)) return "varbinary(max)";
 	switch (typeof value) {
-		case "string": return "nvarchar(max)";
+		case "string": return isCodepageSafeText(value) ? "varchar(max)" : "nvarchar(max)";
 		case "number":
 			if (!Number.isFinite(value)) throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
-			if (Number.isSafeInteger(value)) if (value >= 0 && value <= 255) return "tinyint";
-			else if (value >= -32768 && value <= 32767) return "smallint";
-			else if (value >= -2147483648 && value <= 2147483647) return "int";
+			if (Number.isSafeInteger(value)) if (value >= -2147483648 && value <= 2147483647) return "int";
 			else return "bigint";
 			else return "float";
 		case "boolean": return "bit";
@@ -4045,6 +4143,26 @@ const mssqlToSql = (state, config) => {
 	return finalString.getSql();
 };
 /**
+* MSSQL with the values left for the DRIVER to bind: `@p0`… placeholders plus the ordered values.
+*
+* The same rendering as {@link mssqlToSql} — including the MSSQL-only `TOP`/`WITH TIES` handling in
+* {@link toSqlOptionsFor}, which the positional path does not apply — minus the `sp_executesql`
+* wrapper. T-SQL has no positional `?`, so the placeholders are named; a caller binds them as
+* `p0`…`pN` (`mssql`'s `request.input('p0', value)`).
+*
+* Opt in with {@link RuntimeConfiguration.mssqlBoundParameters}. The wrapped form stays the default
+* because it is self-contained and pasteable; this one exists because the wrapped form's outer text
+* carries the literals, and a caller running a few query shapes at high volume pays for that in
+* single-use plan-cache entries.
+*/
+const mssqlBoundPrepared = (state, config) => {
+	const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
+	return {
+		sql: renderPlaceholders(sqlHelper.getSql(), (index) => "@p" + index),
+		params: sqlHelper.getValues()
+	};
+};
+/**
 * Postgres uses numbered `$n` placeholders: substitute the Nth token with `$1`, `$2`, … in order.
 *
 * This must not scan for a bare `$`. Doing so rewrote the `$` inside caller text — `selectRaw("'$100'")`
@@ -4072,8 +4190,9 @@ const positionalPrepared = (state, config) => {
 /**
 * Renders one query state as a prepared SQL string (placeholders, without a separate params
 * array). For Postgres/MySQL/SQLite this is **not** execution-safe on its own — use
-* {@link parsePrepared} to get `{ sql, params }`. For MSSQL, `parse` and `parsePrepared`
-* both return the same self-contained `sp_executesql` batch (values inlined; `params` empty).
+* {@link parsePrepared} to get `{ sql, params }`. For MSSQL this is always the self-contained
+* `sp_executesql` batch (values inlined), because a bare string has nowhere to carry values —
+* {@link RuntimeConfiguration.mssqlBoundParameters} does not change it, only `parsePrepared`.
 */
 const parse = (state, config) => {
 	if (config.databaseType === DatabaseType.Mssql) return mssqlToSql(state, config);
@@ -4081,11 +4200,15 @@ const parse = (state, config) => {
 	return positionalPrepared(state, config).sql;
 };
 /**
-* Renders one query state as prepared SQL plus its ordered bound values. MSSQL inlines its
-* values into the `sp_executesql` string, so its `params` is empty.
+* Renders one query state as prepared SQL plus its ordered bound values.
+*
+* MSSQL has two forms and defaults to the first: values inlined into a self-contained
+* `sp_executesql` batch, so `params` is empty; or, under
+* {@link RuntimeConfiguration.mssqlBoundParameters}, `@p0`… placeholders with the values left for
+* the driver to bind. The other three dialects always bind.
 */
 const parsePrepared = (state, config) => {
-	if (config.databaseType === DatabaseType.Mssql) return {
+	if (config.databaseType === DatabaseType.Mssql) return config.runtimeConfiguration.mssqlBoundParameters ? mssqlBoundPrepared(state, config) : {
 		sql: mssqlToSql(state, config),
 		params: []
 	};
@@ -4136,6 +4259,47 @@ const parseMulti = (states, transactionState, config) => {
 * `transactionDelimiters` when `transactionState` is
 * {@link MultiBuilderTransactionState.TransactionOn}.
 */
+/**
+* Renders a batch as ONE prepared statement: every placeholder renumbered continuously across the
+* whole batch, and every statement's values concatenated in the same order.
+*
+* **MSSQL only, and it REFUSES elsewhere rather than emitting something that would misbind.** This
+* is the difference between `sp_executesql` and everything else: it takes a `;`-joined batch plus a
+* SINGLE parameter list that every statement in the batch can see, so continuous numbering is
+* exactly right. Postgres's extended protocol runs one statement per parameterized query, MySQL
+* needs `multipleStatements`, and SQLite executes one statement at a time — on those three a
+* concatenated batch is not a runnable parameterized call at all, which is why
+* {@link MultiBuilder.preparedStatements} (statement by statement) remains the portable answer.
+*
+* Reach for this when the round trip is what costs you — a paginated read sending its COUNT and its
+* page together, and reading both back from one result. Reach for `preparedStatements` when you
+* want the statements to be ATOMIC; that is a transaction, and it works everywhere.
+*
+* Under the default (inlined) MSSQL form there is nothing to renumber: each statement is already a
+* self-contained `sp_executesql` carrying its own values, so the batch is returned with no params.
+*/
+const parseMultiPrepared = (states, transactionState, config) => {
+	if (config.databaseType !== DatabaseType.Mssql) throw new ParserError(ParserArea.General, `a parameterized batch is only executable on MSSQL — ${dialectDisplayName(config.databaseType)} runs one statement per prepared call, so use preparedStatements() and run them in order`);
+	if (!config.runtimeConfiguration.mssqlBoundParameters) return {
+		sql: parseMulti(states, transactionState, config),
+		params: []
+	};
+	let sql = "";
+	const params = [];
+	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.begin + "; ";
+	for (const state of states) {
+		const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
+		const values = sqlHelper.getValues();
+		const offset = params.length;
+		sql += renderPlaceholders(sqlHelper.getSql(), (index) => "@p" + (offset + index));
+		params.push(...values);
+	}
+	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.end + ";";
+	return {
+		sql,
+		params
+	};
+};
 const parseMultiRaw = (states, transactionState, config) => {
 	let sql = "";
 	if (transactionState === MultiBuilderTransactionState.TransactionOn) sql += config.transactionDelimiters.begin + "; ";
@@ -4269,7 +4433,14 @@ var JoinOnBuilder = class JoinOnBuilder {
 		});
 		return this;
 	};
-	onRaw = (raw) => {
+	/**
+	* A raw ON fragment, optionally carrying bound values for its `?` markers.
+	*
+	* Same reason as `whereRaw`: without values a caller comparing against anything dynamic had to
+	* interpolate it into the fragment, and an ON clause is no safer a place to do that than a WHERE.
+	* `\?` is an escaped literal question mark, as in knex.
+	*/
+	onRaw = (raw, values = []) => {
 		this.#states.push({
 			joinOperator: JoinOperator.None,
 			joinOnOperator: JoinOnOperator.Raw,
@@ -4279,7 +4450,7 @@ var JoinOnBuilder = class JoinOnBuilder {
 			columnRight: void 0,
 			raw,
 			valueRight: void 0,
-			valuesRight: void 0
+			valuesRight: [...values]
 		});
 		return this;
 	};
@@ -4354,6 +4525,44 @@ var JoinOnBuilder = class JoinOnBuilder {
 			raw: void 0,
 			valueRight: void 0,
 			valuesRight: [value1, value2]
+		});
+		return this;
+	};
+	/**
+	* `ON column IS NULL`.
+	*
+	* A null test is not expressible through {@link onValue}: `= NULL` is never true in SQL, so
+	* passing null there produces a predicate that silently matches nothing. The WHERE clause has
+	* had `whereNull`/`whereNotNull` all along; this closes the same gap on the JOIN, and closing it
+	* removes the raw fragment callers were otherwise forced to hand-write — which also meant
+	* hand-quoting the identifier.
+	*/
+	onNull = (aliasLeft, columnLeft) => {
+		this.#states.push({
+			joinOperator: JoinOperator.None,
+			joinOnOperator: JoinOnOperator.Null,
+			aliasLeft,
+			columnLeft,
+			aliasRight: void 0,
+			columnRight: void 0,
+			raw: void 0,
+			valueRight: void 0,
+			valuesRight: void 0
+		});
+		return this;
+	};
+	/** `ON column IS NOT NULL` — see {@link onNull}. */
+	onNotNull = (aliasLeft, columnLeft) => {
+		this.#states.push({
+			joinOperator: JoinOperator.None,
+			joinOnOperator: JoinOnOperator.NotNull,
+			aliasLeft,
+			columnLeft,
+			aliasRight: void 0,
+			columnRight: void 0,
+			raw: void 0,
+			valueRight: void 0,
+			valuesRight: void 0
 		});
 		return this;
 	};
@@ -5557,7 +5766,14 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
-	whereRaw = (rawWhere) => {
+	/**
+	* A raw WHERE fragment, optionally carrying bound values for its `?` markers.
+	*
+	* Without `values` a caller with `name LIKE ?` had to interpolate the value into the string,
+	* which is how a query builder ends up shipping SQL injection. `\?` is an escaped literal
+	* question mark, as in knex.
+	*/
+	whereRaw = (rawWhere, values = []) => {
 		this.#combinatorTarget = "where";
 		this.#state.whereStates.push({
 			builderType: BuilderType.WhereRaw,
@@ -5566,7 +5782,7 @@ var QueryBuilder = class QueryBuilder {
 			whereOperator: WhereOperator.None,
 			raw: rawWhere,
 			subquery: void 0,
-			values: []
+			values: [...values]
 		});
 		return this;
 	};
@@ -5810,7 +6026,7 @@ var QueryBuilder = class QueryBuilder {
 		});
 		return this;
 	};
-	havingRaw = (rawHaving) => {
+	havingRaw = (rawHaving, values = []) => {
 		this.#combinatorTarget = "having";
 		this.#state.havingStates.push({
 			builderType: BuilderType.HavingRaw,
@@ -5819,7 +6035,7 @@ var QueryBuilder = class QueryBuilder {
 			whereOperator: WhereOperator.None,
 			raw: rawHaving,
 			subquery: void 0,
-			values: []
+			values: [...values]
 		});
 		return this;
 	};
@@ -6691,6 +6907,23 @@ var MultiBuilder = class {
 	preparedStatements = () => {
 		return this.#builders.map((builder) => builder.parsePrepared());
 	};
+	/**
+	* The batch as ONE prepared statement — placeholders renumbered continuously across every
+	* statement, values concatenated in the same order — for a single round trip that returns a
+	* result set per statement.
+	*
+	* **MSSQL only; throws on the other three.** `sp_executesql` takes a `;`-joined batch plus one
+	* shared parameter list, which is what makes continuous numbering correct. Elsewhere a
+	* concatenated batch is not a runnable parameterized call, so {@link preparedStatements} is the
+	* portable answer — and the right one whenever you want the statements to be ATOMIC, since that
+	* is a transaction.
+	*
+	* Unlike {@link preparedStatements}, the transaction delimiters ARE included when
+	* {@link transactionState} is on, because the batch travels as one statement.
+	*/
+	preparedBatch = () => {
+		return parseMultiPrepared(this.states(), this.#transactionState, this.#config);
+	};
 	/** Removes a previously added builder from the batch by name. */
 	removeBuilder = (builderName) => {
 		this.#builders = this.#builders.filter((builder) => builder.state().builderName !== builderName);
@@ -6726,6 +6959,32 @@ var MultiBuilder = class {
 var RuntimeConfiguration = class {
 	/** Optional host-defined settings carried alongside runtime options. */
 	customConfiguration = void 0;
+	/**
+	* MSSQL ONLY — bind parameters through the driver instead of inlining them.
+	*
+	* Named for its dialect because it is the only one with a choice to make: Postgres, MySQL and
+	* SQLite always hand `{ sql, params }` to the driver, so this flag does nothing there and is not
+	* read. MSSQL defaults to a self-contained `exec sp_executesql` batch with the values written
+	* into the EXEC argument list, which is portable — you can paste it into SSMS — and keeps the
+	* INNER statement text stable.
+	*
+	* **Plan reuse is NOT the reason to turn this on.** Measured against SQL Server 2022 with
+	* `optimize for ad hoc workloads` off: 25 executions of one shape with 25 distinct values cache
+	* ONE plan under the default form, the same as under this one. The outer `exec` batch gets no
+	* cache entry at all, so only the value-independent inner statement is cached. (Literal SQL, with
+	* the values written into the statement itself, caches 25 — that is the pathology, and the
+	* default form already avoids it.)
+	*
+	* Turn it on for the narrower wins: values never reach the SQL text, so a logged statement cannot
+	* leak them; the payload is smaller; and the parameter TYPE comes from the driver instead of
+	* being inferred from the value, which matters because `sp_executesql` keys its cache on the
+	* declaration — see `mssqlParameterType` for the banding that used to split one shape into
+	* several plans.
+	*
+	* Set this to `true` and `parsePrepared()` returns `@p0`-style placeholders with the ordered
+	* values alongside, for the caller to bind (`request.input('p0', value)`).
+	*/
+	mssqlBoundParameters = false;
 };
 //#endregion
 //#region src/dialects/mssql/configuration.ts
@@ -7133,6 +7392,6 @@ const Fn = {
 	}
 };
 //#endregion
-export { AGGREGATE_STAR, AggregateFunction, BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseDisplay, parseMulti, parseMultiDisplay, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
+export { AGGREGATE_STAR, AggregateFunction, BuilderType, CallKind, CallParamDirection, CallReturnIntent, DatabaseType, Fn, FrameBoundType, FrameUnit, FullTextMode, HintKind, JoinOnBuilder, JoinOnOperator, JoinOperator, JoinType, JsonExtractMode, MergeBuilder, MssqlQuery, MultiBuilder, MultiBuilderTransactionState, MysqlQuery, NullsOrder, OrderByDirection, ParserArea, ParserError, PostgresQuery, QueryBuilder, QueryType, RowLockMode, RowLockWait, RuntimeConfiguration, SqliteQuery, UpsertAction, WhereOperator, WindowBuilder, _assertQueryBuilderSatisfiesViews, createCallState, createCteState, createFromState, createGroupByState, createHavingState, createHintState, createInsertState, createJoinOnState, createJoinState, createMergeState, createOrderByState, createQueryState, createReturningState, createRowLockState, createSelectState, createUnionState, createUpdateState, createUpsertState, createWhereState, createWindowState, defaultToSql, mssqlConfiguration, mysqlConfiguration, parse, parseDisplay, parseMulti, parseMultiDisplay, parseMultiPrepared, parseMultiRaw, parsePrepared, parseRaw, postgresConfiguration, qualifiedColumn, quoteIdentifier, raw, source, sqliteConfiguration, target, value };
 
 //# sourceMappingURL=index.mjs.map
