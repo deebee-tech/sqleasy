@@ -178,7 +178,9 @@ bool _isPredicateOperator(JoinOnOperator? joinOnOperator) {
       joinOnOperator == JoinOnOperator.inValues ||
       joinOnOperator == JoinOnOperator.notInValues ||
       joinOnOperator == JoinOnOperator.between ||
-      joinOnOperator == JoinOnOperator.notBetween;
+      joinOnOperator == JoinOnOperator.notBetween ||
+      joinOnOperator == JoinOnOperator.isNull ||
+      joinOnOperator == JoinOnOperator.isNotNull;
 }
 
 SqlHelper renderJoinOnConditions(
@@ -370,6 +372,21 @@ SqlHelper _renderJoinOnPredicate(
       sqlHelper.addDynamicValue(lower);
       sqlHelper.addSqlSnippet(' AND ');
       sqlHelper.addDynamicValue(upper);
+
+      spaceAfter();
+      continue;
+    }
+
+    // No value is bound — `IS NULL` takes no operand. Emitting a placeholder here would shift every
+    // later parameter by one, which is the misbinding this clause exists to avoid in the first place.
+    if (on.joinOnOperator == JoinOnOperator.isNull ||
+        on.joinOnOperator == JoinOnOperator.isNotNull) {
+      sqlHelper.addSqlSnippet(qualifiedColumn(
+          on.aliasLeft, on.columnLeft, config.identifierDelimiters));
+
+      sqlHelper.addSqlSnippet(on.joinOnOperator == JoinOnOperator.isNotNull
+          ? ' IS NOT NULL'
+          : ' IS NULL');
 
       spaceAfter();
       continue;

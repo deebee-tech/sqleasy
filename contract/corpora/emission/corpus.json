@@ -96,7 +96,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[i] = @p0 AND [m].[integral_double] = @p1 AND [m].[d] = @p2;', N'@p0 tinyint, @p1 tinyint, @p2 float', @p0 = 5, @p1 = 5, @p2 = 5.5;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[i] = @p0 AND [m].[integral_double] = @p1 AND [m].[d] = @p2;', N'@p0 int, @p1 int, @p2 float', @p0 = 5, @p1 = 5, @p2 = 5.5;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[m] AS [m] WHERE [m].[i] = 5 AND [m].[integral_double] = 5 AND [m].[d] = 5.5;"
@@ -194,7 +194,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT ''why?'' AS q, ''$100'' AS price FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 42;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT ''why?'' AS q, ''$100'' AS price FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 42;",
             "params": []
           },
           "raw": "SELECT 'why?' AS q, '$100' AS price FROM [dbo].[users] AS [u] WHERE [u].[id] = 42;"
@@ -295,7 +295,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT *, (SELECT COUNT(*) FROM [dbo].[orders] AS [o]) AS [orderCount] FROM [dbo].[users] AS [u] WHERE ([u].[active] = @p0 OR [u].[age] > @p1);', N'@p0 bit, @p1 tinyint', @p0 = 1, @p1 = 21;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT *, (SELECT COUNT(*) FROM [dbo].[orders] AS [o]) AS [orderCount] FROM [dbo].[users] AS [u] WHERE ([u].[active] = @p0 OR [u].[age] > @p1);', N'@p0 bit, @p1 int', @p0 = 1, @p1 = 21;",
             "params": []
           },
           "raw": "SELECT *, (SELECT COUNT(*) FROM [dbo].[orders] AS [o]) AS [orderCount] FROM [dbo].[users] AS [u] WHERE ([u].[active] = true OR [u].[age] > 21);"
@@ -472,7 +472,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] AS [userName] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] AS [userName] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT [u].[name] AS [userName] FROM [dbo].[users] AS [u] WHERE [u].[id] = 1;"
@@ -543,7 +543,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[id] = 1;"
@@ -1103,7 +1103,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] AS [userName], (SELECT COUNT(*) FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0) AS [shippedCount] FROM [dbo].[users] AS [u] WHERE [u].[active] = @p1;', N'@p0 nvarchar(max), @p1 bit', @p0 = N'shipped', @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] AS [userName], (SELECT COUNT(*) FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0) AS [shippedCount] FROM [dbo].[users] AS [u] WHERE [u].[active] = @p1;', N'@p0 varchar(max), @p1 bit', @p0 = 'shipped', @p1 = 1;",
             "params": []
           },
           "raw": "SELECT [u].[name] AS [userName], (SELECT COUNT(*) FROM [dbo].[orders] AS [o] WHERE [o].[status] = shipped) AS [shippedCount] FROM [dbo].[users] AS [u] WHERE [u].[active] = true;"
@@ -1234,7 +1234,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT *, (SELECT COUNT(*) FROM [dbo].[orders] AS [o] WHERE [o].[state] = @p0) AS [openCount], (SELECT COUNT(*) FROM [dbo].[orders] AS [o2] WHERE [o2].[state] = @p1) AS [closedCount] FROM [dbo].[users] AS [u] WHERE [u].[id] > @p2;', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 1, @p1 = 2, @p2 = 100;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT *, (SELECT COUNT(*) FROM [dbo].[orders] AS [o] WHERE [o].[state] = @p0) AS [openCount], (SELECT COUNT(*) FROM [dbo].[orders] AS [o2] WHERE [o2].[state] = @p1) AS [closedCount] FROM [dbo].[users] AS [u] WHERE [u].[id] > @p2;', N'@p0 int, @p1 int, @p2 int', @p0 = 1, @p1 = 2, @p2 = 100;",
             "params": []
           },
           "raw": "SELECT *, (SELECT COUNT(*) FROM [dbo].[orders] AS [o] WHERE [o].[state] = 1) AS [openCount], (SELECT COUNT(*) FROM [dbo].[orders] AS [o2] WHERE [o2].[state] = 2) AS [closedCount] FROM [dbo].[users] AS [u] WHERE [u].[id] > 100;"
@@ -1934,7 +1934,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0) AS [active_users] WHERE [active_users].[age] > @p1;', N'@p0 bit, @p1 tinyint', @p0 = 1, @p1 = 21;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0) AS [active_users] WHERE [active_users].[age] > @p1;', N'@p0 bit, @p1 int', @p0 = 1, @p1 = 21;",
             "params": []
           },
           "raw": "SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true) AS [active_users] WHERE [active_users].[age] > 21;"
@@ -2300,7 +2300,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] INNER JOIN (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0) AS [recent_orders] ON [u].[id] = [recent_orders].[user_id];', N'@p0 nvarchar(max)', @p0 = N'paid';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] INNER JOIN (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0) AS [recent_orders] ON [u].[id] = [recent_orders].[user_id];', N'@p0 varchar(max)', @p0 = 'paid';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] INNER JOIN (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = paid) AS [recent_orders] ON [u].[id] = [recent_orders].[user_id];"
@@ -2636,7 +2636,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND [o].[status] = @p0 WHERE [u].[age] > @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'active', @p1 = 21;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND [o].[status] = @p0 WHERE [u].[age] > @p1;', N'@p0 varchar(max), @p1 int', @p0 = 'active', @p1 = 21;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND [o].[status] = active WHERE [u].[age] > 21;"
@@ -2945,7 +2945,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0) AS [au] INNER JOIN (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p1) AS [ro] ON [au].[id] = [ro].[user_id] AND [ro].[total] > @p2 WHERE [au].[age] > @p3;', N'@p0 bit, @p1 nvarchar(max), @p2 tinyint, @p3 tinyint', @p0 = 1, @p1 = N'paid', @p2 = 100, @p3 = 21;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0) AS [au] INNER JOIN (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p1) AS [ro] ON [au].[id] = [ro].[user_id] AND [ro].[total] > @p2 WHERE [au].[age] > @p3;', N'@p0 bit, @p1 varchar(max), @p2 int, @p3 int', @p0 = 1, @p1 = 'paid', @p2 = 100, @p3 = 21;",
             "params": []
           },
           "raw": "SELECT * FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true) AS [au] INNER JOIN (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = paid) AS [ro] ON [au].[id] = [ro].[user_id] AND [ro].[total] > 100 WHERE [au].[age] > 21;"
@@ -3398,7 +3398,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] <> @p0 AND [u].[age] > @p1 AND [u].[score] >= @p2 AND [u].[age] < @p3 AND [u].[score] <= @p4 AND [u].[id] = @p5;', N'@p0 nvarchar(max), @p1 tinyint, @p2 tinyint, @p3 tinyint, @p4 tinyint, @p5 tinyint', @p0 = N'inactive', @p1 = 18, @p2 = 21, @p3 = 65, @p4 = 100, @p5 = 7;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] <> @p0 AND [u].[age] > @p1 AND [u].[score] >= @p2 AND [u].[age] < @p3 AND [u].[score] <= @p4 AND [u].[id] = @p5;', N'@p0 varchar(max), @p1 int, @p2 int, @p3 int, @p4 int, @p5 int', @p0 = 'inactive', @p1 = 18, @p2 = 21, @p3 = 65, @p4 = 100, @p5 = 7;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] <> inactive AND [u].[age] > 18 AND [u].[score] >= 21 AND [u].[age] < 65 AND [u].[score] <= 100 AND [u].[id] = 7;"
@@ -3540,7 +3540,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] LIKE @p0 AND [u].[email] NOT LIKE @p1;', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'%adm%', @p1 = N'%@example.com';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] LIKE @p0 AND [u].[email] NOT LIKE @p1;', N'@p0 varchar(max), @p1 varchar(max)', @p0 = '%adm%', @p1 = '%@example.com';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] LIKE %adm% AND [u].[email] NOT LIKE %@example.com;"
@@ -3633,7 +3633,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[deleted_at] IS NULL AND [u].[name] = @p0;', N'@p0 nvarchar(max)', @p0 = N'after';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[deleted_at] IS NULL AND [u].[name] = @p0;', N'@p0 varchar(max)', @p0 = 'after';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[deleted_at] IS NULL AND [u].[name] = after;"
@@ -3702,7 +3702,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = @p0;', N'@p0 nvarchar(max)', @p0 = N'O''Brien';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = @p0;', N'@p0 varchar(max)', @p0 = 'O''Brien';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = O'Brien;"
@@ -3905,7 +3905,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[zero] = @p0 AND [m].[tinyint_max] = @p1 AND [m].[negative] = @p2 AND [m].[smallint_range] = @p3 AND [m].[int_range] = @p4 AND [m].[bigint_range] = @p5;', N'@p0 tinyint, @p1 tinyint, @p2 smallint, @p3 smallint, @p4 int, @p5 bigint', @p0 = 0, @p1 = 255, @p2 = -1, @p3 = 256, @p4 = 70000, @p5 = 5000000000;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[zero] = @p0 AND [m].[tinyint_max] = @p1 AND [m].[negative] = @p2 AND [m].[smallint_range] = @p3 AND [m].[int_range] = @p4 AND [m].[bigint_range] = @p5;', N'@p0 int, @p1 int, @p2 int, @p3 int, @p4 int, @p5 bigint', @p0 = 0, @p1 = 255, @p2 = -1, @p3 = 256, @p4 = 70000, @p5 = 5000000000;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[m] AS [m] WHERE [m].[zero] = 0 AND [m].[tinyint_max] = 255 AND [m].[negative] = -1 AND [m].[smallint_range] = 256 AND [m].[int_range] = 70000 AND [m].[bigint_range] = 5000000000;"
@@ -4036,7 +4036,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[age] BETWEEN @p0 AND @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 18, @p1 = 65;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[age] BETWEEN @p0 AND @p1;', N'@p0 int, @p1 int', @p0 = 18, @p1 = 65;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[age] BETWEEN 18 AND 65;"
@@ -4146,7 +4146,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[events] AS [e] WHERE [e].[kind] = @p0 AND [e].[occurred_at] BETWEEN @p1 AND @p2 AND [e].[source] = @p3;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 nvarchar(max), @p3 nvarchar(max)', @p0 = N'signup', @p1 = '2024-01-01T00:00:00.000Z', @p2 = '2024-12-31T23:59:59.999Z', @p3 = N'web';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[events] AS [e] WHERE [e].[kind] = @p0 AND [e].[occurred_at] BETWEEN @p1 AND @p2 AND [e].[source] = @p3;', N'@p0 varchar(max), @p1 nvarchar(max), @p2 nvarchar(max), @p3 varchar(max)', @p0 = 'signup', @p1 = '2024-01-01T00:00:00.000Z', @p2 = '2024-12-31T23:59:59.999Z', @p3 = 'web';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[events] AS [e] WHERE [e].[kind] = signup AND [e].[occurred_at] BETWEEN 2024-01-01T00:00:00.000Z AND 2024-12-31T23:59:59.999Z AND [e].[source] = web;"
@@ -4267,7 +4267,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[deleted_at] IS NULL AND [u].[email] IS NOT NULL AND [u].[tenant_id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[deleted_at] IS NULL AND [u].[email] IS NOT NULL AND [u].[tenant_id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[deleted_at] IS NULL AND [u].[email] IS NOT NULL AND [u].[tenant_id] = 1;"
@@ -4344,7 +4344,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (@p0, @p1, @p2);', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 10, @p1 = 20, @p2 = 30;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (@p0, @p1, @p2);', N'@p0 int, @p1 int, @p2 int', @p0 = 10, @p1 = 20, @p2 = 30;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (10, 20, 30);"
@@ -4449,7 +4449,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[u] AS [u] WHERE [u].[flag] IN (@p0, @p1, @p2, @p3);', N'@p0 tinyint, @p1 nvarchar(max), @p2 bit, @p3 nvarchar(max)', @p0 = 1, @p1 = N'two', @p2 = 1, @p3 = NULL;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[u] AS [u] WHERE [u].[flag] IN (@p0, @p1, @p2, @p3);', N'@p0 int, @p1 varchar(max), @p2 bit, @p3 nvarchar(max)', @p0 = 1, @p1 = 'two', @p2 = 1, @p3 = NULL;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[u] AS [u] WHERE [u].[flag] IN (1, two, true, );"
@@ -4552,7 +4552,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] NOT IN (@p0);', N'@p0 nvarchar(max)', @p0 = N'banned';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] NOT IN (@p0);', N'@p0 varchar(max)', @p0 = 'banned';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] NOT IN (banned);"
@@ -4648,7 +4648,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0 AND u.notes LIKE ''%why?%'' AND u.price <> ''$100'' AND [u].[name] = @p1;', N'@p0 tinyint, @p1 nvarchar(max)', @p0 = 1, @p1 = N'after';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0 AND u.notes LIKE ''%why?%'' AND u.price <> ''$100'' AND [u].[name] = @p1;', N'@p0 int, @p1 varchar(max)', @p0 = 1, @p1 = 'after';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] = 1 AND u.notes LIKE '%why?%' AND u.price <> '$100' AND [u].[name] = after;"
@@ -4823,7 +4823,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[a] = @p0 AND ([u].[b] = @p1 OR [u].[c] = @p2)) OR [u].[d] = @p3;', N'@p0 tinyint, @p1 tinyint, @p2 tinyint, @p3 tinyint', @p0 = 1, @p1 = 2, @p2 = 3, @p3 = 4;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[a] = @p0 AND ([u].[b] = @p1 OR [u].[c] = @p2)) OR [u].[d] = @p3;', N'@p0 int, @p1 int, @p2 int, @p3 int', @p0 = 1, @p1 = 2, @p2 = 3, @p3 = 4;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[a] = 1 AND ([u].[b] = 2 OR [u].[c] = 3)) OR [u].[d] = 4;"
@@ -4972,7 +4972,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[role] = @p0 AND [u].[email] IS NOT NULL) OR ([u].[role] = @p1 AND [u].[age] >= @p2);', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 tinyint', @p0 = N'admin', @p1 = N'owner', @p2 = 21;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[role] = @p0 AND [u].[email] IS NOT NULL) OR ([u].[role] = @p1 AND [u].[age] >= @p2);', N'@p0 varchar(max), @p1 varchar(max), @p2 int', @p0 = 'admin', @p1 = 'owner', @p2 = 21;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[role] = admin AND [u].[email] IS NOT NULL) OR ([u].[role] = owner AND [u].[age] >= 21);"
@@ -5089,7 +5089,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[a] = @p0 OR u.b IS NOT NULL) AND [u].[c] = @p1;', N'@p0 tinyint, @p1 bit', @p0 = 1, @p1 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[a] = @p0 OR u.b IS NOT NULL) AND [u].[c] = @p1;', N'@p0 int, @p1 bit', @p0 = 1, @p1 = 0;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE ([u].[a] = 1 OR u.b IS NOT NULL) AND [u].[c] = false;"
@@ -5200,7 +5200,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0) AND [u].[active] = @p1;', N'@p0 tinyint, @p1 bit', @p0 = 100, @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0) AND [u].[active] = @p1;', N'@p0 int, @p1 bit', @p0 = 100, @p1 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100) AND [u].[active] = true;"
@@ -5324,7 +5324,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[age] >= @p0 AND [u].[id] NOT IN (SELECT [b].[user_id] FROM [dbo].[blacklist] AS [b] WHERE [b].[reason] = @p1) AND [u].[name] LIKE @p2;', N'@p0 tinyint, @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = 18, @p1 = N'spam', @p2 = N'a%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[age] >= @p0 AND [u].[id] NOT IN (SELECT [b].[user_id] FROM [dbo].[blacklist] AS [b] WHERE [b].[reason] = @p1) AND [u].[name] LIKE @p2;', N'@p0 int, @p1 varchar(max), @p2 varchar(max)', @p0 = 18, @p1 = 'spam', @p2 = 'a%';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[age] >= 18 AND [u].[id] NOT IN (SELECT [b].[user_id] FROM [dbo].[blacklist] AS [b] WHERE [b].[reason] = spam) AND [u].[name] LIKE a%;"
@@ -5466,7 +5466,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 AND EXISTS (SELECT 1 FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[total] > @p1) AND [u].[age] < @p2;', N'@p0 bit, @p1 tinyint, @p2 tinyint', @p0 = 1, @p1 = 50, @p2 = 65;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 AND EXISTS (SELECT 1 FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[total] > @p1) AND [u].[age] < @p2;', N'@p0 bit, @p1 int, @p2 int', @p0 = 1, @p1 = 50, @p2 = 65;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true AND EXISTS (SELECT 1 FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[total] > 50) AND [u].[age] < 65;"
@@ -5582,7 +5582,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT 1 FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[status] = @p0);', N'@p0 nvarchar(max)', @p0 = N'refunded';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT 1 FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[status] = @p0);', N'@p0 varchar(max)', @p0 = 'refunded';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT 1 FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[status] = refunded);"
@@ -5712,7 +5712,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[tenant_id] = @p0 AND ([u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p1) OR [u].[vip] = @p2) AND [u].[age] >= @p3;', N'@p0 tinyint, @p1 tinyint, @p2 bit, @p3 tinyint', @p0 = 1, @p1 = 100, @p2 = 1, @p3 = 21;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[tenant_id] = @p0 AND ([u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p1) OR [u].[vip] = @p2) AND [u].[age] >= @p3;', N'@p0 int, @p1 int, @p2 bit, @p3 int', @p0 = 1, @p1 = 100, @p2 = 1, @p3 = 21;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[tenant_id] = 1 AND ([u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100) OR [u].[vip] = true) AND [u].[age] >= 21;"
@@ -5877,7 +5877,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0 AND [o].[product_id] IN (SELECT [p].[id] FROM [dbo].[products] AS [p] WHERE [p].[price] < @p1)) AND [u].[active] = @p2;', N'@p0 tinyint, @p1 tinyint, @p2 bit', @p0 = 100, @p1 = 10, @p2 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0 AND [o].[product_id] IN (SELECT [p].[id] FROM [dbo].[products] AS [p] WHERE [p].[price] < @p1)) AND [u].[active] = @p2;', N'@p0 int, @p1 int, @p2 bit', @p0 = 100, @p1 = 10, @p2 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > 100 AND [o].[product_id] IN (SELECT [p].[id] FROM [dbo].[products] AS [p] WHERE [p].[price] < 10)) AND [u].[active] = true;"
@@ -6467,7 +6467,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 GROUP BY [u].[status] HAVING [u].[status] > @p1;', N'@p0 bit, @p1 tinyint', @p0 = 1, @p1 = 5;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 GROUP BY [u].[status] HAVING [u].[status] > @p1;', N'@p0 bit, @p1 int', @p0 = 1, @p1 = 5;",
             "params": []
           },
           "raw": "SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] WHERE [u].[active] = true GROUP BY [u].[status] HAVING [u].[status] > 5;"
@@ -6560,7 +6560,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] AS [role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] <> @p0;', N'@p0 nvarchar(max)', @p0 = N'guest';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] AS [role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] <> @p0;', N'@p0 varchar(max)', @p0 = 'guest';",
             "params": []
           },
           "raw": "SELECT [u].[role] AS [role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] <> guest;"
@@ -6856,7 +6856,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[status] HAVING [u].[status] > @p0 AND [u].[status] < @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 5, @p1 = 100;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[status] HAVING [u].[status] > @p0 AND [u].[status] < @p1;', N'@p0 int, @p1 int', @p0 = 5, @p1 = 100;",
             "params": []
           },
           "raw": "SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[status] HAVING [u].[status] > 5 AND [u].[status] < 100;"
@@ -6949,7 +6949,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[status] HAVING [u].[status] LIKE @p0;', N'@p0 nvarchar(max)', @p0 = N'a%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[status] HAVING [u].[status] LIKE @p0;', N'@p0 varchar(max)', @p0 = 'a%';",
             "params": []
           },
           "raw": "SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[status] HAVING [u].[status] LIKE a%;"
@@ -7249,22 +7249,37 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` LIMIT 10;",
-            "params": []
+            "sql": "SELECT * FROM `users` AS `u` LIMIT ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 10
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` AS `u` LIMIT 10;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" LIMIT 10;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" LIMIT $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 10
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" LIMIT 10;"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" LIMIT 10;",
-            "params": []
+            "sql": "SELECT * FROM \"users\" AS \"u\" LIMIT ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 10
+              }
+            ]
           },
           "raw": "SELECT * FROM \"users\" AS \"u\" LIMIT 10;"
         }
@@ -7300,29 +7315,56 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET @p0 ROWS FETCH NEXT @p1 ROWS ONLY;', N'@p0 int, @p1 int', @p0 = 20, @p1 = 10;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 10  OFFSET 20;",
-            "params": []
+            "sql": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT ?  OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 10  OFFSET 20;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT 10  OFFSET 20;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT $1  OFFSET $2;",
+            "params": [
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT 10  OFFSET 20;"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT 10  OFFSET 20;",
-            "params": []
+            "sql": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT ?  OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
+              }
+            ]
           },
           "raw": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT 10  OFFSET 20;"
         }
@@ -7354,29 +7396,44 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET @p0 ROWS;', N'@p0 int', @p0 = 20;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 20 ROWS;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;",
-            "params": []
+            "sql": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 20
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC  OFFSET 20;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC  OFFSET $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 20
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC  OFFSET 20;"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 20;",
-            "params": []
+            "sql": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 20
+              }
+            ]
           },
           "raw": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 20;"
         }
@@ -7418,18 +7475,22 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 ORDER BY [u].[id] ASC OFFSET 20 ROWS;', N'@p0 bit', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 ORDER BY [u].[id] ASC OFFSET @p1 ROWS;', N'@p0 bit, @p1 int', @p0 = 1, @p1 = 20;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true ORDER BY [u].[id] ASC OFFSET 20 ROWS;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 20;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET ?;",
             "params": [
               {
                 "t": "bool",
                 "v": true
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -7437,11 +7498,15 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 ORDER BY \"u\".\"id\" ASC  OFFSET 20;",
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 ORDER BY \"u\".\"id\" ASC  OFFSET $2;",
             "params": [
               {
                 "t": "bool",
                 "v": true
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -7449,11 +7514,15 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 20;",
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET ?;",
             "params": [
               {
                 "t": "bool",
                 "v": true
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -7713,7 +7782,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[user_id] HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY);', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[user_id] HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC OFFSET @p0 ROWS FETCH NEXT @p1 ROWS ONLY);', N'@p0 int, @p1 int', @p0 = 0, @p1 = 5;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[user_id] HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY);"
@@ -7723,15 +7792,25 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"id\" IN (SELECT \"o\".\"user_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"user_id\" HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT 5);",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"id\" IN (SELECT \"o\".\"user_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"user_id\" HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT $1);",
+            "params": [
+              {
+                "t": "num",
+                "v": 5
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"id\" IN (SELECT \"o\".\"user_id\" FROM \"public\".\"orders\" AS \"o\" GROUP BY \"o\".\"user_id\" HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT 5);"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"id\" IN (SELECT \"o\".\"user_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"user_id\" HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT 5);",
-            "params": []
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"id\" IN (SELECT \"o\".\"user_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"user_id\" HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 5
+              }
+            ]
           },
           "raw": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"id\" IN (SELECT \"o\".\"user_id\" FROM \"orders\" AS \"o\" GROUP BY \"o\".\"user_id\" HAVING COUNT(*) > 3 ORDER BY COUNT(*) DESC LIMIT 5);"
         }
@@ -7797,14 +7876,14 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 GROUP BY [u].[status] HAVING [u].[status] >= @p1 ORDER BY cnt DESC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY;', N'@p0 bit, @p1 tinyint', @p0 = 1, @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 GROUP BY [u].[status] HAVING [u].[status] >= @p1 ORDER BY cnt DESC OFFSET @p2 ROWS FETCH NEXT @p3 ROWS ONLY;', N'@p0 bit, @p1 int, @p2 int, @p3 int', @p0 = 1, @p1 = 1, @p2 = 20, @p3 = 10;",
             "params": []
           },
           "raw": "SELECT [u].[status] AS [status], COUNT(*) AS cnt FROM [dbo].[users] AS [u] WHERE [u].[active] = true GROUP BY [u].[status] HAVING [u].[status] >= 1 ORDER BY cnt DESC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT `u`.`status` AS `status`, COUNT(*) AS cnt FROM `users` AS `u` WHERE `u`.`active` = ? GROUP BY `u`.`status` HAVING `u`.`status` >= ? ORDER BY cnt DESC LIMIT 10  OFFSET 20;",
+            "sql": "SELECT `u`.`status` AS `status`, COUNT(*) AS cnt FROM `users` AS `u` WHERE `u`.`active` = ? GROUP BY `u`.`status` HAVING `u`.`status` >= ? ORDER BY cnt DESC LIMIT ?  OFFSET ?;",
             "params": [
               {
                 "t": "bool",
@@ -7813,6 +7892,14 @@
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -7820,7 +7907,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT \"u\".\"status\" AS \"status\", COUNT(*) AS cnt FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 GROUP BY \"u\".\"status\" HAVING \"u\".\"status\" >= $2 ORDER BY cnt DESC LIMIT 10  OFFSET 20;",
+            "sql": "SELECT \"u\".\"status\" AS \"status\", COUNT(*) AS cnt FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 GROUP BY \"u\".\"status\" HAVING \"u\".\"status\" >= $2 ORDER BY cnt DESC LIMIT $3  OFFSET $4;",
             "params": [
               {
                 "t": "bool",
@@ -7829,6 +7916,14 @@
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -7836,7 +7931,7 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT \"u\".\"status\" AS \"status\", COUNT(*) AS cnt FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? GROUP BY \"u\".\"status\" HAVING \"u\".\"status\" >= ? ORDER BY cnt DESC LIMIT 10  OFFSET 20;",
+            "sql": "SELECT \"u\".\"status\" AS \"status\", COUNT(*) AS cnt FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? GROUP BY \"u\".\"status\" HAVING \"u\".\"status\" >= ? ORDER BY cnt DESC LIMIT ?  OFFSET ?;",
             "params": [
               {
                 "t": "bool",
@@ -7845,6 +7940,14 @@
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -7894,7 +7997,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age], [score], [active]) VALUES (@p0, @p1, @p2, @p3);', N'@p0 nvarchar(max), @p1 tinyint, @p2 float, @p3 bit', @p0 = N'Alice', @p1 = 30, @p2 = 9.99, @p3 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age], [score], [active]) VALUES (@p0, @p1, @p2, @p3);', N'@p0 varchar(max), @p1 int, @p2 float, @p3 bit', @p0 = 'Alice', @p1 = 30, @p2 = 9.99, @p3 = 1;",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[users] ([name], [age], [score], [active]) VALUES (Alice, 30, 9.99, true);"
@@ -8006,7 +8109,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [sales].[orders] ([product_id], [quantity]) VALUES (@p0, @p1);', N'@p0 tinyint, @p1 tinyint', @p0 = 101, @p1 = 5;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [sales].[orders] ([product_id], [quantity]) VALUES (@p0, @p1);', N'@p0 int, @p1 int', @p0 = 101, @p1 = 5;",
             "params": []
           },
           "raw": "INSERT INTO [sales].[orders] ([product_id], [quantity]) VALUES (101, 5);"
@@ -8076,7 +8179,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [users] ([name]) VALUES (@p0);', N'@p0 nvarchar(max)', @p0 = N'Alice';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [users] ([name]) VALUES (@p0);', N'@p0 varchar(max)', @p0 = 'Alice';",
             "params": []
           },
           "raw": "INSERT INTO [users] ([name]) VALUES (Alice);"
@@ -8155,7 +8258,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[events] ([occurred_at], [deleted_at], [note]) VALUES (@p0, @p1, @p2);', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = '2024-01-15T12:00:00.000Z', @p1 = NULL, @p2 = N'it''s fine';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[events] ([occurred_at], [deleted_at], [note]) VALUES (@p0, @p1, @p2);', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 varchar(max)', @p0 = '2024-01-15T12:00:00.000Z', @p1 = NULL, @p2 = 'it''s fine';",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[events] ([occurred_at], [deleted_at], [note]) VALUES (2024-01-15T12:00:00.000Z, , it's fine);"
@@ -8243,7 +8346,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] VALUES (@p0, @p1);', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'Alice', @p1 = 30;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] VALUES (@p0, @p1);', N'@p0 varchar(max), @p1 int', @p0 = 'Alice', @p1 = 30;",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[users] VALUES (Alice, 30);"
@@ -8343,7 +8446,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age]) VALUES (@p0, @p1), (@p2, @p3);', N'@p0 nvarchar(max), @p1 tinyint, @p2 nvarchar(max), @p3 tinyint', @p0 = N'Alice', @p1 = 25, @p2 = N'Bob', @p3 = 30;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age]) VALUES (@p0, @p1), (@p2, @p3);', N'@p0 varchar(max), @p1 int, @p2 varchar(max), @p3 int', @p0 = 'Alice', @p1 = 25, @p2 = 'Bob', @p3 = 30;",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[users] ([name], [age]) VALUES (Alice, 25), (Bob, 30);"
@@ -8577,7 +8680,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [name] = @p0 FROM [dbo].[users] AS [u];', N'@p0 nvarchar(max)', @p0 = N'John';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [name] = @p0 FROM [dbo].[users] AS [u];', N'@p0 varchar(max)', @p0 = 'John';",
             "params": []
           },
           "raw": "UPDATE [u] SET [name] = John FROM [dbo].[users] AS [u];"
@@ -8641,7 +8744,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [dbo].[users] SET [name] = @p0;', N'@p0 nvarchar(max)', @p0 = N'John';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [dbo].[users] SET [name] = @p0;', N'@p0 varchar(max)', @p0 = 'John';",
             "params": []
           },
           "raw": "UPDATE [dbo].[users] SET [name] = John;"
@@ -8706,7 +8809,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [o] SET [status] = @p0 FROM [sales].[orders] AS [o];', N'@p0 nvarchar(max)', @p0 = N'shipped';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [o] SET [status] = @p0 FROM [sales].[orders] AS [o];', N'@p0 varchar(max)', @p0 = 'shipped';",
             "params": []
           },
           "raw": "UPDATE [o] SET [status] = shipped FROM [sales].[orders] AS [o];"
@@ -8796,7 +8899,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [name] = @p0, login_count = login_count + 1, [age] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] = @p2 AND [u].[status] <> @p3;', N'@p0 nvarchar(max), @p1 tinyint, @p2 tinyint, @p3 nvarchar(max)', @p0 = N'John', @p1 = 31, @p2 = 42, @p3 = N'deleted';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [name] = @p0, login_count = login_count + 1, [age] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] = @p2 AND [u].[status] <> @p3;', N'@p0 varchar(max), @p1 int, @p2 int, @p3 varchar(max)', @p0 = 'John', @p1 = 31, @p2 = 42, @p3 = 'deleted';",
             "params": []
           },
           "raw": "UPDATE [u] SET [name] = John, login_count = login_count + 1, [age] = 31 FROM [dbo].[users] AS [u] WHERE [u].[id] = 42 AND [u].[status] <> deleted;"
@@ -8913,7 +9016,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [deleted_at] = @p0, [updated_at] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] = @p2;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 tinyint', @p0 = NULL, @p1 = '2024-06-01T08:30:00.000Z', @p2 = 7;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [deleted_at] = @p0, [updated_at] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] = @p2;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 int', @p0 = NULL, @p1 = '2024-06-01T08:30:00.000Z', @p2 = 7;",
             "params": []
           },
           "raw": "UPDATE [u] SET [deleted_at] = , [updated_at] = 2024-06-01T08:30:00.000Z FROM [dbo].[users] AS [u] WHERE [u].[id] = 7;"
@@ -9062,7 +9165,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 42;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 42;",
             "params": []
           },
           "raw": "DELETE [u] FROM [dbo].[users] AS [u] WHERE [u].[id] = 42;"
@@ -9175,7 +9278,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] FROM [archive].[users] AS [u] WHERE [u].[id] IN (@p0, @p1);', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 2;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] FROM [archive].[users] AS [u] WHERE [u].[id] IN (@p0, @p1);', N'@p0 int, @p1 int', @p0 = 1, @p1 = 2;",
             "params": []
           },
           "raw": "DELETE [u] FROM [archive].[users] AS [u] WHERE [u].[id] IN (1, 2);"
@@ -9266,7 +9369,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM active_users AS au WHERE [au].[age] > @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'active', @p1 = 18;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM active_users AS au WHERE [au].[age] > @p1;', N'@p0 varchar(max), @p1 int', @p0 = 'active', @p1 = 18;",
             "params": []
           },
           "raw": "WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = active) SELECT * FROM active_users AS au WHERE [au].[age] > 18;"
@@ -9398,7 +9501,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0), [big_orders] AS (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p1) SELECT * FROM active_users AS au WHERE [au].[id] > @p2;', N'@p0 nvarchar(max), @p1 float, @p2 tinyint', @p0 = N'active', @p1 = 99.5, @p2 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0), [big_orders] AS (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p1) SELECT * FROM active_users AS au WHERE [au].[id] > @p2;', N'@p0 varchar(max), @p1 float, @p2 int', @p0 = 'active', @p1 = 99.5, @p2 = 0;",
             "params": []
           },
           "raw": "WITH [active_users] AS (SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[status] = active), [big_orders] AS (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > 99.5) SELECT * FROM active_users AS au WHERE [au].[id] > 0;"
@@ -9551,7 +9654,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [descendants] AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = @p0 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] WHERE [e2].[depth] < @p1) SELECT * FROM descendants AS d WHERE [d].[id] <> @p2;', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 1, @p1 = 10, @p2 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [descendants] AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = @p0 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] WHERE [e2].[depth] < @p1) SELECT * FROM descendants AS d WHERE [d].[id] <> @p2;', N'@p0 int, @p1 int, @p2 int', @p0 = 1, @p1 = 10, @p2 = 1;",
             "params": []
           },
           "raw": "WITH [descendants] AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = 1 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] WHERE [e2].[depth] < 10) SELECT * FROM descendants AS d WHERE [d].[id] <> 1;"
@@ -9670,7 +9773,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [base] AS (SELECT * FROM [dbo].[categories] AS [c]), [tree] AS (SELECT * FROM base AS b) SELECT * FROM tree AS t WHERE [t].[depth] <= @p0;', N'@p0 tinyint', @p0 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [base] AS (SELECT * FROM [dbo].[categories] AS [c]), [tree] AS (SELECT * FROM base AS b) SELECT * FROM tree AS t WHERE [t].[depth] <= @p0;', N'@p0 int', @p0 = 3;",
             "params": []
           },
           "raw": "WITH [base] AS (SELECT * FROM [dbo].[categories] AS [c]), [tree] AS (SELECT * FROM base AS b) SELECT * FROM tree AS t WHERE [t].[depth] <= 3;"
@@ -9815,7 +9918,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [constants] AS (SELECT 1 AS tier), [premium] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[tier] = @p0) SELECT * FROM premium AS p WHERE [p].[active] = @p1;', N'@p0 nvarchar(max), @p1 bit', @p0 = N'gold', @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [constants] AS (SELECT 1 AS tier), [premium] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[tier] = @p0) SELECT * FROM premium AS p WHERE [p].[active] = @p1;', N'@p0 varchar(max), @p1 bit', @p0 = 'gold', @p1 = 1;",
             "params": []
           },
           "raw": "WITH [constants] AS (SELECT 1 AS tier), [premium] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[tier] = gold) SELECT * FROM premium AS p WHERE [p].[active] = true;"
@@ -9920,7 +10023,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM [active_users] AS [au] WHERE [au].[id] > @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'active', @p1 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM [active_users] AS [au] WHERE [au].[id] > @p1;', N'@p0 varchar(max), @p1 int', @p0 = 'active', @p1 = 0;",
             "params": []
           },
           "raw": "WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = active) SELECT * FROM [active_users] AS [au] WHERE [au].[id] > 0;"
@@ -10080,7 +10183,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [capped] AS (SELECT TOP (5) [u].[id] FROM [dbo].[users] AS [u]) SELECT [c].[id] FROM capped AS c WHERE [c].[id] > @p0 UNION ALL SELECT TOP (3) [a].[id] FROM [dbo].[admins] AS [a];', N'@p0 tinyint', @p0 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [capped] AS (SELECT TOP (5) [u].[id] FROM [dbo].[users] AS [u]) SELECT [c].[id] FROM capped AS c WHERE [c].[id] > @p0 UNION ALL SELECT TOP (3) [a].[id] FROM [dbo].[admins] AS [a];', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "WITH [capped] AS (SELECT TOP (5) [u].[id] FROM [dbo].[users] AS [u]) SELECT [c].[id] FROM capped AS c WHERE [c].[id] > 0 UNION ALL SELECT TOP (3) [a].[id] FROM [dbo].[admins] AS [a];"
@@ -10129,7 +10232,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM active_users AS au;', N'@p0 nvarchar(max)', @p0 = N'active';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM active_users AS au;', N'@p0 varchar(max)', @p0 = 'active';",
             "params": []
           },
           "raw": "WITH [active_users] AS (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[status] = active) SELECT * FROM active_users AS au;"
@@ -10189,7 +10292,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0 UNION SELECT [a].[name] FROM [dbo].[admins] AS [a] WHERE [a].[status] = @p1;', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'active', @p1 = N'pending';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0 UNION SELECT [a].[name] FROM [dbo].[admins] AS [a] WHERE [a].[status] = @p1;', N'@p0 varchar(max), @p1 varchar(max)', @p0 = 'active', @p1 = 'pending';",
             "params": []
           },
           "raw": "SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[status] = active UNION SELECT [a].[name] FROM [dbo].[admins] AS [a] WHERE [a].[status] = pending;"
@@ -10337,7 +10440,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 UNION ALL SELECT [a].[id] FROM [dbo].[admins] AS [a] INTERSECT SELECT [p].[user_id] FROM [dbo].[premium] AS [p] WHERE [p].[tier] = @p1 EXCEPT SELECT [b].[user_id] FROM [dbo].[banned] AS [b] WHERE [b].[reason] <> @p2;', N'@p0 bit, @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = 1, @p1 = N'gold', @p2 = N'spam';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 UNION ALL SELECT [a].[id] FROM [dbo].[admins] AS [a] INTERSECT SELECT [p].[user_id] FROM [dbo].[premium] AS [p] WHERE [p].[tier] = @p1 EXCEPT SELECT [b].[user_id] FROM [dbo].[banned] AS [b] WHERE [b].[reason] <> @p2;', N'@p0 bit, @p1 varchar(max), @p2 varchar(max)', @p0 = 1, @p1 = 'gold', @p2 = 'spam';",
             "params": []
           },
           "raw": "SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[active] = true UNION ALL SELECT [a].[id] FROM [dbo].[admins] AS [a] INTERSECT SELECT [p].[user_id] FROM [dbo].[premium] AS [p] WHERE [p].[tier] = gold EXCEPT SELECT [b].[user_id] FROM [dbo].[banned] AS [b] WHERE [b].[reason] <> spam;"
@@ -10467,14 +10570,14 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[type] = @p0 UNION SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[type] = @p1 ORDER BY [u].[name] DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'A', @p1 = N'B';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[type] = @p0 UNION SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[type] = @p1 ORDER BY [u].[name] DESC OFFSET @p2 ROWS FETCH NEXT @p3 ROWS ONLY;', N'@p0 varchar(max), @p1 varchar(max), @p2 int, @p3 int', @p0 = 'A', @p1 = 'B', @p2 = 0, @p3 = 10;",
             "params": []
           },
           "raw": "SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[type] = A UNION SELECT [u].[name] FROM [dbo].[users] AS [u] WHERE [u].[type] = B ORDER BY [u].[name] DESC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT `u`.`name` FROM `users` AS `u` WHERE `u`.`type` = ? UNION SELECT `u`.`name` FROM `users` AS `u` WHERE `u`.`type` = ? ORDER BY `u`.`name` DESC LIMIT 10;",
+            "sql": "SELECT `u`.`name` FROM `users` AS `u` WHERE `u`.`type` = ? UNION SELECT `u`.`name` FROM `users` AS `u` WHERE `u`.`type` = ? ORDER BY `u`.`name` DESC LIMIT ?;",
             "params": [
               {
                 "t": "string",
@@ -10483,6 +10586,10 @@
               {
                 "t": "string",
                 "v": "B"
+              },
+              {
+                "t": "num",
+                "v": 10
               }
             ]
           },
@@ -10490,7 +10597,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT \"u\".\"name\" FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"type\" = $1 UNION SELECT \"u\".\"name\" FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"type\" = $2 ORDER BY \"u\".\"name\" DESC LIMIT 10;",
+            "sql": "SELECT \"u\".\"name\" FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"type\" = $1 UNION SELECT \"u\".\"name\" FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"type\" = $2 ORDER BY \"u\".\"name\" DESC LIMIT $3;",
             "params": [
               {
                 "t": "string",
@@ -10499,6 +10606,10 @@
               {
                 "t": "string",
                 "v": "B"
+              },
+              {
+                "t": "num",
+                "v": 10
               }
             ]
           },
@@ -10506,7 +10617,7 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT \"u\".\"name\" FROM \"users\" AS \"u\" WHERE \"u\".\"type\" = ? UNION SELECT \"u\".\"name\" FROM \"users\" AS \"u\" WHERE \"u\".\"type\" = ? ORDER BY \"u\".\"name\" DESC LIMIT 10;",
+            "sql": "SELECT \"u\".\"name\" FROM \"users\" AS \"u\" WHERE \"u\".\"type\" = ? UNION SELECT \"u\".\"name\" FROM \"users\" AS \"u\" WHERE \"u\".\"type\" = ? ORDER BY \"u\".\"name\" DESC LIMIT ?;",
             "params": [
               {
                 "t": "string",
@@ -10515,6 +10626,10 @@
               {
                 "t": "string",
                 "v": "B"
+              },
+              {
+                "t": "num",
+                "v": 10
               }
             ]
           },
@@ -10671,7 +10786,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [email]) VALUES (@p0, @p1);', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'John', @p1 = N'john@example.com';SET NOCOUNT ON; exec sp_executesql N'UPDATE [s] SET [user_count] = @p0 FROM [dbo].[stats] AS [s] WHERE [s].[id] = @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 100, @p1 = 1;SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] = @p0;', N'@p0 nvarchar(max)', @p0 = N'john@example.com';COMMIT TRANSACTION;",
+            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [email]) VALUES (@p0, @p1);', N'@p0 varchar(max), @p1 varchar(max)', @p0 = 'John', @p1 = 'john@example.com';SET NOCOUNT ON; exec sp_executesql N'UPDATE [s] SET [user_count] = @p0 FROM [dbo].[stats] AS [s] WHERE [s].[id] = @p1;', N'@p0 int, @p1 int', @p0 = 100, @p1 = 1;SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] = @p0;', N'@p0 varchar(max)', @p0 = 'john@example.com';COMMIT TRANSACTION;",
             "params": []
           },
           "raw": "BEGIN TRANSACTION; INSERT INTO [dbo].[users] ([name], [email]) VALUES (John, john@example.com);UPDATE [s] SET [user_count] = 100 FROM [dbo].[stats] AS [s] WHERE [s].[id] = 1;SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] = john@example.com;COMMIT TRANSACTION;"
@@ -10757,7 +10872,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [s] FROM [dbo].[sessions] AS [s] WHERE [s].[expired] = @p0;', N'@p0 bit', @p0 = 1;SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[sessions] ([user_id], [token]) VALUES (@p0, @p1);', N'@p0 tinyint, @p1 nvarchar(max)', @p0 = 1, @p1 = N'abc123';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [s] FROM [dbo].[sessions] AS [s] WHERE [s].[expired] = @p0;', N'@p0 bit', @p0 = 1;SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[sessions] ([user_id], [token]) VALUES (@p0, @p1);', N'@p0 int, @p1 varchar(max)', @p0 = 1, @p1 = 'abc123';",
             "params": []
           },
           "raw": "DELETE [s] FROM [dbo].[sessions] AS [s] WHERE [s].[expired] = true;INSERT INTO [dbo].[sessions] ([user_id], [token]) VALUES (1, abc123);"
@@ -10891,7 +11006,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM active_users AS au WHERE [au].[id] > @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'active', @p1 = 0;SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[email] FROM [dbo].[users] AS [u] WHERE [u].[type] = @p0 UNION SELECT [s].[email] FROM [dbo].[subscribers] AS [s] WHERE [s].[confirmed] = @p1;', N'@p0 nvarchar(max), @p1 bit', @p0 = N'customer', @p1 = 1;COMMIT TRANSACTION;",
+            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'WITH [active_users] AS (SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[status] = @p0) SELECT * FROM active_users AS au WHERE [au].[id] > @p1;', N'@p0 varchar(max), @p1 int', @p0 = 'active', @p1 = 0;SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[email] FROM [dbo].[users] AS [u] WHERE [u].[type] = @p0 UNION SELECT [s].[email] FROM [dbo].[subscribers] AS [s] WHERE [s].[confirmed] = @p1;', N'@p0 varchar(max), @p1 bit', @p0 = 'customer', @p1 = 1;COMMIT TRANSACTION;",
             "params": []
           },
           "raw": "BEGIN TRANSACTION; WITH [active_users] AS (SELECT [u].[id] FROM [dbo].[users] AS [u] WHERE [u].[status] = active) SELECT * FROM active_users AS au WHERE [au].[id] > 0;SELECT [u].[email] FROM [dbo].[users] AS [u] WHERE [u].[type] = customer UNION SELECT [s].[email] FROM [dbo].[subscribers] AS [s] WHERE [s].[confirmed] = true;COMMIT TRANSACTION;"
@@ -11023,7 +11138,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] IS NULL AND [u].[b] = @p0 AND [u].[c] = @p1;', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'after', @p1 = 7;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] IS NULL AND [u].[b] = @p0 AND [u].[c] = @p1;', N'@p0 varchar(max), @p1 int', @p0 = 'after', @p1 = 7;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] IS NULL AND [u].[b] = after AND [u].[c] = 7;"
@@ -11114,7 +11229,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age], [email]) VALUES (@p0, @p1, @p2);', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = N'Ada', @p1 = NULL, @p2 = N'x@y.z';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age], [email]) VALUES (@p0, @p1, @p2);', N'@p0 varchar(max), @p1 nvarchar(max), @p2 varchar(max)', @p0 = 'Ada', @p1 = NULL, @p2 = 'x@y.z';",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[users] ([name], [age], [email]) VALUES (Ada, , x@y.z);"
@@ -11337,7 +11452,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[count] = @p0 AND [u].[name] = @p1 AND [u].[active] = @p2 AND [u].[tail] = @p3;', N'@p0 tinyint, @p1 nvarchar(max), @p2 bit, @p3 nvarchar(max)', @p0 = 0, @p1 = N'', @p2 = 0, @p3 = N'sentinel';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[count] = @p0 AND [u].[name] = @p1 AND [u].[active] = @p2 AND [u].[tail] = @p3;', N'@p0 int, @p1 varchar(max), @p2 bit, @p3 varchar(max)', @p0 = 0, @p1 = '', @p2 = 0, @p3 = 'sentinel';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[count] = 0 AND [u].[name] =  AND [u].[active] = false AND [u].[tail] = sentinel;"
@@ -11442,7 +11557,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = @p0;', N'@p0 nvarchar(max)', @p0 = N'O''Brien';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = @p0;', N'@p0 varchar(max)', @p0 = 'O''Brien';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = O'Brien;"
@@ -11511,7 +11626,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[path] = @p0;', N'@p0 nvarchar(max)', @p0 = N'C:\\Users\\ada\nline2\ttabbed';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[path] = @p0;', N'@p0 varchar(max)', @p0 = 'C:\\Users\\ada\nline2\ttabbed';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[path] = C:\\Users\\ada\nline2\ttabbed;"
@@ -11649,7 +11764,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = @p0;', N'@p0 nvarchar(max)', @p0 = N'''; DROP TABLE users; --';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = @p0;', N'@p0 varchar(max)', @p0 = '''; DROP TABLE users; --';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = '; DROP TABLE users; --;"
@@ -11731,7 +11846,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] LIKE @p0 AND [u].[email] NOT LIKE @p1;', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'%o''br_en%', @p1 = N'%@example.com';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] LIKE @p0 AND [u].[email] NOT LIKE @p1;', N'@p0 varchar(max), @p1 varchar(max)', @p0 = '%o''br_en%', @p1 = '%@example.com';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] LIKE %o'br_en% AND [u].[email] NOT LIKE %@example.com;"
@@ -11838,7 +11953,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = @p0 AND [u].[b] = @p1 AND [u].[c] = @p2;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = N'$1', @p1 = N'?', @p2 = N'@p0';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = @p0 AND [u].[b] = @p1 AND [u].[c] = @p2;', N'@p0 varchar(max), @p1 varchar(max), @p2 varchar(max)', @p0 = '$1', @p1 = '?', @p2 = '@p0';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = $1 AND [u].[b] = ? AND [u].[c] = @p0;"
@@ -12076,7 +12191,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = @p0 AND [m].[b] = @p1 AND [m].[c] = @p2;', N'@p0 smallint, @p1 smallint, @p2 smallint', @p0 = -1, @p1 = -128, @p2 = -32768;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = @p0 AND [m].[b] = @p1 AND [m].[c] = @p2;', N'@p0 int, @p1 int, @p2 int', @p0 = -1, @p1 = -128, @p2 = -32768;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = -1 AND [m].[b] = -128 AND [m].[c] = -32768;"
@@ -12195,7 +12310,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[zero] = @p0 AND [m].[max_tinyint] = @p1 AND [m].[over] = @p2;', N'@p0 tinyint, @p1 tinyint, @p2 smallint', @p0 = 0, @p1 = 255, @p2 = 256;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[zero] = @p0 AND [m].[max_tinyint] = @p1 AND [m].[over] = @p2;', N'@p0 int, @p1 int, @p2 int', @p0 = 0, @p1 = 255, @p2 = 256;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[m] AS [m] WHERE [m].[zero] = 0 AND [m].[max_tinyint] = 255 AND [m].[over] = 256;"
@@ -12340,7 +12455,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = @p0 AND [m].[b] = @p1 AND [m].[c] = @p2 AND [m].[d] = @p3 AND [m].[e] = @p4;', N'@p0 smallint, @p1 int, @p2 int, @p3 bigint, @p4 int', @p0 = 32767, @p1 = 32768, @p2 = 2147483647, @p3 = 2147483648, @p4 = -2147483648;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = @p0 AND [m].[b] = @p1 AND [m].[c] = @p2 AND [m].[d] = @p3 AND [m].[e] = @p4;', N'@p0 int, @p1 int, @p2 int, @p3 bigint, @p4 int', @p0 = 32767, @p1 = 32768, @p2 = 2147483647, @p3 = 2147483648, @p4 = -2147483648;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = 32767 AND [m].[b] = 32768 AND [m].[c] = 2147483647 AND [m].[d] = 2147483648 AND [m].[e] = -2147483648;"
@@ -12689,14 +12804,14 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [recent] AS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0) SELECT [u].[id], COUNT(*) AS cnt FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND [o].[kind] = @p1 WHERE [u].[name] LIKE @p2 AND [u].[age] BETWEEN @p3 AND @p4 AND [u].[status] IN (@p5, @p6, @p7) AND [u].[seen_at] > @p8 GROUP BY [u].[id] HAVING [u].[id] > @p9 ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY;', N'@p0 nvarchar(max), @p1 bit, @p2 nvarchar(max), @p3 tinyint, @p4 tinyint, @p5 nvarchar(max), @p6 nvarchar(max), @p7 float, @p8 nvarchar(max), @p9 tinyint', @p0 = N'shipped', @p1 = 1, @p2 = N'%ada%', @p3 = 18, @p4 = 65, @p5 = N'a', @p6 = NULL, @p7 = 2.5, @p8 = '2024-06-01T00:00:00.000Z', @p9 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [recent] AS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0) SELECT [u].[id], COUNT(*) AS cnt FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND [o].[kind] = @p1 WHERE [u].[name] LIKE @p2 AND [u].[age] BETWEEN @p3 AND @p4 AND [u].[status] IN (@p5, @p6, @p7) AND [u].[seen_at] > @p8 GROUP BY [u].[id] HAVING [u].[id] > @p9 ORDER BY [u].[id] ASC OFFSET @p10 ROWS FETCH NEXT @p11 ROWS ONLY;', N'@p0 varchar(max), @p1 bit, @p2 varchar(max), @p3 int, @p4 int, @p5 varchar(max), @p6 nvarchar(max), @p7 float, @p8 nvarchar(max), @p9 int, @p10 int, @p11 int', @p0 = 'shipped', @p1 = 1, @p2 = '%ada%', @p3 = 18, @p4 = 65, @p5 = 'a', @p6 = NULL, @p7 = 2.5, @p8 = '2024-06-01T00:00:00.000Z', @p9 = 1, @p10 = 20, @p11 = 10;",
             "params": []
           },
           "raw": "WITH [recent] AS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = shipped) SELECT [u].[id], COUNT(*) AS cnt FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND [o].[kind] = true WHERE [u].[name] LIKE %ada% AND [u].[age] BETWEEN 18 AND 65 AND [u].[status] IN (a, , 2.5) AND [u].[seen_at] > 2024-06-01T00:00:00.000Z GROUP BY [u].[id] HAVING [u].[id] > 1 ORDER BY [u].[id] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY;"
         },
         "mysql": {
           "prepared": {
-            "sql": "WITH `recent` AS (SELECT * FROM `orders` AS `o` WHERE `o`.`status` = ?) SELECT `u`.`id`, COUNT(*) AS cnt FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id` AND `o`.`kind` = ? WHERE `u`.`name` LIKE ? AND `u`.`age` BETWEEN ? AND ? AND `u`.`status` IN (?, ?, ?) AND `u`.`seen_at` > ? GROUP BY `u`.`id` HAVING `u`.`id` > ? ORDER BY `u`.`id` ASC LIMIT 10  OFFSET 20;",
+            "sql": "WITH `recent` AS (SELECT * FROM `orders` AS `o` WHERE `o`.`status` = ?) SELECT `u`.`id`, COUNT(*) AS cnt FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id` AND `o`.`kind` = ? WHERE `u`.`name` LIKE ? AND `u`.`age` BETWEEN ? AND ? AND `u`.`status` IN (?, ?, ?) AND `u`.`seen_at` > ? GROUP BY `u`.`id` HAVING `u`.`id` > ? ORDER BY `u`.`id` ASC LIMIT ?  OFFSET ?;",
             "params": [
               {
                 "t": "string",
@@ -12736,6 +12851,14 @@
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -12743,7 +12866,7 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "WITH \"recent\" AS (SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"status\" = $1) SELECT \"u\".\"id\", COUNT(*) AS cnt FROM \"public\".\"users\" AS \"u\" INNER JOIN \"public\".\"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" AND \"o\".\"kind\" = $2 WHERE \"u\".\"name\" LIKE $3 AND \"u\".\"age\" BETWEEN $4 AND $5 AND \"u\".\"status\" IN ($6, $7, $8) AND \"u\".\"seen_at\" > $9 GROUP BY \"u\".\"id\" HAVING \"u\".\"id\" > $10 ORDER BY \"u\".\"id\" ASC LIMIT 10  OFFSET 20;",
+            "sql": "WITH \"recent\" AS (SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"status\" = $1) SELECT \"u\".\"id\", COUNT(*) AS cnt FROM \"public\".\"users\" AS \"u\" INNER JOIN \"public\".\"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" AND \"o\".\"kind\" = $2 WHERE \"u\".\"name\" LIKE $3 AND \"u\".\"age\" BETWEEN $4 AND $5 AND \"u\".\"status\" IN ($6, $7, $8) AND \"u\".\"seen_at\" > $9 GROUP BY \"u\".\"id\" HAVING \"u\".\"id\" > $10 ORDER BY \"u\".\"id\" ASC LIMIT $11  OFFSET $12;",
             "params": [
               {
                 "t": "string",
@@ -12783,6 +12906,14 @@
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -12790,7 +12921,7 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "WITH \"recent\" AS (SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"status\" = ?) SELECT \"u\".\"id\", COUNT(*) AS cnt FROM \"users\" AS \"u\" INNER JOIN \"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" AND \"o\".\"kind\" = ? WHERE \"u\".\"name\" LIKE ? AND \"u\".\"age\" BETWEEN ? AND ? AND \"u\".\"status\" IN (?, ?, ?) AND \"u\".\"seen_at\" > ? GROUP BY \"u\".\"id\" HAVING \"u\".\"id\" > ? ORDER BY \"u\".\"id\" ASC LIMIT 10  OFFSET 20;",
+            "sql": "WITH \"recent\" AS (SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"status\" = ?) SELECT \"u\".\"id\", COUNT(*) AS cnt FROM \"users\" AS \"u\" INNER JOIN \"orders\" AS \"o\" ON \"u\".\"id\" = \"o\".\"user_id\" AND \"o\".\"kind\" = ? WHERE \"u\".\"name\" LIKE ? AND \"u\".\"age\" BETWEEN ? AND ? AND \"u\".\"status\" IN (?, ?, ?) AND \"u\".\"seen_at\" > ? GROUP BY \"u\".\"id\" HAVING \"u\".\"id\" > ? ORDER BY \"u\".\"id\" ASC LIMIT ?  OFFSET ?;",
             "params": [
               {
                 "t": "string",
@@ -12830,6 +12961,14 @@
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 10
+              },
+              {
+                "t": "num",
+                "v": 20
               }
             ]
           },
@@ -12875,7 +13014,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [name] = @p0, [age] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] = @p2;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 tinyint', @p0 = N'Ada', @p1 = NULL, @p2 = 7;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [name] = @p0, [age] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] = @p2;', N'@p0 varchar(max), @p1 nvarchar(max), @p2 int', @p0 = 'Ada', @p1 = NULL, @p2 = 7;",
             "params": []
           },
           "raw": "UPDATE [u] SET [name] = Ada, [age] =  FROM [dbo].[users] AS [u] WHERE [u].[id] = 7;"
@@ -13450,7 +13589,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [recent] AS (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0) SELECT (SELECT COUNT(*) FROM [dbo].[logs] AS [l] WHERE [l].[kind] = @p1) AS [click_count], [au].[id] FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p2) AS [au] INNER JOIN [dbo].[payments] AS [p] ON [au].[id] = [p].[user_id] AND [p].[amount] > @p3 WHERE [au].[id] > @p4 GROUP BY [au].[id] HAVING [au].[id] < @p5 UNION ALL SELECT [x].[id] FROM [dbo].[archive] AS [x] WHERE [x].[year] = @p6;', N'@p0 float, @p1 nvarchar(max), @p2 bit, @p3 tinyint, @p4 tinyint, @p5 smallint, @p6 smallint', @p0 = 10.5, @p1 = N'click', @p2 = 1, @p3 = 100, @p4 = 0, @p5 = 999, @p6 = 2020;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [recent] AS (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0) SELECT (SELECT COUNT(*) FROM [dbo].[logs] AS [l] WHERE [l].[kind] = @p1) AS [click_count], [au].[id] FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p2) AS [au] INNER JOIN [dbo].[payments] AS [p] ON [au].[id] = [p].[user_id] AND [p].[amount] > @p3 WHERE [au].[id] > @p4 GROUP BY [au].[id] HAVING [au].[id] < @p5 UNION ALL SELECT [x].[id] FROM [dbo].[archive] AS [x] WHERE [x].[year] = @p6;', N'@p0 float, @p1 varchar(max), @p2 bit, @p3 int, @p4 int, @p5 int, @p6 int', @p0 = 10.5, @p1 = 'click', @p2 = 1, @p3 = 100, @p4 = 0, @p5 = 999, @p6 = 2020;",
             "params": []
           },
           "raw": "WITH [recent] AS (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > 10.5) SELECT (SELECT COUNT(*) FROM [dbo].[logs] AS [l] WHERE [l].[kind] = click) AS [click_count], [au].[id] FROM (SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true) AS [au] INNER JOIN [dbo].[payments] AS [p] ON [au].[id] = [p].[user_id] AND [p].[amount] > 100 WHERE [au].[id] > 0 GROUP BY [au].[id] HAVING [au].[id] < 999 UNION ALL SELECT [x].[id] FROM [dbo].[archive] AS [x] WHERE [x].[year] = 2020;"
@@ -13941,29 +14080,44 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET @p0 ROWS;', N'@p0 int', @p0 = 5;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 5 ROWS;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 5;",
-            "params": []
+            "sql": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 5
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` AS `u` ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 5;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC  OFFSET 5;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC  OFFSET $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 5
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC  OFFSET 5;"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 5;",
-            "params": []
+            "sql": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 5
+              }
+            ]
           },
           "raw": "SELECT * FROM \"users\" AS \"u\" ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 5;"
         }
@@ -14005,18 +14159,22 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 ORDER BY [u].[id] ASC OFFSET 5 ROWS;', N'@p0 bit', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = @p0 ORDER BY [u].[id] ASC OFFSET @p1 ROWS;', N'@p0 bit, @p1 int', @p0 = 1, @p1 = 5;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[active] = true ORDER BY [u].[id] ASC OFFSET 5 ROWS;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET 5;",
+            "sql": "SELECT * FROM `users` AS `u` WHERE `u`.`active` = ? ORDER BY `u`.`id` ASC LIMIT 18446744073709551615 OFFSET ?;",
             "params": [
               {
                 "t": "bool",
                 "v": true
+              },
+              {
+                "t": "num",
+                "v": 5
               }
             ]
           },
@@ -14024,11 +14182,15 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 ORDER BY \"u\".\"id\" ASC  OFFSET 5;",
+            "sql": "SELECT * FROM \"public\".\"users\" AS \"u\" WHERE \"u\".\"active\" = $1 ORDER BY \"u\".\"id\" ASC  OFFSET $2;",
             "params": [
               {
                 "t": "bool",
                 "v": true
+              },
+              {
+                "t": "num",
+                "v": 5
               }
             ]
           },
@@ -14036,11 +14198,15 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET 5;",
+            "sql": "SELECT * FROM \"users\" AS \"u\" WHERE \"u\".\"active\" = ? ORDER BY \"u\".\"id\" ASC LIMIT -1 OFFSET ?;",
             "params": [
               {
                 "t": "bool",
                 "v": true
+              },
+              {
+                "t": "num",
+                "v": 5
               }
             ]
           },
@@ -14197,7 +14363,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] AS [role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] LIKE @p0;', N'@p0 nvarchar(max)', @p0 = N'%adm%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] AS [role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] LIKE @p0;', N'@p0 varchar(max)', @p0 = '%adm%';",
             "params": []
           },
           "raw": "SELECT [u].[role] AS [role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] LIKE %adm%;"
@@ -14311,7 +14477,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND ([o].[amount] > @p0 OR [o].[type] = [u].[default_type]) WHERE [u].[active] = @p1;', N'@p0 tinyint, @p1 bit', @p0 = 42, @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND ([o].[amount] > @p0 OR [o].[type] = [u].[default_type]) WHERE [u].[active] = @p1;', N'@p0 int, @p1 bit', @p0 = 42, @p1 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] INNER JOIN [dbo].[orders] AS [o] ON [u].[id] = [o].[user_id] AND ([o].[amount] > 42 OR [o].[type] = [u].[default_type]) WHERE [u].[active] = true;"
@@ -14503,7 +14669,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [a`b].[c]]d\"e''f] AS [al''ias] FROM [dbo].[we\"ird]]tbl] AS [a`b] INNER JOIN [dbo].[plain] AS [p.q] ON [a`b].[id] = [p.q].[id] WHERE [a`b].[n]]m] = @p0;', N'@p0 nvarchar(max)', @p0 = N'O''Brien';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [a`b].[c]]d\"e''f] AS [al''ias] FROM [dbo].[we\"ird]]tbl] AS [a`b] INNER JOIN [dbo].[plain] AS [p.q] ON [a`b].[id] = [p.q].[id] WHERE [a`b].[n]]m] = @p0;', N'@p0 varchar(max)', @p0 = 'O''Brien';",
             "params": []
           },
           "raw": "SELECT [a`b].[c]]d\"e'f] AS [al'ias] FROM [dbo].[we\"ird]]tbl] AS [a`b] INNER JOIN [dbo].[plain] AS [p.q] ON [a`b].[id] = [p.q].[id] WHERE [a`b].[n]]m] = O'Brien;"
@@ -14611,7 +14777,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = @p0 AND [m].[b] = @p1 AND [m].[c] = @p2 AND [m].[d] = @p3;', N'@p0 tinyint, @p1 tinyint, @p2 smallint, @p3 smallint', @p0 = 2, @p1 = 2, @p2 = -3, @p3 = -3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = @p0 AND [m].[b] = @p1 AND [m].[c] = @p2 AND [m].[d] = @p3;', N'@p0 int, @p1 int, @p2 int, @p3 int', @p0 = 2, @p1 = 2, @p2 = -3, @p3 = -3;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[m] AS [m] WHERE [m].[a] = 2 AND [m].[b] = 2 AND [m].[c] = -3 AND [m].[d] = -3;"
@@ -14864,7 +15030,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[events] AS [e] WHERE [e].[precise_at] = @p0 AND [e].[occurred_at] BETWEEN @p1 AND @p2 AND [e].[tail] = @p3;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 nvarchar(max), @p3 tinyint', @p0 = '2024-01-15T12:00:00.123Z', @p1 = '1969-07-20T20:17:40.000Z', @p2 = '2024-01-15T12:00:00.500Z', @p3 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[events] AS [e] WHERE [e].[precise_at] = @p0 AND [e].[occurred_at] BETWEEN @p1 AND @p2 AND [e].[tail] = @p3;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 nvarchar(max), @p3 int', @p0 = '2024-01-15T12:00:00.123Z', @p1 = '1969-07-20T20:17:40.000Z', @p2 = '2024-01-15T12:00:00.500Z', @p3 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[events] AS [e] WHERE [e].[precise_at] = 2024-01-15T12:00:00.123Z AND [e].[occurred_at] BETWEEN 1969-07-20T20:17:40.000Z AND 2024-01-15T12:00:00.500Z AND [e].[tail] = 1;"
@@ -15027,7 +15193,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0 AND NOT EXISTS (SELECT * FROM [dbo].[refunds] AS [r] WHERE [r].[amount] > @p1)) AND [u].[status] = @p2;', N'@p0 tinyint, @p1 tinyint, @p2 nvarchar(max)', @p0 = 50, @p1 = 5, @p2 = N'x';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > @p0 AND NOT EXISTS (SELECT * FROM [dbo].[refunds] AS [r] WHERE [r].[amount] > @p1)) AND [u].[status] = @p2;', N'@p0 int, @p1 int, @p2 varchar(max)', @p0 = 50, @p1 = 5, @p2 = 'x';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[id] IN (SELECT [o].[user_id] FROM [dbo].[orders] AS [o] WHERE [o].[total] > 50 AND NOT EXISTS (SELECT * FROM [dbo].[refunds] AS [r] WHERE [r].[amount] > 5)) AND [u].[status] = x;"
@@ -15169,7 +15335,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = @p0 AND ([u].[b] = @p1 OR ([u].[c] = @p2 AND [u].[d] = @p3));', N'@p0 tinyint, @p1 tinyint, @p2 tinyint, @p3 tinyint', @p0 = 1, @p1 = 2, @p2 = 3, @p3 = 4;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = @p0 AND ([u].[b] = @p1 OR ([u].[c] = @p2 AND [u].[d] = @p3));', N'@p0 int, @p1 int, @p2 int, @p3 int', @p0 = 1, @p1 = 2, @p2 = 3, @p3 = 4;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = 1 AND ([u].[b] = 2 OR ([u].[c] = 3 AND [u].[d] = 4));"
@@ -15328,7 +15494,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[total] > @p0);', N'@p0 tinyint', @p0 = 9;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[total] > @p0);', N'@p0 int', @p0 = 9;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE o.user_id = u.id AND [o].[total] > 9);"
@@ -15428,7 +15594,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [stale] AS (SELECT [s].[id] FROM [dbo].[sessions] AS [s] WHERE [s].[seen_at] < @p0) UPDATE [u] SET [status] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] > @p2;', N'@p0 nvarchar(max), @p1 nvarchar(max), @p2 tinyint', @p0 = '2024-01-01T00:00:00.000Z', @p1 = N'expired', @p2 = 10;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [stale] AS (SELECT [s].[id] FROM [dbo].[sessions] AS [s] WHERE [s].[seen_at] < @p0) UPDATE [u] SET [status] = @p1 FROM [dbo].[users] AS [u] WHERE [u].[id] > @p2;', N'@p0 nvarchar(max), @p1 varchar(max), @p2 int', @p0 = '2024-01-01T00:00:00.000Z', @p1 = 'expired', @p2 = 10;",
             "params": []
           },
           "raw": "WITH [stale] AS (SELECT [s].[id] FROM [dbo].[sessions] AS [s] WHERE [s].[seen_at] < 2024-01-01T00:00:00.000Z) UPDATE [u] SET [status] = expired FROM [dbo].[users] AS [u] WHERE [u].[id] > 10;"
@@ -15633,7 +15799,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age]) VALUES (@p0, @p1);', N'@p0 nvarchar(max), @p1 tinyint', @p0 = N'Ada', @p1 = 36;SET NOCOUNT ON; exec sp_executesql N'UPDATE [dbo].[users] SET [active] = @p0 WHERE [users].[name] = @p1;', N'@p0 bit, @p1 nvarchar(max)', @p0 = 1, @p1 = N'Ada';COMMIT TRANSACTION;",
+            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [age]) VALUES (@p0, @p1);', N'@p0 varchar(max), @p1 int', @p0 = 'Ada', @p1 = 36;SET NOCOUNT ON; exec sp_executesql N'UPDATE [dbo].[users] SET [active] = @p0 WHERE [users].[name] = @p1;', N'@p0 bit, @p1 varchar(max)', @p0 = 1, @p1 = 'Ada';COMMIT TRANSACTION;",
             "params": []
           },
           "raw": "BEGIN TRANSACTION; INSERT INTO [dbo].[users] ([name], [age]) VALUES (Ada, 36);UPDATE [dbo].[users] SET [active] = true WHERE [users].[name] = Ada;COMMIT TRANSACTION;"
@@ -15856,7 +16022,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[user_id] = @p0);', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[user_id] = @p0);', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[user_id] = 1);"
@@ -15937,7 +16103,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[user_id] = @p0);', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[user_id] = @p0);', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[user_id] = 1);"
@@ -16076,7 +16242,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[cnt] BETWEEN @p0 AND @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 5, @p1 = 10;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[cnt] BETWEEN @p0 AND @p1;', N'@p0 int, @p1 int', @p0 = 5, @p1 = 10;",
             "params": []
           },
           "raw": "SELECT [u].[role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[cnt] BETWEEN 5 AND 10;"
@@ -16168,7 +16334,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] IN (@p0, @p1);', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'admin', @p1 = N'owner';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] IN (@p0, @p1);', N'@p0 varchar(max), @p1 varchar(max)', @p0 = 'admin', @p1 = 'owner';",
             "params": []
           },
           "raw": "SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] IN (admin, owner);"
@@ -16256,7 +16422,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] NOT IN (@p0);', N'@p0 nvarchar(max)', @p0 = N'guest';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] NOT IN (@p0);', N'@p0 varchar(max)', @p0 = 'guest';",
             "params": []
           },
           "raw": "SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] NOT IN (guest);"
@@ -16494,7 +16660,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[amount] > @p0);', N'@p0 tinyint', @p0 = 100;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[amount] > @p0);', N'@p0 int', @p0 = 100;",
             "params": []
           },
           "raw": "SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[amount] > 100);"
@@ -16582,7 +16748,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[amount] > @p0);', N'@p0 tinyint', @p0 = 100;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[amount] > @p0);', N'@p0 int', @p0 = 100;",
             "params": []
           },
           "raw": "SELECT [u].[role] FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING NOT EXISTS (SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[amount] > 100);"
@@ -16825,7 +16991,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] = @p0 AND ([u].[cnt] BETWEEN @p1 AND @p2 OR [u].[role] IS NULL);', N'@p0 nvarchar(max), @p1 tinyint, @p2 tinyint', @p0 = N'admin', @p1 = 1, @p2 = 5;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [u].[role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] = @p0 AND ([u].[cnt] BETWEEN @p1 AND @p2 OR [u].[role] IS NULL);', N'@p0 varchar(max), @p1 int, @p2 int', @p0 = 'admin', @p1 = 1, @p2 = 5;",
             "params": []
           },
           "raw": "SELECT [u].[role], COUNT(*) AS cnt FROM [dbo].[users] AS [u] GROUP BY [u].[role] HAVING [u].[role] = admin AND ([u].[cnt] BETWEEN 1 AND 5 OR [u].[role] IS NULL);"
@@ -17022,7 +17188,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [email]) OUTPUT INSERTED.[id], INSERTED.[name] VALUES (@p0, @p1);', N'@p0 nvarchar(max), @p1 nvarchar(max)', @p0 = N'Ada', @p1 = N'ada@example.com';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name], [email]) OUTPUT INSERTED.[id], INSERTED.[name] VALUES (@p0, @p1);', N'@p0 varchar(max), @p1 varchar(max)', @p0 = 'Ada', @p1 = 'ada@example.com';",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[users] ([name], [email]) OUTPUT INSERTED.[id], INSERTED.[name] VALUES (Ada, ada@example.com);"
@@ -17094,7 +17260,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name]) OUTPUT id, LOWER(name) AS name_lower VALUES (@p0);', N'@p0 nvarchar(max)', @p0 = N'Ada';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'INSERT INTO [dbo].[users] ([name]) OUTPUT id, LOWER(name) AS name_lower VALUES (@p0);', N'@p0 varchar(max)', @p0 = 'Ada';",
             "params": []
           },
           "raw": "INSERT INTO [dbo].[users] ([name]) OUTPUT id, LOWER(name) AS name_lower VALUES (Ada);"
@@ -17165,7 +17331,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [active] = @p0 OUTPUT INSERTED.[id], INSERTED.[active] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p1;', N'@p0 bit, @p1 tinyint', @p0 = 0, @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [u] SET [active] = @p0 OUTPUT INSERTED.[id], INSERTED.[active] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p1;', N'@p0 bit, @p1 int', @p0 = 0, @p1 = 1;",
             "params": []
           },
           "raw": "UPDATE [u] SET [active] = false OUTPUT INSERTED.[id], INSERTED.[active] FROM [dbo].[users] AS [u] WHERE [u].[id] = 1;"
@@ -17235,7 +17401,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] OUTPUT DELETED.[id] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] OUTPUT DELETED.[id] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "DELETE [u] OUTPUT DELETED.[id] FROM [dbo].[users] AS [u] WHERE [u].[id] = 1;"
@@ -17301,7 +17467,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] OUTPUT DELETED.[id] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DELETE [u] OUTPUT DELETED.[id] FROM [dbo].[users] AS [u] WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "DELETE [u] OUTPUT DELETED.[id] FROM [dbo].[users] AS [u] WHERE [u].[id] = 1;"
@@ -17898,7 +18064,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK) WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK) WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK) WHERE [u].[id] = 1;"
@@ -17960,7 +18126,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, NOWAIT) WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, NOWAIT) WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, NOWAIT) WHERE [u].[id] = 1;"
@@ -18022,7 +18188,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, READPAST) WHERE [u].[id] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, READPAST) WHERE [u].[id] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WITH (UPDLOCK, ROWLOCK, READPAST) WHERE [u].[id] = 1;"
@@ -18317,7 +18483,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [archive_user] @p0;', N'@p0 tinyint', @p0 = 42;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [archive_user] @p0;', N'@p0 int', @p0 = 42;",
             "params": []
           },
           "raw": "EXEC [archive_user] 42;"
@@ -18370,7 +18536,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [sales].[close_order] @p0;', N'@p0 tinyint', @p0 = 7;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [sales].[close_order] @p0;', N'@p0 int', @p0 = 7;",
             "params": []
           },
           "raw": "EXEC [sales].[close_order] 7;"
@@ -18464,7 +18630,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [add_two](@p0, @p1);', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 2;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [add_two](@p0, @p1);', N'@p0 int, @p1 int', @p0 = 1, @p1 = 2;",
             "params": []
           },
           "raw": "SELECT [add_two](1, 2);"
@@ -18525,7 +18691,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [reporting].[get_total](@p0);', N'@p0 tinyint', @p0 = 5;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [reporting].[get_total](@p0);', N'@p0 int', @p0 = 5;",
             "params": []
           },
           "raw": "SELECT [reporting].[get_total](5);"
@@ -18579,7 +18745,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [users_over](@p0);', N'@p0 tinyint', @p0 = 18;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [users_over](@p0);', N'@p0 int', @p0 = 18;",
             "params": []
           },
           "raw": "SELECT * FROM [users_over](18);"
@@ -18657,7 +18823,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [set_status] @user_id = @p0, @status = @p1;', N'@p0 tinyint, @p1 nvarchar(max)', @p0 = 1, @p1 = N'active';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [set_status] @user_id = @p0, @status = @p1;', N'@p0 int, @p1 varchar(max)', @p0 = 1, @p1 = 'active';",
             "params": []
           },
           "raw": "EXEC [set_status] @user_id = 1, @status = active;"
@@ -18746,7 +18912,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [bump_score] @p0, score + 1;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [bump_score] @p0, score + 1;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "EXEC [bump_score] 1, score + 1;"
@@ -18804,7 +18970,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DECLARE @archived_count INT; EXEC [archive_user] @p0, @archived_count = @archived_count OUTPUT;', N'@p0 tinyint', @p0 = 42;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DECLARE @archived_count INT; EXEC [archive_user] @p0, @archived_count = @archived_count OUTPUT;', N'@p0 int', @p0 = 42;",
             "params": []
           },
           "raw": "DECLARE @archived_count INT; EXEC [archive_user] 42, @archived_count = @archived_count OUTPUT;"
@@ -18909,7 +19075,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'DECLARE @balance INT = @p0; EXEC [adjust_balance] @p1, @balance = @balance OUTPUT;', N'@p0 tinyint, @p1 tinyint', @p0 = 100, @p1 = 7;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'DECLARE @balance INT = @p0; EXEC [adjust_balance] @p1, @balance = @balance OUTPUT;', N'@p0 int, @p1 int', @p0 = 100, @p1 = 7;",
             "params": []
           },
           "raw": "DECLARE @balance INT = 100; EXEC [adjust_balance] 7, @balance = @balance OUTPUT;"
@@ -19203,7 +19369,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [add_three] @p0, @p1, @p2;', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 1, @p1 = 2, @p2 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'EXEC [add_three] @p0, @p1, @p2;', N'@p0 int, @p1 int, @p2 int', @p0 = 1, @p1 = 2, @p2 = 3;",
             "params": []
           },
           "raw": "EXEC [add_three] 1, 2, 3;"
@@ -19346,7 +19512,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'EXEC [archive_user] @p0;', N'@p0 tinyint', @p0 = 1;SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u];', N'';COMMIT TRANSACTION;",
+            "sql": "BEGIN TRANSACTION; SET NOCOUNT ON; exec sp_executesql N'EXEC [archive_user] @p0;', N'@p0 int', @p0 = 1;SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u];', N'';COMMIT TRANSACTION;",
             "params": []
           },
           "raw": "BEGIN TRANSACTION; EXEC [archive_user] 1;SELECT * FROM [dbo].[users] AS [u];COMMIT TRANSACTION;"
@@ -19855,7 +20021,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = @p0 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [org_chart] AS [oc];', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = @p0 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [org_chart] AS [oc];', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "WITH [org_chart] ([id], [manager_id]) AS (SELECT [e].[id], [e].[manager_id] FROM [dbo].[employees] AS [e] WHERE [e].[id] = 1 UNION ALL SELECT [e2].[id], [e2].[manager_id] FROM [dbo].[employees] AS [e2] INNER JOIN [dbo].[org_chart] AS [oc] ON [e2].[manager_id] = [oc].[id]) SELECT * FROM [org_chart] AS [oc];"
@@ -20229,7 +20395,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [o] SET [total] = @p0 FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] WHERE [c].[banned] = @p1;', N'@p0 tinyint, @p1 bit', @p0 = 0, @p1 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [o] SET [total] = @p0 FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] WHERE [c].[banned] = @p1;', N'@p0 int, @p1 bit', @p0 = 0, @p1 = 1;",
             "params": []
           },
           "raw": "UPDATE [o] SET [total] = 0 FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] WHERE [c].[banned] = true;"
@@ -20319,7 +20485,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [dbo].[orders] SET [total] = @p0 FROM [dbo].[orders] INNER JOIN [dbo].[customers] AS [c] ON [orders].[customer_id] = [c].[id];', N'@p0 tinyint', @p0 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE [dbo].[orders] SET [total] = @p0 FROM [dbo].[orders] INNER JOIN [dbo].[customers] AS [c] ON [orders].[customer_id] = [c].[id];', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "UPDATE [dbo].[orders] SET [total] = 0 FROM [dbo].[orders] INNER JOIN [dbo].[customers] AS [c] ON [orders].[customer_id] = [c].[id];"
@@ -20698,7 +20864,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[products] AS [p] INNER JOIN [dbo].[categories] AS [c] ON [p].[name] NOT LIKE @p0;', N'@p0 nvarchar(max)', @p0 = N'test%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[products] AS [p] INNER JOIN [dbo].[categories] AS [c] ON [p].[name] NOT LIKE @p0;', N'@p0 varchar(max)', @p0 = 'test%';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[products] AS [p] INNER JOIN [dbo].[categories] AS [c] ON [p].[name] NOT LIKE test%;"
@@ -20784,7 +20950,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] IN (@p0, @p1, @p2);', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 1, @p1 = 2, @p2 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] IN (@p0, @p1, @p2);', N'@p0 int, @p1 int, @p2 int', @p0 = 1, @p1 = 2, @p2 = 3;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] IN (1, 2, 3);"
@@ -20886,7 +21052,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] NOT IN (@p0);', N'@p0 tinyint', @p0 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] NOT IN (@p0);', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] NOT IN (0);"
@@ -20966,7 +21132,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] BETWEEN @p0 AND @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 5;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] BETWEEN @p0 AND @p1;', N'@p0 int, @p1 int', @p0 = 1, @p1 = 5;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [c].[tier] BETWEEN 1 AND 5;"
@@ -21066,7 +21232,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] AND [c].[tier] NOT BETWEEN @p0 AND @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] AND [c].[tier] NOT BETWEEN @p0 AND @p1;', N'@p0 int, @p1 int', @p0 = 1, @p1 = 3;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] INNER JOIN [dbo].[customers] AS [c] ON [o].[customer_id] = [c].[id] AND [c].[tier] NOT BETWEEN 1 AND 3;"
@@ -21435,7 +21601,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE ([o].[status] <> @p0 OR [o].[status] IS NULL);', N'@p0 nvarchar(max)', @p0 = N'shipped';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE ([o].[status] <> @p0 OR [o].[status] IS NULL);', N'@p0 varchar(max)', @p0 = 'shipped';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE ([o].[status] <> shipped OR [o].[status] IS NULL);"
@@ -21504,7 +21670,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0;', N'@p0 nvarchar(max)', @p0 = N'shipped';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = @p0;', N'@p0 varchar(max)', @p0 = 'shipped';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[status] = shipped;"
@@ -21581,7 +21747,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING ([o].[customer_id] <> @p0 OR [o].[customer_id] IS NULL);', N'@p0 tinyint', @p0 = 0;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING ([o].[customer_id] <> @p0 OR [o].[customer_id] IS NULL);', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING ([o].[customer_id] <> 0 OR [o].[customer_id] IS NULL);"
@@ -21717,7 +21883,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], ''$.email'') = @p0;', N'@p0 nvarchar(max)', @p0 = N'a@b.c';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], ''$.email'') = @p0;', N'@p0 varchar(max)', @p0 = 'a@b.c';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE JSON_VALUE([u].[meta], '$.email') = a@b.c;"
@@ -21887,7 +22053,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[docs] AS [d] WHERE FREETEXT([d].[body], @p0);', N'@p0 nvarchar(max)', @p0 = N'hello world';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[docs] AS [d] WHERE FREETEXT([d].[body], @p0);', N'@p0 varchar(max)', @p0 = 'hello world';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[docs] AS [d] WHERE FREETEXT([d].[body], hello world);"
@@ -21956,7 +22122,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[docs] AS [d] WHERE CONTAINS([d].[body], @p0);', N'@p0 nvarchar(max)', @p0 = N'+hello';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[docs] AS [d] WHERE CONTAINS([d].[body], @p0);', N'@p0 varchar(max)', @p0 = '+hello';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[docs] AS [d] WHERE CONTAINS([d].[body], +hello);"
@@ -22016,7 +22182,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[docs_fts] AS [d] WHERE FREETEXT([d].[body], @p0);', N'@p0 nvarchar(max)', @p0 = N'hello';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[docs_fts] AS [d] WHERE FREETEXT([d].[body], @p0);', N'@p0 varchar(max)', @p0 = 'hello';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[docs_fts] AS [d] WHERE FREETEXT([d].[body], hello);"
@@ -22502,7 +22668,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [generate_series](@p0, @p1) AS [g];', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [generate_series](@p0, @p1) AS [g];', N'@p0 int, @p1 int', @p0 = 1, @p1 = 3;",
             "params": []
           },
           "raw": "SELECT * FROM [generate_series](1, 3) AS [g];"
@@ -22825,8 +22991,13 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" ORDER BY \"o\".\"total\" DESC FETCH FIRST 5 ROWS WITH TIES;",
-            "params": []
+            "sql": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" ORDER BY \"o\".\"total\" DESC FETCH FIRST $1 ROWS WITH TIES;",
+            "params": [
+              {
+                "t": "num",
+                "v": 5
+              }
+            ]
           },
           "raw": "SELECT \"o\".\"id\" FROM \"public\".\"orders\" AS \"o\" ORDER BY \"o\".\"total\" DESC FETCH FIRST 5 ROWS WITH TIES;"
         },
@@ -22966,7 +23137,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY OPTION (RECOMPILE);', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET @p0 ROWS FETCH NEXT @p1 ROWS ONLY OPTION (RECOMPILE);', N'@p0 int, @p1 int', @p0 = 0, @p1 = 10;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] ORDER BY [u].[id] ASC OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY OPTION (RECOMPILE);"
@@ -23196,7 +23367,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%50\\%\\_x%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 varchar(max)', @p0 = '%50\\%\\_x%';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE %50\\%\\_x% ESCAPE '\\';"
@@ -23265,7 +23436,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] NOT LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%50\\%\\_x%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] NOT LIKE @p0 ESCAPE ''\\'';', N'@p0 varchar(max)', @p0 = '%50\\%\\_x%';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] NOT LIKE %50\\%\\_x% ESCAPE '\\';"
@@ -23334,7 +23505,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'50\\%\\_x%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 varchar(max)', @p0 = '50\\%\\_x%';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE 50\\%\\_x% ESCAPE '\\';"
@@ -23403,7 +23574,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%50\\%\\_x';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 varchar(max)', @p0 = '%50\\%\\_x';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE %50\\%\\_x ESCAPE '\\';"
@@ -23472,7 +23643,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 nvarchar(max)', @p0 = N'%a\\[b]c%';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE @p0 ESCAPE ''\\'';', N'@p0 varchar(max)', @p0 = '%a\\[b]c%';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[email] LIKE %a\\[b]c% ESCAPE '\\';"
@@ -23618,7 +23789,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] WITH (HOLDLOCK) AS [target] USING (VALUES (@p0, @p1, @p2)) AS [source] ([id], [email], [name]) ON [target].[id] = [source].[id] WHEN MATCHED THEN UPDATE SET [email] = [source].[email], [name] = [source].[name] WHEN NOT MATCHED BY TARGET THEN INSERT ([id], [email], [name]) VALUES ([source].[id], [source].[email], [source].[name]) WHEN NOT MATCHED BY SOURCE THEN DELETE;', N'@p0 tinyint, @p1 nvarchar(max), @p2 nvarchar(max)', @p0 = 1, @p1 = N'a@x.io', @p2 = N'Ada';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'MERGE INTO [dbo].[users] WITH (HOLDLOCK) AS [target] USING (VALUES (@p0, @p1, @p2)) AS [source] ([id], [email], [name]) ON [target].[id] = [source].[id] WHEN MATCHED THEN UPDATE SET [email] = [source].[email], [name] = [source].[name] WHEN NOT MATCHED BY TARGET THEN INSERT ([id], [email], [name]) VALUES ([source].[id], [source].[email], [source].[name]) WHEN NOT MATCHED BY SOURCE THEN DELETE;', N'@p0 int, @p1 varchar(max), @p2 varchar(max)', @p0 = 1, @p1 = 'a@x.io', @p2 = 'Ada';",
             "params": []
           },
           "raw": "MERGE INTO [dbo].[users] WITH (HOLDLOCK) AS [target] USING (VALUES (1, a@x.io, Ada)) AS [source] ([id], [email], [name]) ON [target].[id] = [source].[id] WHEN MATCHED THEN UPDATE SET [email] = [source].[email], [name] = [source].[name] WHEN NOT MATCHED BY TARGET THEN INSERT ([id], [email], [name]) VALUES ([source].[id], [source].[email], [source].[name]) WHEN NOT MATCHED BY SOURCE THEN DELETE;"
@@ -23659,7 +23830,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] = @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] = @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] WHERE [total] = 1;"
@@ -23830,7 +24001,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [total] FROM [dbo].[orders] GROUP BY [total] HAVING [total] > @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [total] FROM [dbo].[orders] GROUP BY [total] HAVING [total] > @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT [total] FROM [dbo].[orders] GROUP BY [total] HAVING [total] > 1;"
@@ -23901,7 +24072,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] BETWEEN @p0 AND @p1;', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 9;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] BETWEEN @p0 AND @p1;', N'@p0 int, @p1 int', @p0 = 1, @p1 = 9;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] WHERE [total] BETWEEN 1 AND 9;"
@@ -24034,7 +24205,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] IN (@p0, @p1);', N'@p0 tinyint, @p1 tinyint', @p0 = 1, @p1 = 2;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] WHERE [total] IN (@p0, @p1);', N'@p0 int, @p1 int', @p0 = 1, @p1 = 2;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] WHERE [total] IN (1, 2);"
@@ -24211,7 +24382,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE TOP (3) [dbo].[orders] SET [note] = @p0;', N'@p0 nvarchar(max)', @p0 = N'x';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'UPDATE TOP (3) [dbo].[orders] SET [note] = @p0;', N'@p0 varchar(max)', @p0 = 'x';",
             "params": []
           },
           "raw": "UPDATE TOP (3) [dbo].[orders] SET [note] = x;"
@@ -24326,15 +24497,25 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3);",
-            "params": []
+            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3);"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3);",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT $1);",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3);"
         },
@@ -24384,15 +24565,25 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` ORDER BY `id` DESC LIMIT 3);",
-            "params": []
+            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` ORDER BY `id` DESC LIMIT ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` ORDER BY `id` DESC LIMIT 3);"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" ORDER BY \"id\" DESC LIMIT 3);",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" ORDER BY \"id\" DESC LIMIT $1);",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" ORDER BY \"id\" DESC LIMIT 3);"
         },
@@ -24440,15 +24631,33 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3) LIMIT 99;",
-            "params": []
+            "sql": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT ?) LIMIT ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              },
+              {
+                "t": "num",
+                "v": 99
+              }
+            ]
           },
           "raw": "SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3) LIMIT 99;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3) LIMIT 99;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT $1) LIMIT $2;",
+            "params": [
+              {
+                "t": "num",
+                "v": 3
+              },
+              {
+                "t": "num",
+                "v": 99
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"users\" UNION ALL (SELECT * FROM \"public\".\"admins\" LIMIT 3) LIMIT 99;"
         },
@@ -24528,7 +24737,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] WHERE JSON_VALUE([data], ''$.x'') = @p0;', N'@p0 nvarchar(max)', @p0 = N'a';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[users] WHERE JSON_VALUE([data], ''$.x'') = @p0;', N'@p0 varchar(max)', @p0 = 'a';",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[users] WHERE JSON_VALUE([data], '$.x') = a;"
@@ -24651,7 +24860,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [id] FROM [dbo].[customers] WHERE [id] <= @p0 UNION ALL (SELECT [id] FROM [dbo].[customers] WHERE [id] >= @p1 UNION SELECT [id] FROM [dbo].[customers] WHERE [id] = @p2);', N'@p0 tinyint, @p1 tinyint, @p2 tinyint', @p0 = 2, @p1 = 2, @p2 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [id] FROM [dbo].[customers] WHERE [id] <= @p0 UNION ALL (SELECT [id] FROM [dbo].[customers] WHERE [id] >= @p1 UNION SELECT [id] FROM [dbo].[customers] WHERE [id] = @p2);', N'@p0 int, @p1 int, @p2 int', @p0 = 2, @p1 = 2, @p2 = 3;",
             "params": []
           },
           "raw": "SELECT [id] FROM [dbo].[customers] WHERE [id] <= 2 UNION ALL (SELECT [id] FROM [dbo].[customers] WHERE [id] >= 2 UNION SELECT [id] FROM [dbo].[customers] WHERE [id] = 3);"
@@ -24761,7 +24970,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [id] FROM [dbo].[customers] UNION ALL (SELECT [id] FROM [dbo].[customers] INTERSECT SELECT [id] FROM [dbo].[customers] WHERE [id] = @p0);', N'@p0 tinyint', @p0 = 3;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [id] FROM [dbo].[customers] UNION ALL (SELECT [id] FROM [dbo].[customers] INTERSECT SELECT [id] FROM [dbo].[customers] WHERE [id] = @p0);', N'@p0 int', @p0 = 3;",
             "params": []
           },
           "raw": "SELECT [id] FROM [dbo].[customers] UNION ALL (SELECT [id] FROM [dbo].[customers] INTERSECT SELECT [id] FROM [dbo].[customers] WHERE [id] = 3);"
@@ -24855,29 +25064,44 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS;', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] ORDER BY [id] ASC OFFSET @p0 ROWS;', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS;"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0;",
-            "params": []
+            "sql": "SELECT * FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0;"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0;",
-            "params": []
+            "sql": "SELECT * FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0;"
         }
@@ -24920,29 +25144,44 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET @p0 ROWS) AS [x];', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;",
-            "params": []
+            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET ?) AS `x`;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";",
-            "params": []
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET $1) AS \"x\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";",
-            "params": []
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET ?) AS \"x\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";"
         }
@@ -25306,22 +25545,37 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM `orders` LIMIT 18446744073709551615 OFFSET 0;",
-            "params": []
+            "sql": "SELECT * FROM `orders` LIMIT 18446744073709551615 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM `orders` LIMIT 18446744073709551615 OFFSET 0;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"orders\"  OFFSET 0;",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"orders\"  OFFSET $1;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"orders\"  OFFSET 0;"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"orders\" LIMIT -1 OFFSET 0;",
-            "params": []
+            "sql": "SELECT * FROM \"orders\" LIMIT -1 OFFSET ?;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM \"orders\" LIMIT -1 OFFSET 0;"
         }
@@ -25692,29 +25946,44 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET @p0 ROWS) AS [x];', N'@p0 int', @p0 = 0;",
             "params": []
           },
           "raw": "SELECT * FROM (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS) AS [x];"
         },
         "mysql": {
           "prepared": {
-            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;",
-            "params": []
+            "sql": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET ?) AS `x`;",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM (SELECT `id` FROM `orders` ORDER BY `id` ASC LIMIT 18446744073709551615 OFFSET 0) AS `x`;"
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";",
-            "params": []
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET $1) AS \"x\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC  OFFSET 0) AS \"x\";"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";",
-            "params": []
+            "sql": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET ?) AS \"x\";",
+            "params": [
+              {
+                "t": "num",
+                "v": 0
+              }
+            ]
           },
           "raw": "SELECT * FROM (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT -1 OFFSET 0) AS \"x\";"
         }
@@ -25763,7 +26032,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY);', N'';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET @p0 ROWS FETCH NEXT @p1 ROWS ONLY);', N'@p0 int, @p1 int', @p0 = 0, @p1 = 2;",
             "params": []
           },
           "raw": "SELECT * FROM [dbo].[orders] AS [o] WHERE [o].[id] IN (SELECT [id] FROM [dbo].[orders] ORDER BY [id] ASC OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY);"
@@ -25773,15 +26042,25 @@
         },
         "postgres": {
           "prepared": {
-            "sql": "SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC LIMIT 2);",
-            "params": []
+            "sql": "SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC LIMIT $1);",
+            "params": [
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
           },
           "raw": "SELECT * FROM \"public\".\"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"public\".\"orders\" ORDER BY \"id\" ASC LIMIT 2);"
         },
         "sqlite": {
           "prepared": {
-            "sql": "SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT 2);",
-            "params": []
+            "sql": "SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT ?);",
+            "params": [
+              {
+                "t": "num",
+                "v": 2
+              }
+            ]
           },
           "raw": "SELECT * FROM \"orders\" AS \"o\" WHERE \"o\".\"id\" IN (SELECT \"id\" FROM \"orders\" ORDER BY \"id\" ASC LIMIT 2);"
         }
@@ -25947,11 +26226,15 @@
         },
         "mysql": {
           "prepared": {
-            "sql": "WITH RECURSIVE `t` (`n`) AS (SELECT `id` AS `n` FROM `orders` WHERE `id` = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT 2) SELECT `n` FROM t;",
+            "sql": "WITH RECURSIVE `t` (`n`) AS (SELECT `id` AS `n` FROM `orders` WHERE `id` = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT ?) SELECT `n` FROM t;",
             "params": [
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
               }
             ]
           },
@@ -25962,11 +26245,15 @@
         },
         "sqlite": {
           "prepared": {
-            "sql": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT 2) SELECT \"n\" FROM t;",
+            "sql": "WITH RECURSIVE \"t\" (\"n\") AS (SELECT \"id\" AS \"n\" FROM \"orders\" WHERE \"id\" = ? UNION ALL SELECT t.n + 1 FROM t WHERE t.n < 3 LIMIT ?) SELECT \"n\" FROM t;",
             "params": [
               {
                 "t": "num",
                 "v": 1
+              },
+              {
+                "t": "num",
+                "v": 2
               }
             ]
           },
@@ -26757,7 +27044,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING COUNT(*) > @p0;', N'@p0 tinyint', @p0 = 1;",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING COUNT(*) > @p0;', N'@p0 int', @p0 = 1;",
             "params": []
           },
           "raw": "SELECT [o].[customer_id] FROM [dbo].[orders] AS [o] GROUP BY [o].[customer_id] HAVING COUNT(*) > 1;"
@@ -27413,7 +27700,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT STRING_AGG([o].[note], @p0) WITHIN GROUP (ORDER BY [o].[id] ASC) AS [g] FROM [dbo].[orders] AS [o];', N'@p0 nvarchar(max)', @p0 = N'|';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT STRING_AGG([o].[note], @p0) WITHIN GROUP (ORDER BY [o].[id] ASC) AS [g] FROM [dbo].[orders] AS [o];', N'@p0 varchar(max)', @p0 = '|';",
             "params": []
           },
           "raw": "SELECT STRING_AGG([o].[note], |) WITHIN GROUP (ORDER BY [o].[id] ASC) AS [g] FROM [dbo].[orders] AS [o];"
@@ -27469,7 +27756,7 @@
       "expect": {
         "mssql": {
           "prepared": {
-            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT STRING_AGG([o].[note], @p0) AS [g] FROM [dbo].[orders] AS [o];', N'@p0 nvarchar(max)', @p0 = N', ';",
+            "sql": "SET NOCOUNT ON; exec sp_executesql N'SELECT STRING_AGG([o].[note], @p0) AS [g] FROM [dbo].[orders] AS [o];', N'@p0 varchar(max)', @p0 = ', ';",
             "params": []
           },
           "raw": "SELECT STRING_AGG([o].[note], , ) AS [g] FROM [dbo].[orders] AS [o];"

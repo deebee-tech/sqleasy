@@ -82,7 +82,7 @@ describe('MSSQL MERGE', () => {
     });
     const { sql, params } = b.parsePrepared();
     expect(sql).toContain('VALUES (@p0, @p1)');
-    expect(sql).toContain('@p0 tinyint, @p1 nvarchar(max)');
+    expect(sql).toContain('@p0 int, @p1 varchar(max)');
     expect(params).toEqual([]);
   });
 

@@ -5,6 +5,7 @@ import {
   MssqlQuery,
   MysqlQuery,
   PostgresQuery,
+  RuntimeConfiguration,
   SqliteQuery,
   WhereOperator,
 } from '../../src';
@@ -64,7 +65,7 @@ describe('prepared statements bind their parameters correctly', () => {
 
       const { sql, params } = builder.parsePrepared();
 
-      expect(sql).toContain("@p0 = N'first'");
+      expect(sql).toContain("@p0 = 'first'");
       expect(params).toEqual([]);
     });
   });
@@ -191,6 +192,141 @@ describe('prepared statements bind their parameters correctly', () => {
       const { params } = builder.parsePrepared();
 
       expect(params).toEqual(['Ada', 7]);
+    });
+  });
+});
+
+/**
+ * MSSQL's default is a self-contained `exec sp_executesql` batch with the values written into the
+ * EXEC argument list, which keeps the INNER statement stable. `mssqlBoundParameters` leaves the
+ * values for the driver instead.
+ *
+ * Both reuse their plan — that was measured, not assumed, and the default form is already enough
+ * for it (see `ts/engine/test/mssql.plan-cache.test.ts`). What bound mode changes is that no value
+ * ever reaches the SQL text, so a logged statement cannot leak one and the parameter TYPE comes
+ * from the driver rather than from the value's magnitude.
+ *
+ * The property that matters here is the last test in the first block: same shape + different
+ * values ⇒ BYTE-IDENTICAL SQL.
+ */
+describe('MSSQL bound-parameter mode', () => {
+  const boundQuery = () => {
+    const rc = new RuntimeConfiguration();
+    rc.mssqlBoundParameters = true;
+    return new MssqlQuery(rc);
+  };
+
+  describe('emits named placeholders and hands back the values', () => {
+    it('renders @p0.. instead of wrapping in sp_executesql', () => {
+      const builder = boundQuery().newBuilder();
+      builder.selectAll().fromTable('users', 'u').where('u', 'a', WhereOperator.Equals, 'first');
+
+      const { sql, params } = builder.parsePrepared();
+
+      expect(sql).toBe('SELECT * FROM [dbo].[users] AS [u] WHERE [u].[a] = @p0;');
+      expect(params).toEqual(['first']);
+      expect(sql).not.toContain('sp_executesql');
+    });
+
+    it('numbers placeholders in emission order across clauses', () => {
+      const builder = boundQuery().newBuilder();
+      builder
+        .selectColumn('u', 'id', '')
+        .fromTable('users', 'u')
+        .joinTable(JoinType.Inner, 'orders', 'o', (j) => {
+          j.on('u', 'id', JoinOperator.Equals, 'o', 'user_id')
+            .and()
+            .onValue('o', 'kind', JoinOperator.Equals, 'join-value');
+        })
+        .where('u', 'active', WhereOperator.Equals, 'where-value')
+        .groupByColumn('u', 'id')
+        .having('u', 'id', WhereOperator.GreaterThan, 'having-value');
+
+      const { sql, params } = builder.parsePrepared();
+
+      expect(sql).toContain('@p0');
+      expect(sql).toContain('@p1');
+      expect(sql).toContain('@p2');
+      expect(params).toEqual(['join-value', 'where-value', 'having-value']);
+    });
+
+    it('binds every value of an IN list, in order', () => {
+      const builder = boundQuery().newBuilder();
+      builder.selectAll().fromTable('users', 'u').whereInValues('u', 'id', [10, 20, 30]);
+
+      const { sql, params } = builder.parsePrepared();
+
+      expect(sql).toContain('IN (@p0, @p1, @p2)');
+      expect(params).toEqual([10, 20, 30]);
+    });
+
+    it('a quote in a value cannot escape into the SQL', () => {
+      const builder = boundQuery().newBuilder();
+      const nasty = "'; DROP TABLE users; --";
+      builder.selectAll().fromTable('users', 'u').where('u', 'name', WhereOperator.Equals, nasty);
+
+      const { sql, params } = builder.parsePrepared();
+
+      expect(sql).not.toContain('DROP TABLE');
+      expect(sql).toContain('[u].[name] = @p0');
+      expect(params).toEqual([nasty]);
+    });
+
+    // THE point of the mode. Under the default form these two differ (the values are in the text),
+    // so SQL Server caches two entries; here they are one shape with two parameter sets.
+    it('same shape + different values produces byte-identical SQL', () => {
+      const render = (id: number, name: string) => {
+        const builder = boundQuery().newBuilder();
+        builder
+          .selectAll()
+          .fromTable('contacts', 'c')
+          .where('c', 'id', WhereOperator.Equals, id)
+          .and()
+          .where('c', 'name', WhereOperator.Equals, name);
+        return builder.parsePrepared();
+      };
+
+      // 200 vs 5000 deliberately straddles the tinyint/smallint boundary the INLINE form declares
+      // by magnitude — the value-range inference that splits one shape into several cache entries.
+      const first = render(200, 'Ada');
+      const second = render(5000, 'Grace');
+
+      expect(first.sql).toBe(second.sql);
+      expect(first.params).toEqual([200, 'Ada']);
+      expect(second.params).toEqual([5000, 'Grace']);
+    });
+
+    it('keeps the MSSQL-only TOP rendering that the positional path does not apply', () => {
+      const builder = boundQuery().newBuilder();
+      builder
+        .selectAll()
+        .fromTable('users', 'u')
+        .top(5)
+        .where('u', 'a', WhereOperator.Equals, 'x');
+
+      const { sql, params } = builder.parsePrepared();
+
+      expect(sql).toContain('TOP');
+      expect(params).toEqual(['x']);
+    });
+  });
+
+  describe('leaves the default and the other renderings alone', () => {
+    it('defaults to the sp_executesql form when the flag is not set', () => {
+      const builder = new MssqlQuery().newBuilder();
+      builder.selectAll().fromTable('users', 'u').where('u', 'a', WhereOperator.Equals, 'first');
+
+      const { sql, params } = builder.parsePrepared();
+
+      expect(sql).toContain("@p0 = 'first'");
+      expect(params).toEqual([]);
+    });
+
+    it('parse() stays self-contained even under the flag — a bare string cannot carry values', () => {
+      const builder = boundQuery().newBuilder();
+      builder.selectAll().fromTable('users', 'u').where('u', 'a', WhereOperator.Equals, 'first');
+
+      expect(builder.parse()).toContain('sp_executesql');
     });
   });
 });

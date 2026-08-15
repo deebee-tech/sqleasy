@@ -103,7 +103,7 @@ describe('SqliteQuery limit offset', () => {
       .offset(5);
 
     const sql = builder.parse();
-    expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;');
+    expect(sql).toEqual('SELECT * FROM "users" AS "u" ORDER BY "u"."id" ASC LIMIT ?  OFFSET ?;');
   });
 
   it('offset requires order by', () => {

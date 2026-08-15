@@ -9,6 +9,32 @@ const toHex = (bytes: Uint8Array): string =>
 const isBinaryValue = (value: unknown): value is Uint8Array => value instanceof Uint8Array;
 
 /**
+ * Whether a string is safe to carry to SQL Server as `varchar` rather than `nvarchar`.
+ *
+ * This decides an index seek, not a nicety. T-SQL type precedence puts `nvarchar` above `varchar`,
+ * so comparing a `varchar` COLUMN to an `nvarchar` parameter converts the column — and a converted
+ * column cannot be seeked. Measured on `SQL_Latin1_General_CP1_CI_AS`: an `nvarchar` parameter
+ * against an indexed `varchar(50)` column produced an index SCAN at 10x the cost of the seek a
+ * `varchar` parameter got. The reverse never bites: a `varchar` parameter against an `nvarchar`
+ * column converts the PARAMETER, which is one scalar operation and leaves the seek intact. So
+ * `varchar` is the strictly safer declaration wherever the value survives it.
+ *
+ * ASCII is the conservative test. `varchar` really means "the server's codepage", which the parser
+ * cannot know, and CP1252 would admit accented Latin text too — so a name like `José` falls back to
+ * `nvarchar` here and may scan a `varchar` column. That is the correct trade: a scan returns the
+ * right rows, and guessing a codepage returns the wrong ones. Everything a check-in kiosk actually
+ * searches on — plain names, phone digits, email addresses, codes — is ASCII and gets the seek.
+ */
+export const isCodepageSafeText = (value: string): boolean => {
+  for (let i = 0; i < value.length; i++) {
+    if (value.charCodeAt(i) > 0x7f) {
+      return false;
+    }
+  }
+  return true;
+};
+
+/**
  * A dialect-correct SQL literal for DISPLAY / paste-into-client use.
  *
  * Quotes and escapes strings, renders `NULL`, and uses each engine's usual forms for booleans,
@@ -51,7 +77,11 @@ export const sqlLiteral = (value: unknown, databaseType: DatabaseType): string =
       return value ? 'TRUE' : 'FALSE';
     case 'string':
       if (databaseType === DatabaseType.Mssql) {
-        return "N'" + value.replaceAll("'", "''") + "'";
+        // The `N` prefix must agree with the declared parameter type in `mssqlParameterType`, or
+        // sp_executesql is handed an nvarchar literal for a varchar parameter. See
+        // {@link isCodepageSafeText} for why the unprefixed form is preferred where it is safe.
+        const quoted = "'" + value.replaceAll("'", "''") + "'";
+        return isCodepageSafeText(value) ? quoted : 'N' + quoted;
       }
       return sqlStringLiteral(value);
     case 'object':

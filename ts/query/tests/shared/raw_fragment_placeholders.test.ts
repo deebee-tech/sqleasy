@@ -23,7 +23,7 @@ describe('raw fragments containing placeholder characters', () => {
     expect(sql).toContain("''why?'' AS q");
     // ...and the real placeholder is the one that got rewritten.
     expect(sql).toContain('[u].[id] = @p0');
-    expect(sql).toContain('@p0 tinyint');
+    expect(sql).toContain('@p0 int');
     expect(sql).toContain('@p0 = 42');
   });
 

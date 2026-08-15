@@ -556,6 +556,10 @@ PreparedSql _positionalPrepared(QueryState state, Dialect config) {
 }
 
 /// Renders one query state as a prepared SQL string.
+///
+/// For MSSQL this is always the self-contained `sp_executesql` batch (values inlined), because a
+/// bare string has nowhere to carry values — [RuntimeConfiguration.mssqlBoundParameters] does not
+/// change it, only [parsePrepared].
 String parse(QueryState state, Dialect config) {
   if (config.databaseType == DatabaseType.mssql) {
     return _mssqlToSql(state, config);
@@ -566,11 +570,35 @@ String parse(QueryState state, Dialect config) {
   return _positionalPrepared(state, config).sql;
 }
 
-/// Renders one query state as prepared SQL plus its ordered bound values. MSSQL inlines its values
-/// into the `sp_executesql` string, so its `params` is empty.
+/// MSSQL with the values left for the DRIVER to bind: `@p0`… placeholders plus the ordered values.
+///
+/// The same rendering as [_mssqlToSql] — including the MSSQL-only `TOP`/`WITH TIES` handling in
+/// [toSqlOptionsFor], which the positional path does not apply — minus the `sp_executesql` wrapper.
+/// T-SQL has no positional `?`, so the placeholders are named; a caller binds them as `p0`…`pN`.
+///
+/// Opt in with [RuntimeConfiguration.mssqlBoundParameters].
+PreparedSql _mssqlBoundPrepared(QueryState state, Dialect config) {
+  final sqlHelper =
+      defaultToSql(state, config, ParserMode.prepared, toSqlOptionsFor(config));
+
+  // Substitute by token, never by scanning for a bare `?` — a `?` inside a caller's string literal
+  // is not a placeholder.
+  final sql = renderPlaceholders(sqlHelper.getSql(), (index) => '@p$index');
+
+  return PreparedSql(sql, sqlHelper.getValues());
+}
+
+/// Renders one query state as prepared SQL plus its ordered bound values.
+///
+/// MSSQL has two forms and defaults to the first: values inlined into a self-contained
+/// `sp_executesql` batch, so `params` is empty; or, under
+/// [RuntimeConfiguration.mssqlBoundParameters], `@p0`… placeholders with the values left for the
+/// driver to bind. The other three dialects always bind.
 PreparedSql parsePrepared(QueryState state, Dialect config) {
   if (config.databaseType == DatabaseType.mssql) {
-    return PreparedSql(_mssqlToSql(state, config), const []);
+    return config.runtimeConfiguration.mssqlBoundParameters
+        ? _mssqlBoundPrepared(state, config)
+        : PreparedSql(_mssqlToSql(state, config), const []);
   }
   if (config.databaseType == DatabaseType.postgres) {
     return _postgresPrepared(state, config);
@@ -629,6 +657,65 @@ String parseMulti(
   }
 
   return sql;
+}
+
+/// Renders a batch as ONE prepared statement: every placeholder renumbered continuously across the
+/// whole batch, and every statement's values concatenated in the same order.
+///
+/// **MSSQL only, and it REFUSES elsewhere rather than emitting something that would misbind.** This
+/// is the difference between `sp_executesql` and everything else: it takes a `;`-joined batch plus a
+/// SINGLE parameter list that every statement in the batch can see, so continuous numbering is
+/// exactly right. Postgres's extended protocol runs one statement per parameterized query, MySQL
+/// needs `multipleStatements`, and SQLite executes one statement at a time — on those three a
+/// concatenated batch is not a runnable parameterized call at all, which is why
+/// `MultiBuilder.preparedStatements` (statement by statement) remains the portable answer.
+///
+/// Under the default (inlined) MSSQL form there is nothing to renumber: each statement is already a
+/// self-contained `sp_executesql` carrying its own values, so the batch is returned with no params.
+PreparedSql parseMultiPrepared(
+  List<QueryState> states,
+  MultiBuilderTransactionState transactionState,
+  Dialect config,
+) {
+  if (config.databaseType != DatabaseType.mssql) {
+    throw ParserError(
+      ParserArea.general,
+      'a parameterized batch is only executable on MSSQL — '
+      '${dialectDisplayName(config.databaseType)} runs one statement per prepared call, '
+      'so use preparedStatements() and run them in order',
+    );
+  }
+
+  if (!config.runtimeConfiguration.mssqlBoundParameters) {
+    return PreparedSql(parseMulti(states, transactionState, config), const []);
+  }
+
+  var sql = '';
+  final params = <Object?>[];
+
+  if (transactionState == MultiBuilderTransactionState.transactionOn) {
+    sql += '${config.transactionDelimiters.begin}; ';
+  }
+
+  for (final state in states) {
+    final sqlHelper = defaultToSql(
+        state, config, ParserMode.prepared, toSqlOptionsFor(config));
+    final values = sqlHelper.getValues();
+
+    // The offset is the whole point: numbering restarts at 0 inside each statement, so without it
+    // the second statement's `@p0` would collide with the first's and silently read its value.
+    final offset = params.length;
+    sql += renderPlaceholders(
+        sqlHelper.getSql(), (index) => '@p${offset + index}');
+
+    params.addAll(values);
+  }
+
+  if (transactionState == MultiBuilderTransactionState.transactionOn) {
+    sql += '${config.transactionDelimiters.end};';
+  }
+
+  return PreparedSql(sql, params);
 }
 
 /// Renders a batch of query states as a single raw SQL string with values inlined. DEBUG / TEST only.

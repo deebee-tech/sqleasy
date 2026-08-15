@@ -193,6 +193,46 @@ export class JoinOnBuilder {
     return this;
   };
 
+  /**
+   * `ON column IS NULL`.
+   *
+   * A null test is not expressible through {@link onValue}: `= NULL` is never true in SQL, so
+   * passing null there produces a predicate that silently matches nothing. The WHERE clause has
+   * had `whereNull`/`whereNotNull` all along; this closes the same gap on the JOIN, and closing it
+   * removes the raw fragment callers were otherwise forced to hand-write — which also meant
+   * hand-quoting the identifier.
+   */
+  public onNull = (aliasLeft: string, columnLeft: string): this => {
+    this.#states.push({
+      joinOperator: JoinOperator.None,
+      joinOnOperator: JoinOnOperator.Null,
+      aliasLeft,
+      columnLeft,
+      aliasRight: undefined,
+      columnRight: undefined,
+      raw: undefined,
+      valueRight: undefined,
+      valuesRight: undefined,
+    });
+    return this;
+  };
+
+  /** `ON column IS NOT NULL` — see {@link onNull}. */
+  public onNotNull = (aliasLeft: string, columnLeft: string): this => {
+    this.#states.push({
+      joinOperator: JoinOperator.None,
+      joinOnOperator: JoinOnOperator.NotNull,
+      aliasLeft,
+      columnLeft,
+      aliasRight: undefined,
+      columnRight: undefined,
+      raw: undefined,
+      valueRight: undefined,
+      valuesRight: undefined,
+    });
+    return this;
+  };
+
   public or = (): this => {
     this.#states.push({
       joinOperator: JoinOperator.None,

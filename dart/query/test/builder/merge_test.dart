@@ -79,7 +79,7 @@ void main() {
         });
       final prepared = b.parsePrepared();
       expect(prepared.sql, contains('VALUES (@p0, @p1)'));
-      expect(prepared.sql, contains('@p0 tinyint, @p1 nvarchar(max)'));
+      expect(prepared.sql, contains('@p0 int, @p1 varchar(max)'));
       expect(prepared.params, isEmpty);
     });
 

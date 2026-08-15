@@ -268,7 +268,9 @@ const renderJoinOnPredicate = (
       joinOnOperator === JoinOnOperator.InValues ||
       joinOnOperator === JoinOnOperator.NotInValues ||
       joinOnOperator === JoinOnOperator.Between ||
-      joinOnOperator === JoinOnOperator.NotBetween;
+      joinOnOperator === JoinOnOperator.NotBetween ||
+      joinOnOperator === JoinOnOperator.Null ||
+      joinOnOperator === JoinOnOperator.NotNull;
     const endsOnExpression =
       prevOn &&
       (isPredicateOperator(prevOn.joinOnOperator) ||
@@ -427,6 +429,21 @@ const renderJoinOnPredicate = (
       sqlHelper.addDynamicValue(lower);
       sqlHelper.addSqlSnippet(' AND ');
       sqlHelper.addDynamicValue(upper);
+
+      spaceAfter();
+      continue;
+    }
+
+    // No value is bound — `IS NULL` takes no operand. Emitting a placeholder here would shift every
+    // later parameter by one, which is the misbinding this clause exists to avoid in the first place.
+    if (on.joinOnOperator === JoinOnOperator.Null || on.joinOnOperator === JoinOnOperator.NotNull) {
+      sqlHelper.addSqlSnippet(
+        qualifiedColumn(on.aliasLeft, on.columnLeft, config.identifierDelimiters),
+      );
+
+      sqlHelper.addSqlSnippet(
+        on.joinOnOperator === JoinOnOperator.NotNull ? ' IS NOT NULL' : ' IS NULL',
+      );
 
       spaceAfter();
       continue;

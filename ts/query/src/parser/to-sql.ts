@@ -7,7 +7,7 @@ import { QueryType } from '../enums/query-type';
 import { ParserError } from '../helpers/parser-error';
 import { dialectDisplayName } from '../helpers/dialect-name';
 import { renderPlaceholders, SqlHelper } from '../helpers/sql';
-import { sqlLiteral } from '../helpers/sql-literal';
+import { isCodepageSafeText, sqlLiteral } from '../helpers/sql-literal';
 import type { QueryState } from '../state/query';
 import { defaultCall } from './default-call';
 import { defaultCte } from './default-cte';
@@ -536,7 +536,11 @@ const mssqlParameterType = (value: any): string => {
 
   switch (typeof value) {
     case 'string':
-      return 'nvarchar(max)';
+      // `varchar` wherever the value survives it, because an `nvarchar` parameter against a
+      // `varchar` column converts the COLUMN and loses the index seek. See
+      // {@link isCodepageSafeText} — this is a measured 10x, not a style preference. The literal in
+      // the sp_executesql value list must agree, and `sqlLiteral` applies the same test.
+      return isCodepageSafeText(value) ? 'varchar(max)' : 'nvarchar(max)';
     case 'number':
       if (!Number.isFinite(value)) {
         throw new ParserError(ParserArea.General, `value is not a finite number: ${value}`);
@@ -546,13 +550,17 @@ const mssqlParameterType = (value: any): string => {
       // rejected the batch. Anything past 2^53 is not exactly representable anyway; declare it
       // `float`, whose literal syntax does accept scientific notation.
       if (Number.isSafeInteger(value)) {
-        // T-SQL `tinyint` is UNSIGNED 0–255. The old lower bound of -128 declared negatives as
-        // `tinyint`, and SQL Server raised an arithmetic-overflow error on every one of them.
-        if (value >= 0 && value <= 255) {
-          return 'tinyint';
-        } else if (value >= -32768 && value <= 32767) {
-          return 'smallint';
-        } else if (value >= -2147483648 && value <= 2147483647) {
+        // ONE declaration across the whole 32-bit range, deliberately.
+        //
+        // This used to band by magnitude — `tinyint` 0–255, then `smallint`, then `int` — and that
+        // is a plan-cache multiplier, because sp_executesql's cache key includes the parameter
+        // DECLARATION. The same statement against the same column cached a separate plan per band,
+        // so `id = 200` and `id = 5000` compiled twice for no reason (measured: 3 declarations, 3
+        // plans). Narrower types bought nothing either: against an `int` column the narrower
+        // parameter is the side that gets converted, so the seek was never at stake.
+        //
+        // `bigint` only past the 32-bit range, where the column has to be `bigint` anyway.
+        if (value >= -2147483648 && value <= 2147483647) {
           return 'int';
         } else {
           return 'bigint';
@@ -627,6 +635,29 @@ const mssqlToSql = (state: QueryState, config: Dialect): string => {
 };
 
 /**
+ * MSSQL with the values left for the DRIVER to bind: `@p0`… placeholders plus the ordered values.
+ *
+ * The same rendering as {@link mssqlToSql} — including the MSSQL-only `TOP`/`WITH TIES` handling in
+ * {@link toSqlOptionsFor}, which the positional path does not apply — minus the `sp_executesql`
+ * wrapper. T-SQL has no positional `?`, so the placeholders are named; a caller binds them as
+ * `p0`…`pN` (`mssql`'s `request.input('p0', value)`).
+ *
+ * Opt in with {@link RuntimeConfiguration.mssqlBoundParameters}. The wrapped form stays the default
+ * because it is self-contained and pasteable; this one exists because the wrapped form's outer text
+ * carries the literals, and a caller running a few query shapes at high volume pays for that in
+ * single-use plan-cache entries.
+ */
+const mssqlBoundPrepared = (state: QueryState, config: Dialect): PreparedSql => {
+  const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
+
+  // Substitute by token, never by scanning for a bare `?` — the same rule mssqlToSql documents:
+  // a `?` inside a caller's string literal (`selectRaw("'why?' AS q")`) is not a placeholder.
+  const sql = renderPlaceholders(sqlHelper.getSql(), (index) => '@p' + index);
+
+  return { sql, params: sqlHelper.getValues() };
+};
+
+/**
  * Postgres uses numbered `$n` placeholders: substitute the Nth token with `$1`, `$2`, … in order.
  *
  * This must not scan for a bare `$`. Doing so rewrote the `$` inside caller text — `selectRaw("'$100'")`
@@ -660,8 +691,9 @@ const positionalPrepared = (state: QueryState, config: Dialect): PreparedSql => 
 /**
  * Renders one query state as a prepared SQL string (placeholders, without a separate params
  * array). For Postgres/MySQL/SQLite this is **not** execution-safe on its own — use
- * {@link parsePrepared} to get `{ sql, params }`. For MSSQL, `parse` and `parsePrepared`
- * both return the same self-contained `sp_executesql` batch (values inlined; `params` empty).
+ * {@link parsePrepared} to get `{ sql, params }`. For MSSQL this is always the self-contained
+ * `sp_executesql` batch (values inlined), because a bare string has nowhere to carry values —
+ * {@link RuntimeConfiguration.mssqlBoundParameters} does not change it, only `parsePrepared`.
  */
 export const parse = (state: QueryState, config: Dialect): string => {
   if (config.databaseType === DatabaseType.Mssql) {
@@ -674,12 +706,18 @@ export const parse = (state: QueryState, config: Dialect): string => {
 };
 
 /**
- * Renders one query state as prepared SQL plus its ordered bound values. MSSQL inlines its
- * values into the `sp_executesql` string, so its `params` is empty.
+ * Renders one query state as prepared SQL plus its ordered bound values.
+ *
+ * MSSQL has two forms and defaults to the first: values inlined into a self-contained
+ * `sp_executesql` batch, so `params` is empty; or, under
+ * {@link RuntimeConfiguration.mssqlBoundParameters}, `@p0`… placeholders with the values left for
+ * the driver to bind. The other three dialects always bind.
  */
 export const parsePrepared = (state: QueryState, config: Dialect): PreparedSql => {
   if (config.databaseType === DatabaseType.Mssql) {
-    return { sql: mssqlToSql(state, config), params: [] };
+    return config.runtimeConfiguration.mssqlBoundParameters
+      ? mssqlBoundPrepared(state, config)
+      : { sql: mssqlToSql(state, config), params: [] };
   }
   if (config.databaseType === DatabaseType.Postgres) {
     return postgresPrepared(state, config);
@@ -751,6 +789,69 @@ export const parseMulti = (
  * `transactionDelimiters` when `transactionState` is
  * {@link MultiBuilderTransactionState.TransactionOn}.
  */
+/**
+ * Renders a batch as ONE prepared statement: every placeholder renumbered continuously across the
+ * whole batch, and every statement's values concatenated in the same order.
+ *
+ * **MSSQL only, and it REFUSES elsewhere rather than emitting something that would misbind.** This
+ * is the difference between `sp_executesql` and everything else: it takes a `;`-joined batch plus a
+ * SINGLE parameter list that every statement in the batch can see, so continuous numbering is
+ * exactly right. Postgres's extended protocol runs one statement per parameterized query, MySQL
+ * needs `multipleStatements`, and SQLite executes one statement at a time — on those three a
+ * concatenated batch is not a runnable parameterized call at all, which is why
+ * {@link MultiBuilder.preparedStatements} (statement by statement) remains the portable answer.
+ *
+ * Reach for this when the round trip is what costs you — a paginated read sending its COUNT and its
+ * page together, and reading both back from one result. Reach for `preparedStatements` when you
+ * want the statements to be ATOMIC; that is a transaction, and it works everywhere.
+ *
+ * Under the default (inlined) MSSQL form there is nothing to renumber: each statement is already a
+ * self-contained `sp_executesql` carrying its own values, so the batch is returned with no params.
+ */
+export const parseMultiPrepared = (
+  states: QueryState[],
+  transactionState: MultiBuilderTransactionState,
+  config: Dialect,
+): PreparedSql => {
+  if (config.databaseType !== DatabaseType.Mssql) {
+    throw new ParserError(
+      ParserArea.General,
+      `a parameterized batch is only executable on MSSQL — ${dialectDisplayName(
+        config.databaseType,
+      )} runs one statement per prepared call, so use preparedStatements() and run them in order`,
+    );
+  }
+
+  if (!config.runtimeConfiguration.mssqlBoundParameters) {
+    return { sql: parseMulti(states, transactionState, config), params: [] };
+  }
+
+  let sql = '';
+  const params: unknown[] = [];
+
+  if (transactionState === MultiBuilderTransactionState.TransactionOn) {
+    sql += config.transactionDelimiters.begin + '; ';
+  }
+
+  for (const state of states) {
+    const sqlHelper = defaultToSql(state, config, ParserMode.Prepared, toSqlOptionsFor(config));
+    const values = sqlHelper.getValues();
+
+    // The offset is the whole point: numbering restarts at 0 inside each statement, so without it
+    // the second statement's `@p0` would collide with the first's and silently read its value.
+    const offset = params.length;
+    sql += renderPlaceholders(sqlHelper.getSql(), (index) => '@p' + (offset + index));
+
+    params.push(...values);
+  }
+
+  if (transactionState === MultiBuilderTransactionState.TransactionOn) {
+    sql += config.transactionDelimiters.end + ';';
+  }
+
+  return { sql, params };
+};
+
 export const parseMultiRaw = (
   states: QueryState[],
   transactionState: MultiBuilderTransactionState,

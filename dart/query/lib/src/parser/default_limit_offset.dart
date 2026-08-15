@@ -6,6 +6,10 @@ import '../state.dart';
 
 /// Each grammar's idiom for "no upper bound, just skip n rows".
 ///
+/// Stays a LITERAL while the caller's own limit and offset are bound: this is grammar standing
+/// in for the absence of a limit, not a value anyone supplied, and binding it would attach a
+/// meaningless parameter to every offset-without-limit query.
+///
 /// MySQL and SQLite have no standalone OFFSET — it only parses as the tail of a LIMIT — so an
 /// offset without a limit needs a sentinel limit in front of it or the statement is a syntax error
 /// (MySQL 1064, SQLite `near "OFFSET"`). MySQL's documented idiom is the largest unsigned BIGINT,
@@ -52,19 +56,19 @@ SqlHelper defaultLimitOffset(
 
       if (state.offset != null) {
         sqlHelper.addSqlSnippet('OFFSET ');
-        sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
+        sqlHelper.addDynamicValue((state.offset ?? 0));
         sqlHelper.addSqlSnippet(' ROWS ');
       }
 
       sqlHelper.addSqlSnippet('FETCH FIRST ');
-      sqlHelper.addSqlSnippet(state.limit.toString());
+      sqlHelper.addDynamicValue(state.limit);
       sqlHelper.addSqlSnippet(' ROWS WITH TIES');
       return sqlHelper;
     }
 
     if (state.limit > 0) {
       sqlHelper.addSqlSnippet('LIMIT ');
-      sqlHelper.addSqlSnippet(state.limit.toString());
+      sqlHelper.addDynamicValue(state.limit);
     } else if (state.offset != null) {
       // Offset with no limit is a legitimate query — "skip n, return the rest" — but MySQL and
       // SQLite cannot spell it without a limit in front. Postgres yields no sentinel and keeps its
@@ -83,7 +87,7 @@ SqlHelper defaultLimitOffset(
       }
 
       sqlHelper.addSqlSnippet(' OFFSET ');
-      sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
+      sqlHelper.addDynamicValue((state.offset ?? 0));
     }
   }
 
@@ -115,7 +119,7 @@ SqlHelper defaultLimitOffset(
     } else {
       if (state.limit > 0 || state.offset != null) {
         sqlHelper.addSqlSnippet('OFFSET ');
-        sqlHelper.addSqlSnippet((state.offset ?? 0).toString());
+        sqlHelper.addDynamicValue((state.offset ?? 0));
         sqlHelper.addSqlSnippet(' ROWS');
       }
 
@@ -123,7 +127,7 @@ SqlHelper defaultLimitOffset(
         sqlHelper.addSqlSnippet(' ');
 
         sqlHelper.addSqlSnippet('FETCH NEXT ');
-        sqlHelper.addSqlSnippet(state.limit.toString());
+        sqlHelper.addDynamicValue(state.limit);
         sqlHelper.addSqlSnippet(' ROWS ONLY');
       }
     }

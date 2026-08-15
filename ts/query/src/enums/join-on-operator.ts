@@ -24,6 +24,10 @@ export const JoinOnOperator = {
   Between: 'Between',
   /** `ON column NOT BETWEEN low AND high` — see {@link JoinOnBuilder.onNotBetween}. */
   NotBetween: 'NotBetween',
+  /** `ON column IS NULL` — see {@link JoinOnBuilder.onNull}. */
+  Null: 'Null',
+  /** `ON column IS NOT NULL` — see {@link JoinOnBuilder.onNotNull}. */
+  NotNull: 'NotNull',
   /** No operator / unused slot. */
   None: 'None',
 } as const;

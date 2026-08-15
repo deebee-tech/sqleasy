@@ -26,16 +26,18 @@ void main() {
   group('Postgres and MySQL parenthesize the operand', () {
     test('scopes a branch LIMIT', () {
       final pg = build(PostgresQuery().configuration, (u) => u.limit(3));
+      final pgPrepared = pg.parsePrepared();
       expect(
-        pg.parsePrepared().sql,
+        pgPrepared.sql,
         'SELECT * FROM "public"."users" UNION ALL '
-        '(SELECT * FROM "public"."admins" LIMIT 3);',
+        '(SELECT * FROM "public"."admins" LIMIT \$1);',
       );
+      expect(pgPrepared.params, [3]);
 
       final my = build(MysqlQuery().configuration, (u) => u.limit(3));
       expect(
         my.parsePrepared().sql,
-        'SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3);',
+        'SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT ?);',
       );
     });
 
@@ -48,7 +50,7 @@ void main() {
       expect(
         pg.parsePrepared().sql,
         contains(
-            '(SELECT * FROM "public"."admins" ORDER BY "id" DESC LIMIT 3)'),
+            '(SELECT * FROM "public"."admins" ORDER BY "id" DESC LIMIT \$1)'),
       );
     });
 
@@ -60,7 +62,7 @@ void main() {
       expect(
         sql,
         'SELECT * FROM "public"."users" UNION ALL '
-        '(SELECT * FROM "public"."admins" LIMIT 3) LIMIT 99;',
+        '(SELECT * FROM "public"."admins" LIMIT \$1) LIMIT \$2;',
       );
       // The shape that used to come out — two bare LIMITs — is a syntax error on this engine.
       expect(sql, isNot(contains('LIMIT 3 LIMIT 99')));
@@ -163,7 +165,7 @@ void main() {
       expect(
         b.parsePrepared().sql,
         'SELECT * FROM "public"."users" UNION ALL '
-        'SELECT * FROM "public"."admins" LIMIT 99;',
+        'SELECT * FROM "public"."admins" LIMIT \$1;',
       );
     });
   });

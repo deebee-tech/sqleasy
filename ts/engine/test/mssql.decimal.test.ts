@@ -44,6 +44,10 @@ vi.mock('mssql', () => {
     ConnectionPool: FakeConnectionPool,
     Request: FakeRequest,
     Transaction: FakeTransaction,
+    // The executor declares plain-ASCII strings as varchar rather than letting the driver infer
+    // nvarchar, so the mock has to carry the type factory the real module exports.
+    VarChar: (length: number) => ({ type: 'VarChar', length }),
+    MAX: 65535,
   };
   return { default: api, ...api };
 });

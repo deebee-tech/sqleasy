@@ -463,5 +463,13 @@ enum JoinOnOperator {
   notInValues,
   between,
   notBetween,
+
+  /// `ON column IS NULL`. Named `isNull` rather than mirroring TypeScript's `Null` because `null`
+  /// is a reserved word in Dart; the public method is `onNull` in both languages, which is the
+  /// name parity is measured on.
+  isNull,
+
+  /// `ON column IS NOT NULL` — see [isNull] for the naming.
+  isNotNull,
   none,
 }

@@ -23,12 +23,32 @@ class PreparedSql {
 
 /// The outcome of executing one statement.
 class QueryResult {
-  const QueryResult({required this.rows, required this.rowCount});
+  const QueryResult({required this.rows, required this.rowCount, this.recordsets});
 
   final List<Row> rows;
 
   /// Rows returned (SELECT) or affected (INSERT/UPDATE/DELETE).
   final int rowCount;
+
+  /// Every result set the statement produced, when the driver reported any — `recordsets[0]` is the
+  /// same list as [rows]. Null when it reported none (an INSERT with no OUTPUT clause).
+  ///
+  /// **MSSQL only, and that is a property of the other three rather than a gap here.** Postgres runs
+  /// exactly one statement per parameterized query on the extended protocol, MySQL is used without
+  /// `multipleStatements`, and SQLite executes one statement at a time — each by deliberate choice,
+  /// because concatenating a batch into one string misbinds when placeholder numbering restarts per
+  /// statement. T-SQL is the one dialect that both accepts a `;`-joined batch and hands back a
+  /// result set per statement.
+  ///
+  /// Reach for it when you want N result sets in ONE round trip — the usual case being a paginated
+  /// read that sends its COUNT and its page together. When you want N statements to be ATOMIC, use
+  /// [DbExecutor.transaction] instead: it returns one [QueryResult] per statement and works on every
+  /// dialect.
+  ///
+  /// Always null in Dart today: the Dart port has no MSSQL executor yet (only MySQL, Postgres and
+  /// SQLite). The field is here so the two languages describe the same result, not because Dart can
+  /// currently fill it.
+  final List<List<Row>>? recordsets;
 
   @override
   String toString() => 'QueryResult(rowCount: $rowCount, rows: $rows)';

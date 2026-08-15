@@ -46,4 +46,77 @@ void main() {
       );
     });
   });
+
+  /// A null test cannot go through `onValue`: `= NULL` is never true, so passing null there yields
+  /// a predicate that silently matches nothing — a wrong answer with no error. WHERE has had
+  /// `whereNull`/`whereNotNull` since the beginning; the JOIN was simply asymmetric.
+  group('JOIN ON null tests', () {
+    test('onNull renders IS NULL', () {
+      final builder = PostgresQuery().newBuilder()
+        ..selectAll()
+        ..fromTable('orders', alias: 'o')
+        ..joinTable(JoinType.left, 'customers', (j) {
+          j.onNull('c', 'deleted_at');
+        }, alias: 'c');
+
+      expect(builder.parseRaw(), contains('ON "c"."deleted_at" IS NULL'));
+    });
+
+    test('onNotNull composes with a preceding on() via the implicit AND', () {
+      final builder = PostgresQuery().newBuilder()
+        ..selectAll()
+        ..fromTable('orders', alias: 'o')
+        ..joinTable(JoinType.left, 'customers', (j) {
+          j
+              .on('o', 'customer_id', JoinOperator.equals, 'c', 'id')
+              .onNotNull('c', 'email');
+        }, alias: 'c');
+
+      expect(
+        builder.parseRaw(),
+        contains('ON "o"."customer_id" = "c"."id" AND "c"."email" IS NOT NULL'),
+      );
+    });
+
+    // IS NULL takes no operand, so it must consume no placeholder. Emitting one would shift every
+    // later parameter by one and misbind the whole query.
+    test('binds no placeholder, leaving later parameters aligned', () {
+      final builder = PostgresQuery().newBuilder()
+        ..selectAll()
+        ..fromTable('orders', alias: 'o')
+        ..joinTable(JoinType.left, 'customers', (j) {
+          j
+              .onValue('c', 'tier', JoinOperator.equals, 'gold')
+              .and()
+              .onNull('c', 'deleted_at')
+              .and()
+              .onValue('c', 'region', JoinOperator.equals, 'emea');
+        }, alias: 'c');
+
+      final prepared = builder.parsePrepared();
+      expect(prepared.sql, contains('"c"."tier" = \$1'));
+      expect(prepared.sql, contains('"c"."deleted_at" IS NULL'));
+      expect(prepared.sql, contains('"c"."region" = \$2'));
+      expect(prepared.params, ['gold', 'emea']);
+    });
+
+    test('each dialect quotes the identifier with its own delimiters', () {
+      final cases = <String, dynamic>{
+        '[c].[deleted_at] IS NULL': MssqlQuery(),
+        '`c`.`deleted_at` IS NULL': MysqlQuery(),
+        '"c"."deleted_at" IS NULL': SqliteQuery(),
+      };
+
+      cases.forEach((expected, query) {
+        final builder = query.newBuilder()
+          ..selectAll()
+          ..fromTable('orders', alias: 'o')
+          ..joinTable(JoinType.left, 'customers', (j) {
+            j.onNull('c', 'deleted_at');
+          }, alias: 'c');
+
+        expect(builder.parseRaw(), contains(expected));
+      });
+    });
+  });
 }

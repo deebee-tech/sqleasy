@@ -51,6 +51,29 @@ bool isIntegral(num value) => value.isFinite && value == value.roundToDouble();
 bool isSafeIntegral(num value) =>
     isIntegral(value) && value.abs() <= 9007199254740991; // 2^53 - 1
 
+/// Whether a string is safe to carry to SQL Server as `varchar` rather than `nvarchar`.
+///
+/// This decides an index seek, not a nicety. T-SQL type precedence puts `nvarchar` above `varchar`,
+/// so comparing a `varchar` COLUMN to an `nvarchar` parameter converts the column — and a converted
+/// column cannot be seeked. Measured on `SQL_Latin1_General_CP1_CI_AS`: an `nvarchar` parameter
+/// against an indexed `varchar(50)` column produced an index SCAN at 10x the cost of the seek a
+/// `varchar` parameter got. The reverse never bites: a `varchar` parameter against an `nvarchar`
+/// column converts the PARAMETER, which is one scalar operation and leaves the seek intact. So
+/// `varchar` is the strictly safer declaration wherever the value survives it.
+///
+/// ASCII is the conservative test. `varchar` really means "the server's codepage", which the parser
+/// cannot know, and CP1252 would admit accented Latin text too — so a name like `José` falls back to
+/// `nvarchar` here and may scan a `varchar` column. That is the correct trade: a scan returns the
+/// right rows, and guessing a codepage returns the wrong ones.
+bool isCodepageSafeText(String value) {
+  for (var i = 0; i < value.length; i++) {
+    if (value.codeUnitAt(i) > 0x7f) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /// Renders [value] as a SQL numeric literal, identically on every platform and identically to
 /// JavaScript — which is what the golden corpus froze.
 ///

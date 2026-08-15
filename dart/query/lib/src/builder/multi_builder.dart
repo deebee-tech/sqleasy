@@ -79,4 +79,19 @@ class MultiBuilder<V extends SqlBuilderView> {
   /// included here.
   List<parser.PreparedSql> preparedStatements() =>
       _builders.map((b) => b.parsePrepared()).toList();
+
+  /// The batch as ONE prepared statement — placeholders renumbered continuously across every
+  /// statement, values concatenated in the same order — for a single round trip that returns a
+  /// result set per statement.
+  ///
+  /// **MSSQL only; throws on the other three.** `sp_executesql` takes a `;`-joined batch plus one
+  /// shared parameter list, which is what makes continuous numbering correct. Elsewhere a
+  /// concatenated batch is not a runnable parameterized call, so [preparedStatements] is the
+  /// portable answer — and the right one whenever you want the statements to be ATOMIC, since that
+  /// is a transaction.
+  ///
+  /// Unlike [preparedStatements], the transaction delimiters ARE included when [transactionState]
+  /// is on, because the batch travels as one statement.
+  parser.PreparedSql preparedBatch() =>
+      parser.parseMultiPrepared(states(), _transactionState, _config);
 }

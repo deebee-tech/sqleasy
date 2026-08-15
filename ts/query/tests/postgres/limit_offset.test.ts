@@ -95,7 +95,7 @@ describe('PostgresQuery limit offset', () => {
 
     const sql = builder.parse();
     expect(sql).toEqual(
-      'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = $1 ORDER BY "u"."id" ASC LIMIT 10  OFFSET 5;',
+      'SELECT * FROM "public"."users" AS "u" WHERE "u"."active" = $1 ORDER BY "u"."id" ASC LIMIT $2  OFFSET $3;',
     );
   });
 

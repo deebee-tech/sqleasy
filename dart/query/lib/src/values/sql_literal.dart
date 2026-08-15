@@ -65,7 +65,11 @@ String sqlLiteral(Object? value, DatabaseType databaseType) {
 
   if (value is String) {
     if (databaseType == DatabaseType.mssql) {
-      return "N'${value.replaceAll("'", "''")}'";
+      // The `N` prefix must agree with the declared parameter type in `mssqlParameterType`, or
+      // sp_executesql is handed an nvarchar literal for a varchar parameter. See
+      // [isCodepageSafeText] for why the unprefixed form is preferred where it is safe.
+      final quoted = "'${value.replaceAll("'", "''")}'";
+      return isCodepageSafeText(value) ? quoted : 'N$quoted';
     }
     return sqlStringLiteral(value);
   }

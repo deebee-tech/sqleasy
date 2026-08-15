@@ -47,7 +47,7 @@ describe('parseDisplay', () => {
     expect(builder.parseDisplay()).toBe('SELECT * FROM "users" AS "u" WHERE "u"."active" = 0;');
   });
 
-  it("MSSQL returns the inner statement — not sp_executesql — with N'…' literals", () => {
+  it("MSSQL returns the inner statement — not sp_executesql — with escaped literals", () => {
     const builder = new MssqlQuery()
       .newBuilder()
       .selectAll()
@@ -58,7 +58,9 @@ describe('parseDisplay', () => {
 
     const sql = builder.parseDisplay();
     expect(sql).toBe(
-      "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = N'O''Brien' AND [u].[id] = 42;",
+      // Unprefixed, matching the varchar the parameter is declared as — a display form that
+      // disagrees with the executed form is how you end up debugging the wrong statement.
+      "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = 'O''Brien' AND [u].[id] = 42;",
     );
     expect(sql).not.toContain('sp_executesql');
     expect(sql).not.toContain('SET NOCOUNT');

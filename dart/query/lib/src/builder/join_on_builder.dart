@@ -89,6 +89,30 @@ class JoinOnBuilder {
     return this;
   }
 
+  /// `ON column IS NULL`.
+  ///
+  /// A null test is not expressible through [onValue]: `= NULL` is never true in SQL, so passing
+  /// null there produces a predicate that silently matches nothing. WHERE has had
+  /// `whereNull`/`whereNotNull` all along; this closes the same gap on the JOIN, and removes the
+  /// raw fragment callers were otherwise forced to hand-write — which also meant hand-quoting the
+  /// identifier.
+  JoinOnBuilder onNull(String alias, String column) {
+    _states.add(JoinOnState()
+      ..joinOnOperator = JoinOnOperator.isNull
+      ..aliasLeft = alias
+      ..columnLeft = column);
+    return this;
+  }
+
+  /// `ON column IS NOT NULL` — see [onNull].
+  JoinOnBuilder onNotNull(String alias, String column) {
+    _states.add(JoinOnState()
+      ..joinOnOperator = JoinOnOperator.isNotNull
+      ..aliasLeft = alias
+      ..columnLeft = column);
+    return this;
+  }
+
   /// A raw ON fragment, emitted verbatim.
   JoinOnBuilder onRaw(String raw) {
     _states.add(JoinOnState()

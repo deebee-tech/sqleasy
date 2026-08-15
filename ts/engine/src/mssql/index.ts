@@ -13,7 +13,7 @@ import type {
   Row,
 } from '../index';
 
-const { ConnectionPool, Transaction, Request } = mssql;
+const { ConnectionPool, Transaction, Request, VarChar, MAX } = mssql;
 
 /** Connection settings — any `mssql` config object, or a raw connection string. */
 export type MssqlConfig = MssqlDriverConfig | { connectionString: string };
@@ -154,9 +154,9 @@ const MAX_EXACT_INTEGER_DIGITS = 15;
  * turned `decimal(9,0)` — a perfectly exact integer id — into a string for no reason. Refusing to
  * hand back a correct value is its own kind of wrong.
  */
-const lossyNumericColumns = (result: IResult<unknown>): string[] => {
+const lossyNumericColumns = (recordset: unknown): string[] => {
   const columns = (
-    result.recordset as unknown as
+    recordset as
       | {
           columns?: Record<
             string,
@@ -240,10 +240,9 @@ const MSSQL_TEMPORAL_DECLARATIONS: Readonly<Record<string, TemporalKind>> = {
  * reads. Empty when the driver reported no columns — in which case nothing is rewritten, rather than
  * guessed at.
  */
-const temporalKinds = (result: IResult<unknown>): ColumnKinds => {
+const temporalKinds = (recordset: unknown): ColumnKinds => {
   const columns = (
-    result.recordset as unknown as
-      { columns?: Record<string, { type?: { declaration?: string } }> } | undefined
+    recordset as { columns?: Record<string, { type?: { declaration?: string } }> } | undefined
   )?.columns;
   if (!columns) return new Map();
   return new Map(
@@ -260,17 +259,38 @@ const temporalKinds = (result: IResult<unknown>): ColumnKinds => {
  * made "the same row reads identically on every dialect" false for a quarter of the product, and it
  * pushed an `instanceof Date` branch onto every consumer forever. Closed 2026-07-21.
  */
-const toResult = <T>(result: IResult<unknown>): QueryResult<T> => ({
-  rows: normalizeRows(
-    coerceLossyNumerics((result.recordset ?? []) as unknown as T[], lossyNumericColumns(result)),
-    temporalKinds(result),
+const normalizeRecordset = <T>(recordset: unknown): T[] =>
+  normalizeRows(
+    coerceLossyNumerics((recordset ?? []) as unknown as T[], lossyNumericColumns(recordset)),
+    temporalKinds(recordset),
     // UTC, because `tedious` reads a zone-less value as UTC where `pg` and `mysql2` read it as local.
     // Taking the local half here shifted every DATETIME2 by the reader's offset and moved a DATE onto
     // the wrong day — see the measurement on `DateComponents` in ../normalize.ts.
     'utc',
-  ),
-  rowCount: result.recordset ? result.recordset.length : (result.rowsAffected?.[0] ?? 0),
-});
+  );
+
+/**
+ * Column metadata hangs off each RECORDSET, not off the result, so every set in a `;`-joined batch
+ * is normalized against its own columns. Normalizing the second statement's rows against the first
+ * statement's columns is the bug this shape exists to make unavailable: the two sets rarely share a
+ * schema, so a `DATETIME2` in one and a `MONEY` in the other would each be coerced by the wrong rule.
+ *
+ * `recordsets[0]` is the SAME array as `rows` — normalized once and shared, not rebuilt.
+ */
+const toResult = <T>(result: IResult<unknown>): QueryResult<T> => {
+  const sets = (result.recordsets ?? []) as unknown as unknown[];
+  const normalized = sets.map((recordset) => normalizeRecordset<T>(recordset));
+  const rowCount = result.recordset ? result.recordset.length : (result.rowsAffected?.[0] ?? 0);
+
+  // No result sets at all (an INSERT without OUTPUT): report the affected count and leave
+  // `recordsets` absent rather than inventing an empty set that the caller would have to tell apart
+  // from a statement that genuinely returned nothing.
+  if (normalized.length === 0) {
+    return { rows: normalizeRecordset<T>(result.recordset), rowCount };
+  }
+
+  return { rows: normalized[0] as T[], rowCount, recordsets: normalized };
+};
 
 /**
  * Some SQL producers (including SQLEasy's mssql dialect) prefix `SET NOCOUNT ON;`. NOCOUNT
@@ -291,9 +311,40 @@ export const withRowCounts = (sql: string): string =>
 // literal. query() re-wraps its argument in sp_executesql, which is harmless for both a plain
 // statement and a pre-formed batch (verified against real SQL Server: two sp_executesql inserts in
 // a transaction commit both).
-type BindableRequest = { input(name: string, value: unknown): unknown };
+type BindableRequest = { input(name: string, ...rest: unknown[]): unknown };
+
+/**
+ * ASCII-only, so the value survives the trip as `varchar`.
+ *
+ * Duplicated from the query package's `isCodepageSafeText` rather than imported: this package takes
+ * no dependency on a SQL builder, by design. Keep the two in step — they decide the same thing.
+ */
+const isCodepageSafeText = (value: string): boolean => {
+  for (let i = 0; i < value.length; i++) {
+    if (value.charCodeAt(i) > 0x7f) {
+      return false;
+    }
+  }
+  return true;
+};
+
+/**
+ * Bind `@p0..@pN`, declaring plain-ASCII strings as `varchar` instead of letting the driver infer.
+ *
+ * `mssql`'s own inference returns `NVarChar` for every string, and an `nvarchar` parameter compared
+ * to a `varchar` COLUMN converts the column, which cannot then be seeked — measured on
+ * `SQL_Latin1_General_CP1_CI_AS` as an index scan at 10x the seek's cost. A `varchar` parameter is
+ * safe in both directions, because against an `nvarchar` column it is the PARAMETER that converts.
+ * Non-ASCII still goes as `NVarChar`: a scan that returns the right rows beats a seek that does not.
+ */
 const bindParams = <R extends BindableRequest>(request: R, params?: readonly unknown[]): R => {
-  (params ?? []).forEach((value, i) => request.input(`p${i}`, value));
+  (params ?? []).forEach((value, i) => {
+    if (typeof value === 'string' && isCodepageSafeText(value)) {
+      request.input(`p${i}`, VarChar(MAX), value);
+      return;
+    }
+    request.input(`p${i}`, value);
+  });
   return request;
 };
 

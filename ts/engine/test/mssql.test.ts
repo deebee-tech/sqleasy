@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 // Shared recorder for the mssql driver mock (hoisted so it exists before the mock factory runs).
 const rec = vi.hoisted(() => ({
   events: [] as string[],
-  queries: [] as { sql: string; inputs: Record<string, unknown>; requestTimeout?: number }[],
+  queries: [] as {
+    sql: string;
+    inputs: Record<string, unknown>;
+    types?: Record<string, unknown>;
+    requestTimeout?: number;
+  }[],
   batches: [] as { sql: string; inputs: Record<string, unknown>; requestTimeout?: number }[],
   failOn: undefined as string | undefined,
   failConnectOnce: false,
@@ -21,16 +26,26 @@ const rec = vi.hoisted(() => ({
 vi.mock('mssql', () => {
   class FakeRequest {
     inputs: Record<string, unknown> = {};
+    types: Record<string, unknown> = {};
     requestTimeout?: number;
     constructor(_parent?: unknown, overrides?: { requestTimeout?: number }) {
       this.requestTimeout = overrides?.requestTimeout;
     }
-    input(name: string, value: unknown) {
-      this.inputs[name] = value;
+    // Mirrors the real `input(name, [type], value)`: the type is OPTIONAL and the value is always
+    // last. Recording argument 2 unconditionally would store the type as the value for every
+    // explicitly-typed parameter.
+    input(name: string, ...rest: unknown[]) {
+      this.inputs[name] = rest[rest.length - 1];
+      this.types[name] = rest.length > 1 ? rest[0] : undefined;
       return this;
     }
     async query(sql: string) {
-      rec.queries.push({ sql, inputs: this.inputs, requestTimeout: this.requestTimeout });
+      rec.queries.push({
+        sql,
+        inputs: this.inputs,
+        types: this.types,
+        requestTimeout: this.requestTimeout,
+      });
       if (rec.failOn && sql.includes(rec.failOn)) throw new Error(`boom: ${sql}`);
       return { recordset: [{ ok: 1 }], rowsAffected: [1] };
     }
@@ -75,6 +90,10 @@ vi.mock('mssql', () => {
     ConnectionPool: FakeConnectionPool,
     Transaction: FakeTransaction,
     Request: FakeRequest,
+    // The executor declares plain-ASCII strings as varchar rather than letting the driver infer
+    // nvarchar, so the mock has to carry the type factory the real module exports.
+    VarChar: (length: number) => ({ type: 'VarChar', length }),
+    MAX: 65535,
   };
   return { default: api, ...api };
 });
@@ -176,6 +195,13 @@ describe('mssql orchestration', () => {
     const res = await db.run({ sql: 'SELECT @p0, @p1;', params: ['a', 2] });
 
     expect(rec.queries[0]!.inputs).toEqual({ p0: 'a', p1: 2 });
+    // Plain-ASCII strings are declared varchar rather than left to the driver, which infers
+    // nvarchar for every string — and an nvarchar parameter against a varchar column converts the
+    // COLUMN, losing the index seek. Numbers keep the driver's own inference.
+    expect(rec.queries[0]!.types).toEqual({
+      p0: { type: 'VarChar', length: 65535 },
+      p1: undefined,
+    });
     expect(res).toMatchObject({ rowCount: 1 });
   });
 

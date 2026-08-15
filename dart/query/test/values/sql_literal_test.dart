@@ -34,7 +34,7 @@ void main() {
       final sql = builder.parseDisplay();
       expect(
         sql,
-        "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = N'O''Brien' AND [u].[id] = 42;",
+        "SELECT * FROM [dbo].[users] AS [u] WHERE [u].[name] = 'O''Brien' AND [u].[id] = 42;",
       );
       expect(sql, isNot(contains('sp_executesql')));
       expect(builder.parse(), contains('sp_executesql'));

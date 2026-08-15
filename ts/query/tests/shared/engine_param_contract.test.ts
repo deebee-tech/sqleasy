@@ -107,7 +107,7 @@ describe('multi-builder execution contract', () => {
     const p1 = b1.parsePrepared();
     expect(p1.params).toEqual([]);
     expect(p1.sql).toContain("exec sp_executesql N'INSERT INTO [dbo].[users]");
-    expect(p1.sql).toContain("@p0 = N'Ada'");
+    expect(p1.sql).toContain("@p0 = 'Ada'");
 
     const p2 = b2.parsePrepared();
     expect(p2.params).toEqual([]);
@@ -173,10 +173,12 @@ describe('value-type fidelity carried to the driver', () => {
 
     expect(params).toEqual([]);
     expect(sql).toContain(
-      "N'@p0 tinyint, @p1 smallint, @p2 int, @p3 bigint, @p4 float, @p5 bit, @p6 nvarchar(max)'",
+      "N'@p0 int, @p1 int, @p2 int, @p3 bigint, @p4 float, @p5 bit, @p6 varchar(max)'",
     );
     expect(sql).toContain('@p5 = 0'); // boolean false → bit 0
-    expect(sql).toContain("@p6 = N'hi'");
+    // No `N` prefix: the value is plain ASCII, so it is declared varchar and the literal must
+    // agree. A mismatch hands sp_executesql an nvarchar literal for a varchar parameter.
+    expect(sql).toContain("@p6 = 'hi'");
   });
 
   it('MSSQL Equals + null emits IS NULL with no sp_executesql parameter', () => {

@@ -45,14 +45,16 @@ describe('a set-operation branch clause binds to the branch', () => {
     it('scopes a branch LIMIT', () => {
       const pg = new PostgresQuery().newBuilder();
       branch((u: any) => u.limit(3))(pg);
-      expect(pg.parsePrepared().sql).toBe(
-        'SELECT * FROM "public"."users" UNION ALL (SELECT * FROM "public"."admins" LIMIT 3);',
+      const pgPrepared = pg.parsePrepared();
+      expect(pgPrepared.sql).toBe(
+        'SELECT * FROM "public"."users" UNION ALL (SELECT * FROM "public"."admins" LIMIT $1);',
       );
+      expect(pgPrepared.params).toEqual([3]);
 
       const my = new MysqlQuery().newBuilder();
       branch((u: any) => u.limit(3))(my);
       expect(my.parsePrepared().sql).toBe(
-        'SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT 3);',
+        'SELECT * FROM `users` UNION ALL (SELECT * FROM `admins` LIMIT ?);',
       );
     });
 
@@ -60,7 +62,7 @@ describe('a set-operation branch clause binds to the branch', () => {
       const pg = new PostgresQuery().newBuilder();
       branch((u: any) => u.orderByColumn('', 'id', OrderByDirection.Descending).limit(3))(pg);
       expect(pg.parsePrepared().sql).toContain(
-        '(SELECT * FROM "public"."admins" ORDER BY "id" DESC LIMIT 3)',
+        '(SELECT * FROM "public"."admins" ORDER BY "id" DESC LIMIT $1)',
       );
     });
 
@@ -69,12 +71,14 @@ describe('a set-operation branch clause binds to the branch', () => {
       branch((u: any) => u.limit(3))(pg);
       pg.limit(99);
 
-      const { sql } = pg.parsePrepared();
+      const { sql, params } = pg.parsePrepared();
       expect(sql).toBe(
-        'SELECT * FROM "public"."users" UNION ALL (SELECT * FROM "public"."admins" LIMIT 3) LIMIT 99;',
+        'SELECT * FROM "public"."users" UNION ALL (SELECT * FROM "public"."admins" LIMIT $1) LIMIT $2;',
       );
+      // Emission order, not call order: the branch's limit is bound before the outer one.
+      expect(params).toEqual([3, 99]);
       // The shape that used to come out — two bare LIMITs — is a syntax error on this engine.
-      expect(sql).not.toMatch(/LIMIT 3 LIMIT 99/);
+      expect(sql).not.toMatch(/LIMIT \$1 LIMIT \$2/);
     });
   });
 
@@ -158,7 +162,7 @@ describe('a set-operation branch clause binds to the branch', () => {
       branch(() => {})(b);
       b.limit(99);
       expect(b.parsePrepared().sql).toBe(
-        'SELECT * FROM "public"."users" UNION ALL SELECT * FROM "public"."admins" LIMIT 99;',
+        'SELECT * FROM "public"."users" UNION ALL SELECT * FROM "public"."admins" LIMIT $1;',
       );
     });
   });

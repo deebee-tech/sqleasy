@@ -20,7 +20,11 @@ String mssqlParameterType(Object? value) {
   }
 
   if (value is String) {
-    return 'nvarchar(max)';
+    // `varchar` wherever the value survives it, because an `nvarchar` parameter against a `varchar`
+    // column converts the COLUMN and loses the index seek. See [isCodepageSafeText] — this is a
+    // measured 10x, not a style preference. The literal in the sp_executesql value list must agree,
+    // and `sqlLiteral` applies the same test.
+    return isCodepageSafeText(value) ? 'varchar(max)' : 'nvarchar(max)';
   }
 
   if (value is num) {
@@ -35,15 +39,18 @@ String mssqlParameterType(Object? value) {
     if (isSafeIntegral(value)) {
       // NOTE: `isIntegral`, not `value is int`. An integral DOUBLE (5.0) must land in exactly the
       // same band as the int 5 — that is what TypeScript does, and the corpus froze it. Using
-      // `is int` here would declare `float` on the Dart VM and `tinyint` on dart2js, from one input.
+      // `is int` here would declare `float` on the Dart VM and `int` on dart2js, from one input.
       //
-      // T-SQL `tinyint` is UNSIGNED 0–255. A negative in that band raises an arithmetic-overflow
-      // error on the whole batch, which is why the lower bound is 0 and not -128.
-      if (value >= 0 && value <= 255) {
-        return 'tinyint';
-      } else if (value >= -32768 && value <= 32767) {
-        return 'smallint';
-      } else if (value >= -2147483648 && value <= 2147483647) {
+      // ONE declaration across the whole 32-bit range, deliberately. This used to band by magnitude
+      // — `tinyint` 0–255, then `smallint`, then `int` — and that is a plan-cache multiplier,
+      // because sp_executesql's cache key includes the parameter DECLARATION. The same statement
+      // against the same column cached a separate plan per band, so `id = 200` and `id = 5000`
+      // compiled twice for no reason (measured: 3 declarations, 3 plans). Narrower types bought
+      // nothing either: against an `int` column the narrower parameter is the side that gets
+      // converted, so the seek was never at stake.
+      //
+      // `bigint` only past the 32-bit range, where the column has to be `bigint` anyway.
+      if (value >= -2147483648 && value <= 2147483647) {
         return 'int';
       } else {
         return 'bigint';
