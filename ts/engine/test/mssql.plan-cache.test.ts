@@ -106,7 +106,10 @@ describe.skipIf(!MSSQL_CONNECTION_STRING || !isLocal(MSSQL_CONNECTION_STRING))(
     };
 
     /** Runs one rendering `EXECUTIONS` times from a clean cache and reports the resulting plan count. */
-    const plansAfter = async (db: Db, render: (id: number) => { sql: string; params: never[] | number[] }) => {
+    const plansAfter = async (
+      db: Db,
+      render: (id: number) => { sql: string; params: never[] | number[] },
+    ) => {
       await db.run({ sql: 'DBCC FREEPROCCACHE;' });
       for (let id = 1; id <= EXECUTIONS; id++) {
         await db.run(render(id));

@@ -106,7 +106,7 @@ describe('MSSQL multi-recordset results', () => {
   // The bug the per-set shape exists to make unavailable. Two sets in one batch rarely share a
   // schema, so normalizing the second against the FIRST set's columns would coerce by the wrong
   // rule — here it would turn a plain int into the string '42'.
-  it('normalizes each set against its own columns, not the first set\'s', async () => {
+  it("normalizes each set against its own columns, not the first set's", async () => {
     rec.set([
       { rows: [{ amount: 1234567.89 }], columns: { amount: column('decimal', 19, 4) } },
       { rows: [{ amount: 42 }], columns: { amount: column('int', 10, 0) } },

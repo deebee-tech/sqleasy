@@ -298,11 +298,7 @@ describe('MSSQL bound-parameter mode', () => {
 
     it('keeps the MSSQL-only TOP rendering that the positional path does not apply', () => {
       const builder = boundQuery().newBuilder();
-      builder
-        .selectAll()
-        .fromTable('users', 'u')
-        .top(5)
-        .where('u', 'a', WhereOperator.Equals, 'x');
+      builder.selectAll().fromTable('users', 'u').top(5).where('u', 'a', WhereOperator.Equals, 'x');
 
       const { sql, params } = builder.parsePrepared();
 

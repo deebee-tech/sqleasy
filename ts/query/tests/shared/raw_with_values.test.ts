@@ -74,7 +74,10 @@ describe('raw fragments carrying bound values', () => {
 
   it('takes an escaped marker as a literal question mark', () => {
     const builder = new PostgresQuery().newBuilder();
-    builder.selectAll().fromTable('notes', 'n').whereRaw("n.body LIKE '%why\\?%' AND n.id = ?", [7]);
+    builder
+      .selectAll()
+      .fromTable('notes', 'n')
+      .whereRaw("n.body LIKE '%why\\?%' AND n.id = ?", [7]);
 
     const { sql, params } = builder.parsePrepared();
 

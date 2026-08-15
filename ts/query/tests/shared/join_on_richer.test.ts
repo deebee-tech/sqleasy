@@ -79,8 +79,16 @@ describe('richer JOIN ON predicates', () => {
   // library should not answer the same question two different ways, and neither answer should
   // be a syntax error.
   it.each([
-    { name: 'onIn', apply: (j: JoinOnBuilder) => j.onIn('c', 'tier', []), message: /IN requires at least one value/ },
-    { name: 'onNotIn', apply: (j: JoinOnBuilder) => j.onNotIn('c', 'tier', []), message: /NOT IN requires at least one value/ },
+    {
+      name: 'onIn',
+      apply: (j: JoinOnBuilder) => j.onIn('c', 'tier', []),
+      message: /IN requires at least one value/,
+    },
+    {
+      name: 'onNotIn',
+      apply: (j: JoinOnBuilder) => j.onNotIn('c', 'tier', []),
+      message: /NOT IN requires at least one value/,
+    },
   ])('$name refuses an empty list rather than emitting IN ()', ({ apply, message }) => {
     const builder = new PostgresQuery().newBuilder();
     builder

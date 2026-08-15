@@ -43,8 +43,8 @@ void main() {
 
         expect(
           () => builder.parseRaw(),
-          throwsA(predicate((e) =>
-              e.toString().contains('requires at least one value'))),
+          throwsA(predicate(
+              (e) => e.toString().contains('requires at least one value'))),
         );
       }
     });
@@ -132,7 +132,7 @@ void main() {
         final builder = query.newBuilder()
           ..selectAll()
           ..fromTable('orders', alias: 'o')
-          ..joinTable(JoinType.left, 'customers', (j) {
+          ..joinTable(JoinType.left, 'customers', (JoinOnBuilder j) {
             j.onNull('c', 'deleted_at');
           }, alias: 'c');
 

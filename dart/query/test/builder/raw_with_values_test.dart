@@ -35,7 +35,8 @@ void main() {
 
     /// The reason a fragment is not always scanned for `?`. A question mark in the fragment's TEXT
     /// is ordinary, and tearing one out to make room for a value nobody supplied would corrupt it.
-    test('leaves a literal question mark alone when no values are supplied', () {
+    test('leaves a literal question mark alone when no values are supplied',
+        () {
       final builder = PostgresQuery().newBuilder()
         ..selectAll()
         ..fromTable('notes', alias: 'n')
@@ -72,8 +73,8 @@ void main() {
 
         expect(
           () => builder.parsePrepared(),
-          throwsA(predicate(
-              (e) => e.toString().contains('value marker(s) but'))),
+          throwsA(
+              predicate((e) => e.toString().contains('value marker(s) but'))),
         );
       }
     });

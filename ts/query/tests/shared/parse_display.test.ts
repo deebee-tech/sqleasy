@@ -47,7 +47,7 @@ describe('parseDisplay', () => {
     expect(builder.parseDisplay()).toBe('SELECT * FROM "users" AS "u" WHERE "u"."active" = 0;');
   });
 
-  it("MSSQL returns the inner statement — not sp_executesql — with escaped literals", () => {
+  it('MSSQL returns the inner statement — not sp_executesql — with escaped literals', () => {
     const builder = new MssqlQuery()
       .newBuilder()
       .selectAll()
