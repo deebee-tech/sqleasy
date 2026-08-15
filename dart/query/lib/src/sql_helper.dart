@@ -69,6 +69,64 @@ class SqlHelper {
     _parts.add(sql);
   }
 
+  /// A caller's raw fragment plus the values its `?` markers stand for.
+  ///
+  /// This is what [addSqlSnippet] could not do: a raw fragment was text and only text, so a caller
+  /// with `name LIKE ?` had nowhere to put the value and had to interpolate it — which is how a
+  /// query builder ends up shipping SQL injection. The markers are replaced HERE, while the
+  /// fragment is still being walked, so the value never becomes part of the statement text.
+  ///
+  /// No values means no markers: a question mark in the fragment's TEXT is ordinary, and tearing
+  /// one out to make room for a value nobody supplied would corrupt the SQL. `\?` is an escaped
+  /// literal question mark, as in knex.
+  ///
+  /// A count mismatch throws rather than binding what it can — leaving a marker dangling surfaces
+  /// far from this call, as a driver error nobody can trace back to a fragment.
+  void addRawWithValues(String raw, List<Object?> values) {
+    if (raw.contains(_nul)) {
+      throw ParserError(ParserArea.general, 'SQL fragment contains a NUL byte');
+    }
+
+    if (values.isEmpty) {
+      _parts.add(raw);
+      return;
+    }
+
+    final parts = splitOnValueMarkers(raw);
+    final markers = parts.length - 1;
+
+    if (markers != values.length) {
+      throw ParserError(
+        ParserArea.general,
+        'raw fragment has $markers value marker(s) but ${values.length} value(s) were supplied',
+      );
+    }
+
+    for (final value in values) {
+      assertBindableValue(value);
+    }
+
+    for (var index = 0; index < parts.length; index++) {
+      _parts.add(parts[index]);
+
+      if (index >= values.length) {
+        continue;
+      }
+
+      // Normalized exactly as addDynamicValue does — a value bound through a raw fragment is
+      // still a bound value, and skipping this is how the two paths quietly disagree.
+      final normalized = normalizeBoundValue(values[index]);
+
+      if (_parserMode == ParserMode.prepared) {
+        _values.add(normalized);
+        _parts.add(placeholderToken);
+        continue;
+      }
+
+      _parts.add(valueToDebugString(normalized));
+    }
+  }
+
   /// Splices a sub-parser's already-rendered SQL and its bound values into this helper. The sub-SQL
   /// legitimately carries [placeholderToken]s, so it bypasses the NUL check — its own fragments were
   /// validated when the sub-parser built them.
@@ -114,3 +172,33 @@ class SqlHelper {
 /// more dangerous shape: it works until someone sets a perfectly ordinary sql_mode. Use this for any
 /// value that must reach the server AS TEXT, and `quoteIdentifier` for anything naming an object.
 String sqlStringLiteral(String value) => "'${value.replaceAll("'", "''")}'";
+
+/// Splits a caller's raw fragment on its unescaped `?` markers.
+///
+/// `\?` is an escaped literal question mark and does NOT mark a value — the same convention knex
+/// uses, which matters because the fragments being ported here come from knex.
+///
+/// Returns one more part than there are markers, so `parts.length - 1` is the placeholder count.
+List<String> splitOnValueMarkers(String raw) {
+  final parts = <String>[];
+  final current = StringBuffer();
+
+  for (var index = 0; index < raw.length; index++) {
+    if (raw[index] == r'\' && index + 1 < raw.length && raw[index + 1] == '?') {
+      current.write('?');
+      index++;
+      continue;
+    }
+
+    if (raw[index] == '?') {
+      parts.add(current.toString());
+      current.clear();
+      continue;
+    }
+
+    current.write(raw[index]);
+  }
+
+  parts.add(current.toString());
+  return parts;
+}

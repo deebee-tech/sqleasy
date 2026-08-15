@@ -1274,7 +1274,14 @@ export class QueryBuilder {
     return this;
   };
 
-  public whereRaw = (rawWhere: string): this => {
+  /**
+   * A raw WHERE fragment, optionally carrying bound values for its `?` markers.
+   *
+   * Without `values` a caller with `name LIKE ?` had to interpolate the value into the string,
+   * which is how a query builder ends up shipping SQL injection. `\?` is an escaped literal
+   * question mark, as in knex.
+   */
+  public whereRaw = (rawWhere: string, values: readonly any[] = []): this => {
     this.#combinatorTarget = 'where';
     this.#state.whereStates.push({
       builderType: BuilderType.WhereRaw,
@@ -1283,7 +1290,7 @@ export class QueryBuilder {
       whereOperator: WhereOperator.None,
       raw: rawWhere,
       subquery: undefined,
-      values: [],
+      values: [...values],
     });
 
     return this;
@@ -1675,7 +1682,7 @@ export class QueryBuilder {
     return this;
   };
 
-  public havingRaw = (rawHaving: string): this => {
+  public havingRaw = (rawHaving: string, values: readonly any[] = []): this => {
     this.#combinatorTarget = 'having';
     this.#state.havingStates.push({
       builderType: BuilderType.HavingRaw,
@@ -1684,7 +1691,7 @@ export class QueryBuilder {
       whereOperator: WhereOperator.None,
       raw: rawHaving,
       subquery: undefined,
-      values: [],
+      values: [...values],
     });
 
     return this;

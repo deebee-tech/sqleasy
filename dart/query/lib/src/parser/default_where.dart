@@ -138,7 +138,7 @@ SqlHelper defaultWhere(
     }
 
     if (cur.builderType == BuilderType.whereRaw) {
-      sqlHelper.addSqlSnippet(cur.raw ?? '');
+      sqlHelper.addRawWithValues(cur.raw ?? '', cur.values);
       spaceAfter();
       continue;
     }

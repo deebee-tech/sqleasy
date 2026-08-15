@@ -734,11 +734,17 @@ class QueryBuilder
     return this;
   }
 
-  QueryBuilder whereRaw(String rawWhere) {
+  /// A raw WHERE fragment, optionally carrying bound values for its `?` markers.
+  ///
+  /// Without [values] a caller with `name LIKE ?` had to interpolate the value into the string,
+  /// which is how a query builder ends up shipping SQL injection. `\?` is an escaped literal
+  /// question mark, as in knex.
+  QueryBuilder whereRaw(String rawWhere, [List<Object?> values = const []]) {
     _combinatorTarget = 'where';
     _state.whereStates.add(WhereState()
       ..builderType = BuilderType.whereRaw
-      ..raw = rawWhere);
+      ..raw = rawWhere
+      ..values = List.of(values));
     return this;
   }
 
@@ -1107,11 +1113,13 @@ class QueryBuilder
     return this;
   }
 
-  QueryBuilder havingRaw(String rawHaving) {
+  /// A raw HAVING fragment, optionally carrying bound values — see [whereRaw].
+  QueryBuilder havingRaw(String rawHaving, [List<Object?> values = const []]) {
     _combinatorTarget = 'having';
     _state.havingStates.add(HavingState()
       ..builderType = BuilderType.havingRaw
-      ..raw = rawHaving);
+      ..raw = rawHaving
+      ..values = List.of(values));
     return this;
   }
 

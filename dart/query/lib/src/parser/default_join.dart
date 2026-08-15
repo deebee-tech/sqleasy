@@ -295,7 +295,7 @@ SqlHelper _renderJoinOnPredicate(
     }
 
     if (on.joinOnOperator == JoinOnOperator.raw) {
-      sqlHelper.addSqlSnippet(on.raw ?? '');
+      sqlHelper.addRawWithValues(on.raw ?? '', on.valuesRight ?? const []);
       spaceAfter();
       continue;
     }

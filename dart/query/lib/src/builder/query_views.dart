@@ -147,7 +147,7 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
   );
   MssqlQueryBuilder whereNull(String table, String column);
   MssqlQueryBuilder whereNotNull(String table, String column);
-  MssqlQueryBuilder whereRaw(String rawWhere);
+  MssqlQueryBuilder whereRaw(String rawWhere, [List<Object?> values]);
   MssqlQueryBuilder whereRaws(List<String> rawWheres);
   MssqlQueryBuilder whereJsonExtract(
     String table,
@@ -222,7 +222,7 @@ abstract interface class MssqlQueryBuilder implements SqlBuilderView {
     bool distinct = false,
     void Function(MssqlQueryBuilder builder)? filter,
   });
-  MssqlQueryBuilder havingRaw(String rawHaving);
+  MssqlQueryBuilder havingRaw(String rawHaving, [List<Object?> values]);
   MssqlQueryBuilder havingRaws(List<String> rawHavings);
   MssqlQueryBuilder havingJsonExtract(
     String table,
@@ -467,7 +467,7 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
   );
   MysqlQueryBuilder whereNull(String table, String column);
   MysqlQueryBuilder whereNotNull(String table, String column);
-  MysqlQueryBuilder whereRaw(String rawWhere);
+  MysqlQueryBuilder whereRaw(String rawWhere, [List<Object?> values]);
   MysqlQueryBuilder whereRaws(List<String> rawWheres);
   MysqlQueryBuilder whereJsonExtract(
     String table,
@@ -563,7 +563,7 @@ abstract interface class MysqlQueryBuilder implements SqlBuilderView {
     bool distinct = false,
     void Function(MysqlQueryBuilder builder)? filter,
   });
-  MysqlQueryBuilder havingRaw(String rawHaving);
+  MysqlQueryBuilder havingRaw(String rawHaving, [List<Object?> values]);
   MysqlQueryBuilder havingRaws(List<String> rawHavings);
   MysqlQueryBuilder havingJsonExtract(
     String table,
@@ -840,7 +840,7 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
   );
   PostgresQueryBuilder whereNull(String table, String column);
   PostgresQueryBuilder whereNotNull(String table, String column);
-  PostgresQueryBuilder whereRaw(String rawWhere);
+  PostgresQueryBuilder whereRaw(String rawWhere, [List<Object?> values]);
   PostgresQueryBuilder whereRaws(List<String> rawWheres);
   PostgresQueryBuilder whereJsonExtract(
     String table,
@@ -937,7 +937,7 @@ abstract interface class PostgresQueryBuilder implements SqlBuilderView {
     bool distinct = false,
     void Function(PostgresQueryBuilder builder)? filter,
   });
-  PostgresQueryBuilder havingRaw(String rawHaving);
+  PostgresQueryBuilder havingRaw(String rawHaving, [List<Object?> values]);
   PostgresQueryBuilder havingRaws(List<String> rawHavings);
   PostgresQueryBuilder havingJsonExtract(
     String table,
@@ -1223,7 +1223,7 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
   );
   SqliteQueryBuilder whereNull(String table, String column);
   SqliteQueryBuilder whereNotNull(String table, String column);
-  SqliteQueryBuilder whereRaw(String rawWhere);
+  SqliteQueryBuilder whereRaw(String rawWhere, [List<Object?> values]);
   SqliteQueryBuilder whereRaws(List<String> rawWheres);
   SqliteQueryBuilder whereJsonExtract(
     String table,
@@ -1321,7 +1321,7 @@ abstract interface class SqliteQueryBuilder implements SqlBuilderView {
     bool distinct = false,
     void Function(SqliteQueryBuilder builder)? filter,
   });
-  SqliteQueryBuilder havingRaw(String rawHaving);
+  SqliteQueryBuilder havingRaw(String rawHaving, [List<Object?> values]);
   SqliteQueryBuilder havingRaws(List<String> rawHavings);
   SqliteQueryBuilder havingJsonExtract(
     String table,

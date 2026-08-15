@@ -43,6 +43,40 @@ export const renderPlaceholders = (sql: string, nth: (index: number) => string):
 };
 
 /**
+ * Splits a caller's raw fragment on its unescaped `?` markers.
+ *
+ * `\?` is an escaped literal question mark and does NOT mark a value — the same convention knex
+ * uses, which matters because the fragments being ported here come from knex. Without it a fragment
+ * like `WHERE note LIKE 'why\?'` would claim a value it does not have and shift every later
+ * binding.
+ *
+ * Returns one more part than there are markers, so `parts.length - 1` is the placeholder count.
+ */
+export const splitOnValueMarkers = (raw: string): string[] => {
+  const parts: string[] = [];
+  let current = '';
+
+  for (let index = 0; index < raw.length; index++) {
+    if (raw[index] === '\\' && raw[index + 1] === '?') {
+      current += '?';
+      index++;
+      continue;
+    }
+
+    if (raw[index] === '?') {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+
+    current += raw[index];
+  }
+
+  parts.push(current);
+  return parts;
+};
+
+/**
  * Accumulates SQL fragments and their bound values while a parser walks a query state.
  *
  * Deliberately dialect-agnostic: it emits {@link PLACEHOLDER_TOKEN}, never a dialect's `?`/`$`, so
@@ -97,6 +131,60 @@ export class SqlHelper {
    * legitimately carries {@link PLACEHOLDER_TOKEN}s, so it bypasses the NUL check in
    * {@link addSqlSnippet} — its own fragments were validated when the sub-parser built them.
    */
+  /**
+   * A caller's raw fragment plus the values its `?` markers stand for.
+   *
+   * This is what `addSqlSnippet` could not do: a raw fragment was text and only text, so a caller
+   * with `WHERE name LIKE ?` had nowhere to put the value and had to interpolate it — which is how
+   * a query builder ends up shipping SQL injection. The markers are replaced HERE, while the fragment
+   * is still being walked, so the value never becomes part of the statement text at all.
+   *
+   * A count mismatch throws rather than binding what it can. Silently taking the first two of three
+   * values leaves the third marker dangling and every dialect reports it far from this call.
+   */
+  public addRawWithValues = (raw: string, values: readonly any[]): void => {
+    if (raw.includes(NUL)) {
+      throw new ParserError(ParserArea.General, 'SQL fragment contains a NUL byte');
+    }
+
+    // No values means no markers. A fragment is only scanned for `?` when the caller supplied
+    // something to put there — otherwise `selectRaw("'why?' AS q")` and every other fragment with a
+    // question mark in its TEXT would have one silently torn out. That is a real corpus case, and
+    // it is why this cannot simply always tokenise.
+    if (values.length === 0) {
+      this.#parts.push(raw);
+      return;
+    }
+
+    const parts = splitOnValueMarkers(raw);
+    const markers = parts.length - 1;
+
+    if (markers !== values.length) {
+      throw new ParserError(
+        ParserArea.General,
+        `raw fragment has ${markers} value marker(s) but ${values.length} value(s) were supplied`,
+      );
+    }
+
+    values.forEach(assertBindableValue);
+
+    parts.forEach((part, index) => {
+      this.#parts.push(part);
+
+      if (index >= values.length) {
+        return;
+      }
+
+      if (this.#parserMode === ParserMode.Prepared) {
+        this.#values.push(values[index]);
+        this.#parts.push(PLACEHOLDER_TOKEN);
+        return;
+      }
+
+      this.#parts.push(this.getValueStringFromDataType(values[index]));
+    });
+  };
+
   public addSqlSnippetWithValues = (sqlString: string, values: any[]): void => {
     this.#values.push(...values);
     this.#parts.push(sqlString);

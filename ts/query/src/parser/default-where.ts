@@ -142,7 +142,7 @@ export const defaultWhere = (
     }
 
     if (cur.builderType === BuilderType.WhereRaw) {
-      sqlHelper.addSqlSnippet(cur.raw ?? '');
+      sqlHelper.addRawWithValues(cur.raw ?? '', cur.values ?? []);
       spaceAfter();
       continue;
     }

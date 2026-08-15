@@ -94,7 +94,14 @@ export class JoinOnBuilder {
     return this;
   };
 
-  public onRaw = (raw: string): this => {
+  /**
+   * A raw ON fragment, optionally carrying bound values for its `?` markers.
+   *
+   * Same reason as `whereRaw`: without values a caller comparing against anything dynamic had to
+   * interpolate it into the fragment, and an ON clause is no safer a place to do that than a WHERE.
+   * `\?` is an escaped literal question mark, as in knex.
+   */
+  public onRaw = (raw: string, values: readonly any[] = []): this => {
     this.#states.push({
       joinOperator: JoinOperator.None,
       joinOnOperator: JoinOnOperator.Raw,
@@ -104,7 +111,7 @@ export class JoinOnBuilder {
       columnRight: undefined,
       raw,
       valueRight: undefined,
-      valuesRight: undefined,
+      valuesRight: [...values],
     });
     return this;
   };

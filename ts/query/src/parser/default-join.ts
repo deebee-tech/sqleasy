@@ -294,7 +294,7 @@ const renderJoinOnPredicate = (
     }
 
     if (on.joinOnOperator === JoinOnOperator.Raw) {
-      sqlHelper.addSqlSnippet(on.raw ?? '');
+      sqlHelper.addRawWithValues(on.raw ?? '', on.valuesRight ?? []);
 
       spaceAfter();
       continue;

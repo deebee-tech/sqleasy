@@ -113,11 +113,16 @@ class JoinOnBuilder {
     return this;
   }
 
-  /// A raw ON fragment, emitted verbatim.
-  JoinOnBuilder onRaw(String raw) {
+  /// A raw ON fragment, optionally carrying bound values for its `?` markers.
+  ///
+  /// Same reason as `whereRaw`: without values a caller comparing against anything dynamic had to
+  /// interpolate it into the fragment, and an ON clause is no safer a place to do that than a
+  /// WHERE. `\?` is an escaped literal question mark, as in knex.
+  JoinOnBuilder onRaw(String raw, [List<Object?> values = const []]) {
     _states.add(JoinOnState()
       ..joinOnOperator = JoinOnOperator.raw
-      ..raw = raw);
+      ..raw = raw
+      ..valuesRight = List.of(values));
     return this;
   }
 

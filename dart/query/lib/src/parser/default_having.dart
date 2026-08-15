@@ -145,7 +145,7 @@ SqlHelper defaultHaving(
     }
 
     if (cur.builderType == BuilderType.havingRaw) {
-      sqlHelper.addSqlSnippet(cur.raw ?? '');
+      sqlHelper.addRawWithValues(cur.raw ?? '', cur.values);
       spaceAfter();
       continue;
     }

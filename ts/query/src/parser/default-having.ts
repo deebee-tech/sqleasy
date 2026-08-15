@@ -150,7 +150,7 @@ export const defaultHaving = (
     }
 
     if (cur.builderType === BuilderType.HavingRaw) {
-      sqlHelper.addSqlSnippet(cur.raw ?? '');
+      sqlHelper.addRawWithValues(cur.raw ?? '', cur.values ?? []);
       spaceAfter();
       continue;
     }
