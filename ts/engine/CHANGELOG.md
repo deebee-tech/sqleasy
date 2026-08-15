@@ -1,3 +1,10 @@
+# [3.0.0-beta.1](https://github.com/deebee-tech/sqleasy/compare/sqleasy-engine-v2.0.0...sqleasy-engine-v3.0.0-beta.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **dart:** regenerate the typed views and satisfy the release gate ([1d7f456](https://github.com/deebee-tech/sqleasy/commit/1d7f45685c5fe7523705c678936a5c2da53144c9))
+
 # [2.0.0](https://github.com/deebee-tech/sqleasy/compare/sqleasy-engine-v1.2.0...sqleasy-engine-v2.0.0) (2026-07-22)
 
 
