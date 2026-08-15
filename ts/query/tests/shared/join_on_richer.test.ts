@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { JoinOnBuilder } from '../../src';
 import {
   JoinOperator,
   JoinType,
@@ -71,6 +72,27 @@ describe('richer JOIN ON predicates', () => {
     const { sql, params } = builder.parsePrepared();
     expect(sql).toContain('ON "c"."tier" BETWEEN $1 AND $2');
     expect(params).toEqual([1, 5]);
+  });
+
+  // The WHERE clause has refused an empty IN since it was written; the JOIN clause emitted
+  // `IN ()` instead — invalid SQL that reaches the database before anything complains. One
+  // library should not answer the same question two different ways, and neither answer should
+  // be a syntax error.
+  it.each([
+    { name: 'onIn', apply: (j: JoinOnBuilder) => j.onIn('c', 'tier', []), message: /IN requires at least one value/ },
+    { name: 'onNotIn', apply: (j: JoinOnBuilder) => j.onNotIn('c', 'tier', []), message: /NOT IN requires at least one value/ },
+  ])('$name refuses an empty list rather than emitting IN ()', ({ apply, message }) => {
+    const builder = new PostgresQuery().newBuilder();
+    builder
+      .selectAll()
+      .fromTable('orders', 'o')
+      .joinTable(JoinType.Inner, 'customers', 'c', (j) => {
+        j.on('o', 'customer_id', JoinOperator.Equals, 'c', 'id');
+        j.and();
+        apply(j);
+      });
+
+    expect(() => builder.parseRaw()).toThrow(message);
   });
 
   it('onNotBetween composes with a preceding on() via the implicit AND', () => {

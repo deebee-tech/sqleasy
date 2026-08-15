@@ -28,6 +28,27 @@ void main() {
       expect(prepared.params, [1, 2, 3]);
     });
 
+    // The WHERE clause has refused an empty IN since it was written; the JOIN clause emitted
+    // `IN ()` instead — invalid SQL that reaches the database before anything complains.
+    test('onIn/onNotIn refuse an empty list rather than emitting IN ()', () {
+      for (final empty in [true, false]) {
+        final builder = PostgresQuery().newBuilder()
+          ..selectAll()
+          ..fromTable('orders', alias: 'o')
+          ..joinTable(JoinType.inner, 'customers', (j) {
+            j.on('o', 'customer_id', JoinOperator.equals, 'c', 'id');
+            j.and();
+            empty ? j.onIn('c', 'tier', []) : j.onNotIn('c', 'tier', []);
+          }, alias: 'c');
+
+        expect(
+          () => builder.parseRaw(),
+          throwsA(predicate((e) =>
+              e.toString().contains('requires at least one value'))),
+        );
+      }
+    });
+
     test('onNotBetween composes with implicit AND', () {
       final builder = PostgresQuery().newBuilder()
         ..selectAll()

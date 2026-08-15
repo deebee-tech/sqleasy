@@ -335,6 +335,20 @@ SqlHelper _renderJoinOnPredicate(
 
     if (on.joinOnOperator == JoinOnOperator.inValues ||
         on.joinOnOperator == JoinOnOperator.notInValues) {
+      // `IN ()` is a syntax error in every dialect. The WHERE clause has refused this since it was
+      // written, for the reason given there — an empty list usually means an unfiltered collection
+      // reached the builder, and rewriting it to a false predicate hides that. The JOIN clause had
+      // no such guard and emitted the invalid text instead, which is the worse of the two failure
+      // modes: it reaches the database before anything complains.
+      if ((on.valuesRight ?? const []).isEmpty) {
+        throw ParserError(
+          ParserArea.join,
+          on.joinOnOperator == JoinOnOperator.notInValues
+              ? 'NOT IN requires at least one value'
+              : 'IN requires at least one value',
+        );
+      }
+
       sqlHelper.addSqlSnippet(qualifiedColumn(
           on.aliasLeft, on.columnLeft, config.identifierDelimiters));
 
