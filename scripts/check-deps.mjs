@@ -11,7 +11,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
-const WORKSPACE_DIRS = ['configs', 'ts', 'dart', 'python', 'csharp', 'go', 'contract'];
+const WORKSPACE_DIRS = ['configs', 'ts', 'dart', 'contract'];
 const CHECKED_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies'];
 const ALLOWED = /^(catalog:|workspace:)/;
 
@@ -24,9 +24,9 @@ function manifests() {
     try {
       entries = readdirSync(base);
     } catch {
-      continue; // directory not created yet — phases land incrementally
+      continue; // directory absent
     }
-    // A workspace dir may itself be a package (go/) or contain packages (ts/query, ts/engine).
+    // A workspace dir may itself be a package (contract/) or contain packages (ts/query, ts/engine).
     const selfManifest = join(base, 'package.json');
     try {
       if (statSync(selfManifest).isFile()) found.push(selfManifest);

@@ -115,8 +115,6 @@
     "psql",
     "psqleasy",
     "pubspec",
-    "pyproject",
-    "pytest",
     "recordset",
     "regclass",
     "relitigate",

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Asserts the honest capability surface is IDENTICAL across the TypeScript reference and the Dart
 // port: the set of methods each dialect's typed view HIDES must match, method-for-method, in both
-// languages. This is the cross-language spec the next port (C#/Go/Python) mirrors, so a drift between
-// TS and Dart here would silently ship two different honest surfaces.
+// languages. This is the cross-language spec both ports are held to, so a drift between TS and Dart
+// here would silently ship two different honest surfaces.
 //
 // Source of truth in each language:
 //   TS   — the `AbsentOn{Mssql,Mysql,Postgres,Sqlite}` union types in

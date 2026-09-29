@@ -63,7 +63,6 @@ jobs:
       fail-fast: false
       matrix:
         lang: [ts, dart]
-        # python / csharp / go join here as they land (phase 6)
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v5

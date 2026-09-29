@@ -2,8 +2,8 @@
 # and by every language's integration job in CI.
 #
 # This file is the reason the monorepo exists. The emission corpus is pure and travels for free, but
-# the normalization + introspection corpora need REAL databases, and five language ports each
-# standing up their own containers is how dialect coverage silently drifts apart. Pinned image tags
+# the normalization + introspection corpora need REAL databases, and each language port
+# standing up its own containers is how dialect coverage silently drifts apart. Pinned image tags
 # are part of the contract: a normalization golden is only meaningful against a known server version.
 #
 # SQLite has no container — each language opens a file/in-memory DB seeded from harness/seed/sqlite.sql.

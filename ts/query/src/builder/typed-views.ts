@@ -4,7 +4,7 @@ import type { QueryBuilder } from './query';
  * Per-engine typed views over the single {@link QueryBuilder} runtime class.
  *
  * SQLEasy is an honest capability surface: hitting the dot should show only what the engine you are
- * on can actually do. The runtime enforces that by throwing (the floor, and all Go can do); these
+ * on can actually do. The runtime enforces that by throwing (the floor, in every language); these
  * views add the compile-time ceiling for TypeScript — a method a dialect cannot run is not on that
  * dialect's builder type, so it does not autocomplete and does not compile.
  *

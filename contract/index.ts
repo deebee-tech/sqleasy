@@ -16,7 +16,7 @@ export * from './schema/introspection';
 /**
  * Absolute path to the emission corpus.
  *
- * Ports that can read a file at test time (TS, Python, C#, Go, and Dart on the VM) load it from here.
+ * Ports that can read a file at test time (TS and Dart on the VM) load it from here.
  * Dart additionally base64-embeds it into a generated source file, because dart2js has no `dart:io`
  * and cannot read a file when the suite runs under `-p chrome`.
  */

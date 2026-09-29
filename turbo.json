@@ -9,7 +9,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "bin/**", "*.nupkg"]
+      "outputs": ["dist/**"]
     },
 
     // Re-mints the emission corpus from the TypeScript reference implementation. Never part of a
@@ -21,7 +21,7 @@
     // Unit tests + EMISSION/BINDING conformance. No database.
     //
     // The corpus is listed as an explicit input so that changing it invalidates EVERY language's
-    // conformance cache with zero edits to Dart/Python/Go/C# source. That is the whole mechanism by
+    // conformance cache with zero edits to Dart source. That is the whole mechanism by
     // which "a contract change reruns everyone, a TS-only change reruns only TS" is automatic.
     "test": {
       "dependsOn": ["^build"],
@@ -32,10 +32,7 @@
         "lib/**",
         "test/**",
         "tests/**",
-        "**/*.dart",
-        "**/*.py",
-        "**/*.cs",
-        "**/*.go"
+        "**/*.dart"
       ],
       "outputs": []
     },
@@ -54,10 +51,7 @@
         "$TURBO_ROOT$/harness/seed/**",
         "src/**",
         "lib/**",
-        "**/*.dart",
-        "**/*.py",
-        "**/*.cs",
-        "**/*.go"
+        "**/*.dart"
       ],
       "env": ["HARNESS_DIALECTS", "DATABASE_URL", "MYSQL_URL", "MSSQL_CONNECTION_STRING"],
       "outputs": []
