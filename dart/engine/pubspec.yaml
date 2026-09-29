@@ -29,8 +29,9 @@ dependencies:
   # FFI over the bundled SQLite library (by the drift author).
   sqlite3: ^3.5.0
   # NOTE: no MSSQL driver yet. There is no native pure-Dart TDS driver; the only server-viable path
-  # is `dart_odbc` (FFI over host unixODBC + MS ODBC Driver 18), or a sidecar. That decision is
-  # deliberately deferred — MSSQL is the last leg built. See docs/engine-pilot-plan.md.
+  # is `dart_odbc` (FFI over host unixODBC + MS ODBC Driver 18), or a sidecar. No MSSQL leg, by
+  # decision (2026-07-21): revisit only when a Dart consumer needs SQL Server; `dart_odbc` is the
+  # realistic path.
 
 dev_dependencies:
   lints: ^6.0.0

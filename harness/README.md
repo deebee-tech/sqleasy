@@ -53,6 +53,7 @@ of the traps above.
 ## Status
 
 The seeds, both corpora, and the TypeScript and Dart replays are all live. Corpus C (normalization)
-and corpus D (introspection) run against these databases in CI, and the integration lanes are run
-under more than one `TZ` on purpose — several real bugs here were visible only as a disagreement
-between two timezones.
+and corpus D (introspection) run against these databases in CI. CI runs one `TZ` (the runner
+default, UTC). Before trusting a temporal change, run `pnpm turbo run conformance:integration` locally
+under `TZ=America/New_York` and `TZ=Asia/Tokyo`; several real bugs showed only as a disagreement
+between two zones.

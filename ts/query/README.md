@@ -225,8 +225,8 @@ builder
       .where('u', 'role', WhereOperator.Equals, 'moderator');
   });
 
-// ILIKE / NOT ILIKE — case-insensitive LIKE. Postgres emits native ILIKE; MySQL, SQLite, and
-// MSSQL (none of which have ILIKE) get an equivalent LOWER(col) LIKE LOWER(?) rewrite.
+// ILIKE / NOT ILIKE — case-insensitive LIKE. Postgres only: MySQL, SQLite, and MSSQL have no ILIKE
+// operator (their LIKE case-sensitivity is collation-dependent), so it throws a ParserError there.
 builder.clearAll();
 builder
   .selectAll()
@@ -410,10 +410,10 @@ builder
 ### Upsert (INSERT conflict clause)
 
 `.onConflictDoNothing()` / `.onConflictDoUpdate()` handle a conflicting row on `INSERT`: Postgres/SQLite
-get `ON CONFLICT (...) DO NOTHING` / `DO UPDATE SET ...`; MySQL gets `INSERT IGNORE` / `ON DUPLICATE
-KEY UPDATE` instead (its own conflicting-key detection ignores `conflictColumns`, kept only so one
-call shape works on every dialect). MSSQL upsert is emitted as a `MERGE` statement (requires an
-explicit column list and at least one conflict column).
+get `ON CONFLICT (...) DO NOTHING` / `DO UPDATE SET ...`. MySQL spells it `.insertIgnore()` /
+`.onDuplicateKeyUpdate()` (`INSERT IGNORE` / `ON DUPLICATE KEY UPDATE`) with no conflict target,
+because MySQL fires on any unique key; `onConflict*` is hidden on the MySQL view. MSSQL has no
+upsert: `onConflict*` is hidden on the MSSQL view and refused at runtime, so write a `.merge()`.
 
 ```typescript
 builder.clearAll();
@@ -423,7 +423,7 @@ builder
   .insertValues(['john@example.com', 'John'])
   .onConflictDoUpdate(['email'], [{ columnName: 'name', value: 'John Updated' }]);
 // Postgres/SQLite: ... ON CONFLICT ("email") DO UPDATE SET "name" = John Updated;
-// MySQL:           ... ON DUPLICATE KEY UPDATE `name` = John Updated;
+// MySQL:           .onDuplicateKeyUpdate([...]) → ... ON DUPLICATE KEY UPDATE `name` = John Updated;
 
 // Skip conflicting rows entirely
 builder.clearAll();
@@ -433,8 +433,8 @@ builder
   .insertValues(['john@example.com'])
   .onConflictDoNothing(['email']);
 // Postgres/SQLite: ... ON CONFLICT ("email") DO NOTHING;
-// MySQL:           INSERT IGNORE INTO `users` (`email`) VALUES (john@example.com);
-// MSSQL:           MERGE INTO [dbo].[users] AS [target] USING (VALUES (...)) ...;
+// MySQL:           .insertIgnore() → INSERT IGNORE INTO `users` (`email`) VALUES (john@example.com);
+// MSSQL:           throws a ParserError — MSSQL has no upsert; use .merge()
 ```
 
 ### JSON operators
@@ -646,15 +646,15 @@ builder
   .limit(10)
   .offset(20);
 
-// NULLS FIRST / NULLS LAST — native on Postgres/SQLite; emulated on MySQL/MSSQL with a leading
-// `CASE WHEN col IS NULL THEN ... END` sort key, since neither dialect has the clause.
+// NULLS FIRST / NULLS LAST — native on Postgres/SQLite; MySQL/MSSQL have no such clause, so a
+// placement other than NullsOrder.None throws a ParserError there.
 builder.clearAll();
 builder
   .selectAll()
   .fromTable('orders', 'o')
   .orderByColumn('o', 'shipped_at', OrderByDirection.Ascending, NullsOrder.Last);
 // Postgres/SQLite: ORDER BY "o"."shipped_at" ASC NULLS LAST;
-// MySQL/MSSQL:     ORDER BY CASE WHEN `o`.`shipped_at` IS NULL THEN 1 ELSE 0 END, `o`.`shipped_at` ASC;
+// MySQL/MSSQL:     throws a ParserError
 ```
 
 `.limit()` is **pagination**: on MSSQL it renders as `OFFSET … ROWS FETCH NEXT … ROWS ONLY`, which
@@ -666,10 +666,11 @@ tool to reach for when you want `TOP (n)` and no ordering. The two are not inter
 ### Row locks (SELECT ... FOR UPDATE / FOR SHARE)
 
 `.forUpdate()` / `.forShare()` lock the SELECT's result rows. Postgres/MySQL append a trailing
-`FOR UPDATE`/`FOR SHARE` (optionally `NOWAIT` or `SKIP LOCKED`); MSSQL has no such clause, so it's
-rewritten as a `WITH (...)` table hint (`UPDLOCK, ROWLOCK` / `HOLDLOCK, ROWLOCK`, with `NOWAIT` /
-`READPAST` for the wait variants) on every base table in the `FROM`. SQLite has no row-level locking
-at all and `.forUpdate()`/`.forShare()` throw a `ParserError` there.
+`FOR UPDATE`/`FOR SHARE` (optionally `NOWAIT` or `SKIP LOCKED`). MSSQL has no such clause; its view
+spells the exclusive lock `.updlock()` / `.updlockNowait()` / `.updlockReadpast()`, emitted as a
+`WITH (UPDLOCK, ROWLOCK[, NOWAIT|READPAST])` table hint on every base table in the `FROM`. MSSQL has
+no shared row lock, so `.forShare()` is refused there. SQLite has no row-level locking at all and
+`.forUpdate()`/`.forShare()` throw a `ParserError` there.
 
 ```typescript
 builder.clearAll();

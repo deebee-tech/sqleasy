@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Seeds contract/capabilities/capabilities.json — the capability manifest described in
-// docs/capability-manifest-design.md.
+// Seeds contract/capabilities/capabilities.json — the capability manifest whose design of record
+// is commit f6c6035.
 //
 // The manifest is INERT. Nothing imports it, nothing generates from it, no gate reads it. It exists
 // so that adjudication can begin as a by-product of the clean-sweep work rather than as a competing
@@ -436,7 +436,7 @@ const manifest = {
     "views and remains the hand-adjudication frontier. `kind` on an unadjudicated cell is extraction's " +
     "HYPOTHESIS from generated goldens, never a finding. `name` is the engine's own term; filling all " +
     'four dialects with the SAME name is what makes a capability shared (sharedness is DERIVED, never ' +
-    'authored). There is deliberately no "emulated" kind. See docs/capability-manifest-design.md. ' +
+    'authored). There is deliberately no "emulated" kind. Design of record: commit f6c6035. ' +
     'Regenerate with: node scripts/build-capability-manifest.mjs',
   manifestVersion: '0.1.0',
   generatedFrom: {
@@ -446,7 +446,7 @@ const manifest = {
     decisions: 'contract/capabilities/decisions.json',
     typedViewSurface:
       'dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)',
-    audit: 'docs/audits/dialect-parity-2026-07-19.md',
+    audit: '2026-07-19 parity audit (commit 3e31078)',
     sweep: '2026-07-20 approximation sweep (39 confirmed violations)',
   },
   dialects: DIALECTS,

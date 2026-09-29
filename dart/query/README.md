@@ -183,7 +183,7 @@ builder
 builder.clearAll();
 builder..selectAll()..fromTable('users', alias: 'u')..where('u', 'name', WhereOperator.ilike, '%ada%');
 // Postgres: WHERE "u"."name" ILIKE $1
-// MySQL/SQLite/MSSQL: WHERE LOWER(...) LIKE LOWER(?) — no native ILIKE on those dialects.
+// MySQL/SQLite/MSSQL: throws a ParserError — no ILIKE operator on those dialects.
 
 // Literal substring match: contains / notContains / startsWith / endsWith. The bound value is the
 // raw text to find — the wildcards are added for you and any %/_ (and MSSQL's [) are ESCAPED, so a
@@ -316,10 +316,11 @@ final builder = PostgresQuery().newBuilder()
 ### Upsert (ON CONFLICT)
 
 `onConflictDoNothing()`/`onConflictDoUpdate()`/`onConflictDoUpdateRaw()` add an INSERT conflict
-clause. Postgres/SQLite emit `ON CONFLICT (...) DO NOTHING`/`DO UPDATE SET ...`; MySQL emits
-`INSERT IGNORE`/`ON DUPLICATE KEY UPDATE` instead (the conflict-column list is ignored there — MySQL
-infers the conflicting key from the table's own constraints). MSSQL emits `MERGE INTO …` via the same
-`onConflict*` methods.
+clause. Postgres/SQLite emit `ON CONFLICT (...) DO NOTHING`/`DO UPDATE SET ...`. MySQL spells it
+`insertIgnore()`/`onDuplicateKeyUpdate()` (`INSERT IGNORE`/`ON DUPLICATE KEY UPDATE`) with no
+conflict target, because MySQL infers the conflicting key from the table's own constraints;
+`onConflict*` is hidden on the MySQL view. MSSQL has no upsert: `onConflict*` is hidden on the MSSQL
+view and refused at runtime, so write a `merge()`.
 
 ```dart
 final builder = PostgresQuery().newBuilder()
@@ -332,7 +333,7 @@ final builder = PostgresQuery().newBuilder()
 // Skip conflicting rows: ..onConflictDoNothing(['email'])
 // Raw SET expression:    ..onConflictDoUpdateRaw(['email'], 'hits = users.hits + 1')
 // Undo:                  ..clearUpsert()
-// MSSQL:                 MERGE INTO [dbo].[users] AS [target] USING (VALUES (...)) ...
+// MSSQL:                 throws a ParserError — MSSQL has no upsert; use merge()
 ```
 
 ### JSON operators
@@ -397,9 +398,10 @@ builder.hintRaw('/*+ SeqScan(u) */');
 ### Row locks (FOR UPDATE / FOR SHARE)
 
 `forUpdate()`/`forShare()` lock a SELECT's result rows, with `Nowait`/`SkipLocked` wait variants.
-Postgres/MySQL append a trailing `FOR UPDATE`/`FOR SHARE`; MSSQL has no such clause and gets an
-equivalent `WITH (UPDLOCK, ROWLOCK)`/`WITH (HOLDLOCK, ROWLOCK)` table hint on every base table
-instead. SQLite has no row-level locking and throws a `ParserError`.
+Postgres/MySQL append a trailing `FOR UPDATE`/`FOR SHARE`. MSSQL has no such clause; its view
+spells the exclusive lock `updlock()`/`updlockNowait()`/`updlockReadpast()`, emitted as a
+`WITH (UPDLOCK, ROWLOCK[, NOWAIT|READPAST])` table hint on every base table. MSSQL has no shared row
+lock, so `forShare()` is refused there. SQLite has no row-level locking and throws a `ParserError`.
 
 ```dart
 final builder = PostgresQuery().newBuilder()
@@ -425,8 +427,8 @@ final builder = PostgresQuery().newBuilder()
 ```
 
 `orderByColumn()` accepts an optional fourth argument for `NullsOrder.first` / `NullsOrder.last`.
-Postgres and SQLite emit native `NULLS FIRST`/`NULLS LAST`; MySQL and MSSQL emulate it with a
-leading `CASE WHEN col IS NULL THEN … END` sort key.
+Postgres and SQLite emit native `NULLS FIRST`/`NULLS LAST`; MySQL and MSSQL have no such clause, so
+a placement other than `NullsOrder.none` throws a `ParserError` there.
 
 `limit()` is **pagination**: on MSSQL it renders as `OFFSET … ROWS FETCH NEXT … ROWS ONLY`, which
 T-SQL accepts only alongside an `ORDER BY` — so paginating without one throws rather than emitting
@@ -666,7 +668,7 @@ So a naive builder emits **different SQL on Flutter web than on Flutter mobile**
 source, with nothing thrown and nothing logged: `5.0` binds as `@p0 tinyint` / `= 5` on the web and
 `@p0 float` / `= 5.0` on mobile. Every value here passes through one platform-independent rendering
 layer, and the test suite runs on **both** platforms — `dart test` (the VM) and `dart test -p chrome`
-(dart2js) — so the two can never diverge. See [`goldens/README.md`](goldens/README.md).
+(dart2js) — so the two can never diverge. See [`contract/README.md`](../../contract/README.md).
 
 ## Null comparisons
 
@@ -707,14 +709,13 @@ CI expects the same checks locally (Chrome/Chromium required for `-p chrome`):
 dart pub get
 dart analyze --fatal-infos
 dart format --output=none --set-exit-if-changed .
-dart run tool/fetch_goldens.dart --verify
+dart run tool/gen_views.dart --check
 dart run tool/verify_embed.dart
 dart test               # the Dart VM — Flutter mobile and desktop
 dart test -p chrome     # dart2js — Flutter web. Not redundant, not optional.
 dart run example/sqleasy_example.dart
 
-dart run tool/fetch_goldens.dart    # pull the pinned corpus from the TypeScript repo's tag
-dart run tool/embed_goldens.dart    # re-embed it for the dart2js test run
+dart run tool/embed_goldens.dart    # re-embed ../../contract/corpora/emission/corpus.json for dart2js
 ```
 
 ## License

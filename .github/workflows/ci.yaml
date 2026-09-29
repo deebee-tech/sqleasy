@@ -43,7 +43,7 @@ jobs:
       # Every dependency must be `catalog:` or `workspace:` — no literal ranges anywhere.
       - run: pnpm run check:deps
       # A feature must not land for some dialects and silently skip others. Ratchet: fails only on a
-      # NEW op x dialect gap. See docs/audits/dialect-parity-2026-07-19.md.
+      # NEW op x dialect gap. See the 2026-07-19 parity audit (commit 3e31078).
       - run: pnpm run check:parity
       # The contract is versioned independently of every implementation: content change => version bump.
       - run: pnpm run check:contract

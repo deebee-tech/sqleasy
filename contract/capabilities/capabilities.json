@@ -1,5 +1,5 @@
 {
-  "_comment": "INERT capability manifest. Nothing imports this, nothing generates from it, no gate reads it. A cell is `adjudicated` when a HUMAN source settled it: decisions.json (rich, carries the refusal text) or the typed-view surface (dart/query/tool/view_manifest.dart, held in lockstep with the TS AbsentOn* sets by scripts/check-surface-parity.mjs) — the latter now supplies every method's per-dialect membership and engine-native name. An UNADJUDICATED cell is one no human source has settled: an op on the forced list whose meaning turns on an enum/argument the views cannot see (whereMatch's full-text subsystem, updateTable's SQLite gap), or a caller-facing enum member (WhereOperator.Ilike, NullsOrder.First, …) — the enum axis is NOT expressible in the typed views and remains the hand-adjudication frontier. `kind` on an unadjudicated cell is extraction's HYPOTHESIS from generated goldens, never a finding. `name` is the engine's own term; filling all four dialects with the SAME name is what makes a capability shared (sharedness is DERIVED, never authored). There is deliberately no \"emulated\" kind. See docs/capability-manifest-design.md. Regenerate with: node scripts/build-capability-manifest.mjs",
+  "_comment": "INERT capability manifest. Nothing imports this, nothing generates from it, no gate reads it. A cell is `adjudicated` when a HUMAN source settled it: decisions.json (rich, carries the refusal text) or the typed-view surface (dart/query/tool/view_manifest.dart, held in lockstep with the TS AbsentOn* sets by scripts/check-surface-parity.mjs) — the latter now supplies every method's per-dialect membership and engine-native name. An UNADJUDICATED cell is one no human source has settled: an op on the forced list whose meaning turns on an enum/argument the views cannot see (whereMatch's full-text subsystem, updateTable's SQLite gap), or a caller-facing enum member (WhereOperator.Ilike, NullsOrder.First, …) — the enum axis is NOT expressible in the typed views and remains the hand-adjudication frontier. `kind` on an unadjudicated cell is extraction's HYPOTHESIS from generated goldens, never a finding. `name` is the engine's own term; filling all four dialects with the SAME name is what makes a capability shared (sharedness is DERIVED, never authored). There is deliberately no \"emulated\" kind. Design of record: commit f6c6035. Regenerate with: node scripts/build-capability-manifest.mjs",
   "manifestVersion": "0.1.0",
   "generatedFrom": {
     "corpus": "contract/corpora/emission/corpus.json",
@@ -7,7 +7,7 @@
     "corpusCases": 392,
     "decisions": "contract/capabilities/decisions.json",
     "typedViewSurface": "dart/query/tool/view_manifest.dart (parity-checked against ts typed-views.ts)",
-    "audit": "docs/audits/dialect-parity-2026-07-19.md",
+    "audit": "2026-07-19 parity audit (commit 3e31078)",
     "sweep": "2026-07-20 approximation sweep (39 confirmed violations)"
   },
   "dialects": [

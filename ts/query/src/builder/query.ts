@@ -2429,7 +2429,7 @@ export class QueryBuilder {
    */
   public updlockReadpast = (): this => this.forUpdateSkipLocked();
 
-  /** Shared row lock on the SELECT's result rows (`FOR SHARE`; MSSQL `WITH (HOLDLOCK, ROWLOCK)`). */
+  /** Shared row lock on the SELECT's result rows (`FOR SHARE`). Refused on MSSQL, which has none. */
   public forShare = (): this => {
     this.#state.rowLock = { mode: RowLockMode.ForShare, wait: RowLockWait.Default };
     return this;

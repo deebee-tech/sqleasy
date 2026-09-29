@@ -3,22 +3,26 @@
 A dialect-aware SQL builder and execution engine for **MSSQL, MySQL, Postgres, and SQLite** — fluent,
 zero-dependency, and not an ORM.
 
-This is a **polyglot, contract-first monorepo**. The same two packages are implemented in several
-languages, and every implementation is held to the others _byte-for-byte_ by a shared golden contract.
+This is a **polyglot, contract-first monorepo**. The same two packages are implemented in TypeScript
+and Dart, and every implementation is held to the others _byte-for-byte_ by a shared golden contract.
 
 ## Layout
 
 ```
-contract/    the cross-language source of truth — independently versioned      (phase 3)
+contract/    the cross-language source of truth — independently versioned
 ts/          query/  engine/     @deebeetech/sqleasy, @deebeetech/sqleasy-engine
-dart/        query/  engine/     pub.dev: sqleasy, sqleasy_engine             (phases 4-5)
-python/      query/  engine/                                                   (phase 6)
-csharp/      query/  engine/                                                   (phase 6)
-go/          query/  engine/                                                   (phase 6)
+dart/        query/  engine/     pub.dev: sqleasy, sqleasy_engine
 configs/     shared tsconfig / eslint presets (never published)
 harness/     one logical schema, four dialect renderings — the shared DB fixtures
 scripts/     repo guardrails (check-deps, check-dialect-parity, ...)
 ```
+
+## The design rule
+
+SQLEasy is an honest capability surface, not a portability layer. A construct that exists on every
+engine gets one common method. A construct an engine lacks is refused on that engine. A construct
+an engine spells its own native way gets its own engine-named method. Runtime refusal is the floor
+in every language; per-engine types are the ceiling where the language allows.
 
 ## The one rule that makes this work
 
@@ -35,7 +39,7 @@ Cross-language SDKs are conventionally split per language, and this deliberately
 
 1. **The engine's contract needs real databases.** Emission goldens are pure text and travel for
    free, but result-normalization and introspection goldens need pinned Postgres/MySQL/SQL Server
-   containers. Split across five repos, that fixture environment gets duplicated five times and
+   containers. Split across per-language repos, that fixture environment gets duplicated in each and
    drifts. Here it is defined once, in `docker-compose.harness.yml`.
 2. **The product is parity.** A `bigint` that comes back as a float in one language and a string in
    another is silent data corruption. Co-location means one commit changes the emission, regenerates
@@ -63,4 +67,4 @@ version range anywhere fails the build.
 
 ## License
 
-MIT © Sandy Weatherby
+MIT © DeeBee Tech

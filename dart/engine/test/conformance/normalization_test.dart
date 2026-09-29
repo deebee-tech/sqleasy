@@ -16,9 +16,10 @@ import 'package:test/test.dart';
 ///
 /// Requires the shared docker harness (`pnpm harness:up`). FAIL LOUD, NEVER SKIP.
 void main() {
-  // MSSQL is deliberately absent: there is no native pure-Dart TDS driver and its leg is built last
-  // (see docs/engine-pilot-plan.md). This list is asserted below so the gap stays EXPLICIT — a port
-  // that quietly stopped replaying a dialect is exactly how coverage is lost.
+  // MSSQL is deliberately absent: there is no native pure-Dart TDS driver, and by decision
+  // (2026-07-21) there is no MSSQL leg until a Dart consumer needs SQL Server; `dart_odbc` (host
+  // unixODBC + MS ODBC Driver 18) is the realistic path. This list is asserted below so the gap
+  // stays EXPLICIT — a port that quietly stopped replaying a dialect is exactly how coverage is lost.
   const implemented = {'postgres', 'mysql', 'sqlite'};
 
   final corpus = jsonDecode(
@@ -87,7 +88,8 @@ void main() {
             'ndim=2 it reads elements from inside the second dimension header. The same value cast '
             '::text returns the correct {{...}}, so the server sends good bytes and the decoder '
             'loses them. Corrupted before normalization runs — nothing in this package can fix it. '
-            'The TypeScript port replays this case and passes.',
+            'The TypeScript port replays this case and passes. '
+            '(Upstream report drafted in e8524b6, not filed.)',
   };
 
   test('every known gap still names a real corpus case', () {

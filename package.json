@@ -2,7 +2,7 @@
   "name": "sqleasy-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Polyglot, contract-first monorepo for SQLEasy — the query builder and execution engine across TypeScript, Dart, Python, C#, and Go, held to one another by a shared golden contract.",
+  "description": "Polyglot, contract-first monorepo for SQLEasy — the query builder and execution engine in TypeScript and Dart, held to one another by a shared golden contract.",
   "license": "MIT",
   "author": {
     "name": "Sandy Weatherby",

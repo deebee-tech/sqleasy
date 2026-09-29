@@ -38,7 +38,7 @@ if (!corpusPath) {
 const corpus = JSON.parse(readFileSync(corpusPath, 'utf8'));
 
 // --derive: REPORT ONLY, never a gate. Derives each case's dialect set from the capability manifest
-// and compares it to the authored one. Under docs/capability-manifest-design.md, `dialects` stops
+// and compares it to the authored one. Under the manifest design (commit f6c6035), `dialects` stops
 // being authored and becomes the intersection, over a case's ops, of the dialects where every op is
 // `native` — so the 289 cases that currently declare nothing are stamped rather than rewritten.
 // While adjudication is in progress most cells are `unadjudicated`, so this mostly measures how much
@@ -116,7 +116,7 @@ if (process.argv.includes('--derive')) {
 
   console.log(
     '\nREPORT ONLY — this never fails the build. The derived set becomes authoritative only when\n' +
-      'the cells it reads have been adjudicated by a human. See docs/capability-manifest-design.md.',
+      'the cells it reads have been adjudicated by a human. Design of record: commit f6c6035.',
   );
   process.exit(0);
 }
@@ -221,7 +221,7 @@ if (introduced.length > 0) {
   console.error(
     '\nEvery op must resolve, per dialect, to either real emitted SQL or an explicit {throws}\n' +
       'case proving clean rejection. If the dialect genuinely cannot do it, add the {throws} case —\n' +
-      'that is a correct absence. If it can, implement it. See docs/audits/dialect-parity-2026-07-19.md.',
+      'that is a correct absence. If it can, implement it. See the 2026-07-19 parity audit (commit 3e31078).',
   );
   process.exit(1);
 }

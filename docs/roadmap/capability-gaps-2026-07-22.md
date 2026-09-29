@@ -1,11 +1,7 @@
 # SQLEasy capability roadmap
 
-**Status:** open. Written 2026-07-22, against SQLEasy 12.0.0 / contract 0.24.0.
-**Companion document:** [`subbuilder-scope-leaks-2026-07-22.md`](subbuilder-scope-leaks-2026-07-22.md)
-covers _defects_ — 45 places where a clause set on a child builder does not mean what the caller
-wrote once inlined. This file covers _missing capabilities_. Item #163 in §6 below ("grouped
-set-operation operands") is superseded by that document, which found the nested form silently
-flattens.
+**Status:** open backlog — worked in pieces as time allows; never a release gate. Reconciled
+2026-09-29 (13.1.0 + beta, contract 0.46.0).
 
 **How to use this:** every entry is written so it can be picked up cold. Pick one, read its paragraph in
 §3, check §5 for whether something else has to land first, and go. Nothing here is sequenced —
@@ -57,26 +53,27 @@ enough to matter, and the engines disagree with their docs more than they should
 
 ## 3. The ranked list
 
-Ranked by demand first, then by inverse effort. **#6 is done** (shipped in 12.0.0) and is left in
-place so the numbering matches the detail paragraphs below.
+Ranked by demand first, then by inverse effort. **#6 is done** (shipped in 12.0.0), and **#3, #10,
+#13, #14, #15 and #24 are done** (shipped in 13.0.0); they are left in place so the numbering matches
+the detail paragraphs below.
 
 | #     | Capability                                                                      | Engines (floor)                                          | Demand | Effort |
 | ----- | ------------------------------------------------------------------------------- | -------------------------------------------------------- | ------ | ------ |
 | 1     | `NOT BETWEEN` in WHERE / HAVING                                                 | all four (SQL-92)                                        | high   | small  |
 | 2     | CTE `MATERIALIZED` / `NOT MATERIALIZED`                                         | PG 12+, SQLite 3.35+                                     | high   | small  |
-| 3     | `DISTINCT` inside an aggregate (`COUNT(DISTINCT x)`) — needs #10                | all four                                                 | high   | small  |
+| 3     | ~~`DISTINCT` inside an aggregate~~ — **DONE, 13.0.0 (`4905588`)**               | all four                                                 | —      | —      |
 | 4     | Column-to-column comparison in WHERE / HAVING                                   | all four                                                 | high   | medium |
-| 5     | JOIN ON null predicates: `IS [NOT] NULL`, null-safe equality                    | all four (MSSQL native `IS DISTINCT FROM` 2022+)         | high   | medium |
+| 5     | JOIN ON null-safe equality (`IS [NOT] NULL` in ON done on beta, `dfeb5ef`)      | all four (MSSQL native `IS DISTINCT FROM` 2022+)         | high   | medium |
 | ~~6~~ | ~~Row-capped UPDATE / DELETE~~ — **DONE, shipped in 12.0.0 (`41cca88`)**        | MySQL 4.0+, MSSQL 2005+                                  | —      | —      |
 | 7     | ORDER BY an output column: alias, unqualified name, ordinal                     | all four                                                 | high   | medium |
 | 8     | `JOIN … USING (cols)`                                                           | PG, MySQL 8, SQLite                                      | high   | medium |
 | 9     | `VALUES` as a table source — `FROM (VALUES …) AS t(a,b)`                        | PG, MSSQL 2008+, MySQL 8.0.19+; SQLite narrower          | high   | medium |
-| 10    | An aggregate call node (COUNT / SUM / AVG / MIN / MAX)                          | all four                                                 | high   | medium |
+| 10    | ~~An aggregate call node~~ — **DONE, 13.0.0 (`4905588`)**                       | all four                                                 | —      | —      |
 | 11    | `excluded` / row-alias reference in the upsert SET list                         | PG 9.5+, SQLite 3.24+, MySQL 8.0.19+                     | high   | medium |
 | 12    | Postgres array predicates: `= ANY(arr)`, `<> ALL(arr)`, `@>`, `<@`, `&&`        | PG (MySQL `MEMBER OF` partial)                           | high   | medium |
-| 13    | Row-value comparison — `(a,b) > (?,?)`, `(a,b) IN ((?,?),…)`                    | PG, MySQL, SQLite 3.15+; **not** MSSQL                   | high   | large  |
-| 14    | Ordered string aggregation — STRING_AGG / GROUP_CONCAT                          | all four, three grammars                                 | high   | large  |
-| 15    | JSON aggregation in the SELECT list                                             | PG 9.3+, MySQL 5.7.22+, SQLite 3.9+; **not** MSSQL ≤2022 | high   | large  |
+| 13    | ~~Row-value comparison~~ — **DONE, 13.0.0 (`48e3239`)**                         | PG, MySQL, SQLite 3.15+; **not** MSSQL                   | —      | —      |
+| 14    | ~~Ordered string aggregation~~ — **DONE, 13.0.0 (`b5e91f3`)**                   | all four, three grammars                                 | —      | —      |
+| 15    | ~~JSON aggregation in the SELECT list~~ — **DONE, 13.0.0 (`9dbdb90`)**          | PG 9.3+, MySQL 5.7.22+, SQLite 3.9+; **not** MSSQL ≤2022 | —      | —      |
 | 16    | Table functions in JOIN/APPLY position + column-referencing args                | MSSQL 2005+, PG, SQLite 3.9+                             | high   | large  |
 | 17    | JSON shredding into rows (JSON_TABLE / OPENJSON…WITH / json_each over a column) | MySQL 8.0.4+, MSSQL 2016+, PG 9.4+, SQLite 3.9+          | high   | large  |
 | 18    | `INTERSECT ALL` / `EXCEPT ALL`                                                  | PG, MySQL 8.0.31+                                        | medium | small  |
@@ -85,7 +82,7 @@ place so the numbering matches the detail paragraphs below.
 | 21    | `INSERT … DEFAULT VALUES`                                                       | PG, SQLite, MSSQL; MySQL `INSERT INTO t () VALUES ()`    | medium | small  |
 | 22    | `WITH ORDINALITY` — needs #33                                                   | PG 9.4+                                                  | medium | small  |
 | 23    | Named windows — `WINDOW w AS (…)` / `OVER w`                                    | PG 8.4+, MySQL 8.0+, SQLite 3.25+, MSSQL 2022+           | medium | medium |
-| 24    | `FILTER (WHERE …)` on aggregates (plain and windowed)                           | PG 9.4+, SQLite 3.30+                                    | medium | medium |
+| 24    | ~~`FILTER (WHERE …)` on aggregates~~ — **DONE, 13.0.0 (`0a7e6a8`)**             | PG 9.4+, SQLite 3.30+                                    | —      | —      |
 | 25    | Non-integer RANGE frame offsets (`INTERVAL '7' DAY PRECEDING`)                  | PG 11+, MySQL 8.0+                                       | medium | medium |
 | 26    | Quantified subquery comparison — `> ALL (…)`, `>= ANY (…)`                      | PG, MySQL, MSSQL; **not** SQLite                         | medium | medium |
 | 27    | `COLLATE` on ORDER BY terms and comparisons                                     | all four                                                 | medium | medium |
@@ -132,11 +129,11 @@ applies here too.
 
 **8. `JOIN … USING (cols)`.** Verified running on PG 17.10, MySQL 8.4.10 and SQLite 3.51.0; verified rejected on MSSQL 2022 (`Msg 102 … near 'USING'`), so a correct 3-of-4. Needs a `usingColumns` field on `JoinState`, a builder overload beside `joinTable`, and an MSSQL refusal. Trap: `joinRaw` is not coverage — `default-join.ts` emits it verbatim and `continue`s, skipping identifier quoting, the MySQL index-hint slot and the MSSQL per-table lock hint. PG 14+ additionally accepts the join-alias form `USING (q) AS x`.
 
-**9. `VALUES` as a table source.** `FROM (VALUES (1,'x'),(2,'y')) AS t(a,b)` — the inline lookup table, the batch-of-tuples join. PG and MSSQL 2008+ take it as written (MSSQL requires the alias list); MySQL 8.0.19+ spells the rows `VALUES ROW(1,'x'), ROW(2,'y')`; SQLite takes the rows but not the `AS t(a,b)` alias list, so SQLite gets a genuinely narrower version, not the same capability. The rendering is already written but locked inside MERGE: `MergeBuilder.usingValues(alias, columns, rows)` emits exactly `(VALUES …) AS alias (cols)` and MERGE is MSSQL-only. **Raw is not an escape hatch here** — `fromRaw` takes a string and emits it with `addSqlSnippet`, which carries no values, and no `*Raw` method in the builder accepts params, so a VALUES source built with `fromRaw` would have to inline literals. Depends on #33 for the alias list.
+**9. `VALUES` as a table source.** `FROM (VALUES (1,'x'),(2,'y')) AS t(a,b)` — the inline lookup table, the batch-of-tuples join. PG and MSSQL 2008+ take it as written (MSSQL requires the alias list); MySQL 8.0.19+ spells the rows `VALUES ROW(1,'x'), ROW(2,'y')`; SQLite takes the rows but not the `AS t(a,b)` alias list, so SQLite gets a genuinely narrower version, not the same capability. The rendering is already written but locked inside MERGE: `MergeBuilder.usingValues(alias, columns, rows)` emits exactly `(VALUES …) AS alias (cols)` and MERGE is MSSQL-only. **Raw is not an escape hatch here** — `fromRaw` takes a string and emits it with `addSqlSnippet`, which carries no values (since `85b3bde`, on beta, only `whereRaw`/`havingRaw`/`onRaw` take bound values; `fromRaw`, `selectRaw` and the raw SET lists still do not), so a VALUES source built with `fromRaw` would have to inline literals. Depends on #33 for the alias list.
 
 **10. An aggregate call node.** COUNT / SUM / AVG / MIN / MAX are identical spellings on all four engines and SQLEasy has no method for any of them. The entire SELECT-list surface is selectAll / selectColumn(s) / selectRaw(s) / selectWithBuilder / selectWindow / selectJsonExtract; `SelectState` has no aggregate fields and none of the 129 adjudicated ops is an aggregate. `HAVING COUNT(*) > 5` — the canonical HAVING — is `havingRaw` only, because `having()` takes `(alias, column, operator, value)`. The corpus itself writes `{"op":"selectRaw","sql":"COUNT(*) AS cnt"}`. Trap, and it is the real cost: this is a surface-design decision, not a method. It is the gate on #3, #14, #15 and #24, and it moves the line the refutations relied on — that SQLEasy models clauses, not expressions. Decide the boundary deliberately (aggregate call node with a column or `*` operand, not a general expression AST) before any of the four dependents ship.
 
-**11. `excluded` / row-alias reference in the upsert SET list.** `ON CONFLICT … DO UPDATE SET name = EXCLUDED.name` — the whole point of an upsert. PG 9.5+ and SQLite 3.24+ spell it `excluded`; MySQL 8.0.19+ uses the row alias (`INSERT … AS new … ON DUPLICATE KEY UPDATE c = new.c`), with `VALUES(c)` on earlier versions, deprecated in 8.0.20. Today `onConflictDoUpdate` takes `{columnName, value}` pairs and `emitSetList` runs every value through `addDynamicValue`, so `SET "name" = excluded."name"` comes out as a re-bound literal. The raw route replaces the whole SET list **and cannot bind parameters** (no `*Raw` method in the library accepts params), so mixing `name = excluded.name` with a bound `updated_at = $1` is not expressible at all. The shape is already proven in-repo: `MergeBuilder`'s `source()`/`target()`/`value()`/`raw()` expression helpers do exactly this. Trap: MySQL needs the `AS new` row alias emitted on the INSERT itself, which the upsert emitter does not currently touch.
+**11. `excluded` / row-alias reference in the upsert SET list.** `ON CONFLICT … DO UPDATE SET name = EXCLUDED.name` — the whole point of an upsert. PG 9.5+ and SQLite 3.24+ spell it `excluded`; MySQL 8.0.19+ uses the row alias (`INSERT … AS new … ON DUPLICATE KEY UPDATE c = new.c`), with `VALUES(c)` on earlier versions, deprecated in 8.0.20. Today `onConflictDoUpdate` takes `{columnName, value}` pairs and `emitSetList` runs every value through `addDynamicValue`, so `SET "name" = excluded."name"` comes out as a re-bound literal. The raw route replaces the whole SET list **and cannot bind parameters** (the raw SET-list forms take no values; since `85b3bde`, on beta, only `whereRaw`/`havingRaw`/`onRaw` do), so mixing `name = excluded.name` with a bound `updated_at = $1` is not expressible at all. The shape is already proven in-repo: `MergeBuilder`'s `source()`/`target()`/`value()`/`raw()` expression helpers do exactly this. Trap: MySQL needs the `AS new` row alias emitted on the INSERT itself, which the upsert emitter does not currently touch.
 
 **12. Postgres array predicates.** `col = ANY($1)` binds one array parameter instead of N scalars; `@>`, `<@`, `&&` are the array containment/overlap operators. Postgres all versions; MySQL 8.0.17+ has the analogous `value MEMBER OF(json_array)`; MSSQL and SQLite have nothing. `whereInValues` emits one placeholder per element, with three consequences `IN` cannot fix and `= ANY($1)` does: the empty list is a hard refusal (`'IN requires at least one value'`) while `= ANY('{}'::int[])` is valid and matches nothing; a 20k-element list blows past Postgres's 65535 bound-parameter cap; and every distinct list length is a distinct statement text, churning the plan cache. Trap: `@>` does have an emitter, but `emitJsonContainsPredicate` unconditionally appends `::jsonb` to the bound value, so it cannot be pointed at a `text[]` or `int[]` column — the array operators need their own emission path, not a reuse.
 
@@ -185,7 +182,7 @@ Do not re-sweep these.
 
 Not "nothing." Three things remain after all 46 items, plus one adjacent observation.
 
-**The expression axis, deliberately.** Even with #10 done, SQLEasy still has no `CASE`, no `CAST`, no `COALESCE`, and no scalar-function surface beyond the five `Fn.*` normalization helpers (concat, charLength, round, now, divide). That boundary is stated in code — "This is deliberately NOT an expression AST" — and every refutation above leans on it. Items #10, #14, #15 push directly against it, so the aggregate node needs an explicit ruling on where the new line sits, or the next sweep will find the same argument on both sides.
+**The expression axis, deliberately.** Even with #10 done, SQLEasy still has no `CASE`, no `CAST`, no `COALESCE`, and no scalar-function surface beyond the five `Fn.*` normalization helpers (concat, charLength, round, now, divide). That boundary is stated in code — "This is deliberately NOT an expression AST" — and every refutation above leans on it. Items #10, #14, #15 push directly against it.
 
 **DDL, entirely.** No CREATE / ALTER / DROP for tables, indexes, views or constraints. #30 (TRUNCATE) is the DDL-adjacent edge and carries an implicit commit on MySQL and MSSQL, which is itself a scope question this builder has never had to answer.
 
@@ -193,7 +190,7 @@ Not "nothing." Three things remain after all 46 items, plus one adjacent observa
 
 **Areas this sweep did not cover at all**, so their state is unknown rather than clean: the full-text surface (`FullTextMode`, `whereMatch`), the stored-procedure `CALL` surface (`CallKind`, `CallParamDirection`, `CallReturnIntent`), and transaction control beyond the `BEGIN`/`COMMIT` delimiters — no savepoints, no isolation levels, no per-statement lock timeout.
 
-**Adjacent, not a capability:** `LIMIT`/`OFFSET`/`TOP` values are spliced as literals (`state.limit.toString()`), never bound. All four engines accept a parameter there (with MSSQL needing `TOP (@p)` parenthesized). Same plan-cache-churn argument as the `IN`-list case in #12, but it is a parameterization choice on a shipped capability, so it belongs on the bug track, not this one.
+**Adjacent, not a capability:** `LIMIT`/`OFFSET` have been bound on all four dialects since `dfeb5ef` (beta), but `TOP (n)`, `TOP (n) WITH TIES` and the MSSQL mutation caps are still spliced as literals (`to-sql.ts`, `default-mutation-row-cap.ts`). MSSQL accepts a parameter there as `TOP (@p)`. Same plan-cache-churn argument as the `IN`-list case in #12, but it is a parameterization choice on a shipped capability, so it belongs on the bug track, not this one.
 
 ## 8. Provenance
 
@@ -201,3 +198,28 @@ Not "nothing." Three things remain after all 46 items, plus one adjacent observa
 - Raw output: `wkm27k7wt` (231 KB). The ranked table, detail paragraphs, cluster notes, kill list
   and tail in this document are that output, restructured — no findings were dropped.
 - The two fixed defects are commits `c83ddb5` and `41cca88` on `main`.
+
+## 9. Carried from the 2026-07-19 parity audit
+
+The audit is commit `3e31078`. These items were still open at reconciliation:
+
+- **G1 · SQLite `UPDATE … FROM`.** `default-mutation-join.ts` still refuses every SQLite mutation
+  join. SQLite 3.33.0+ has `UPDATE … FROM` with Postgres semantics, so the guard could narrow to
+  DELETE and route UPDATE through the Postgres path in the same file.
+- **E4 · MySQL `statementTimeoutMs`.** The doc comments (`ts/engine/src/index.ts`,
+  `ts/engine/src/mysql/index.ts`) and `ts/engine/README.md` say `mysql2` destroys the connection
+  and kills the statement. The audit found a client-side reject only: no `destroy()`, no
+  `KILL QUERY`. Verify, then fix the claim or enforce it server-side (`MAX_EXECUTION_TIME`).
+- **E5 · `explain().rows`.** MySQL maps `rows` to `rows_examined_per_scan`, not rows produced, and
+  `fullScan` is lenient on Postgres (only `Seq Scan`) while MySQL/MSSQL flag full index scans.
+- **S4 · SQLite `whereMatch` operand.** It emits `<column> MATCH ?`; FTS5 expects the table on the
+  left. Verify against a live FTS5 table before acting.
+
+## 10. Other open items
+
+- **First-class MSSQL `HOLDLOCK` / `REPEATABLEREAD`.** `forShare` is refused on MSSQL;
+  `default-row-lock.ts` says it should return under T-SQL's own vocabulary.
+- **Negative live-probing of `absent` cells.** Never built.
+- **Open decision: MERGE `.holdlock()`** is opt-in, not forced (`merge.ts`).
+- **Open decision: the `*WithOwner` family** stays shared on MySQL, runtime-guarded
+  (`typed-views.ts`).
